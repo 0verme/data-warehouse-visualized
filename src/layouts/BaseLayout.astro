@@ -12,7 +12,9 @@ const baseUrl = import.meta.env.BASE_URL
 const canonicalPath = Astro.url.pathname.startsWith(baseUrl)
   ? Astro.url.pathname
   : `${baseUrl}${Astro.url.pathname.replace(/^\//, '')}`
-const canonicalUrl = canonical ?? new URL(canonicalPath, Astro.url.origin).href
+const siteUrl = import.meta.env.PUBLIC_SITE_URL?.replace(/\/+$/, '')
+const canonicalUrl =
+  canonical ?? (siteUrl ? new URL(canonicalPath, `${siteUrl}/`).href : canonicalPath)
 ---
 
 <!doctype html>

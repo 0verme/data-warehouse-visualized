@@ -75,7 +75,7 @@ npm run preview      # 预览生产构建
 npm run format:check # 检查 Prettier 格式
 ```
 
-构建产物位于 `dist/`，不依赖服务端运行时，可部署到 GitHub Pages、Cloudflare Pages 或 Vercel。部署到 GitHub Pages 的项目子路径时，可设置 `BASE_PATH=/data-warehouse-visualized/` 后再运行 `npm run build`；默认值 `/` 适合域名根路径部署。
+构建产物位于 `dist/`，不依赖服务端运行时，可部署到 GitHub Pages、Cloudflare Pages 或 Vercel。部署到 GitHub Pages 的项目子路径时，可设置 `BASE_PATH=/data-warehouse-visualized/` 后再运行 `npm run build`；默认值 `/` 适合域名根路径部署。若需要生成绝对 canonical，可额外设置 `PUBLIC_SITE_URL=https://你的域名`。
 
 ## 项目结构
 
