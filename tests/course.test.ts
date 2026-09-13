@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { getLessonContent } from '../src/content/lessons'
 import { getLessonBySlug, lessons } from '../src/data/course'
 import { getAdjacentLessons, sortLessons } from '../src/utils/lesson'
 
@@ -9,7 +10,7 @@ describe('课程数据与导航', () => {
     const ordered = sortLessons(reversedLessons)
 
     expect(ordered.map((lesson) => lesson.order)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
     ])
   })
 
@@ -20,14 +21,41 @@ describe('课程数据与导航', () => {
     expect(adjacent.next?.slug).toBe('data-modeling')
   })
 
-  it('星型模型课程已进入目录，并连接到数据血缘之后', () => {
-    const starSchemaLesson = getLessonBySlug('star-schema-and-grain')
+  it('第三章按建模导入、星型模型、SCD2 连成连续课程', () => {
+    expect(lessons.slice(2, 5).map((lesson) => lesson.slug)).toEqual([
+      'data-modeling',
+      'star-schema-and-grain',
+      'slowly-changing-dimension',
+    ])
+    expect(getLessonBySlug('data-modeling')?.demo).toBe('modeling-intro')
+    expect(getLessonBySlug('slowly-changing-dimension')?.demo).toBe('scd')
 
-    expect(starSchemaLesson?.demo).toBe('star-schema')
-    expect(starSchemaLesson && getAdjacentLessons(lessons, starSchemaLesson.slug)).toEqual({
-      previous: expect.objectContaining({ slug: 'data-lineage' }),
-      next: expect.objectContaining({ slug: 'data-governance' }),
+    expect(getAdjacentLessons(lessons, 'data-modeling')).toEqual({
+      previous: expect.objectContaining({ slug: 'warehouse-layers' }),
+      next: expect.objectContaining({ slug: 'star-schema-and-grain' }),
     })
+    expect(getAdjacentLessons(lessons, 'star-schema-and-grain')).toEqual({
+      previous: expect.objectContaining({ slug: 'data-modeling' }),
+      next: expect.objectContaining({ slug: 'slowly-changing-dimension' }),
+    })
+    expect(getAdjacentLessons(lessons, 'slowly-changing-dimension')).toEqual({
+      previous: expect.objectContaining({ slug: 'star-schema-and-grain' }),
+      next: expect.objectContaining({ slug: 'metric-system' }),
+    })
+  })
+
+  it('数据建模导入课不再使用课程骨架', () => {
+    const lesson = getLessonBySlug('data-modeling')
+
+    expect(lesson).toBeDefined()
+    expect(getLessonContent(lesson!)).toMatchObject({
+      concept: { term: 'Grain（粒度）' },
+      visualization: { kind: 'modeling-intro' },
+    })
+  })
+
+  it('数据血缘顺序调整到第十课', () => {
+    expect(getLessonBySlug('data-lineage')).toMatchObject({ order: 10, chapter: '08' })
   })
 
   it('首尾课程不会产生越界导航', () => {

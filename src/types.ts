@@ -104,3 +104,46 @@ export interface StarSchemaVisualization {
   grains: GrainOption[]
   errorDemo: GrainErrorDemo
 }
+
+export interface ModelingIntroStep {
+  id: string
+  title: string
+  description: string
+  example: string
+}
+
+export interface ModelingIntroVisualization {
+  kind: 'modeling-intro'
+  rawTable: StarSchemaTableData
+  steps: ModelingIntroStep[]
+}
+
+export interface ScdDimensionVersion {
+  userId: string
+  city: string
+  memberLevel: string
+  effectiveFrom: string
+  effectiveTo: string
+  isCurrent: boolean
+}
+
+export type ScdAttributeUpdate = Partial<Pick<ScdDimensionVersion, 'city' | 'memberLevel'>>
+
+export interface ScdDimensionChange extends ScdAttributeUpdate {
+  effectiveFrom: string
+}
+
+export interface ScdOrder {
+  id: string
+  label: string
+  orderTime: string
+  amount: number
+}
+
+export interface ScdVisualization {
+  kind: 'scd'
+  initialVersion: ScdDimensionVersion
+  change: ScdDimensionChange
+  orders: ScdOrder[]
+  timelineLabels?: string[]
+}

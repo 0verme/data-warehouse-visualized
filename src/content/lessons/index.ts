@@ -1,6 +1,8 @@
 import type { Lesson } from '../../data/course'
 import type { LessonContent } from '../types'
 import { dataLineageContent } from './data-lineage'
+import { dataModelingContent } from './data-modeling'
+import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { whyDataWarehouseContent } from './why-data-warehouse'
@@ -9,7 +11,9 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,
+  'data-modeling': dataModelingContent,
   'star-schema-and-grain': starSchemaAndGrainContent,
+  'slowly-changing-dimension': slowlyChangingDimensionContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {
