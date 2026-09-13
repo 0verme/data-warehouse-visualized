@@ -1,0 +1,29 @@
+---
+import { LearnShell } from '../../components/course/LearnShell'
+import { getLessonContent } from '../../content/lessons'
+import { lessons, type Lesson } from '../../data/course'
+import type { LessonContent } from '../../content/types'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+interface Props {
+  lesson: Lesson
+  content: LessonContent
+}
+
+export function getStaticPaths() {
+  return lessons.map((lesson) => ({
+    params: { slug: lesson.slug },
+    props: {
+      lesson,
+      content: getLessonContent(lesson),
+    },
+  }))
+}
+
+const { lesson, content } = Astro.props
+const pageTitle = `${lesson.title}｜数据仓库图解`
+---
+
+<BaseLayout title={pageTitle} description={lesson.summary}>
+  <LearnShell client:load lessons={lessons} initialLesson={lesson} initialContent={content} />
+</BaseLayout>

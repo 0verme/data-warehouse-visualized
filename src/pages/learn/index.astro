@@ -1,0 +1,21 @@
+---
+import { LearnShell } from '../../components/course/LearnShell'
+import { getLessonContent } from '../../content/lessons'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { lessons } from '../../data/course'
+
+const firstLesson = lessons[0]
+---
+
+<BaseLayout
+  title="开始学习｜数据仓库图解"
+  description="沿着数据流动的方向，交互式学习数据仓库的基础概念、分层与数据血缘。"
+>
+  <LearnShell
+    client:load
+    lessons={lessons}
+    initialLesson={firstLesson}
+    initialContent={getLessonContent(firstLesson)}
+    isIndex
+  />
+</BaseLayout>
