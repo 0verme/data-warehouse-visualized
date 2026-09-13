@@ -32,3 +32,75 @@ export interface LineageEdge {
   source: string
   target: string
 }
+
+export type StarSchemaFieldRole = 'key' | 'attribute' | 'measure'
+export type StarSchemaTableType = 'fact' | 'dimension'
+export type StarSchemaTone = 'blue' | 'teal' | 'amber' | 'violet' | 'navy'
+export type GrainId = 'order' | 'order-item' | 'user-day'
+
+export type StarSchemaCell = string | number
+export type StarSchemaRow = Record<string, StarSchemaCell>
+
+export interface StarSchemaTableData {
+  columns: string[]
+  rows: StarSchemaRow[]
+}
+
+export interface StarSchemaField {
+  name: string
+  label: string
+  role: StarSchemaFieldRole
+}
+
+export interface StarSchemaTable {
+  id: string
+  name: string
+  type: StarSchemaTableType
+  rowMeaning: string
+  key: {
+    label: string
+    value: string
+  }
+  fields: StarSchemaField[]
+  responsibility: string
+}
+
+export interface StarSchemaFieldGroup {
+  id: string
+  label: string
+  tone: StarSchemaTone
+  fields: string[]
+}
+
+export interface GrainOption {
+  id: GrainId
+  label: string
+  statement: string
+  description: string
+  columns: string[]
+  rows: StarSchemaRow[]
+  useCase: string
+  boundary: string
+  recommended: boolean
+}
+
+export interface GrainErrorDemo {
+  wrongColumns: string[]
+  wrongRows: StarSchemaRow[]
+  fixedColumns: string[]
+  fixedRows: StarSchemaRow[]
+  actualAmount: number
+  wrongMeasure: string
+  fixedMeasure: string
+  wrongSql: string
+  fixedSql: string
+}
+
+export interface StarSchemaVisualization {
+  kind: 'star-schema'
+  rawTable: StarSchemaTableData
+  rawFieldGroups: StarSchemaFieldGroup[]
+  tables: StarSchemaTable[]
+  grains: GrainOption[]
+  errorDemo: GrainErrorDemo
+}

@@ -35,6 +35,7 @@
 - 业务系统到数据仓库的数据流 Demo
 - ODS / DWD / DWS / ADS 分层加工 Demo
 - 可点击的数据血缘图与 Impact Analysis 模拟
+- 星型模型与粒度交互实验：大宽表拆分、粒度切换与重复计算修复
 - Desktop、Tablet、Mobile 响应式布局
 - `prefers-reduced-motion` 降级支持
 - 基础 title、description、canonical 和 Open Graph 元数据
@@ -54,7 +55,7 @@
 11. 性能与工程实践
 12. 从 0 搭一套数据仓库
 
-当前已完成 3 个真实交互 Demo，分别对应第 1、2、8 课；其余课程先保留在完整路线中。
+当前已完成 4 个真实交互 Demo，分别对应第 1、2、8 课，以及星型模型与粒度课程；其余课程先保留在完整路线中。
 
 ## 本地开发
 
@@ -108,8 +109,8 @@ src/
 
 ### Phase 2
 
-- [ ] 星型模型可视化
-- [ ] 粒度变化模拟
+- [x] 星型模型可视化
+- [x] 粒度变化模拟
 - [ ] SCD2 拉链表时间轴
 - [ ] Partition Pruning 模拟
 - [ ] Shuffle / 数据倾斜模拟

@@ -1,4 +1,11 @@
-import type { FlowOutput, LineageEdge, LineageNode, PipelineStage, SourceSystem } from '../types'
+import type {
+  FlowOutput,
+  LineageEdge,
+  LineageNode,
+  PipelineStage,
+  SourceSystem,
+  StarSchemaVisualization,
+} from '../types'
 
 export interface LessonSection {
   title: string
@@ -38,6 +45,7 @@ export type LessonVisualization =
       nodes: LineageNode[]
       edges: LineageEdge[]
     }
+  | StarSchemaVisualization
 
 export interface LessonContent {
   eyebrow: string

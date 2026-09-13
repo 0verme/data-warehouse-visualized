@@ -144,7 +144,9 @@ const baseUrl = import.meta.env.BASE_URL
         </div>
         <div class="course-map__list">
           {chapters.map((chapter) => {
-            const lesson = chapter.lessons[0]
+            const lesson =
+              chapter.lessons.find((chapterLesson) => chapterLesson.demo !== 'coming-soon') ??
+              chapter.lessons[0]
             return (
               <a
                 class={`roadmap-row${lesson.demo !== 'coming-soon' ? ' is-ready' : ''}`}
