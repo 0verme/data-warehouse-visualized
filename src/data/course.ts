@@ -1,5 +1,5 @@
 export type LessonDifficulty = 'beginner' | 'intermediate' | 'advanced'
-export type LessonDemo = 'systems' | 'layers' | 'lineage' | 'coming-soon'
+export type LessonDemo = 'systems' | 'layers' | 'lineage' | 'star-schema' | 'coming-soon'
 
 export interface Lesson {
   id: string
@@ -133,12 +133,24 @@ const lessonDrafts: Lesson[] = [
     demo: 'lineage',
   },
   {
+    id: 'lesson-star-schema-grain',
+    slug: 'star-schema-and-grain',
+    chapter: '03',
+    title: '星型模型与粒度',
+    summary: '从订单大宽表拆出事实和维度，亲手切换粒度，并看见粒度错误如何让金额重复计算。',
+    order: 9,
+    difficulty: 'beginner',
+    estimatedMinutes: 14,
+    tags: ['星型模型', '事实表', '粒度'],
+    demo: 'star-schema',
+  },
+  {
     id: 'lesson-09',
     slug: 'data-governance',
     chapter: '09',
     title: '数据治理：让数据可以被找到和使用',
     summary: '从目录、权限、标准和责任人理解治理不是额外的文档工作。',
-    order: 9,
+    order: 10,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
     tags: ['治理', '元数据'],
@@ -150,7 +162,7 @@ const lessonDrafts: Lesson[] = [
     chapter: '10',
     title: '湖仓：数据湖和数仓如何靠近？',
     summary: '了解湖仓架构试图解决的存储、计算和治理问题。',
-    order: 10,
+    order: 11,
     difficulty: 'advanced',
     estimatedMinutes: 15,
     tags: ['湖仓', '架构'],
@@ -162,7 +174,7 @@ const lessonDrafts: Lesson[] = [
     chapter: '11',
     title: '性能与工程实践',
     summary: '从分区、数据倾斜和复用角度，认识性能优化背后的工程权衡。',
-    order: 11,
+    order: 12,
     difficulty: 'advanced',
     estimatedMinutes: 15,
     tags: ['性能', '工程'],
@@ -174,7 +186,7 @@ const lessonDrafts: Lesson[] = [
     chapter: '12',
     title: '从 0 搭一套数据仓库',
     summary: '把前面的概念串成一条路线，从业务问题走到可维护的数据产品。',
-    order: 12,
+    order: 13,
     difficulty: 'advanced',
     estimatedMinutes: 20,
     tags: ['实践', '项目'],

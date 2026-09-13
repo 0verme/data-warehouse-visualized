@@ -4,7 +4,7 @@ import { CodeBlock } from './CodeBlock'
 import { CompareCard } from './CompareCard'
 import { ConceptCard } from './ConceptCard'
 import { InsightCard } from './InsightCard'
-import { BusinessSystemFlow, LineageGraph, PipelineFlow } from '../visualizations'
+import { BusinessSystemFlow, LineageGraph, PipelineFlow, StarSchemaFlow } from '../visualizations'
 
 interface LessonContentProps {
   lesson: Lesson
@@ -43,9 +43,19 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
           aria-labelledby={`${lesson.id}-visualization-title`}
         >
           <div className="section-heading">
-            <span className="eyebrow">动手实验</span>
-            <h2 id={`${lesson.id}-visualization-title`}>把概念变成一条可观察的数据流</h2>
-            <p>操作下面的图，观察数据如何进入系统、被加工，或沿着依赖关系产生影响。</p>
+            {content.visualization.kind === 'star-schema' ? (
+              <>
+                <span className="eyebrow">交互式建模实验</span>
+                <h2 id={`${lesson.id}-visualization-title`}>从一张大宽表，走到一颗星</h2>
+                <p>先启动建模，再切换事实表粒度，最后亲眼看见粒度不一致为什么会让金额重复计算。</p>
+              </>
+            ) : (
+              <>
+                <span className="eyebrow">动手实验</span>
+                <h2 id={`${lesson.id}-visualization-title`}>把概念变成一条可观察的数据流</h2>
+                <p>操作下面的图，观察数据如何进入系统、被加工，或沿着依赖关系产生影响。</p>
+              </>
+            )}
           </div>
           {content.visualization.kind === 'systems' && (
             <BusinessSystemFlow
@@ -59,6 +69,9 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
           )}
           {content.visualization.kind === 'lineage' && (
             <LineageGraph nodes={content.visualization.nodes} edges={content.visualization.edges} />
+          )}
+          {content.visualization.kind === 'star-schema' && (
+            <StarSchemaFlow visualization={content.visualization} />
           )}
         </section>
       )}
