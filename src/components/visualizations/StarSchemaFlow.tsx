@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type {
-  GrainId,
   GrainErrorDemo,
+  GrainId,
   GrainOption,
-  StarSchemaFieldGroup,
   StarSchemaFieldRole,
   StarSchemaTable,
   StarSchemaTableData,
   StarSchemaTableType,
-  StarSchemaTone,
   StarSchemaVisualization,
 } from '../../types'
 import { calculateGrainErrorResult, getGrainOption } from '../../utils/star-schema'
@@ -17,7 +15,6 @@ interface StarSchemaFlowProps {
   visualization: StarSchemaVisualization
 }
 
-type ModelingPhase = 'raw' | 'splitting' | 'modeled'
 type ErrorStep = 'wrong' | 'calculated' | 'fixed'
 
 const tableTypeLabels = {
@@ -31,59 +28,70 @@ const fieldRoleLabels = {
   measure: '事实',
 } satisfies Record<StarSchemaFieldRole, string>
 
-const modelingPhaseLabels = {
-  raw: '字段仍然混在 order_raw 大宽表中',
-  splitting: '正在按业务实体拆分字段……',
-  modeled: '事实表居中，维度表围绕四周',
-} satisfies Record<ModelingPhase, string>
+const relationshipKeys: Record<string, string> = {
+  'dim-user': 'user_id',
+  'dim-product': 'product_id',
+  'dim-shop': 'shop_id',
+}
 
-const errorStepLabels = {
+const errorStepLabels: Record<ErrorStep, string> = {
   wrong: '先观察错误模型',
   calculated: 'SUM 已经暴露重复计算',
   fixed: '字段和粒度已经对齐',
-} satisfies Record<ErrorStep, string>
-
-function getModelingActionLabel(phase: ModelingPhase): string {
-  if (phase === 'modeled') {
-    return '重新播放'
-  }
-
-  if (phase === 'splitting') {
-    return '建模中…'
-  }
-
-  return '开始建模'
 }
 
-function getToneClass(tone: StarSchemaTone): string {
-  return `star-schema__table-cell--${tone}`
+function getTableById(tables: readonly StarSchemaTable[], tableId: string) {
+  for (const table of tables) {
+    if (table.id === tableId) {
+      return table
+    }
+  }
+
+  return undefined
 }
 
-function DataTable({
-  data,
-  caption,
-  fieldGroups,
-  compact = false,
-}: {
-  data: StarSchemaTableData
-  caption: string
-  fieldGroups?: readonly StarSchemaFieldGroup[]
-  compact?: boolean
-}) {
+function getFactTable(tables: readonly StarSchemaTable[]) {
+  for (const table of tables) {
+    if (table.type === 'fact') {
+      return table
+    }
+  }
+
+  return undefined
+}
+
+function getRecommendedGrainId(options: readonly GrainOption[]): GrainId {
+  for (const option of options) {
+    if (option.recommended) {
+      return option.id
+    }
+  }
+
+  return options[0]?.id ?? 'order-item'
+}
+
+function getGrainKey(grainId: GrainId): string {
+  if (grainId === 'order') {
+    return 'order_id'
+  }
+
+  if (grainId === 'user-day') {
+    return 'dt + user_id'
+  }
+
+  return 'order_id + product_id'
+}
+
+function DataTable({ data, caption }: { data: StarSchemaTableData; caption: string }) {
   return (
-    <div className={`star-schema__table-wrap${compact ? ' is-compact' : ''}`}>
-      <table className="star-schema__table">
+    <div className="star-schema__data-table-wrap">
+      <table className="star-schema__data-table">
         <caption>{caption}</caption>
         <thead>
           <tr>
-            {data.columns.map((column) => {
-              const fieldGroup = fieldGroups?.find((group) => group.fields.includes(column))
-              return (
-                <th className={fieldGroup ? getToneClass(fieldGroup.tone) : undefined} key={column}>
-                  {column}
-                </th>
-              )
-            })}
+            {data.columns.map((column) => (
+              <th key={column}>{column}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -91,17 +99,9 @@ function DataTable({
             <tr
               key={`${rowIndex}-${data.columns.map((column) => String(row[column] ?? '')).join('-')}`}
             >
-              {data.columns.map((column) => {
-                const fieldGroup = fieldGroups?.find((group) => group.fields.includes(column))
-                return (
-                  <td
-                    className={fieldGroup ? getToneClass(fieldGroup.tone) : undefined}
-                    key={column}
-                  >
-                    {String(row[column] ?? '—')}
-                  </td>
-                )
-              })}
+              {data.columns.map((column) => (
+                <td key={column}>{String(row[column] ?? '—')}</td>
+              ))}
             </tr>
           ))}
         </tbody>
@@ -121,7 +121,7 @@ function TableNode({
 }) {
   return (
     <button
-      className={`star-schema__table-node star-schema__table-node--${table.type}${
+      className={`star-topology__node star-topology__node--${table.type}${
         isSelected ? ' is-selected' : ''
       }`}
       type="button"
@@ -129,13 +129,13 @@ function TableNode({
       aria-label={`${table.name}，${tableTypeLabels[table.type]}，${table.rowMeaning}`}
       onClick={() => onSelect(table.id)}
     >
-      <span className="star-schema__table-node-topline">
+      <span className="star-topology__node-topline">
         <span>{tableTypeLabels[table.type]}</span>
         <span aria-hidden="true">{isSelected ? '●' : '○'}</span>
       </span>
       <strong>{table.name}</strong>
       <small>{table.rowMeaning}</small>
-      <span className="star-schema__table-node-fields">
+      <span className="star-topology__node-fields">
         {table.fields
           .slice(0, 4)
           .map((field) => field.name)
@@ -146,7 +146,23 @@ function TableNode({
   )
 }
 
-function StarModelDiagram({
+function getNodePosition(index: number): 'left' | 'top' | 'right' | 'bottom' {
+  if (index === 0) {
+    return 'left'
+  }
+
+  if (index === 1) {
+    return 'top'
+  }
+
+  if (index === 2) {
+    return 'right'
+  }
+
+  return 'bottom'
+}
+
+function StarTopology({
   tables,
   selectedTableId,
   onSelect,
@@ -155,170 +171,121 @@ function StarModelDiagram({
   selectedTableId: string
   onSelect: (tableId: string) => void
 }) {
+  const fact = getFactTable(tables)
   const dimensions = tables.filter((table) => table.type === 'dimension')
-  const fact = tables.find((table) => table.type === 'fact')
+  const selectedTable = getTableById(tables, selectedTableId)
 
   return (
-    <div className="star-schema__diagram" aria-label="事实表和维度表组成的星型模型">
-      <div className="star-schema__diagram-note">
-        <span className="eyebrow eyebrow--small">STAR SCHEMA</span>
-        <p>点击任意节点，查看它在模型中的职责</p>
+    <section className="star-topology" aria-labelledby="star-topology-title">
+      <div className="star-topology__heading">
+        <div>
+          <span className="eyebrow">STAR SCHEMA · 拓扑视角</span>
+          <h3 id="star-topology-title">事实表在中央，维度表围绕它</h3>
+        </div>
+        <p>点击节点或关系，观察事实表用哪个外键连接观察角度。</p>
       </div>
-      <div className="star-schema__diagram-grid">
-        {dimensions.map((table, index) => (
-          <div
-            className={`star-schema__table-position star-schema__table-position--dimension-${index}`}
-            key={table.id}
-          >
-            <TableNode
-              table={table}
-              isSelected={table.id === selectedTableId}
-              onSelect={onSelect}
-            />
-          </div>
-        ))}
-        <div className="star-schema__spokes" aria-hidden="true">
-          {dimensions.map((dimension) => (
-            <span key={dimension.id}>连接外键</span>
-          ))}
+      <div className="star-topology__canvas">
+        <div className="star-topology__spokes" aria-hidden="true">
+          {dimensions.map((dimension, index) => {
+            const position = getNodePosition(index)
+            const isActive = selectedTableId === fact?.id || selectedTableId === dimension.id
+            return (
+              <span
+                className={`star-topology__spoke star-topology__spoke--${position}${
+                  isActive ? ' is-active' : ''
+                }`}
+                key={dimension.id}
+              />
+            )
+          })}
         </div>
         {fact && (
-          <div className="star-schema__table-position star-schema__table-position--fact">
+          <div className="star-topology__position star-topology__position--fact">
             <TableNode table={fact} isSelected={fact.id === selectedTableId} onSelect={onSelect} />
           </div>
         )}
+        {dimensions.map((dimension, index) => {
+          const position = getNodePosition(index)
+          return (
+            <div
+              className={`star-topology__position star-topology__position--${position}`}
+              key={dimension.id}
+            >
+              <TableNode
+                table={dimension}
+                isSelected={dimension.id === selectedTableId}
+                onSelect={onSelect}
+              />
+            </div>
+          )
+        })}
       </div>
-      <div className="star-schema__legend" aria-label="模型图例">
+      <ul className="star-topology__relations" aria-label="事实表外键关系">
+        {dimensions.map((dimension) => {
+          const key = relationshipKeys[dimension.id] ?? dimension.fields[0]?.name ?? 'id'
+          const isActive = selectedTableId === dimension.id || selectedTableId === fact?.id
+          return (
+            <li key={dimension.id}>
+              <button
+                className={`star-topology__relation${isActive ? ' is-active' : ''}`}
+                type="button"
+                aria-pressed={selectedTableId === dimension.id}
+                onClick={() => onSelect(dimension.id)}
+              >
+                <span>{dimension.name}</span>
+                <code>{key}</code>
+                <b aria-hidden="true">↔</b>
+                <code>fact.{key}</code>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      {selectedTable && (
+        <aside className="star-topology__selection" aria-live="polite">
+          <div>
+            <span>当前节点</span>
+            <strong>{selectedTable.name}</strong>
+          </div>
+          <p>{selectedTable.responsibility}</p>
+          <div className="star-topology__selection-key">
+            <span>{selectedTable.type === 'fact' ? '事实表外键' : '连接事实表的外键'}</span>
+            <code>
+              {selectedTable.type === 'fact'
+                ? dimensions.map((dimension) => relationshipKeys[dimension.id] ?? 'id').join(' · ')
+                : (relationshipKeys[selectedTable.id] ?? selectedTable.key.value)}
+            </code>
+          </div>
+          <div className="star-topology__selection-fields">
+            <span>关键字段</span>
+            <ul>
+              {selectedTable.fields.slice(0, 5).map((field) => (
+                <li key={field.name}>
+                  <code>{field.name}</code>
+                  <small>{fieldRoleLabels[field.role]}</small>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      )}
+      <div className="star-topology__legend" aria-label="星型模型图例">
         <span>
-          <i className="star-schema__legend-dot star-schema__legend-dot--fact" aria-hidden="true" />
-          事实表：保存事件和可度量数值
+          <i
+            className="star-topology__legend-dot star-topology__legend-dot--fact"
+            aria-hidden="true"
+          />
+          中央事实表：事件与可度量数值
         </span>
         <span>
           <i
-            className="star-schema__legend-dot star-schema__legend-dot--dimension"
+            className="star-topology__legend-dot star-topology__legend-dot--dimension"
             aria-hidden="true"
           />
-          维度表：提供观察事实的角度
+          周围维度表：观察事实的角度
         </span>
       </div>
-    </div>
-  )
-}
-
-function TableInspector({ table }: { table?: StarSchemaTable }) {
-  if (!table) {
-    return null
-  }
-
-  return (
-    <aside className="star-schema__inspector" aria-live="polite">
-      <div className="star-schema__inspector-heading">
-        <div>
-          <span className="eyebrow eyebrow--small">当前节点</span>
-          <h4>{table.name}</h4>
-        </div>
-        <span className={`star-schema__type-badge star-schema__type-badge--${table.type}`}>
-          {tableTypeLabels[table.type]}
-        </span>
-      </div>
-      <dl className="star-schema__inspector-facts">
-        <div>
-          <dt>一行代表</dt>
-          <dd>{table.rowMeaning}</dd>
-        </div>
-        <div>
-          <dt>{table.key.label}</dt>
-          <dd>{table.key.value}</dd>
-        </div>
-        <div>
-          <dt>模型职责</dt>
-          <dd>{table.responsibility}</dd>
-        </div>
-      </dl>
-      <div className="star-schema__field-list">
-        <span>关键字段</span>
-        <ul>
-          {table.fields.map((field) => (
-            <li key={field.name}>
-              <code>{field.name}</code>
-              <small>
-                {field.label} · {fieldRoleLabels[field.role]}
-              </small>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </aside>
-  )
-}
-
-function RawTableStage({ visualization }: { visualization: StarSchemaVisualization }) {
-  return (
-    <div className="star-schema__raw-stage">
-      <div className="star-schema__raw-stage-heading">
-        <div>
-          <span className="star-schema__stage-number">01</span>
-          <strong>order_raw · 一张大宽表</strong>
-        </div>
-        <span>所有属性暂时挤在一起</span>
-      </div>
-      <DataTable
-        data={visualization.rawTable}
-        caption="订单原始大宽表：同一个用户、店铺和订单属性会在多条明细中重复"
-        fieldGroups={visualization.rawFieldGroups}
-      />
-      <div className="star-schema__field-legend" aria-label="大宽表字段分组">
-        {visualization.rawFieldGroups.map((group) => (
-          <span key={group.id}>
-            <i className={`star-schema__legend-bar star-schema__legend-bar--${group.tone}`} />
-            {group.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function SplittingStage({ visualization }: { visualization: StarSchemaVisualization }) {
-  return (
-    <div className="star-schema__split-stage">
-      <div className="star-schema__split-source">
-        <span className="star-schema__stage-number">01</span>
-        <strong>order_raw</strong>
-        <small>识别字段属于谁</small>
-        <div className="star-schema__split-pills">
-          {visualization.rawFieldGroups.map((group) => (
-            <span
-              className={`star-schema__split-pill star-schema__split-pill--${group.tone}`}
-              key={group.id}
-            >
-              {group.label}
-            </span>
-          ))}
-        </div>
-      </div>
-      <div className="star-schema__split-arrow" aria-hidden="true">
-        <span>按业务实体拆分</span>
-        <strong>→</strong>
-      </div>
-      <div className="star-schema__split-targets">
-        {visualization.tables.map((table) => (
-          <div
-            className={`star-schema__split-target star-schema__split-target--${table.type}`}
-            key={table.id}
-          >
-            <span>{tableTypeLabels[table.type]}</span>
-            <strong>{table.name}</strong>
-            <small>
-              {table.fields
-                .slice(0, 4)
-                .map((field) => field.name)
-                .join(' · ')}
-            </small>
-          </div>
-        ))}
-      </div>
-    </div>
+    </section>
   )
 }
 
@@ -332,21 +299,21 @@ function GrainSelector({
   onSelect: (grainId: GrainId) => void
 }) {
   return (
-    <div className="grain-lab__options" role="tablist" aria-label="事实表粒度选择">
+    <div className="star-grain__options" role="tablist" aria-label="事实表粒度选择">
       {options.map((option, index) => {
         const isSelected = option.id === selectedGrainId
         return (
           <button
-            className={`grain-lab__option${isSelected ? ' is-selected' : ''}`}
+            className={`star-grain__option${isSelected ? ' is-selected' : ''}`}
             type="button"
             role="tab"
-            id={`grain-tab-${option.id}`}
+            id={`star-grain-tab-${option.id}`}
             aria-selected={isSelected}
-            aria-controls={`grain-panel-${option.id}`}
+            aria-controls={`star-grain-panel-${option.id}`}
             onClick={() => onSelect(option.id)}
             key={option.id}
           >
-            <span>0{index + 1}</span>
+            <span>{index < 9 ? `0${index + 1}` : String(index + 1)}</span>
             <strong>{option.label}</strong>
             {option.recommended && <small>本例推荐</small>}
           </button>
@@ -372,30 +339,36 @@ function GrainLab({
   }
 
   return (
-    <section className="star-schema__grain-lab" aria-labelledby="grain-lab-title">
-      <div className="star-schema__subheading">
+    <section className="star-grain" aria-labelledby="star-grain-title">
+      <div className="star-grain__heading">
         <div>
-          <span className="eyebrow">Stage 03 · 粒度实验</span>
-          <h3 id="grain-lab-title">选择事实表粒度</h3>
+          <span className="eyebrow">GRAIN SWITCH · 粒度视角</span>
+          <h3 id="star-grain-title">切换粒度，表的形状会一起改变</h3>
         </div>
-        <p>先说清楚“一行代表什么”，表结构和指标才能有边界。</p>
+        <p>粒度不是一句标签：它决定主键、行数，以及这张事实表能回答的问题。</p>
       </div>
       <GrainSelector options={options} selectedGrainId={selectedGrain.id} onSelect={onSelect} />
       <div
-        className="grain-lab__panel"
-        id={`grain-panel-${selectedGrain.id}`}
+        className="star-grain__panel"
+        id={`star-grain-panel-${selectedGrain.id}`}
         role="tabpanel"
-        aria-labelledby={`grain-tab-${selectedGrain.id}`}
+        aria-labelledby={`star-grain-tab-${selectedGrain.id}`}
       >
-        <div className="grain-lab__answer">
-          <span className="grain-lab__answer-label">这一行代表</span>
-          <strong>{selectedGrain.statement}</strong>
-          <p>{selectedGrain.description}</p>
-          {selectedGrain.recommended && (
-            <span className="grain-lab__recommendation">当前案例推荐</span>
-          )}
+        <div className="star-grain__stats" aria-live="polite">
+          <div>
+            <span>这一行代表</span>
+            <strong>{selectedGrain.statement}</strong>
+          </div>
+          <div>
+            <span>示例行数</span>
+            <strong>{selectedGrain.rows.length}</strong>
+          </div>
+          <div>
+            <span>主键提示</span>
+            <code>{getGrainKey(selectedGrain.id)}</code>
+          </div>
         </div>
-        <div className="grain-lab__use-case">
+        <div className="star-grain__explanation">
           <div>
             <span>适合回答</span>
             <p>{selectedGrain.useCase}</p>
@@ -408,14 +381,13 @@ function GrainLab({
         <DataTable
           data={{ columns: selectedGrain.columns, rows: selectedGrain.rows }}
           caption={`${selectedGrain.label}示例数据`}
-          compact
         />
       </div>
     </section>
   )
 }
 
-function GrainErrorDemo({
+function GrainErrorLab({
   demo,
   step,
   result,
@@ -431,46 +403,45 @@ function GrainErrorDemo({
   const displayedTotal = isFixed ? result.fixedTotal : result.wrongTotal
 
   return (
-    <section className="star-schema__error-demo" aria-labelledby="grain-error-title">
-      <div className="star-schema__subheading">
+    <section className="star-error" aria-labelledby="star-error-title">
+      <div className="star-error__heading">
         <div>
-          <span className="eyebrow">Stage 04 · 粒度错误模拟</span>
-          <h3 id="grain-error-title">同一个订单，为什么会被算成 600 元？</h3>
+          <span className="eyebrow">GRAIN CHECK · 错误暴露</span>
+          <h3 id="star-error-title">让重复金额自己暴露</h3>
         </div>
         <p aria-live="polite">{errorStepLabels[step]}</p>
       </div>
-      <div className="error-demo__scenario">
+      <div className="star-error__scenario">
         <strong>订单 1001</strong>
         <span>商品 A：100 元</span>
         <span>商品 B：200 元</span>
         <b>实际订单金额：{demo.actualAmount} 元</b>
       </div>
-      <div className="error-demo__steps" aria-label="粒度错误修复步骤">
+      <div className="star-error__steps" aria-label="粒度错误修复步骤">
         <span className={step === 'wrong' ? 'is-current' : 'is-done'}>01 错误模型</span>
         <i aria-hidden="true">→</i>
         <span className={isCalculated ? 'is-current' : ''}>02 执行 SUM</span>
         <i aria-hidden="true">→</i>
         <span className={isFixed ? 'is-current' : ''}>03 修复模型</span>
       </div>
-      <div className={`error-demo__models error-demo__models--${step}`}>
-        <article className="error-demo__model error-demo__model--wrong">
-          <div className="error-demo__model-heading">
+      <div className={`star-error__models star-error__models--${step}`}>
+        <article className="star-error__model star-error__model--wrong">
+          <div className="star-error__model-heading">
             <div>
               <span>错误设计</span>
-              <strong>order_total_amount 被重复保存</strong>
+              <strong>订单总额被复制到每个商品行</strong>
             </div>
             <code>{demo.wrongMeasure}</code>
           </div>
           <DataTable
             data={{ columns: demo.wrongColumns, rows: demo.wrongRows }}
             caption="错误模型：每个商品行都携带同一个订单总额"
-            compact
           />
-          <code className="error-demo__sql">{demo.wrongSql}</code>
+          <code className="star-error__sql">{demo.wrongSql}</code>
         </article>
         {isFixed && (
-          <article className="error-demo__model error-demo__model--fixed">
-            <div className="error-demo__model-heading">
+          <article className="star-error__model star-error__model--fixed">
+            <div className="star-error__model-heading">
               <div>
                 <span>修复设计</span>
                 <strong>每个商品行只保存自己的金额</strong>
@@ -480,13 +451,12 @@ function GrainErrorDemo({
             <DataTable
               data={{ columns: demo.fixedColumns, rows: demo.fixedRows }}
               caption="修复模型：订单明细粒度对应商品金额"
-              compact
             />
-            <code className="error-demo__sql">{demo.fixedSql}</code>
+            <code className="star-error__sql">{demo.fixedSql}</code>
           </article>
         )}
       </div>
-      <div className="error-demo__actions">
+      <div className="star-error__actions">
         <button
           className="button button--primary button--small"
           type="button"
@@ -511,7 +481,7 @@ function GrainErrorDemo({
           重置演示
         </button>
       </div>
-      <div className={`error-demo__result error-demo__result--${step}`} aria-live="polite">
+      <div className={`star-error__result star-error__result--${step}`} aria-live="polite">
         <div>
           <span>实际金额</span>
           <strong>{result.actualAmount} 元</strong>
@@ -539,108 +509,46 @@ function GrainErrorDemo({
 }
 
 export function StarSchemaFlow({ visualization }: StarSchemaFlowProps) {
-  const factTable = visualization.tables.find((table) => table.type === 'fact')
-  const recommendedGrainId =
-    visualization.grains.find((grain) => grain.recommended)?.id ??
-    visualization.grains[0]?.id ??
-    'order-item'
-  const [modelingPhase, setModelingPhase] = useState<ModelingPhase>('raw')
+  const factTable = getFactTable(visualization.tables)
+  const recommendedGrainId = getRecommendedGrainId(visualization.grains)
   const [selectedTableId, setSelectedTableId] = useState(
     factTable?.id ?? visualization.tables[0]?.id ?? '',
   )
   const [selectedGrainId, setSelectedGrainId] = useState<GrainId>(recommendedGrainId)
   const [errorStep, setErrorStep] = useState<ErrorStep>('wrong')
-  const timerIds = useRef<number[]>([])
   const errorResult = useMemo(
     () => calculateGrainErrorResult(visualization.errorDemo),
     [visualization.errorDemo],
   )
-  const selectedTable = visualization.tables.find((table) => table.id === selectedTableId)
-
-  function clearTimers() {
-    timerIds.current.forEach((timerId) => window.clearTimeout(timerId))
-    timerIds.current = []
-  }
-
-  function startModeling() {
-    clearTimers()
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setModelingPhase('modeled')
-      return
-    }
-
-    setModelingPhase('splitting')
-    const modelingTimer = window.setTimeout(() => setModelingPhase('modeled'), 950)
-    timerIds.current.push(modelingTimer)
-  }
 
   function resetLesson() {
-    clearTimers()
-    setModelingPhase('raw')
     setSelectedTableId(factTable?.id ?? visualization.tables[0]?.id ?? '')
     setSelectedGrainId(recommendedGrainId)
     setErrorStep('wrong')
   }
 
-  useEffect(() => {
-    return () => clearTimers()
-  }, [])
-
   return (
     <div className="star-schema-flow">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">星型模型建模实验</span>
-          <p aria-live="polite">{modelingPhaseLabels[modelingPhase]}</p>
+          <span className="visualization-toolbar__label">星型模型实验台</span>
+          <p aria-live="polite">中央事实表 · 周围维度表 · 可切换粒度</p>
         </div>
-        <div className="visualization-toolbar__actions">
-          <button
-            className="button button--primary button--small"
-            type="button"
-            onClick={startModeling}
-            disabled={modelingPhase === 'splitting'}
-          >
-            {getModelingActionLabel(modelingPhase)}
-          </button>
-          <button
-            className="button button--quiet button--small"
-            type="button"
-            onClick={resetLesson}
-          >
-            重置
-          </button>
-        </div>
+        <button className="button button--quiet button--small" type="button" onClick={resetLesson}>
+          重置实验
+        </button>
       </div>
-
-      <section className={`star-schema__modeling star-schema__modeling--${modelingPhase}`}>
-        <div className="star-schema__subheading">
-          <div>
-            <span className="eyebrow">Stage 01 → 02 · 建模转换</span>
-            <h3>从订单大宽表，走到一颗星</h3>
-          </div>
-          <p>{modelingPhaseLabels[modelingPhase]}</p>
-        </div>
-        {modelingPhase === 'raw' && <RawTableStage visualization={visualization} />}
-        {modelingPhase === 'splitting' && <SplittingStage visualization={visualization} />}
-        {modelingPhase === 'modeled' && (
-          <>
-            <StarModelDiagram
-              tables={visualization.tables}
-              selectedTableId={selectedTableId}
-              onSelect={setSelectedTableId}
-            />
-            <TableInspector table={selectedTable} />
-          </>
-        )}
-      </section>
-
+      <StarTopology
+        tables={visualization.tables}
+        selectedTableId={selectedTableId}
+        onSelect={setSelectedTableId}
+      />
       <GrainLab
         options={visualization.grains}
         selectedGrainId={selectedGrainId}
         onSelect={setSelectedGrainId}
       />
-      <GrainErrorDemo
+      <GrainErrorLab
         demo={visualization.errorDemo}
         step={errorStep}
         result={errorResult}
