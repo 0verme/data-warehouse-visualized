@@ -125,6 +125,73 @@ src/
 - [ ] SQL 血缘演示
 - [ ] 爆炸半径高级模式
 
+## Cloudflare 部署
+
+生产发布使用 Cloudflare Workers Static Assets，不使用 SSR、Astro Cloudflare Adapter 或 Worker 服务端业务代码：
+
+```text
+GitHub main
+→ GitHub Actions
+→ Astro build
+→ dist/
+→ Cloudflare Workers Static Assets
+→ https://sql.sb
+```
+
+### GitHub Actions
+
+工作流文件为 `.github/workflows/cloudflare-deploy.yml`：
+
+- `pull_request` 只执行 `npm ci`、`npm run test`、`npm run lint`、`npm run format:check` 和 `npm run build`，不会部署生产。
+- `main` 的 push 会先完成同样的验证并构建 `dist/`，再部署到 Cloudflare Workers。
+- `workflow_dispatch` 支持手动生产发布；手动运行时请确认选择的 ref，建议使用 `main`。
+- 部署使用仓库内的 `wrangler`，生产构建默认使用根路径 `/`，不会设置 `BASE_PATH`。现有 `BASE_PATH` 兼容逻辑保留给 GitHub Pages 等路径部署场景。
+
+### 需要手工配置的 GitHub 项
+
+在 `GitHub → Repository → Settings → Secrets and variables → Actions` 中自行维护：
+
+- **Secret**：`CLOUDFLARE_API_TOKEN`
+- **Variable**：`CLOUDFLARE_ACCOUNT_ID`
+
+不要把 Token、Account ID 或其他生产凭证写入仓库、`wrangler.jsonc`、`README`、`package.json` 或 `.env`。Account ID 通过 GitHub Actions Variable 传给 Wrangler，以避免部署时选错 Account；PR 验证不会读取生产 Secret。
+
+### Cloudflare API Token
+
+请使用 **API Token**，不要使用 `Global API Key`。按当前 Cloudflare 权限界面为目标 Account 创建并尽量收窄范围：
+
+- `Account → Workers Scripts → Edit`（部分 Cloudflare 页面显示为 `Workers Scripts Write`）
+- `Account → Account Settings → Read`
+
+本项目只上传 Worker Static Assets，不使用 Workers Routes、KV、R2、D1、Pages 或数据库绑定，因此不应为本 workflow 额外授予这些权限。Cloudflare 的 `Edit Cloudflare Workers` 模板可作为创建起点，但请检查并移除本项目不需要的产品权限，并只选择实际部署的 Account。
+
+### 绑定 `sql.sb`
+
+本次代码不把 Custom Domain 写入 `wrangler.jsonc`，以避免首次域名绑定、DNS 和 CI 凭证耦合。首次成功部署后，在 Cloudflare Dashboard 手工绑定一次：
+
+```text
+Workers & Pages
+→ 对应 Worker
+→ Settings / Domains & Routes
+→ Add Custom Domain
+→ sql.sb
+```
+
+`sql.sb` 必须是 Cloudflare 中已激活的 zone；Custom Domain 会由 Cloudflare 负责对应 DNS 记录和证书。绑定完成后，后续 `main` 自动部署只更新同一个 Worker 的静态资源。
+
+### 本地验证
+
+```bash
+npm ci
+npm run test
+npm run lint
+npm run format:check
+npm run build
+npm run deploy -- --dry-run
+```
+
+最后一条只验证 Wrangler 能读取 `wrangler.jsonc` 并识别 `./dist`，不会上传到 Cloudflare；真实部署仍需要上述 GitHub 凭证和 Cloudflare 账号权限。
+
 ## Contributing
 
 欢迎围绕课程内容、可视化交互、无障碍、响应式体验和工程实践提交 Issue 或 Pull Request。
