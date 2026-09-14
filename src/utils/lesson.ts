@@ -71,6 +71,17 @@ export function isLearnIndexPath(pathname: string): boolean {
   return normalizedPath === '/learn' || normalizedPath.endsWith('/learn')
 }
 
+export function getLessonChapterId(items: readonly Lesson[], lessonId: string): string | undefined {
+  return items.find((lesson) => lesson.id === lessonId)?.chapter
+}
+
+export function toggleExpandedChapter(
+  expandedChapterId: string | null,
+  chapterId: string,
+): string | null {
+  return expandedChapterId === chapterId ? null : chapterId
+}
+
 export function getAdjacentLessons(items: readonly Lesson[], currentSlug: string): AdjacentLessons {
   const orderedLessons = sortLessons(items)
   const currentIndex = orderedLessons.findIndex((lesson) => lesson.slug === currentSlug)

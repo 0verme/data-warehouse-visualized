@@ -4,10 +4,12 @@ import { getLessonBySlug, lessons } from '../src/data/course'
 import {
   getAdjacentLessons,
   getChapterDisplayNumber,
+  getLessonChapterId,
   getLessonDisplayNumber,
   getLessonFromPath,
   isLearnIndexPath,
   sortLessons,
+  toggleExpandedChapter,
 } from '../src/utils/lesson'
 
 const reversedLessons = [...lessons].reverse()
@@ -130,6 +132,18 @@ describe('课程数据与导航', () => {
         .previous?.slug,
     ).toBe('data-modeling')
     expect(isLearnIndexPath('/dw/learn/')).toBe(true)
+  })
+
+  it('按当前课程定位章节并保持单展开 Accordion', () => {
+    expect(getLessonChapterId(lessons, 'lesson-scd-type-2')).toBe('03')
+    expect(getLessonChapterId(lessons, 'lesson-04')).toBe('04')
+
+    let expandedChapterId: string | null = '03'
+    expandedChapterId = toggleExpandedChapter(expandedChapterId, '04')
+    expect(expandedChapterId).toBe('04')
+
+    expandedChapterId = toggleExpandedChapter(expandedChapterId, '04')
+    expect(expandedChapterId).toBeNull()
   })
 
   it('数据建模导入课不再使用课程骨架', () => {
