@@ -2,12 +2,25 @@ import type {
   FlowOutput,
   LineageEdge,
   LineageNode,
+  MetricVisualization,
   ModelingIntroVisualization,
   PipelineStage,
   ScdVisualization,
   SourceSystem,
   StarSchemaVisualization,
 } from '../types'
+
+export interface LessonOpening {
+  eyebrow: string
+  title: string
+  intro: string
+  cards: Array<{
+    label: string
+    value: string
+    detail: string
+  }>
+  question: string
+}
 
 export interface LessonSection {
   title: string
@@ -50,9 +63,11 @@ export type LessonVisualization =
   | ModelingIntroVisualization
   | StarSchemaVisualization
   | ScdVisualization
+  | MetricVisualization
 
 export interface LessonContent {
   eyebrow: string
+  opening?: LessonOpening
   subtitle: string
   quickSummary: string
   concept: {

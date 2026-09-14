@@ -147,3 +147,50 @@ export interface ScdVisualization {
   orders: ScdOrder[]
   timelineLabels?: string[]
 }
+
+export type MetricStatusRule = 'all' | 'paid'
+export type MetricRefundRule = 'gross' | 'net'
+export type MetricTimeField = 'orderTime' | 'payTime'
+export type MetricGrainMode = 'correct' | 'duplicated'
+export type MetricOrderStatus = 'PAID' | 'PENDING'
+
+export interface MetricConfig {
+  statusRule: MetricStatusRule
+  refundRule: MetricRefundRule
+  timeField: MetricTimeField
+  grainMode: MetricGrainMode
+}
+
+export interface MetricOrder {
+  id: string
+  orderTime: string
+  payTime: string | null
+  status: MetricOrderStatus
+  orderAmount: number
+  refundAmount: number
+}
+
+export interface MetricOrderDetail {
+  orderId: string
+  product: string
+  orderAmount: number
+}
+
+export interface MetricDefinition {
+  name: string
+  businessProcess: string
+  subject: string
+  statusRule: string
+  grain: string
+  timeField: string
+  measure: string
+  refundRule: string
+  period: string
+}
+
+export interface MetricVisualization {
+  kind: 'metric-definition'
+  targetDate: string
+  orders: MetricOrder[]
+  detailRows: MetricOrderDetail[]
+}

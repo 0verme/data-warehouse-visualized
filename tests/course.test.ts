@@ -54,6 +54,23 @@ describe('课程数据与导航', () => {
     })
   })
 
+  it('指标体系已升级为正式交互课程并连接 SQL 章节', () => {
+    expect(getLessonBySlug('metric-system')).toMatchObject({
+      title: '指标体系：同一个数字为什么不一样？',
+      order: 6,
+      chapter: '04',
+      demo: 'metric-definition',
+    })
+    expect(getLessonContent(getLessonBySlug('metric-system')!)).toMatchObject({
+      visualization: { kind: 'metric-definition' },
+      opening: { title: '昨天 GMV 到底是多少？' },
+    })
+    expect(getAdjacentLessons(lessons, 'metric-system')).toEqual({
+      previous: expect.objectContaining({ slug: 'slowly-changing-dimension' }),
+      next: expect.objectContaining({ slug: 'sql-and-transformation' }),
+    })
+  })
+
   it('数据血缘顺序调整到第十课', () => {
     expect(getLessonBySlug('data-lineage')).toMatchObject({ order: 10, chapter: '08' })
   })

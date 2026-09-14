@@ -2,6 +2,7 @@ import type { Lesson } from '../../data/course'
 import type { LessonContent } from '../types'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
+import { metricSystemContent } from './metric-system'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
@@ -12,6 +13,7 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,
   'data-modeling': dataModelingContent,
+  'metric-system': metricSystemContent,
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
 }

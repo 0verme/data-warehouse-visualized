@@ -1,5 +1,6 @@
 export { BusinessSystemFlow } from './BusinessSystemFlow'
 export { LineageGraph } from './LineageGraph'
+export { MetricDefinitionLab } from './MetricDefinitionLab'
 export { ModelingIntro } from './ModelingIntro'
 export { PipelineFlow } from './PipelineFlow'
 export { SlowlyChangingDimension } from './SlowlyChangingDimension'

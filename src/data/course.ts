@@ -1,6 +1,13 @@
 export type LessonDifficulty = 'beginner' | 'intermediate' | 'advanced'
 export type LessonDemo =
-  'systems' | 'layers' | 'lineage' | 'modeling-intro' | 'star-schema' | 'scd' | 'coming-soon'
+  | 'systems'
+  | 'layers'
+  | 'lineage'
+  | 'modeling-intro'
+  | 'star-schema'
+  | 'scd'
+  | 'metric-definition'
+  | 'coming-soon'
 
 export interface Lesson {
   id: string
@@ -83,7 +90,7 @@ const lessonDrafts: Lesson[] = [
     difficulty: 'beginner',
     estimatedMinutes: 10,
     tags: ['指标', '口径'],
-    demo: 'coming-soon',
+    demo: 'metric-definition',
   },
   {
     id: 'lesson-05',
