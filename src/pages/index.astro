@@ -2,7 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { chapters, lessons } from '../data/course'
 
-const actualDemoCount = lessons.filter((lesson) => lesson.demo !== 'coming-soon').length
+const actualDemoCount = lessons.filter(
+  (lesson) => lesson.demo !== 'coming-soon' && lesson.demo !== 'modeling-intro',
+).length
 const baseUrl = import.meta.env.BASE_URL
 ---
 
@@ -57,7 +59,7 @@ const baseUrl = import.meta.env.BASE_URL
           </div>
           <div class="hero__meta">
             <span>
-              <strong>{lessons.length}</strong> 节课程骨架
+              <strong>{lessons.length}</strong> 节课程路线
             </span>
             <span class="hero__meta-separator" aria-hidden="true" />
             <span>

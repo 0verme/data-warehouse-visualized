@@ -4,7 +4,14 @@ import { CodeBlock } from './CodeBlock'
 import { CompareCard } from './CompareCard'
 import { ConceptCard } from './ConceptCard'
 import { InsightCard } from './InsightCard'
-import { BusinessSystemFlow, LineageGraph, PipelineFlow, StarSchemaFlow } from '../visualizations'
+import {
+  BusinessSystemFlow,
+  LineageGraph,
+  ModelingIntro,
+  PipelineFlow,
+  SlowlyChangingDimension,
+  StarSchemaFlow,
+} from '../visualizations'
 
 interface LessonContentProps {
   lesson: Lesson
@@ -49,6 +56,20 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
                 <h2 id={`${lesson.id}-visualization-title`}>从一张大宽表，走到一颗星</h2>
                 <p>先启动建模，再切换事实表粒度，最后亲眼看见粒度不一致为什么会让金额重复计算。</p>
               </>
+            ) : content.visualization.kind === 'modeling-intro' ? (
+              <>
+                <span className="eyebrow">建模导入</span>
+                <h2 id={`${lesson.id}-visualization-title`}>先从一行原始数据开始</h2>
+                <p>先观察字段混在一起的订单记录，再用四步建模思路定义它的业务含义。</p>
+              </>
+            ) : content.visualization.kind === 'scd' ? (
+              <>
+                <span className="eyebrow">SCD Type 2 交互实验</span>
+                <h2 id={`${lesson.id}-visualization-title`}>直接 UPDATE，历史去了哪里？</h2>
+                <p>
+                  先让错误方案产生历史冲突，再切换到 SCD Type 2，观察时间点查询如何命中正确版本。
+                </p>
+              </>
             ) : (
               <>
                 <span className="eyebrow">动手实验</span>
@@ -70,8 +91,14 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
           {content.visualization.kind === 'lineage' && (
             <LineageGraph nodes={content.visualization.nodes} edges={content.visualization.edges} />
           )}
+          {content.visualization.kind === 'modeling-intro' && (
+            <ModelingIntro visualization={content.visualization} />
+          )}
           {content.visualization.kind === 'star-schema' && (
             <StarSchemaFlow visualization={content.visualization} />
+          )}
+          {content.visualization.kind === 'scd' && (
+            <SlowlyChangingDimension visualization={content.visualization} />
           )}
         </section>
       )}

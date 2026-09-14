@@ -1,4 +1,6 @@
 export { BusinessSystemFlow } from './BusinessSystemFlow'
 export { LineageGraph } from './LineageGraph'
+export { ModelingIntro } from './ModelingIntro'
 export { PipelineFlow } from './PipelineFlow'
+export { SlowlyChangingDimension } from './SlowlyChangingDimension'
 export { StarSchemaFlow } from './StarSchemaFlow'

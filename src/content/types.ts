@@ -2,7 +2,9 @@ import type {
   FlowOutput,
   LineageEdge,
   LineageNode,
+  ModelingIntroVisualization,
   PipelineStage,
+  ScdVisualization,
   SourceSystem,
   StarSchemaVisualization,
 } from '../types'
@@ -45,7 +47,9 @@ export type LessonVisualization =
       nodes: LineageNode[]
       edges: LineageEdge[]
     }
+  | ModelingIntroVisualization
   | StarSchemaVisualization
+  | ScdVisualization
 
 export interface LessonContent {
   eyebrow: string

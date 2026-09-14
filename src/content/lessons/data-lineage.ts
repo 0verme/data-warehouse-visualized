@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const dataLineageContent: LessonContent = {
-  eyebrow: '第 08 课 · 追踪一张表的来路与去向',
+  eyebrow: '第 10 课 · 追踪一张表的来路与去向',
   subtitle: '一张表的字段变化，可能沿着依赖关系影响多个下游。',
   quickSummary:
     '数据血缘把表、字段或任务之间的依赖连起来，让我们知道数据从哪里来，以及修改后会影响哪里。',

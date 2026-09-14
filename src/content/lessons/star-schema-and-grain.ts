@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const starSchemaAndGrainContent: LessonContent = {
-  eyebrow: '第 4 个真实交互课 · 从一行数据开始',
+  eyebrow: '第 04 课 · 从一行数据开始',
   subtitle: '先确定粒度，再确定事实和维度；一行数据的含义，决定每个指标能不能被正确计算。',
   quickSummary:
     '把订单大宽表拆成事实表和维度表之前，先用一句话声明“事实表中的一行代表什么”。粒度清楚，星型模型和指标口径才有稳定的基础。',
