@@ -1,5 +1,6 @@
 ---
 import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
+import { SiteFooter } from '../components/SiteFooter'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { chapters, lessons } from '../data/course'
 import { getMessage } from '../i18n/messages'
@@ -217,26 +218,6 @@ const baseUrl = import.meta.env.BASE_URL
       </section>
     </main>
 
-    <footer class="site-footer home-footer">
-      <div class="brand brand--footer home-brand">
-        <span class="brand__mark" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span class="brand__text">
-          <strong>数据仓库图解</strong>
-          <small>从一张表开始，看懂数据仓库。</small>
-        </span>
-      </div>
-      <div class="site-footer__meta">
-        <span>
-          <code>sql.sb</code>
-        </span>
-        <a href="https://x.com/0verme8" target="_blank" rel="noopener noreferrer">
-          X / @0verme8
-        </a>
-      </div>
-    </footer>
+    <SiteFooter variant="home" />
   </div>
 </BaseLayout>

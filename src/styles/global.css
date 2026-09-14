@@ -771,6 +771,18 @@ pre {
   font-size: 11px;
 }
 
+.site-footer__meta > * {
+  white-space: nowrap;
+}
+
+.site-footer__meta a:hover {
+  color: var(--blue);
+}
+
+.learn-main .learn-footer {
+  margin-top: 52px;
+}
+
 /* Learning shell */
 .learn-app {
   min-height: 100vh;

@@ -33,6 +33,7 @@ import {
   LessonNavigation,
   ProgressIndicator,
 } from '../lesson'
+import { SiteFooter } from '../SiteFooter'
 
 interface LearnShellProps {
   lessons: Lesson[]
@@ -544,6 +545,7 @@ export function LearnShell({
             onToggleComplete={toggleActiveLesson}
             locale={locale}
           />
+          <SiteFooter variant="learn" />
         </main>
       </div>
       <script data-astro-rerun>{progressBootstrapScript}</script>
