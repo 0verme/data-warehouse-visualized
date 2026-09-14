@@ -1,4 +1,6 @@
 import type { Lesson } from '../../data/course'
+import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
+import { getMessage } from '../../i18n/messages'
 import { getRoute } from '../../utils/routes'
 
 interface LessonNavigationProps {
@@ -7,9 +9,18 @@ interface LessonNavigationProps {
   lessonId: string
   isCompleted: boolean
   onToggleComplete: () => void
+  locale?: Locale
 }
 
-function LessonLink({ lesson, direction }: { lesson?: Lesson; direction: 'previous' | 'next' }) {
+function LessonLink({
+  lesson,
+  direction,
+  locale,
+}: {
+  lesson?: Lesson
+  direction: 'previous' | 'next'
+  locale: Locale
+}) {
   if (!lesson) {
     return <div className={`lesson-nav__link lesson-nav__link--${direction} is-disabled`} />
   }
@@ -20,7 +31,7 @@ function LessonLink({ lesson, direction }: { lesson?: Lesson; direction: 'previo
       href={getRoute(`/learn/${lesson.slug}/`)}
     >
       <span className="lesson-nav__direction">
-        {direction === 'previous' ? '上一节' : '下一节'}
+        {getMessage(direction === 'previous' ? 'previousLesson' : 'nextLesson', locale)}
       </span>
       <strong>{lesson.title}</strong>
       <span className="lesson-nav__arrow" aria-hidden="true">
@@ -36,10 +47,11 @@ export function LessonNavigation({
   lessonId,
   isCompleted,
   onToggleComplete,
+  locale = DEFAULT_LOCALE,
 }: LessonNavigationProps) {
   return (
-    <nav className="lesson-nav" aria-label="课程导航">
-      <LessonLink lesson={previous} direction="previous" />
+    <nav className="lesson-nav" aria-label={getMessage('courseNavigation', locale)}>
+      <LessonLink lesson={previous} direction="previous" locale={locale} />
       <button
         className={`complete-button${isCompleted ? ' is-completed' : ''}`}
         data-progress-complete-lesson={lessonId}
@@ -48,9 +60,9 @@ export function LessonNavigation({
         onClick={onToggleComplete}
       >
         <span aria-hidden="true">✓</span>
-        {isCompleted ? '已学会' : '标记为已学会'}
+        {getMessage(isCompleted ? 'learned' : 'markAsLearned', locale)}
       </button>
-      <LessonLink lesson={next} direction="next" />
+      <LessonLink lesson={next} direction="next" locale={locale} />
     </nav>
   )
 }

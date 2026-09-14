@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Lesson } from '../../data/course'
-import { chapters } from '../../data/course'
+import { getChapters } from '../../data/course'
 import type { LessonContent } from '../../content/types'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
 import { getLessonContent } from '../../content/lessons'
@@ -17,6 +17,8 @@ import {
 } from '../../utils/progress'
 import { getAdjacentLessons, getLessonFromPath, isLearnIndexPath } from '../../utils/lesson'
 import { getRoute } from '../../utils/routes'
+import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
+import { getMessage } from '../../i18n/messages'
 import {
   LessonContent as LessonBody,
   LessonHeader,
@@ -30,6 +32,7 @@ interface LearnShellProps {
   initialContent: LessonContent
   codeHighlights?: CodeHighlightMap
   isIndex?: boolean
+  locale?: Locale
 }
 
 interface ProgressBootstrapState {
@@ -43,7 +46,15 @@ declare global {
   }
 }
 
-const progressBootstrapScript = `(() => {
+function createProgressBootstrapScript(locale: Locale): string {
+  const currentLessonCompleted = JSON.stringify(getMessage('learnedCurrentLesson', locale))
+  const lessonCompleted = JSON.stringify(getMessage('learned', locale))
+  const currentLesson = JSON.stringify(getMessage('currentLesson', locale))
+  const lessonNotCompleted = JSON.stringify(getMessage('notCompleted', locale))
+  const lessonsCompleted = JSON.stringify(getMessage('lessonsCompleted', locale))
+  const markAsLearned = JSON.stringify(getMessage('markAsLearned', locale))
+
+  return `(() => {
   const root = document.currentScript?.closest('astro-island')
   let stored = null
 
@@ -99,7 +110,7 @@ const progressBootstrapScript = `(() => {
     status.classList.toggle('is-pending', !isCompleted)
     status.setAttribute(
       'aria-label',
-      isCompleted ? (isActive ? '已学会，当前课程' : '已学会') : isActive ? '当前课程' : '未完成',
+      isCompleted ? (isActive ? ${currentLessonCompleted} : ${lessonCompleted}) : isActive ? ${currentLesson} : ${lessonNotCompleted},
     )
 
     if (isCompleted && !status.querySelector('svg')) {
@@ -133,7 +144,7 @@ const progressBootstrapScript = `(() => {
     const completedCount = lessonIds.filter((id) => completedLessonSet.has(id)).length
     const isComplete = lessonIds.length > 0 && completedCount === lessonIds.length
     chapterProgress.classList.toggle('is-complete', isComplete)
-    chapterProgress.setAttribute('aria-label', completedCount + '/' + lessonIds.length + ' 节已完成')
+    chapterProgress.setAttribute('aria-label', completedCount + '/' + lessonIds.length + ' ' + ${lessonsCompleted})
     setFirstText(chapterProgress, String(completedCount))
   })
 
@@ -146,9 +157,10 @@ const progressBootstrapScript = `(() => {
       (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
     )
     const labelNode = textNodes[textNodes.length - 1]
-    if (labelNode) labelNode.nodeValue = isCompleted ? '已学会' : '标记为已学会'
+    if (labelNode) labelNode.nodeValue = isCompleted ? ${lessonCompleted} : ${markAsLearned}
   })
 })()`
+}
 
 function subscribeToRouteChanges(onChange: () => void): () => void {
   document.addEventListener('astro:after-swap', onChange)
@@ -190,7 +202,10 @@ export function LearnShell({
   initialContent,
   codeHighlights,
   isIndex = false,
+  locale = DEFAULT_LOCALE,
 }: LearnShellProps) {
+  const localizedChapters = useMemo(() => getChapters(locale), [locale])
+  const progressBootstrapScript = useMemo(() => createProgressBootstrapScript(locale), [locale])
   const fallbackProgress = useMemo(
     () => createInitialProgress(initialLesson.id),
     [initialLesson.id],
@@ -302,7 +317,11 @@ export function LearnShell({
   return (
     <div className="learn-app" data-progress-index={isIndex ? 'true' : 'false'}>
       <header className="learn-topbar">
-        <a className="brand brand--learn" href={getRoute('/')} aria-label="返回数据仓库图解首页">
+        <a
+          className="brand brand--learn"
+          href={getRoute('/')}
+          aria-label={getMessage('homeAriaLabel', locale)}
+        >
           <span className="brand__mark" aria-hidden="true">
             <i />
             <i />
@@ -310,7 +329,7 @@ export function LearnShell({
           </span>
           <span className="brand__text">
             <strong>数据仓库图解</strong>
-            <small>交互式教材</small>
+            <small>{getMessage('interactiveTextbook', locale)}</small>
           </span>
         </a>
 
@@ -319,6 +338,7 @@ export function LearnShell({
             completedCount={completedCount}
             totalLessons={lessons.length}
             compact
+            locale={locale}
           />
         </div>
 
@@ -332,7 +352,7 @@ export function LearnShell({
           <span className="sidebar-toggle__icon" aria-hidden="true">
             ☰
           </span>
-          课程目录
+          {getMessage('courseDirectory', locale)}
         </button>
       </header>
 
@@ -340,16 +360,16 @@ export function LearnShell({
         <aside
           className={`course-sidebar${isSidebarOpen ? ' is-open' : ''}`}
           id="course-sidebar"
-          aria-label="课程目录"
+          aria-label={getMessage('courseDirectory', locale)}
         >
           <div className="course-sidebar__intro">
-            <span className="eyebrow eyebrow--small">学习路线</span>
+            <span className="eyebrow eyebrow--small">{getMessage('learningRoute', locale)}</span>
             <h2>从一张表开始</h2>
             <p>沿着数据流动的方向，把抽象概念变成可以观察的步骤。</p>
           </div>
 
           <nav className="course-nav">
-            {chapters.map((chapter) => {
+            {localizedChapters.map((chapter) => {
               const completedLessonCount = chapter.lessons.filter((lesson) =>
                 progress.completedLessonIds.includes(lesson.id),
               ).length
@@ -377,7 +397,7 @@ export function LearnShell({
                       data-progress-chapter-lessons={chapter.lessons
                         .map((lesson) => lesson.id)
                         .join(',')}
-                      aria-label={`${completedLessonCount}/${chapter.lessons.length} 节已完成`}
+                      aria-label={`${completedLessonCount}/${chapter.lessons.length} ${getMessage('lessonsCompleted', locale)}`}
                     >
                       {completedLessonCount}/{chapter.lessons.length}
                     </span>
@@ -388,11 +408,11 @@ export function LearnShell({
                       const isCompleted = progress.completedLessonIds.includes(lesson.id)
                       const statusLabel = isCompleted
                         ? isActive
-                          ? '已学会，当前课程'
-                          : '已学会'
+                          ? getMessage('learnedCurrentLesson', locale)
+                          : getMessage('learned', locale)
                         : isActive
-                          ? '当前课程'
-                          : '未完成'
+                          ? getMessage('currentLesson', locale)
+                          : getMessage('notCompleted', locale)
 
                       return (
                         <li key={lesson.id}>
@@ -431,24 +451,25 @@ export function LearnShell({
           <button
             className="sidebar-backdrop"
             type="button"
-            aria-label="关闭课程目录"
+            aria-label={getMessage('closeCourseDirectory', locale)}
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
 
         <main className="learn-main">
           <div className="learn-main__crumbs">
-            <a href={getRoute('/')}>首页</a>
+            <a href={getRoute('/')}>{getMessage('home', locale)}</a>
             <span aria-hidden="true">/</span>
-            <span>课程学习</span>
+            <span>{getMessage('courseLearning', locale)}</span>
             <span aria-hidden="true">/</span>
             <span>{activeLesson.title}</span>
           </div>
-          <LessonHeader lesson={activeLesson} content={activeContent} />
+          <LessonHeader lesson={activeLesson} content={activeContent} locale={locale} />
           <LessonBody
             lesson={activeLesson}
             content={activeContent}
             codeHighlights={codeHighlights}
+            locale={locale}
           />
           <LessonNavigation
             previous={adjacentLessons.previous}
@@ -456,6 +477,7 @@ export function LearnShell({
             lessonId={activeLesson.id}
             isCompleted={isActiveLessonCompleted}
             onToggleComplete={toggleActiveLesson}
+            locale={locale}
           />
         </main>
       </div>

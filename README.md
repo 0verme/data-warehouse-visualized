@@ -43,6 +43,12 @@
 - `prefers-reduced-motion` 降级支持
 - 基础 title、description、canonical 和 Open Graph 元数据
 
+## Internationalization
+
+当前产品语言为 `zh-CN`，本次只提供 i18n-ready 基础：课程 `id`、`slug` 等稳定 identity 与标题、摘要、标签等展示文本已经解耦，默认 locale 为 `zh-CN`。公共 UI 文案统一从 `src/i18n/` 获取，业务组件不应散落 locale 判断。
+
+未来第二语言计划采用 `/en/...` 路径；英文课程内容尚未维护，本次不提供 `/en` 页面、不修改现有中文 URL，也不改变课程进度存储格式。
+
 ## 课程路线
 
 1. 数据仓库是什么
@@ -91,6 +97,7 @@ src/
 │   └── visualizations/  # 数据驱动的交互可视化
 ├── content/             # 每节课的文案和实验输入数据
 ├── data/                # Lesson Schema、课程元数据和章节路线
+├── i18n/                # Locale 定义和公共 UI 文案
 ├── layouts/             # 网站级 Astro Layout 与 SEO
 ├── pages/               # 首页、学习入口和动态 Lesson 路由
 ├── styles/              # CSS Variables、组件样式和响应式规则
