@@ -48,10 +48,18 @@ describe('课程数据与导航', () => {
     const lesson = getLessonBySlug('data-modeling')
 
     expect(lesson).toBeDefined()
-    expect(getLessonContent(lesson!)).toMatchObject({
-      concept: { term: 'Grain（粒度）' },
-      visualization: { kind: 'modeling-intro' },
-    })
+    const content = getLessonContent(lesson!)
+
+    expect(content.concept.term).toBe('Grain（粒度）')
+    expect(
+      content.sections.some(
+        (section) =>
+          section.kind === 'visualization' && section.visualization.kind === 'modeling-intro',
+      ),
+    ).toBe(true)
+    expect(content.visualization).toBeUndefined()
+    expect(content.engineeringTip).toBeUndefined()
+    expect(content.pitfalls).toBeUndefined()
   })
 
   it('指标体系已升级为正式交互课程并连接 SQL 章节', () => {
