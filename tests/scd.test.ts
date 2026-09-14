@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { slowlyChangingDimensionContent } from '../src/content/lessons/slowly-changing-dimension'
 import { getLessonBySlug } from '../src/data/course'
+import type { ScdVisualization } from '../src/types'
 import {
   applyType1Update,
   applyType2Update,
@@ -8,9 +9,16 @@ import {
   SCD_OPEN_END,
 } from '../src/utils/scd'
 
-const visualization = slowlyChangingDimensionContent.visualization
+let visualization: ScdVisualization | undefined
 
-if (!visualization || visualization.kind !== 'scd') {
+for (const section of slowlyChangingDimensionContent.sections) {
+  if (section.kind === 'visualization' && section.visualization.kind === 'scd') {
+    visualization = section.visualization
+    break
+  }
+}
+
+if (!visualization) {
   throw new Error('SCD 测试需要 scd visualization 数据')
 }
 
