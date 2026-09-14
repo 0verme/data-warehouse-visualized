@@ -3,8 +3,10 @@ import { LearnShell } from '../../components/course/LearnShell'
 import { getLessonContent } from '../../content/lessons'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { lessons } from '../../data/course'
+import { buildLessonCodeHighlightMap } from '../../utils/build-code-highlight'
 
 const firstLesson = lessons[0]
+const codeHighlights = await buildLessonCodeHighlightMap(lessons)
 ---
 
 <BaseLayout
@@ -17,6 +19,7 @@ const firstLesson = lessons[0]
     lessons={lessons}
     initialLesson={firstLesson}
     initialContent={getLessonContent(firstLesson)}
+    codeHighlights={codeHighlights}
     isIndex
   />
 </BaseLayout>

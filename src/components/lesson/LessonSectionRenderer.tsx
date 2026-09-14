@@ -5,6 +5,7 @@ import type {
   LessonVisualization,
 } from '../../content/types'
 import type { Lesson } from '../../data/course'
+import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
 import {
   BusinessSystemFlow,
   LakehouseArchitectureLab,
@@ -28,6 +29,7 @@ interface LessonSectionRendererProps {
   legacyVisualization?: LessonVisualization
   legacyComparison?: LessonComparison
   legacyCode?: LessonCodeExample
+  codeHighlights?: CodeHighlightMap
   engineeringTip?: string
   pitfalls?: string[]
 }
@@ -193,11 +195,20 @@ function LegacyTeachingNotes({
   )
 }
 
+function getHighlightedCode(
+  codeHighlights: CodeHighlightMap | undefined,
+  language: string,
+  code: string,
+) {
+  return codeHighlights?.[getCodeHighlightKey(language, code)]
+}
+
 function LegacyBlocks({
   lesson,
   legacyVisualization,
   legacyComparison,
   legacyCode,
+  codeHighlights,
   engineeringTip,
   pitfalls,
 }: Omit<LessonSectionRendererProps, 'sections'>) {
@@ -221,7 +232,13 @@ function LegacyBlocks({
           headingId={`${lesson.id}-legacy-compare-title`}
         />
       )}
-      {legacyCode && <CodeBlock {...legacyCode} headingId={`${lesson.id}-legacy-code-title`} />}
+      {legacyCode && (
+        <CodeBlock
+          {...legacyCode}
+          highlightedCode={getHighlightedCode(codeHighlights, legacyCode.language, legacyCode.code)}
+          headingId={`${lesson.id}-legacy-code-title`}
+        />
+      )}
       <LegacyTeachingNotes engineeringTip={engineeringTip} pitfalls={pitfalls} />
     </>
   )
@@ -239,7 +256,12 @@ function isLegacyNarrativeSection(
   return isNarrativeSection(section) && section.kind === undefined
 }
 
-function renderSection(section: LessonSection, lessonId: string, index: number) {
+function renderSection(
+  section: LessonSection,
+  lessonId: string,
+  index: number,
+  codeHighlights?: CodeHighlightMap,
+) {
   switch (section.kind) {
     case 'compare':
       return (
@@ -253,6 +275,7 @@ function renderSection(section: LessonSection, lessonId: string, index: number) 
       return (
         <CodeBlock
           {...section}
+          highlightedCode={getHighlightedCode(codeHighlights, section.language, section.code)}
           headingId={`${lessonId}-section-${index}-sql-title`}
           key={`sql-${index}`}
         />
@@ -303,6 +326,7 @@ export function LessonSectionRenderer({
   legacyVisualization,
   legacyComparison,
   legacyCode,
+  codeHighlights,
   engineeringTip,
   pitfalls,
 }: LessonSectionRendererProps) {
@@ -322,6 +346,7 @@ export function LessonSectionRenderer({
           legacyVisualization={legacyVisualization}
           legacyComparison={legacyComparison}
           legacyCode={legacyCode}
+          codeHighlights={codeHighlights}
           engineeringTip={engineeringTip}
           pitfalls={pitfalls}
         />
@@ -331,12 +356,13 @@ export function LessonSectionRenderer({
 
   return (
     <section className="lesson-sequence" aria-label="课程内容">
-      {sections.map((section, index) => renderSection(section, lesson.id, index))}
+      {sections.map((section, index) => renderSection(section, lesson.id, index, codeHighlights))}
       <LegacyBlocks
         lesson={lesson}
         legacyVisualization={legacyVisualization}
         legacyComparison={legacyComparison}
         legacyCode={legacyCode}
+        codeHighlights={codeHighlights}
         engineeringTip={engineeringTip}
         pitfalls={pitfalls}
       />
