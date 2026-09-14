@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { CodeRenderer } from '../lesson/CodeRenderer'
+import type { CodeHighlightMap } from '../../utils/code-highlight'
+import { getCodeHighlightKey } from '../../utils/code-highlight'
+import { HERO_METRIC_SQL } from '../../data/code-examples'
 
 type FlowPhase = 0 | 1 | 2 | 3
 type StageStatus = 'waiting' | 'current' | 'done'
@@ -43,6 +47,10 @@ interface FlowConnectorProps {
   label: string
   phase: FlowPhase
   isPlaying: boolean
+}
+
+interface HeroDataFlowProps {
+  codeHighlights?: CodeHighlightMap
 }
 
 const FLOW_STEP_MS = 1350
@@ -267,12 +275,15 @@ function MetricStage({
   phase,
   isPlaying,
   metricValue,
+  codeHighlights,
 }: {
   phase: FlowPhase
   isPlaying: boolean
   metricValue: number
+  codeHighlights?: CodeHighlightMap
 }) {
   const status = getStageStatus(3, phase)
+  const highlightedCode = codeHighlights?.[getCodeHighlightKey('sql', HERO_METRIC_SQL)]
   const statusLabel = getStageStatusLabel(status, phase, isPlaying)
   const hasRun = phase === 3
 
@@ -280,9 +291,12 @@ function MetricStage({
     <HeroStage step={heroSteps[3]} status={status} statusLabel={statusLabel}>
       <div className="hero-demo__metric-body">
         <div className="hero-demo__sql-block">
-          <span>SQL</span>
-          <code>SELECT SUM(amount)</code>
-          <code>FROM dwd_order;</code>
+          <span className="hero-demo__sql-label">SQL</span>
+          <CodeRenderer
+            className="hero-demo__sql-code"
+            code={HERO_METRIC_SQL}
+            highlightedCode={highlightedCode}
+          />
         </div>
         <div className={`hero-demo__metric-result${hasRun ? ' is-visible' : ''}`}>
           <span>GMV</span>
@@ -385,7 +399,7 @@ function DataStory({
   )
 }
 
-export function HeroDataFlow() {
+export function HeroDataFlow({ codeHighlights }: HeroDataFlowProps) {
   const [phase, setPhase] = useState<FlowPhase>(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [metricValue, setMetricValue] = useState(0)
@@ -511,7 +525,12 @@ export function HeroDataFlow() {
         <FlowConnector index={1} label="filter" phase={phase} isPlaying={isPlaying} />
         <DwdStage phase={phase} isPlaying={isPlaying} />
         <FlowConnector index={2} label="aggregate" phase={phase} isPlaying={isPlaying} />
-        <MetricStage phase={phase} isPlaying={isPlaying} metricValue={metricValue} />
+        <MetricStage
+          phase={phase}
+          isPlaying={isPlaying}
+          metricValue={metricValue}
+          codeHighlights={codeHighlights}
+        />
       </div>
 
       <DataStory dwdHasRun={dwdHasRun} metricHasRun={metricHasRun} metricValue={metricValue} />

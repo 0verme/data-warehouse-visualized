@@ -1,3 +1,5 @@
+import { CodeRenderer } from './CodeRenderer'
+
 interface CodeBlockProps {
   label: string
   language: string
@@ -19,16 +21,7 @@ export function CodeBlock({
         <h2 id={headingId}>{label}</h2>
         <span>{language}</span>
       </div>
-      {highlightedCode ? (
-        // pi-lens-ignore: dangerously-set-inner-html
-        <div className="code-block__body" dangerouslySetInnerHTML={{ __html: highlightedCode }} />
-      ) : (
-        <div className="code-block__body">
-          <pre>
-            <code>{code}</code>
-          </pre>
-        </div>
-      )}
+      <CodeRenderer className="code-block__body" code={code} highlightedCode={highlightedCode} />
     </section>
   )
 }
