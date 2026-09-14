@@ -13,6 +13,7 @@ export type LessonDemo =
   | 'metric-definition'
   | 'lakehouse'
   | 'sql-transformation'
+  | 'governance'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -168,7 +169,7 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
-    demo: 'coming-soon',
+    demo: 'governance',
   },
   {
     id: 'lesson-10',
@@ -273,9 +274,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['维度历史', 'SCD Type 2', '时间区间'],
     },
     'lesson-09': {
-      title: '数据治理：让数据可以被找到和使用',
-      summary: '从目录、权限、标准和责任人理解治理不是额外的文档工作。',
-      tags: ['治理', '元数据'],
+      title: '数据治理：当数据平台开始失控',
+      summary: '从资产目录、字段策略、生命周期和血缘影响，做出可解释的治理决定。',
+      tags: ['治理', '资产目录', '决策台', '血缘影响'],
     },
     'lesson-10': {
       title: '湖仓：为什么数据湖最终需要仓库能力',

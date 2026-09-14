@@ -10,6 +10,7 @@ import { getMessage } from '../../i18n/messages'
 import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
 import {
   BusinessSystemFlow,
+  GovernanceWorkbench,
   LakehouseArchitectureLab,
   LineageGraph,
   MetricDefinitionLab,
@@ -107,6 +108,8 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
       return <LakehouseArchitectureLab visualization={visualization} />
     case 'sql-transformation':
       return <SqlTransformationWorkbench visualization={visualization} />
+    case 'governance':
+      return <GovernanceWorkbench visualization={visualization} />
   }
 }
 

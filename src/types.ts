@@ -361,3 +361,199 @@ export interface LakehouseDecisionRecord {
   risks: string[]
   notSuitableWhen: string[]
 }
+
+export type GovernanceAssetType = 'table' | 'view' | 'dataset'
+export type GovernanceLifecycle = 'active' | 'deprecated' | 'retiring'
+export type GovernanceSensitivity = 'public' | 'internal' | 'sensitive' | 'restricted'
+export type GovernanceDefinitionCompleteness = 'complete' | 'partial' | 'ambiguous'
+export type GovernanceFreshnessStatus = 'current' | 'delayed' | 'unknown'
+export type GovernanceOwnerStatus = 'assigned' | 'missing'
+
+export interface GovernanceCatalogFilters {
+  query: string
+  tag: 'all' | string
+  lifecycle: 'all' | GovernanceLifecycle
+  sensitivity: 'all' | GovernanceSensitivity
+  ownerStatus: 'all' | GovernanceOwnerStatus
+}
+
+export interface GovernanceFreshnessMetadata {
+  lastUpdatedAt: string
+  expectedRefresh: string
+  observedDelayMinutes?: number
+  status: GovernanceFreshnessStatus
+}
+
+export interface GovernanceBusinessDefinition {
+  summary: string
+  grain: string
+  scope: string
+  exclusions?: string
+}
+
+export interface GovernanceField {
+  name: string
+  label: string
+  type: string
+  description: string
+  sensitivity: GovernanceSensitivity
+  semanticStatus?: 'stable' | 'review-needed'
+  maskingStrategy?: string
+  lineageNodeId?: string
+}
+
+export interface GovernanceMetricReference {
+  name: string
+  definition: MetricDefinition
+  sourceLessonSlug: string
+  note: string
+}
+
+export interface GovernanceLineageEvidence {
+  status: 'linked' | 'partial' | 'unavailable'
+  nodeId?: string
+  note: string
+}
+
+/**
+ * Phase 1 deliberately keeps the quality boundary as an optional reference.
+ * It is not a quality result and must not be rendered as pass/fail.
+ */
+export interface GovernanceQualityEvidenceReference {
+  source: 'chapter-07'
+  status: 'pending-integration'
+  note: string
+}
+
+export interface GovernanceAsset {
+  id: string
+  technicalName: string
+  businessName: string
+  description: string
+  assetType: GovernanceAssetType
+  owner?: string
+  steward?: string
+  tags: string[]
+  lifecycle: GovernanceLifecycle
+  freshnessMetadata?: GovernanceFreshnessMetadata
+  sensitivity: GovernanceSensitivity
+  fields: GovernanceField[]
+  businessDefinition: GovernanceBusinessDefinition
+  definitionCompleteness: GovernanceDefinitionCompleteness
+  metricDefinition?: GovernanceMetricReference
+  lineageEvidence: GovernanceLineageEvidence
+  qualityEvidence?: GovernanceQualityEvidenceReference
+}
+
+export type GovernanceRole = 'analyst' | 'marketing' | 'external-collaborator'
+export type GovernancePurpose =
+  'business-analysis' | 'user-outreach' | 'data-export' | 'external-sharing'
+export type GovernancePolicyDecision = 'allow' | 'masked' | 'approval-required' | 'deny'
+
+export interface GovernancePolicyFactor {
+  label: string
+  value: string
+  implication: string
+  tone: 'positive' | 'caution' | 'blocking'
+}
+
+export interface GovernancePolicyDecisionResult {
+  assetId: string
+  fieldName: string
+  role: GovernanceRole
+  purpose: GovernancePurpose
+  decision: GovernancePolicyDecision
+  reason: string
+  evidence: string[]
+  policyFactors: GovernancePolicyFactor[]
+  remainingRisk: string
+}
+
+export type GovernanceRecommendation = 'recommended' | 'usable-with-caution' | 'not-recommended'
+
+export interface GovernanceRecommendationFactor {
+  label: string
+  tone: 'positive' | 'caution' | 'blocking'
+  detail: string
+}
+
+export interface GovernanceRecommendationResult {
+  status: GovernanceRecommendation
+  reasons: string[]
+  factors: GovernanceRecommendationFactor[]
+}
+
+export type GovernanceLifecycleEventType =
+  'owner-missing' | 'field-change' | 'asset-deprecated' | 'asset-retiring' | 'sensitivity-change'
+
+export interface GovernanceLifecycleEvent {
+  id: string
+  assetId: string
+  eventType: GovernanceLifecycleEventType
+  label: string
+  description: string
+  sourceEntityId?: string
+  affectedEntityId?: string
+  fieldName?: string
+  newFieldName?: string
+  semanticChange?: string
+  newSensitivity?: GovernanceSensitivity
+  evidence: LineageEvidence
+}
+
+export interface GovernanceLifecycleResult {
+  asset: GovernanceAsset
+  changed: boolean
+  message: string
+}
+
+export interface GovernanceImpactObject {
+  id: string
+  label: string
+  entityType: LineageEntityType
+  role: string
+}
+
+export interface GovernanceNotificationTarget {
+  id: string
+  label: string
+  recipient: string
+  reason: string
+  priority: 'first' | 'next' | 'review'
+}
+
+export interface GovernanceLineageImpact {
+  source?: GovernanceImpactObject
+  directImpacts: GovernanceImpactObject[]
+  transitiveImpacts: GovernanceImpactObject[]
+  consumers: GovernanceImpactObject[]
+  notificationTargets: GovernanceNotificationTarget[]
+  suggestedOrder: GovernanceImpactObject[]
+}
+
+export interface GovernanceDecisionRecord {
+  id: string
+  recordedAt: string
+  selectedAssetId: string
+  selectedAssetName: string
+  fieldName: string
+  role: GovernanceRole
+  purpose: GovernancePurpose
+  recommendation: GovernanceRecommendation
+  accessDecision: GovernancePolicyDecision
+  decisionReason: string
+  impactEventId?: string
+  directImpact: string[]
+  transitiveImpact: string[]
+  consumers: string[]
+  notifications: string[]
+  remainingRisks: string[]
+}
+
+export interface GovernanceVisualization {
+  kind: 'governance'
+  assets: GovernanceAsset[]
+  lineageNodes: LineageNode[]
+  lineageEdges: LineageEdge[]
+  events: GovernanceLifecycleEvent[]
+}

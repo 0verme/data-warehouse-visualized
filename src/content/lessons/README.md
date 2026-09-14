@@ -14,3 +14,4 @@
 - `star-schema-and-grain.ts`：星型模型、事实表、维度表与粒度错误模拟
 - `slowly-changing-dimension.ts`：Type 1 / Type 2 对比与维度历史时间轴实验
 - `data-lineage.ts`：血缘关系与影响分析
+- `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
