@@ -25,5 +25,11 @@ const pageTitle = `${lesson.title}｜数据仓库图解`
 ---
 
 <BaseLayout title={pageTitle} description={lesson.summary}>
-  <LearnShell client:load lessons={lessons} initialLesson={lesson} initialContent={content} />
+  <LearnShell
+    client:load
+    transition:persist="learn-shell"
+    lessons={lessons}
+    initialLesson={lesson}
+    initialContent={content}
+  />
 </BaseLayout>

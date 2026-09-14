@@ -13,6 +13,7 @@ const firstLesson = lessons[0]
 >
   <LearnShell
     client:load
+    transition:persist="learn-shell"
     lessons={lessons}
     initialLesson={firstLesson}
     initialContent={getLessonContent(firstLesson)}

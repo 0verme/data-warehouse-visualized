@@ -3,6 +3,7 @@ import {
   createInitialProgress,
   getProgressPercent,
   loadProgress,
+  normalizeProgress,
   parseProgress,
   PROGRESS_STORAGE_KEY,
   saveProgress,
@@ -40,6 +41,22 @@ describe('学习进度', () => {
     expect(completed.completedLessonIds).toEqual(['lesson-01'])
     expect(getProgressPercent(completed, 4)).toBe(25)
     expect(reopened.completedLessonIds).toEqual([])
+  })
+
+  it('按当前课程集合清理进度并按页面类型选择当前课程', () => {
+    const progress = {
+      completedLessonIds: ['lesson-01', 'removed-lesson', 'lesson-01'],
+      currentLessonId: 'lesson-02',
+    }
+
+    expect(normalizeProgress(progress, ['lesson-01', 'lesson-02'], 'lesson-01', true)).toEqual({
+      completedLessonIds: ['lesson-01'],
+      currentLessonId: 'lesson-02',
+    })
+    expect(normalizeProgress(progress, ['lesson-01', 'lesson-02'], 'lesson-01', false)).toEqual({
+      completedLessonIds: ['lesson-01'],
+      currentLessonId: 'lesson-01',
+    })
   })
 
   it('更新当前课程而不丢失完成记录', () => {
