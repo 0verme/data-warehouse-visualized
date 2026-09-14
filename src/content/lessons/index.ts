@@ -2,6 +2,7 @@ import type { Lesson } from '../../data/course'
 import type { LessonContent } from '../types'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
+import { lakehouseContent } from './lakehouse'
 import { metricSystemContent } from './metric-system'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
@@ -16,6 +17,7 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'metric-system': metricSystemContent,
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
+  lakehouse: lakehouseContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

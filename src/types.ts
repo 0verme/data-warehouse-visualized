@@ -242,3 +242,122 @@ export interface MetricVisualization {
   orders: MetricOrder[]
   detailRows: MetricOrderDetail[]
 }
+
+export type LakehouseArchitecture = 'warehouse' | 'lake' | 'lakehouse'
+export type LakehouseWorkload = 'bi' | 'exploration' | 'ml' | 'streaming'
+export type LakehouseConstraint =
+  'schema-change' | 'concurrent-writes' | 'history' | 'cost-sensitive' | 'governance'
+export type LakehouseCapability =
+  | 'flexible-storage'
+  | 'schema-management'
+  | 'transactions'
+  | 'version-history'
+  | 'stable-query'
+  | 'ad-hoc-analysis'
+  | 'ml-access'
+  | 'streaming-writes'
+  | 'governance'
+  | 'compute-separation'
+export type LakehouseCapabilityLevel = 'strong' | 'partial' | 'limited'
+export type LakehouseDataVolumeCategory = 'small' | 'medium' | 'large'
+export type LakehouseCell = string | number | boolean | null
+export type LakehouseRow = Record<string, LakehouseCell>
+
+export interface LakehouseDataSource {
+  id: string
+  label: string
+  format: 'table' | 'event-log' | 'json-file'
+  detail: string
+  example: string
+}
+
+export interface LakehouseSnapshot {
+  version: number
+  id: string
+  committedAt: string
+  columns: string[]
+  rows: LakehouseRow[]
+  change: string
+}
+
+export interface LakehouseSchemaField {
+  name: string
+  label: string
+  defaultValue: LakehouseCell
+}
+
+export interface LakehouseSnapshotCommit {
+  committedAt: string
+  change: string
+  addedFields?: LakehouseSchemaField[]
+  rows?: LakehouseRow[]
+}
+
+export interface LakehouseScenario {
+  id: string
+  label: string
+  description: string
+  workload: LakehouseWorkload
+  constraints: LakehouseConstraint[]
+  dataVolumeCategory: LakehouseDataVolumeCategory
+}
+
+export interface LakehouseVisualization {
+  kind: 'lakehouse'
+  dataSources: LakehouseDataSource[]
+  scenarios: LakehouseScenario[]
+  snapshots: LakehouseSnapshot[]
+  evolutionCommit: LakehouseSnapshotCommit
+}
+
+export type LakehouseFlowStageId =
+  'ingestion' | 'storage' | 'table-layer' | 'compute' | 'governance'
+
+export interface LakehouseFlowStage {
+  id: LakehouseFlowStageId
+  label: string
+  status: LakehouseCapabilityLevel
+  title: string
+  detail: string
+}
+
+export type LakehouseConsumerId = 'bi' | 'ad-hoc' | 'ml'
+
+export interface LakehouseConsumerState {
+  id: LakehouseConsumerId
+  label: string
+  status: LakehouseCapabilityLevel
+  detail: string
+}
+
+export interface LakehouseArchitectureState {
+  architecture: LakehouseArchitecture
+  storageType: string
+  computeSeparation: 'coupled' | 'partial' | 'separated'
+  partitionFileLayoutHint: string
+  workload: LakehouseWorkload
+  dataVolumeCategory: LakehouseDataVolumeCategory
+}
+
+export type LakehouseCapabilityMatrix = Record<LakehouseCapability, LakehouseCapabilityLevel>
+
+export interface LakehouseDecisionEvidence {
+  kind: 'fit' | 'tradeoff' | 'risk'
+  text: string
+}
+
+export interface LakehouseDecision {
+  scores: Record<LakehouseArchitecture, number>
+  recommendedArchitecture: LakehouseArchitecture
+  evidence: LakehouseDecisionEvidence[]
+}
+
+export interface LakehouseDecisionRecord {
+  workload: LakehouseWorkload
+  constraints: LakehouseConstraint[]
+  chosenArchitecture: LakehouseArchitecture
+  benefits: string[]
+  tradeoffs: string[]
+  risks: string[]
+  notSuitableWhen: string[]
+}

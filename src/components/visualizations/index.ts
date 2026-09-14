@@ -1,4 +1,5 @@
 export { BusinessSystemFlow } from './BusinessSystemFlow'
+export { LakehouseArchitectureLab } from './LakehouseArchitectureLab'
 export { LineageGraph } from './LineageGraph'
 export { MetricDefinitionLab } from './MetricDefinitionLab'
 export { ModelingIntro } from './ModelingIntro'

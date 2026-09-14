@@ -1,5 +1,6 @@
 import type {
   FlowOutput,
+  LakehouseVisualization,
   LineageEdge,
   LineageInvestigationEvent,
   LineageNode,
@@ -116,6 +117,7 @@ export type LessonVisualization =
   | StarSchemaVisualization
   | ScdVisualization
   | MetricVisualization
+  | LakehouseVisualization
 
 export interface LessonContent {
   eyebrow: string
