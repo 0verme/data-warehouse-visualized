@@ -29,19 +29,24 @@ interface ScdLabState {
   timelineIndex: number
 }
 
-const stageLabels: Record<ScdStage, string> = {
+const stageLabels = {
   initial: '时间胶囊停在升级前：普通会员',
   updated: 'Type 1 已覆盖：把时间拨回去看，历史会变成黄金会员',
   historical: 'Type 2 已开启：每个时间点命中自己的版本',
-}
+} satisfies Record<ScdStage, string>
 
 function getChangeAttributes(visualization: ScdVisualization): ScdAttributeUpdate {
-  return {
-    ...(visualization.change.city !== undefined ? { city: visualization.change.city } : {}),
-    ...(visualization.change.memberLevel !== undefined
-      ? { memberLevel: visualization.change.memberLevel }
-      : {}),
+  const attributes: ScdAttributeUpdate = {}
+
+  if (visualization.change.city !== undefined) {
+    attributes.city = visualization.change.city
   }
+
+  if (visualization.change.memberLevel !== undefined) {
+    attributes.memberLevel = visualization.change.memberLevel
+  }
+
+  return attributes
 }
 
 function hasDate(points: readonly ScdTimelinePoint[], date: string): boolean {
@@ -148,6 +153,27 @@ function getOrderById(
   return undefined
 }
 
+function getSelectedVersion(
+  point: ScdTimelinePoint | undefined,
+  mode: ScdMode,
+  type1Version: ScdDimensionVersion,
+  type2Versions: readonly ScdDimensionVersion[],
+): ScdDimensionVersion | undefined {
+  if (!point) {
+    return undefined
+  }
+
+  if (mode === 'type2') {
+    return getDimensionVersionAt(type2Versions, point.date)
+  }
+
+  return type1Version
+}
+
+function getRailSize(value: number): number {
+  return Math.min(Math.max(value, 1), 6)
+}
+
 function DimensionVersionTable({
   versions,
   showHistoryFields,
@@ -244,20 +270,14 @@ function TimeMachine({
       </div>
       <div className="scd__time-rail">
         <div
-          className="scd__month-rail"
-          style={{
-            gridTemplateColumns: `repeat(${Math.max(monthLabels.length, 1)}, minmax(0, 1fr))`,
-          }}
+          className={`scd__month-rail scd__month-rail--${getRailSize(monthLabels.length)}`}
           aria-hidden="true"
         >
           {monthLabels.map((label) => (
             <span key={label}>{label}</span>
           ))}
         </div>
-        <div
-          className="scd__point-rail"
-          style={{ gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(0, 1fr))` }}
-        >
+        <div className={`scd__point-rail scd__point-rail--${getRailSize(points.length)}`}>
           {points.map((point, index) => (
             <button
               className={`scd__time-point scd__time-point--${point.kind}${
@@ -293,6 +313,38 @@ function TimeMachine({
   )
 }
 
+function OrderJoinCards({
+  order,
+  version,
+  mode,
+}: {
+  order: ScdOrder
+  version: ScdDimensionVersion | undefined
+  mode: ScdMode
+}) {
+  const isType2 = mode === 'type2'
+
+  return (
+    <div className="scd__join-cards">
+      <article className="scd__join-card scd__join-card--order">
+        <span>事实表 · fact_order</span>
+        <strong>{order.label}</strong>
+        <small>
+          {order.orderTime} · ¥{order.amount}
+        </small>
+      </article>
+      <span className="scd__join-arrow" aria-hidden="true">
+        JOIN
+      </span>
+      <article className="scd__join-card scd__join-card--dimension">
+        <span>维度表 · dim_user</span>
+        <strong>{version?.memberLevel ?? '未找到版本'}</strong>
+        <small>{isType2 ? '按订单时间命中的历史版本' : '表中留下的当前版本'}</small>
+      </article>
+    </div>
+  )
+}
+
 function TimeTravelResult({
   point,
   order,
@@ -305,6 +357,9 @@ function TimeTravelResult({
   mode: ScdMode
 }) {
   const isType2 = mode === 'type2'
+  const snapshotDetail = version
+    ? `${version.city} · ${version.effectiveFrom} ≤ t < ${version.effectiveTo}`
+    : '请检查维度版本的有效时间区间'
 
   return (
     <div className="scd__time-result" aria-live="polite">
@@ -320,31 +375,10 @@ function TimeTravelResult({
       <div className="scd__snapshot-card">
         <span>U1001 在这个时间点是</span>
         <strong>{version?.memberLevel ?? '没有匹配版本'}</strong>
-        <small>
-          {version
-            ? `${version.city} · ${version.effectiveFrom} ≤ t < ${version.effectiveTo}`
-            : '请检查维度版本的有效时间区间'}
-        </small>
+        <small>{snapshotDetail}</small>
       </div>
-      {order ? (
-        <div className="scd__join-cards">
-          <article className="scd__join-card scd__join-card--order">
-            <span>事实表 · fact_order</span>
-            <strong>{order.label}</strong>
-            <small>
-              {order.orderTime} · ¥{order.amount}
-            </small>
-          </article>
-          <span className="scd__join-arrow" aria-hidden="true">
-            JOIN
-          </span>
-          <article className="scd__join-card scd__join-card--dimension">
-            <span>维度表 · dim_user</span>
-            <strong>{version?.memberLevel ?? '未找到版本'}</strong>
-            <small>{isType2 ? '按订单时间命中的历史版本' : '表中留下的当前版本'}</small>
-          </article>
-        </div>
-      ) : (
+      {order && <OrderJoinCards order={order} version={version} mode={mode} />}
+      {!order && (
         <p className="scd__checkpoint-note">
           这是一个属性变化的检查点，不对应订单；滑到订单 A 或订单 B，可观察 JOIN 的历史语义。
         </p>
@@ -355,6 +389,224 @@ function TimeTravelResult({
         </code>
       )}
     </div>
+  )
+}
+
+function ScdScenario({ hasUpdated }: { hasUpdated: boolean }) {
+  return (
+    <section className="scd__scenario" aria-labelledby="scd-scenario-title">
+      <div className="scd__scenario-heading">
+        <div>
+          <span className="eyebrow">THE HISTORY QUESTION · 历史问题</span>
+          <h3 id="scd-scenario-title">U1001 的今天，不能改写订单的昨天</h3>
+        </div>
+        <p>2026-03-01 升级为黄金会员，但历史订单仍然发生在过去。</p>
+      </div>
+      <div className="scd__change-strip">
+        <article className="scd__state-card">
+          <span>2026-01-01 → 2026-03-01</span>
+          <strong>普通会员</strong>
+          <small>杭州 · 旧版本等待被关闭</small>
+        </article>
+        <div className="scd__change-arrow" aria-hidden="true">
+          <span>2026-03-01</span>
+          <strong>→</strong>
+        </div>
+        <article
+          className={`scd__state-card scd__state-card--new${hasUpdated ? ' is-active' : ''}`}
+        >
+          <span>2026-03-01 → 现在</span>
+          <strong>黄金会员</strong>
+          <small>杭州 · 新版本从此刻生效</small>
+        </article>
+      </div>
+    </section>
+  )
+}
+
+function VersionCopy({ isType2 }: { isType2: boolean }) {
+  return (
+    <div className="scd__version-copy">
+      <span className="scd__version-label">
+        {isType2 ? 'TYPE 2 · 保存历史版本' : 'TYPE 1 · 直接覆盖'}
+      </span>
+      <strong>{isType2 ? '关闭旧行，再插入新行' : 'dim_user 只保留一行'}</strong>
+      <p>
+        {isType2
+          ? '旧版本在升级时结束，新版本从升级时刻开始生效；两个有效区间不会重叠。'
+          : 'UPDATE member_level = “黄金会员” 后，普通会员这条历史状态不再存在。'}
+      </p>
+    </div>
+  )
+}
+
+function VersionFeedback({ mode, hasUpdated }: { mode: ScdMode; hasUpdated: boolean }) {
+  const isType2 = mode === 'type2'
+
+  return (
+    <div
+      className={`scd__feedback scd__feedback--${mode}`}
+      role={!isType2 && hasUpdated ? 'alert' : 'status'}
+      aria-live="polite"
+    >
+      {!isType2 && !hasUpdated && (
+        <>
+          <strong>先让问题发生</strong>
+          <span>执行一次属性变化，然后把时间线拨回 2026-02-10，查看订单 A。</span>
+        </>
+      )}
+      {!isType2 && hasUpdated && (
+        <>
+          <strong>错误：历史状态丢失</strong>
+          <span>2026-02-10 用户当时还是普通会员，直接 UPDATE 却让订单 A 显示成了黄金会员。</span>
+        </>
+      )}
+      {isType2 && (
+        <>
+          <strong>历史被保留下来</strong>
+          <span>同一个 user_id 有两个版本，时间旅行滑块会让订单 A 和订单 B 命中不同状态。</span>
+        </>
+      )}
+    </div>
+  )
+}
+
+interface VersionExperimentProps {
+  state: ScdLabState
+  hasUpdated: boolean
+  activeVersions: readonly ScdDimensionVersion[]
+  selectedVersion: ScdDimensionVersion | undefined
+  onUpdate: () => void
+  onEnableType2: () => void
+  onReviewType1: () => void
+}
+
+function VersionExperiment({
+  state,
+  hasUpdated,
+  activeVersions,
+  selectedVersion,
+  onUpdate,
+  onEnableType2,
+  onReviewType1,
+}: VersionExperimentProps) {
+  const isType2 = state.mode === 'type2'
+
+  return (
+    <section className="scd__experiment" aria-labelledby="scd-experiment-title">
+      <div className="scd__subheading">
+        <div>
+          <span className="eyebrow">VERSION LAB · 版本策略</span>
+          <h3 id="scd-experiment-title">先让属性变化发生，再决定是否保留历史</h3>
+        </div>
+        <p>{stageLabels[state.stage]}</p>
+      </div>
+      <div className="scd__control-deck">
+        <div className="scd__mode-switch" role="tablist" aria-label="选择维度历史策略">
+          <button
+            className={`scd__mode-tab${!isType2 ? ' is-selected' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={!isType2}
+            onClick={onReviewType1}
+          >
+            <span>TYPE 1</span>
+            <strong>直接覆盖</strong>
+            <small>只保留今天的值</small>
+          </button>
+          <button
+            className={`scd__mode-tab${isType2 ? ' is-selected' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={isType2}
+            disabled={!hasUpdated}
+            onClick={onEnableType2}
+          >
+            <span>TYPE 2</span>
+            <strong>新增版本</strong>
+            <small>让时间点命中历史</small>
+          </button>
+        </div>
+        <div className="scd__actions">
+          <button
+            className="button button--primary button--small"
+            type="button"
+            onClick={onUpdate}
+            disabled={hasUpdated}
+          >
+            {hasUpdated ? '属性变化已写入' : '执行：升级为黄金会员'}
+          </button>
+          {isType2 && (
+            <button
+              className="button button--quiet button--small"
+              type="button"
+              onClick={onReviewType1}
+            >
+              回看 Type 1
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="scd__version-layout">
+        <VersionCopy isType2={isType2} />
+        <DimensionVersionTable
+          versions={activeVersions}
+          showHistoryFields={isType2}
+          selectedVersion={selectedVersion}
+        />
+      </div>
+      <VersionFeedback mode={state.mode} hasUpdated={hasUpdated} />
+    </section>
+  )
+}
+
+interface TimeQueryProps {
+  points: readonly ScdTimelinePoint[]
+  monthLabels: readonly string[]
+  selectedIndex: number
+  selectedPoint: ScdTimelinePoint | undefined
+  selectedOrder: ScdOrder | undefined
+  selectedVersion: ScdDimensionVersion | undefined
+  mode: ScdMode
+  onSelect: (index: number) => void
+}
+
+function TimeQuery({
+  points,
+  monthLabels,
+  selectedIndex,
+  selectedPoint,
+  selectedOrder,
+  selectedVersion,
+  mode,
+  onSelect,
+}: TimeQueryProps) {
+  return (
+    <section className="scd__query" aria-labelledby="scd-query-title">
+      <div className="scd__subheading">
+        <div>
+          <span className="eyebrow">TIME TRAVEL · 有效区间查询</span>
+          <h3 id="scd-query-title">滑过升级节点，观察答案如何改变</h3>
+        </div>
+        <p>点击时间点或拖动滑块，时间会决定 JOIN 命中哪一行维度。</p>
+      </div>
+      <TimeMachine
+        points={points}
+        monthLabels={monthLabels}
+        selectedIndex={selectedIndex}
+        onSelect={onSelect}
+      />
+      {selectedPoint ? (
+        <TimeTravelResult
+          point={selectedPoint}
+          order={selectedOrder}
+          version={selectedVersion}
+          mode={mode}
+        />
+      ) : (
+        <p className="scd__empty-state">暂无可查询的时间点。</p>
+      )}
+    </section>
   )
 }
 
@@ -386,11 +638,7 @@ export function SlowlyChangingDimension({ visualization }: SlowlyChangingDimensi
   const selectedPoint = timelinePoints[state.timelineIndex] ?? timelinePoints[0]
   const selectedOrder = getOrderById(visualization.orders, selectedPoint?.orderId)
   const activeVersions = state.mode === 'type2' ? type2Versions : [type1Version]
-  const selectedVersion = selectedPoint
-    ? state.mode === 'type2'
-      ? getDimensionVersionAt(type2Versions, selectedPoint.date)
-      : type1Version
-    : undefined
+  const selectedVersion = getSelectedVersion(selectedPoint, state.mode, type1Version, type2Versions)
   const hasUpdated = state.stage !== 'initial'
   const monthLabels = visualization.timelineLabels ?? getMonthLabels(timelinePoints)
 
@@ -402,7 +650,7 @@ export function SlowlyChangingDimension({ visualization }: SlowlyChangingDimensi
     setState((current) => ({ ...current, mode: 'type1', stage: 'updated' }))
   }
 
-  function useType2() {
+  function enableType2() {
     if (!hasUpdated) {
       return
     }
@@ -430,161 +678,27 @@ export function SlowlyChangingDimension({ visualization }: SlowlyChangingDimensi
         </button>
       </div>
 
-      <section className="scd__scenario" aria-labelledby="scd-scenario-title">
-        <div className="scd__scenario-heading">
-          <div>
-            <span className="eyebrow">THE HISTORY QUESTION · 历史问题</span>
-            <h3 id="scd-scenario-title">U1001 的今天，不能改写订单的昨天</h3>
-          </div>
-          <p>2026-03-01 升级为黄金会员，但历史订单仍然发生在过去。</p>
-        </div>
-        <div className="scd__change-strip">
-          <article className="scd__state-card">
-            <span>2026-01-01 → 2026-03-01</span>
-            <strong>普通会员</strong>
-            <small>杭州 · 旧版本等待被关闭</small>
-          </article>
-          <div className="scd__change-arrow" aria-hidden="true">
-            <span>2026-03-01</span>
-            <strong>→</strong>
-          </div>
-          <article
-            className={`scd__state-card scd__state-card--new${hasUpdated ? ' is-active' : ''}`}
-          >
-            <span>2026-03-01 → 现在</span>
-            <strong>黄金会员</strong>
-            <small>杭州 · 新版本从此刻生效</small>
-          </article>
-        </div>
-      </section>
+      <ScdScenario hasUpdated={hasUpdated} />
 
-      <section className="scd__experiment" aria-labelledby="scd-experiment-title">
-        <div className="scd__subheading">
-          <div>
-            <span className="eyebrow">VERSION LAB · 版本策略</span>
-            <h3 id="scd-experiment-title">先让属性变化发生，再决定是否保留历史</h3>
-          </div>
-          <p>{stageLabels[state.stage]}</p>
-        </div>
-        <div className="scd__control-deck">
-          <div className="scd__mode-switch" role="tablist" aria-label="选择维度历史策略">
-            <button
-              className={`scd__mode-tab${state.mode === 'type1' ? ' is-selected' : ''}`}
-              type="button"
-              role="tab"
-              aria-selected={state.mode === 'type1'}
-              onClick={reviewType1}
-            >
-              <span>TYPE 1</span>
-              <strong>直接覆盖</strong>
-              <small>只保留今天的值</small>
-            </button>
-            <button
-              className={`scd__mode-tab${state.mode === 'type2' ? ' is-selected' : ''}`}
-              type="button"
-              role="tab"
-              aria-selected={state.mode === 'type2'}
-              disabled={!hasUpdated}
-              onClick={useType2}
-            >
-              <span>TYPE 2</span>
-              <strong>新增版本</strong>
-              <small>让时间点命中历史</small>
-            </button>
-          </div>
-          <div className="scd__actions">
-            <button
-              className="button button--primary button--small"
-              type="button"
-              onClick={updateUser}
-              disabled={hasUpdated}
-            >
-              {hasUpdated ? '属性变化已写入' : '执行：升级为黄金会员'}
-            </button>
-            {state.mode === 'type2' && (
-              <button
-                className="button button--quiet button--small"
-                type="button"
-                onClick={reviewType1}
-              >
-                回看 Type 1
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="scd__version-layout">
-          <div className="scd__version-copy">
-            <span className="scd__version-label">
-              {state.mode === 'type2' ? 'TYPE 2 · 保存历史版本' : 'TYPE 1 · 直接覆盖'}
-            </span>
-            <strong>
-              {state.mode === 'type2' ? '关闭旧行，再插入新行' : 'dim_user 只保留一行'}
-            </strong>
-            <p>
-              {state.mode === 'type2'
-                ? '旧版本在升级时结束，新版本从升级时刻开始生效；两个有效区间不会重叠。'
-                : 'UPDATE member_level = “黄金会员” 后，普通会员这条历史状态不再存在。'}
-            </p>
-          </div>
-          <DimensionVersionTable
-            versions={activeVersions}
-            showHistoryFields={state.mode === 'type2'}
-            selectedVersion={selectedVersion}
-          />
-        </div>
-        <div
-          className={`scd__feedback scd__feedback--${state.mode}`}
-          role={state.mode === 'type1' && hasUpdated ? 'alert' : 'status'}
-          aria-live="polite"
-        >
-          {state.mode === 'type1' && !hasUpdated && (
-            <>
-              <strong>先让问题发生</strong>
-              <span>执行一次属性变化，然后把时间线拨回 2026-02-10，查看订单 A。</span>
-            </>
-          )}
-          {state.mode === 'type1' && hasUpdated && (
-            <>
-              <strong>错误：历史状态丢失</strong>
-              <span>
-                2026-02-10 用户当时还是普通会员，直接 UPDATE 却让订单 A 显示成了黄金会员。
-              </span>
-            </>
-          )}
-          {state.mode === 'type2' && (
-            <>
-              <strong>历史被保留下来</strong>
-              <span>同一个 user_id 有两个版本，时间旅行滑块会让订单 A 和订单 B 命中不同状态。</span>
-            </>
-          )}
-        </div>
-      </section>
-
-      <section className="scd__query" aria-labelledby="scd-query-title">
-        <div className="scd__subheading">
-          <div>
-            <span className="eyebrow">TIME TRAVEL · 有效区间查询</span>
-            <h3 id="scd-query-title">滑过升级节点，观察答案如何改变</h3>
-          </div>
-          <p>点击时间点或拖动滑块，时间会决定 JOIN 命中哪一行维度。</p>
-        </div>
-        <TimeMachine
-          points={timelinePoints}
-          monthLabels={monthLabels}
-          selectedIndex={state.timelineIndex}
-          onSelect={(timelineIndex) => setState((current) => ({ ...current, timelineIndex }))}
-        />
-        {selectedPoint ? (
-          <TimeTravelResult
-            point={selectedPoint}
-            order={selectedOrder}
-            version={selectedVersion}
-            mode={state.mode}
-          />
-        ) : (
-          <p className="scd__empty-state">暂无可查询的时间点。</p>
-        )}
-      </section>
+      <VersionExperiment
+        state={state}
+        hasUpdated={hasUpdated}
+        activeVersions={activeVersions}
+        selectedVersion={selectedVersion}
+        onUpdate={updateUser}
+        onEnableType2={enableType2}
+        onReviewType1={reviewType1}
+      />
+      <TimeQuery
+        points={timelinePoints}
+        monthLabels={monthLabels}
+        selectedIndex={state.timelineIndex}
+        selectedPoint={selectedPoint}
+        selectedOrder={selectedOrder}
+        selectedVersion={selectedVersion}
+        mode={state.mode}
+        onSelect={(timelineIndex) => setState((current) => ({ ...current, timelineIndex }))}
+      />
     </div>
   )
 }

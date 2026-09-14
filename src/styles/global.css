@@ -6929,6 +6929,36 @@ pre {
   gap: 8px;
 }
 
+.scd__month-rail--1,
+.scd__point-rail--1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.scd__month-rail--2,
+.scd__point-rail--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scd__month-rail--3,
+.scd__point-rail--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scd__month-rail--4,
+.scd__point-rail--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.scd__month-rail--5,
+.scd__point-rail--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.scd__month-rail--6,
+.scd__point-rail--6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .scd__month-rail {
   padding: 0 8% 6px;
 }
