@@ -7,6 +7,7 @@ import { InsightCard } from './InsightCard'
 import {
   BusinessSystemFlow,
   LineageGraph,
+  MetricDefinitionLab,
   ModelingIntro,
   PipelineFlow,
   SlowlyChangingDimension,
@@ -21,6 +22,26 @@ interface LessonContentProps {
 export function LessonContent({ lesson, content }: LessonContentProps) {
   return (
     <div className="lesson-content">
+      {content.opening && (
+        <section className="lesson-opening" aria-labelledby={`${lesson.id}-opening-title`}>
+          <div className="lesson-opening__heading">
+            <span className="eyebrow">{content.opening.eyebrow}</span>
+            <h2 id={`${lesson.id}-opening-title`}>{content.opening.title}</h2>
+            <p>{content.opening.intro}</p>
+          </div>
+          <div className="lesson-opening__cards">
+            {content.opening.cards.map((card) => (
+              <article className="lesson-opening__card" key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.detail}</small>
+              </article>
+            ))}
+          </div>
+          <p className="lesson-opening__question">{content.opening.question}</p>
+        </section>
+      )}
+
       <ConceptCard term={content.concept.term} definition={content.concept.definition} />
 
       <section className="lesson-sections" aria-label="课程正文">
@@ -70,6 +91,14 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
                   先让错误方案产生历史冲突，再切换到 SCD Type 2，观察时间点查询如何命中正确版本。
                 </p>
               </>
+            ) : content.visualization.kind === 'metric-definition' ? (
+              <>
+                <span className="eyebrow">指标口径交互实验</span>
+                <h2 id={`${lesson.id}-visualization-title`}>改变口径，数字就会改变</h2>
+                <p>
+                  先选择状态、退款、时间和粒度规则，再追踪哪些订单参与计算，以及最终数字如何被逐步加出来。
+                </p>
+              </>
             ) : (
               <>
                 <span className="eyebrow">动手实验</span>
@@ -99,6 +128,9 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
           )}
           {content.visualization.kind === 'scd' && (
             <SlowlyChangingDimension visualization={content.visualization} />
+          )}
+          {content.visualization.kind === 'metric-definition' && (
+            <MetricDefinitionLab visualization={content.visualization} />
           )}
         </section>
       )}
