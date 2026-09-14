@@ -2,13 +2,19 @@ interface CodeBlockProps {
   label: string
   language: string
   code: string
+  headingId?: string
 }
 
-export function CodeBlock({ label, language, code }: CodeBlockProps) {
+export function CodeBlock({
+  label,
+  language,
+  code,
+  headingId = 'code-block-title',
+}: CodeBlockProps) {
   return (
-    <section className="code-block" aria-labelledby="code-block-title">
+    <section className="code-block" aria-labelledby={headingId}>
       <div className="code-block__header">
-        <h2 id="code-block-title">{label}</h2>
+        <h2 id={headingId}>{label}</h2>
         <span>{language}</span>
       </div>
       <pre>
