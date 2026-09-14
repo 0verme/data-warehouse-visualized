@@ -1,3 +1,5 @@
+import { TeachingAside } from './TeachingAside'
+
 interface InsightCardProps {
   label: string
   title: string
@@ -5,17 +7,14 @@ interface InsightCardProps {
   tone?: 'blue' | 'amber'
 }
 
+/** @deprecated Use EngineeringNote or Pitfall for new lesson sections. */
 export function InsightCard({ label, title, children, tone = 'blue' }: InsightCardProps) {
   return (
-    <article className={`insight-card insight-card--${tone}`}>
-      <div className="insight-card__label">
-        <span className="insight-card__icon" aria-hidden="true">
-          {tone === 'amber' ? '!' : 'i'}
-        </span>
-        {label}
-      </div>
-      <h3>{title}</h3>
-      <p>{children}</p>
-    </article>
+    <TeachingAside
+      label={label}
+      title={title}
+      text={children}
+      tone={tone === 'amber' ? 'pitfall' : 'engineering'}
+    />
   )
 }

@@ -105,6 +105,26 @@ export interface StarSchemaVisualization {
   errorDemo: GrainErrorDemo
 }
 
+export type ModelingFieldRole = 'process-key' | 'dimension' | 'fact'
+export type ModelingFieldTone = 'blue' | 'teal' | 'amber' | 'violet' | 'navy'
+
+export interface ModelingFieldGroup {
+  id: string
+  label: string
+  role: ModelingFieldRole
+  tone: ModelingFieldTone
+  fields: string[]
+  explanation: string
+}
+
+export interface ModelingOutputTable {
+  id: string
+  name: string
+  type: 'fact' | 'dimension'
+  rowMeaning: string
+  fields: string[]
+}
+
 export interface ModelingIntroStep {
   id: string
   title: string
@@ -116,6 +136,8 @@ export interface ModelingIntroVisualization {
   kind: 'modeling-intro'
   rawTable: StarSchemaTableData
   steps: ModelingIntroStep[]
+  fieldGroups: ModelingFieldGroup[]
+  outputTables: ModelingOutputTable[]
 }
 
 export interface ScdDimensionVersion {

@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { starSchemaAndGrainContent } from '../src/content/lessons/star-schema-and-grain'
 import { getLessonBySlug } from '../src/data/course'
+import type { StarSchemaVisualization } from '../src/types'
 import {
   calculateGrainErrorResult,
   getGrainOption,
   sumNumericColumn,
 } from '../src/utils/star-schema'
 
-const visualization = starSchemaAndGrainContent.visualization
+let visualization: StarSchemaVisualization | undefined
 
-if (!visualization || visualization.kind !== 'star-schema') {
+for (const section of starSchemaAndGrainContent.sections) {
+  if (section.kind === 'visualization' && section.visualization.kind === 'star-schema') {
+    visualization = section.visualization
+    break
+  }
+}
+
+if (!visualization) {
   throw new Error('星型模型测试需要 star-schema visualization 数据')
 }
 
