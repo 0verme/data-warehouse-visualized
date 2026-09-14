@@ -161,56 +161,77 @@ export function LearnShell({
           </div>
 
           <nav className="course-nav">
-            {chapters.map((chapter) => (
-              <section className="course-chapter" key={chapter.id}>
-                <button
-                  className="course-chapter__heading"
-                  type="button"
-                  aria-expanded={!collapsedChapters[chapter.id]}
-                  aria-controls={`chapter-${chapter.id}`}
-                  onClick={() => toggleChapter(chapter.id)}
-                >
-                  <span className="course-chapter__index">{chapter.id}</span>
-                  <span className="course-chapter__separator" aria-hidden="true">
-                    /
-                  </span>
-                  <strong>{chapter.title}</strong>
-                  <span className="course-chapter__chevron" aria-hidden="true">
-                    <svg viewBox="0 0 16 16" focusable="false">
-                      <path d="m4 6 4 4 4-4" />
-                    </svg>
-                  </span>
-                </button>
-                <ul id={`chapter-${chapter.id}`} hidden={collapsedChapters[chapter.id]}>
-                  {chapter.lessons.map((lesson) => {
-                    const isActive = lesson.id === activeLesson.id
-                    const isCompleted = progress.completedLessonIds.includes(lesson.id)
-                    return (
-                      <li key={lesson.id}>
-                        <a
-                          ref={isActive ? activeLessonRef : undefined}
-                          className={`course-lesson${isActive ? ' is-active' : ''}`}
-                          href={getRoute(`/learn/${lesson.slug}/`)}
-                          aria-current={isActive ? 'page' : undefined}
-                          onClick={() => navigateToLesson(lesson)}
-                        >
-                          <span className="course-lesson__number">
-                            {String(lesson.order).padStart(2, '0')}
-                          </span>
-                          <span className="course-lesson__title">{lesson.title}</span>
-                          <span
-                            className={`course-lesson__status${isCompleted ? ' is-completed' : ''}`}
-                            aria-label={isCompleted ? '已学会' : '未完成'}
+            {chapters.map((chapter) => {
+              const completedLessonCount = chapter.lessons.filter((lesson) =>
+                progress.completedLessonIds.includes(lesson.id),
+              ).length
+              const isChapterComplete =
+                chapter.lessons.length > 0 && completedLessonCount === chapter.lessons.length
+
+              return (
+                <section className="course-chapter" key={chapter.id}>
+                  <button
+                    className="course-chapter__heading"
+                    type="button"
+                    aria-expanded={!collapsedChapters[chapter.id]}
+                    aria-controls={`chapter-${chapter.id}`}
+                    onClick={() => toggleChapter(chapter.id)}
+                  >
+                    <span className="course-chapter__chevron" aria-hidden="true">
+                      <svg viewBox="0 0 16 16" focusable="false">
+                        <path d="m4 6 4 4 4-4" />
+                      </svg>
+                    </span>
+                    <span className="course-chapter__index">{chapter.id}</span>
+                    <strong>{chapter.title}</strong>
+                    <span
+                      className={`course-chapter__progress${isChapterComplete ? ' is-complete' : ''}`}
+                      aria-label={`${completedLessonCount}/${chapter.lessons.length} 节已完成`}
+                    >
+                      {completedLessonCount}/{chapter.lessons.length}
+                    </span>
+                  </button>
+                  <ul id={`chapter-${chapter.id}`} hidden={collapsedChapters[chapter.id]}>
+                    {chapter.lessons.map((lesson) => {
+                      const isActive = lesson.id === activeLesson.id
+                      const isCompleted = progress.completedLessonIds.includes(lesson.id)
+                      const statusLabel = isCompleted
+                        ? isActive
+                          ? '已学会，当前课程'
+                          : '已学会'
+                        : isActive
+                          ? '当前课程'
+                          : '未完成'
+
+                      return (
+                        <li key={lesson.id}>
+                          <a
+                            ref={isActive ? activeLessonRef : undefined}
+                            className={`course-lesson${isActive ? ' is-active' : ''}`}
+                            href={getRoute(`/learn/${lesson.slug}/`)}
+                            aria-current={isActive ? 'page' : undefined}
+                            onClick={() => navigateToLesson(lesson)}
                           >
-                            {isCompleted ? '✓' : ''}
-                          </span>
-                        </a>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </section>
-            ))}
+                            <span
+                              className={`course-lesson__status${isActive ? ' is-active' : ''}${isCompleted ? ' is-completed' : ' is-pending'}`}
+                              role="img"
+                              aria-label={statusLabel}
+                            >
+                              {isCompleted && (
+                                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                                  <path d="m3.5 8.5 3 3 6-7" />
+                                </svg>
+                              )}
+                            </span>
+                            <span className="course-lesson__title">{lesson.title}</span>
+                          </a>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              )
+            })}
           </nav>
         </aside>
 
