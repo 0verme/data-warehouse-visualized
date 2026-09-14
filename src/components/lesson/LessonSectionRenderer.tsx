@@ -14,8 +14,9 @@ import {
   LineageGraph,
   MetricDefinitionLab,
   ModelingIntro,
-  PipelineFlow,
   PerformanceLab,
+  PipelineFlow,
+  SchedulerRunSimulator,
   SlowlyChangingDimension,
   SqlTransformationWorkbench,
   StarSchemaFlow,
@@ -110,6 +111,8 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
       return <SqlTransformationWorkbench visualization={visualization} />
     case 'performance-lab':
       return <PerformanceLab visualization={visualization} />
+    case 'scheduler':
+      return <SchedulerRunSimulator visualization={visualization} />
   }
 }
 
@@ -170,6 +173,13 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
         title: '昨天的销售额到底是多少？',
         description:
           '先选择目标粒度，再逐步执行去重、JOIN、聚合和分区重跑，观察每一行数据如何改变。',
+      }
+    case 'scheduler':
+      return {
+        eyebrow: '调度系统 · DAG Run 模拟器',
+        title: '早上 8 点，报表为什么还没到？',
+        description:
+          '沿着时间轴推进第 05 章的 ODS → DWD → DWS → ADS，观察迟到、失败、重试和重跑如何传播。',
       }
     default:
       return {
