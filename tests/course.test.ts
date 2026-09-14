@@ -62,6 +62,34 @@ describe('课程数据与导航', () => {
     expect(content.pitfalls).toBeUndefined()
   })
 
+  it('星型模型与 SCD 课程使用不同的语义 sections', () => {
+    const starSchema = getLessonContent(getLessonBySlug('star-schema-and-grain')!)
+    const scd = getLessonContent(getLessonBySlug('slowly-changing-dimension')!)
+
+    expect(starSchema.sections.map((section) => section.kind ?? 'narrative')).toEqual([
+      'narrative',
+      'visualization',
+      'narrative',
+      'takeaway',
+      'pitfall',
+    ])
+    expect(scd.sections.map((section) => section.kind ?? 'narrative')).toEqual([
+      'narrative',
+      'visualization',
+      'compare',
+      'sql',
+      'engineering-note',
+      'takeaway',
+      'pitfall',
+    ])
+    expect(starSchema.visualization).toBeUndefined()
+    expect(scd.visualization).toBeUndefined()
+    expect(scd.comparison).toBeUndefined()
+    expect(scd.code).toBeUndefined()
+    expect(scd.engineeringTip).toBeUndefined()
+    expect(scd.pitfalls).toBeUndefined()
+  })
+
   it('指标体系已升级为正式交互课程并连接 SQL 章节', () => {
     expect(getLessonBySlug('metric-system')).toMatchObject({
       title: '指标体系：同一个数字为什么不一样？',
