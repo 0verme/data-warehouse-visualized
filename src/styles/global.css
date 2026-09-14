@@ -1399,6 +1399,8 @@ pre {
 }
 
 .visualization-section {
+  container-name: visualization;
+  container-type: inline-size;
   margin: 4px 0 39px;
   padding: 28px;
   border: 1px solid var(--line);
@@ -11079,6 +11081,396 @@ pre {
 
   .lakehouse-record__grid {
     grid-template-columns: 1fr;
+  }
+
+  .lakehouse-decision__scores {
+    max-width: 280px;
+  }
+}
+
+/* Responsive visualization governance follows the component container, not the viewport. */
+@container visualization (max-width: 760px) {
+  .lakehouse-flow {
+    overflow: visible;
+  }
+
+  .lakehouse-flow__stages {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .lakehouse-flow__stage {
+    min-height: 0;
+  }
+
+  .lakehouse-flow__arrow {
+    top: auto;
+    right: calc(50% - 7px);
+    bottom: -14px;
+    transform: rotate(90deg);
+  }
+}
+
+@container visualization (max-width: 660px) {
+  .business-flow__diagram {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 13px;
+  }
+
+  .business-flow__source-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-flow__connector {
+    width: 100%;
+    height: 32px;
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .business-flow__connector-line {
+    width: 1px;
+    height: 100%;
+  }
+
+  .business-flow__connector-line::after {
+    top: auto;
+    right: -3px;
+    bottom: -1px;
+    border-top: 0;
+    border-right: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+    transform: rotate(45deg);
+  }
+
+  .business-flow--phase-1 .business-flow__connector-line::after,
+  .business-flow--phase-2 .business-flow__connector-line::after,
+  .business-flow--phase-3 .business-flow__connector-line::after {
+    border-color: var(--teal);
+  }
+
+  .business-flow__connector-label {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    padding: 0 7px;
+    background: var(--surface);
+    transform: translateX(-50%);
+  }
+
+  .warehouse-node {
+    min-height: 118px;
+  }
+
+  .business-flow__packet {
+    justify-content: center;
+    margin: -3px 0 1px;
+  }
+
+  .business-flow--phase-1 .business-flow__packet,
+  .business-flow--phase-2 .business-flow__packet,
+  .business-flow--phase-3 .business-flow__packet {
+    animation-name: packet-pulse;
+  }
+
+  .pipeline-flow__track {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pipeline-flow__item {
+    align-items: stretch;
+  }
+
+  .pipeline-stage {
+    width: 100%;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .pipeline-stage p {
+    min-height: 0;
+  }
+
+  .pipeline-flow__arrow {
+    width: 100%;
+    height: 29px;
+  }
+
+  .pipeline-flow__arrow span {
+    height: 13px;
+  }
+
+  .pipeline-flow__legend {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .modeling-lab__toolbar,
+  .modeling-lab__panel-heading,
+  .star-topology__heading,
+  .star-grain__heading,
+  .star-error__heading,
+  .scd__scenario-heading,
+  .scd__subheading,
+  .scd__time-machine-heading,
+  .scd__time-result-heading,
+  .metric-lab__section-heading,
+  .lakehouse-lab__subheading {
+    display: block;
+  }
+
+  .modeling-lab__toolbar-actions {
+    margin-top: 11px;
+  }
+
+  .modeling-lab__toolbar-actions .button {
+    flex: 1;
+  }
+
+  .modeling-lab__panel-heading p,
+  .star-topology__heading > p,
+  .star-grain__heading > p,
+  .star-error__heading > p,
+  .scd__scenario-heading p,
+  .scd__subheading > p,
+  .metric-lab__section-heading > p,
+  .lakehouse-lab__subheading p {
+    max-width: none;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  .modeling-lab__stage-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modeling-lab__field-board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .modeling-lab__field-group-heading {
+    min-height: 0;
+  }
+
+  .modeling-lab__field-explanation {
+    display: block;
+  }
+
+  .modeling-lab__field-explanation p {
+    margin-top: 5px;
+  }
+
+  .modeling-lab__split-stage {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 11px;
+  }
+
+  .modeling-lab__source-stack {
+    min-height: 0;
+  }
+
+  .modeling-lab__source-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modeling-lab__split-arrow {
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .modeling-lab__split-arrow span {
+    margin: 0;
+  }
+
+  .lineage-explorer-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-investigation {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .lineage-investigation__summary {
+    padding-top: 10px;
+    padding-left: 0;
+    border-top: 1px solid #c8e2dd;
+    border-left: 0;
+  }
+
+  .lineage-investigation .button {
+    width: 100%;
+  }
+
+  .lineage-impact-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lineage-canvas {
+    min-height: 380px;
+  }
+
+  .lineage-selection {
+    display: block;
+  }
+
+  .lineage-selection p {
+    margin-top: 7px;
+  }
+
+  .impact-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .impact-stats div {
+    display: block;
+    padding: 9px;
+  }
+
+  .impact-stats strong,
+  .impact-stats span {
+    display: block;
+  }
+
+  .impact-stats strong {
+    font-size: 18px;
+  }
+
+  .lineage-evidence__heading {
+    display: block;
+  }
+
+  .lineage-evidence__heading p {
+    max-width: none;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  .lineage-evidence__edges {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-evidence__detail {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-evidence__detail .button {
+    width: 100%;
+  }
+
+  .lakehouse-architecture-tabs,
+  .lakehouse-inputs__grid,
+  .lakehouse-scenarios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lakehouse-flow {
+    overflow: visible;
+  }
+
+  .lakehouse-flow__stages {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .lakehouse-flow__stage {
+    min-height: 0;
+  }
+
+  .lakehouse-flow__arrow {
+    top: auto;
+    right: calc(50% - 7px);
+    bottom: -14px;
+    transform: rotate(90deg);
+  }
+
+  .lakehouse-flow__consumers,
+  .lakehouse-state-strip {
+    min-width: 0;
+  }
+
+  .lakehouse-flow__consumers {
+    grid-template-columns: max-content repeat(3, minmax(0, 1fr));
+  }
+
+  .lakehouse-state-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lakehouse-state-strip > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .lakehouse-decision__recommendation,
+  .lakehouse-snapshot__compare {
+    grid-template-columns: 1fr;
+  }
+
+  .lakehouse-record__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container visualization (max-width: 480px) {
+  .modeling-lab__field-board,
+  .lakehouse-record__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modeling-lab__field-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modeling-lab__outputs {
+    grid-template-columns: 1fr;
+  }
+
+  .modeling-lab__output--fact {
+    grid-column: auto;
+  }
+
+  .lineage-node {
+    width: 108px;
+    min-height: 61px;
+    padding: 7px 8px;
+  }
+
+  .lineage-node strong,
+  .lineage-node small {
+    font-size: 8px;
+  }
+
+  .lakehouse-architecture-tabs,
+  .lakehouse-inputs__grid,
+  .lakehouse-scenarios,
+  .lakehouse-state-strip,
+  .lakehouse-controls__grid,
+  .lakehouse-decision__recommendation,
+  .lakehouse-flow__consumers {
+    grid-template-columns: 1fr;
+  }
+
+  .lakehouse-state-strip > div:last-child {
+    grid-column: auto;
+  }
+
+  .lakehouse-flow__consumer-label {
+    margin-bottom: -3px;
   }
 
   .lakehouse-decision__scores {

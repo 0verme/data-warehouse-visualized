@@ -347,3 +347,97 @@
   color: var(--teal);
   font-size: 9px;
 }
+
+/* Keep the investigation controls usable when the lesson card is narrow in a wide shell. */
+@container visualization (max-width: 660px) {
+  .lineage-explorer-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-investigation {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .lineage-investigation__summary {
+    padding-top: 10px;
+    padding-left: 0;
+    border-top: 1px solid #c8e2dd;
+    border-left: 0;
+  }
+
+  .lineage-investigation .button {
+    width: 100%;
+  }
+
+  .lineage-impact-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lineage-canvas {
+    min-height: 380px;
+  }
+
+  .lineage-selection {
+    display: block;
+  }
+
+  .lineage-selection p {
+    margin-top: 7px;
+  }
+
+  .impact-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .impact-stats div {
+    display: block;
+    padding: 9px;
+  }
+
+  .impact-stats strong,
+  .impact-stats span {
+    display: block;
+  }
+
+  .impact-stats strong {
+    font-size: 18px;
+  }
+
+  .lineage-evidence__heading {
+    display: block;
+  }
+
+  .lineage-evidence__heading p {
+    max-width: none;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  .lineage-evidence__edges {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-evidence__detail {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-evidence__detail .button {
+    width: 100%;
+  }
+}
+
+@container visualization (max-width: 480px) {
+  .lineage-node {
+    width: 108px;
+    min-height: 61px;
+    padding: 7px 8px;
+  }
+
+  .lineage-node strong,
+  .lineage-node small {
+    font-size: 8px;
+  }
+}
