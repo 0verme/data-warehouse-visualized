@@ -13,4 +13,5 @@
 @import './motion.css';
 @import './layouts/home.css';
 @import './lessons/lakehouse.css';
+@import './lessons/performance.css';
 @import './components/visualization-compact.css';

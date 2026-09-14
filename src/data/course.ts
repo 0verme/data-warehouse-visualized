@@ -13,6 +13,7 @@ export type LessonDemo =
   | 'metric-definition'
   | 'lakehouse'
   | 'sql-transformation'
+  | 'performance-lab'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -186,7 +187,7 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 15,
-    demo: 'coming-soon',
+    demo: 'performance-lab',
   },
   {
     id: 'lesson-12',
