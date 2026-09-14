@@ -343,6 +343,7 @@
 
 .sql-workbench__prediction {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 0.9fr) minmax(270px, 1.1fr);
   gap: 18px;
   align-items: center;
@@ -351,6 +352,7 @@
 
 .sql-workbench__prediction-actions {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: stretch;
@@ -358,6 +360,7 @@
 
 .sql-workbench__prediction-options {
   display: grid;
+  min-width: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
 }
@@ -438,6 +441,7 @@
 
 .sql-workbench__tables {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
   gap: 9px;
   align-items: stretch;
@@ -1144,6 +1148,115 @@
 
   .sql-workbench__comparison-heading p {
     text-align: left;
+  }
+
+  .sql-workbench__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .sql-workbench__snapshot-meta {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* The workbench follows the width of its lesson card, including wide desktop shells. */
+@container visualization (max-width: 760px) {
+  .sql-workbench__workspace {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .sql-workbench__main {
+    padding: 18px;
+  }
+
+  .sql-workbench__active-heading,
+  .sql-workbench__sql-heading,
+  .sql-workbench__comparison-heading,
+  .sql-workbench__snapshot-heading,
+  .sql-workbench__contract-heading,
+  .sql-workbench__snapshot-panel-heading {
+    display: grid;
+  }
+
+  .sql-workbench__prediction {
+    grid-template-columns: 1fr;
+  }
+
+  .sql-workbench__prediction > * {
+    min-width: 0;
+  }
+
+  .sql-workbench__tables {
+    grid-template-columns: 1fr;
+  }
+
+  .sql-workbench__table-arrow {
+    min-height: 20px;
+    transform: rotate(90deg);
+  }
+
+  .sql-workbench__comparison-heading p {
+    text-align: left;
+  }
+
+  .sql-workbench__snapshot-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container visualization (max-width: 560px) {
+  .sql-workbench__toolbar {
+    display: grid;
+    align-items: stretch;
+  }
+
+  .sql-workbench__toolbar .button {
+    justify-self: start;
+  }
+
+  .sql-workbench__grain-gate,
+  .sql-workbench__snapshots,
+  .sql-workbench__contract {
+    padding: 18px;
+  }
+
+  .sql-workbench__grain-options,
+  .sql-workbench__contract dl {
+    grid-template-columns: 1fr;
+  }
+
+  .sql-workbench__workspace {
+    display: block;
+  }
+
+  .sql-workbench__steps {
+    padding: 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line, #dfe6ef);
+  }
+
+  .sql-workbench__steps ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sql-workbench__step {
+    grid-template-columns: 27px minmax(0, 1fr);
+  }
+
+  .sql-workbench__step-status {
+    display: none;
+  }
+
+  .sql-workbench__main {
+    padding: 16px;
+  }
+
+  .sql-workbench__prediction-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .sql-workbench__execute {
+    justify-self: start;
   }
 
   .sql-workbench__metrics {
