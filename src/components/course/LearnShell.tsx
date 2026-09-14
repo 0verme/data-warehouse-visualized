@@ -15,7 +15,13 @@ import {
   toggleLessonComplete,
   type ProgressState,
 } from '../../utils/progress'
-import { getAdjacentLessons, getLessonFromPath, isLearnIndexPath } from '../../utils/lesson'
+import {
+  getAdjacentLessons,
+  getChapterDisplayNumber,
+  getLessonDisplayNumber,
+  getLessonFromPath,
+  isLearnIndexPath,
+} from '../../utils/lesson'
 import { getRoute } from '../../utils/routes'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
@@ -390,7 +396,9 @@ export function LearnShell({
                         <path d="m4 6 4 4 4-4" />
                       </svg>
                     </span>
-                    <span className="course-chapter__index">{chapter.id}</span>
+                    <span className="course-chapter__index">
+                      {getChapterDisplayNumber(chapter.id)}
+                    </span>
                     <strong>{chapter.title}</strong>
                     <span
                       className={`course-chapter__progress${isChapterComplete ? ' is-complete' : ''}`}
@@ -435,6 +443,9 @@ export function LearnShell({
                                 </svg>
                               )}
                             </span>
+                            <span className="course-lesson__number" aria-hidden="true">
+                              {getLessonDisplayNumber(lesson, chapter.lessons)}
+                            </span>
                             <span className="course-lesson__title">{lesson.title}</span>
                           </a>
                         </li>
@@ -464,7 +475,12 @@ export function LearnShell({
             <span aria-hidden="true">/</span>
             <span>{activeLesson.title}</span>
           </div>
-          <LessonHeader lesson={activeLesson} content={activeContent} locale={locale} />
+          <LessonHeader
+            lesson={activeLesson}
+            lessons={lessons}
+            content={activeContent}
+            locale={locale}
+          />
           <LessonBody
             lesson={activeLesson}
             content={activeContent}

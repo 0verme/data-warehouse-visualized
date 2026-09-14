@@ -3,6 +3,8 @@ import { getLessonContent } from '../src/content/lessons'
 import { getLessonBySlug, lessons } from '../src/data/course'
 import {
   getAdjacentLessons,
+  getChapterDisplayNumber,
+  getLessonDisplayNumber,
   getLessonFromPath,
   isLearnIndexPath,
   sortLessons,
@@ -11,12 +13,56 @@ import {
 const reversedLessons = [...lessons].reverse()
 
 describe('课程数据与导航', () => {
-  it('按 order 稳定排序课程', () => {
+  it('按章节和章节内 order 稳定排序课程', () => {
     const ordered = sortLessons(reversedLessons)
 
-    expect(ordered.map((lesson) => lesson.order)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+    expect(ordered.map((lesson) => lesson.slug)).toEqual(lessons.map((lesson) => lesson.slug))
+    expect(ordered.slice(2, 5).map((lesson) => `${lesson.chapter}:${lesson.order}`)).toEqual([
+      '03:100',
+      '03:200',
+      '03:300',
     ])
+  })
+
+  it('从当前章节排序动态计算课程展示编号', () => {
+    expect(getChapterDisplayNumber('01')).toBe('01')
+    expect(getChapterDisplayNumber('10')).toBe('10')
+    expect(getLessonDisplayNumber(getLessonBySlug('why-data-warehouse')!, lessons)).toBe('1-1')
+    expect(getLessonDisplayNumber(getLessonBySlug('warehouse-layers')!, lessons)).toBe('2-1')
+    expect(getLessonDisplayNumber(getLessonBySlug('data-modeling')!, lessons)).toBe('3-1')
+    expect(getLessonDisplayNumber(getLessonBySlug('star-schema-and-grain')!, lessons)).toBe('3-2')
+    expect(getLessonDisplayNumber(getLessonBySlug('slowly-changing-dimension')!, lessons)).toBe(
+      '3-3',
+    )
+  })
+
+  it('插入章节内 order 权重后自动重新计算后续展示编号', () => {
+    const insertedLessons = [
+      { id: 'lesson-a', chapter: '01', order: 100 },
+      { id: 'lesson-b', chapter: '01', order: 200 },
+      { id: 'lesson-c', chapter: '01', order: 300 },
+      { id: 'lesson-new', chapter: '01', order: 150 },
+    ] as const
+    const ordered = sortLessons(insertedLessons)
+
+    expect(ordered.map((lesson) => lesson.id)).toEqual([
+      'lesson-a',
+      'lesson-new',
+      'lesson-b',
+      'lesson-c',
+    ])
+    expect(ordered.map((lesson) => getLessonDisplayNumber(lesson, insertedLessons))).toEqual([
+      '1-1',
+      '1-2',
+      '1-3',
+      '1-4',
+    ])
+  })
+
+  it('课程骨架只显示章节编号，不直接暴露排序权重', () => {
+    expect(getLessonContent(getLessonBySlug('scheduling-system')!).eyebrow).toBe(
+      '第 06 章 · 课程骨架',
+    )
   })
 
   it('返回当前课程的上一节和下一节', () => {
@@ -135,7 +181,7 @@ describe('课程数据与导航', () => {
   it('指标体系已升级为正式交互课程并连接 SQL 章节', () => {
     expect(getLessonBySlug('metric-system')).toMatchObject({
       title: '指标体系：同一个数字为什么不一样？',
-      order: 6,
+      order: 100,
       chapter: '04',
       demo: 'metric-definition',
     })
@@ -150,7 +196,7 @@ describe('课程数据与导航', () => {
   })
 
   it('数据血缘顺序调整到第十课', () => {
-    expect(getLessonBySlug('data-lineage')).toMatchObject({ order: 10, chapter: '08' })
+    expect(getLessonBySlug('data-lineage')).toMatchObject({ order: 100, chapter: '08' })
   })
 
   it('首尾课程不会产生越界导航', () => {

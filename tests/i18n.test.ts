@@ -19,7 +19,7 @@ describe('轻量 i18n API', () => {
       title: '为什么需要数据仓库？',
       summary: '从订单、用户、商品和支付四本业务账开始，理解分析系统为何需要独立的数据空间。',
       tags: ['基础概念', 'OLTP', 'OLAP'],
-      order: 1,
+      order: 100,
       slug: 'why-data-warehouse',
     })
     expect(lesson?.id).toBe('lesson-01')

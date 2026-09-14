@@ -1,4 +1,5 @@
 import type { Lesson } from '../../data/course'
+import { getChapterDisplayNumber } from '../../utils/lesson'
 import type { LessonContent } from '../types'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
@@ -25,7 +26,7 @@ const lessonContentBySlug: Record<string, LessonContent> = {
 export function getLessonContent(lesson: Lesson): LessonContent {
   return (
     lessonContentBySlug[lesson.slug] ?? {
-      eyebrow: `第 ${String(lesson.order).padStart(2, '0')} 课 · 课程骨架`,
+      eyebrow: `第 ${getChapterDisplayNumber(lesson.chapter)} 章 · 课程骨架`,
       subtitle: '这节课正在准备中，先把它放进完整的学习路线。',
       quickSummary: lesson.summary,
       concept: {

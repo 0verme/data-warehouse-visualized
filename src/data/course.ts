@@ -1,5 +1,6 @@
 import { DEFAULT_LOCALE, type Locale } from '../i18n/locale'
 import { getMessage } from '../i18n/messages'
+import { sortLessons } from '../utils/lesson'
 
 export type LessonDifficulty = 'beginner' | 'intermediate' | 'advanced'
 export type LessonDemo =
@@ -18,7 +19,8 @@ export type LessonDemo =
 export interface LessonDefinition {
   id: string
   slug: string
-  chapter: string
+  chapter: ChapterId
+  /** Chapter-local sorting weight; the UI always derives the displayed number from it. */
   order: number
   difficulty: LessonDifficulty
   estimatedMinutes: number
@@ -73,7 +75,7 @@ export const lessonDefinitions = [
     id: 'lesson-01',
     slug: 'why-data-warehouse',
     chapter: '01',
-    order: 1,
+    order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 8,
     demo: 'systems',
@@ -82,7 +84,7 @@ export const lessonDefinitions = [
     id: 'lesson-02',
     slug: 'warehouse-layers',
     chapter: '02',
-    order: 2,
+    order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
     demo: 'layers',
@@ -91,7 +93,7 @@ export const lessonDefinitions = [
     id: 'lesson-03',
     slug: 'data-modeling',
     chapter: '03',
-    order: 3,
+    order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 12,
     demo: 'modeling-intro',
@@ -100,7 +102,7 @@ export const lessonDefinitions = [
     id: 'lesson-04',
     slug: 'metric-system',
     chapter: '04',
-    order: 6,
+    order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
     demo: 'metric-definition',
@@ -109,7 +111,7 @@ export const lessonDefinitions = [
     id: 'lesson-05',
     slug: 'sql-and-transformation',
     chapter: '05',
-    order: 7,
+    order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 15,
     demo: 'sql-transformation',
@@ -118,7 +120,7 @@ export const lessonDefinitions = [
     id: 'lesson-06',
     slug: 'scheduling-system',
     chapter: '06',
-    order: 8,
+    order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
     demo: 'coming-soon',
@@ -127,7 +129,7 @@ export const lessonDefinitions = [
     id: 'lesson-07',
     slug: 'data-quality',
     chapter: '07',
-    order: 9,
+    order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
     demo: 'coming-soon',
@@ -136,7 +138,7 @@ export const lessonDefinitions = [
     id: 'lesson-08',
     slug: 'data-lineage',
     chapter: '08',
-    order: 10,
+    order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
     demo: 'lineage',
@@ -145,7 +147,7 @@ export const lessonDefinitions = [
     id: 'lesson-star-schema-grain',
     slug: 'star-schema-and-grain',
     chapter: '03',
-    order: 4,
+    order: 200,
     difficulty: 'beginner',
     estimatedMinutes: 14,
     demo: 'star-schema',
@@ -154,7 +156,7 @@ export const lessonDefinitions = [
     id: 'lesson-scd-type-2',
     slug: 'slowly-changing-dimension',
     chapter: '03',
-    order: 5,
+    order: 300,
     difficulty: 'beginner',
     estimatedMinutes: 12,
     demo: 'scd',
@@ -163,7 +165,7 @@ export const lessonDefinitions = [
     id: 'lesson-09',
     slug: 'data-governance',
     chapter: '09',
-    order: 11,
+    order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
     demo: 'coming-soon',
@@ -172,7 +174,7 @@ export const lessonDefinitions = [
     id: 'lesson-10',
     slug: 'lakehouse',
     chapter: '10',
-    order: 12,
+    order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 18,
     demo: 'lakehouse',
@@ -181,7 +183,7 @@ export const lessonDefinitions = [
     id: 'lesson-11',
     slug: 'performance-and-practice',
     chapter: '11',
-    order: 13,
+    order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 15,
     demo: 'coming-soon',
@@ -190,7 +192,7 @@ export const lessonDefinitions = [
     id: 'lesson-12',
     slug: 'build-a-warehouse',
     chapter: '12',
-    order: 14,
+    order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 20,
     demo: 'coming-soon',
@@ -309,12 +311,12 @@ function getTranslation<T, TId extends string>(
 }
 
 export function getLessons(locale: Locale = DEFAULT_LOCALE): Lesson[] {
-  return lessonDefinitions
-    .map((definition) => ({
+  return sortLessons(
+    lessonDefinitions.map((definition) => ({
       ...definition,
       ...getTranslation(lessonTranslations, definition.id, locale),
-    }))
-    .sort((left, right) => left.order - right.order)
+    })),
+  )
 }
 
 export const lessons = getLessons()

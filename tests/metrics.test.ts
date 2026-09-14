@@ -22,7 +22,7 @@ describe('指标口径实验', () => {
     expect(getLessonBySlug('metric-system')).toMatchObject({
       title: '指标体系：同一个数字为什么不一样？',
       chapter: '04',
-      order: 6,
+      order: 100,
       demo: 'metric-definition',
     })
     expect(visualization.targetDate).toBe('2026-09-13')
