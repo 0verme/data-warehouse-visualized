@@ -81,7 +81,13 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
     case 'pipeline':
       return <PipelineFlow stages={visualization.stages} />
     case 'lineage':
-      return <LineageGraph nodes={visualization.nodes} edges={visualization.edges} />
+      return (
+        <LineageGraph
+          nodes={visualization.nodes}
+          edges={visualization.edges}
+          investigationEvent={visualization.investigationEvent}
+        />
+      )
     case 'modeling-intro':
       return <ModelingIntro visualization={visualization} />
     case 'star-schema':
@@ -208,6 +214,18 @@ function LegacyBlocks({
   )
 }
 
+function isNarrativeSection(
+  section: LessonSection,
+): section is Extract<LessonSection, { paragraphs: string[] }> {
+  return 'paragraphs' in section
+}
+
+function isLegacyNarrativeSection(
+  section: LessonSection,
+): section is Extract<LessonSection, { paragraphs: string[] }> {
+  return isNarrativeSection(section) && section.kind === undefined
+}
+
 function renderSection(section: LessonSection, lessonId: string, index: number) {
   switch (section.kind) {
     case 'compare':
@@ -253,6 +271,10 @@ function renderSection(section: LessonSection, lessonId: string, index: number) 
       return <Pitfall text={section.text} title={section.title} key={`pitfall-${index}`} />
     case 'narrative':
     default:
+      if (!isNarrativeSection(section)) {
+        return null
+      }
+
       return (
         <NarrativeSection section={section} index={index} composed key={`narrative-${index}`} />
       )
@@ -268,13 +290,14 @@ export function LessonSectionRenderer({
   engineeringTip,
   pitfalls,
 }: LessonSectionRendererProps) {
-  const hasComposedSections = sections.some((section) => section.kind !== undefined)
+  const legacySections = sections.filter(isLegacyNarrativeSection)
+  const hasComposedSections = legacySections.length !== sections.length
 
   if (!hasComposedSections) {
     return (
       <>
         <section className="lesson-sections" aria-label="课程正文">
-          {sections.map((section, index) => (
+          {legacySections.map((section, index) => (
             <NarrativeSection section={section} index={index} key={`${section.title}-${index}`} />
           ))}
         </section>

@@ -1,6 +1,7 @@
 import type {
   FlowOutput,
   LineageEdge,
+  LineageInvestigationEvent,
   LineageNode,
   MetricVisualization,
   ModelingIntroVisualization,
@@ -109,6 +110,7 @@ export type LessonVisualization =
       kind: 'lineage'
       nodes: LineageNode[]
       edges: LineageEdge[]
+      investigationEvent?: LineageInvestigationEvent
     }
   | ModelingIntroVisualization
   | StarSchemaVisualization

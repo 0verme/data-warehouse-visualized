@@ -1,0 +1,349 @@
+/* Lineage explorer-specific controls and investigation panels. */
+
+.lineage-explorer-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 250px);
+  gap: 15px;
+  margin-bottom: 14px;
+}
+
+.lineage-control-block,
+.lineage-search {
+  min-width: 0;
+}
+
+.lineage-control-label {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.lineage-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.lineage-view-tabs .button {
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+}
+
+.lineage-view-tabs .button:hover,
+.lineage-view-tabs .button.is-selected {
+  border-color: var(--blue);
+  background: var(--surface-blue);
+  color: var(--blue);
+}
+
+.lineage-search input {
+  width: 100%;
+  margin-top: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+}
+
+.lineage-search input:focus {
+  border-color: var(--blue);
+  outline: 2px solid rgb(45 108 223 / 15%);
+  outline-offset: 1px;
+}
+
+.lineage-search-results {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: -3px 0 14px;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-search-result {
+  padding: 4px 7px;
+  border: 1px solid #c8e2dd;
+  border-radius: 5px;
+  background: #f4fbfa;
+  color: var(--teal);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.lineage-impact-controls {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 12px 0;
+}
+
+.lineage-investigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 17px;
+  align-items: center;
+  margin: 15px 0 17px;
+  padding: 16px;
+  border: 1px solid #c8e2dd;
+  border-radius: 10px;
+  background: #f4fbfa;
+}
+
+.lineage-investigation__copy h3 {
+  margin: 5px 0 5px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.lineage-investigation__copy p,
+.lineage-investigation__copy small {
+  display: block;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.lineage-investigation__copy small {
+  margin-top: 6px;
+  color: var(--teal);
+}
+
+.lineage-investigation__summary {
+  min-width: 145px;
+  padding-left: 15px;
+  border-left: 1px solid #c8e2dd;
+}
+
+.lineage-investigation__summary strong {
+  display: block;
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 23px;
+}
+
+.lineage-investigation__summary span,
+.lineage-investigation__summary p {
+  margin: 2px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-investigation__summary p {
+  line-height: 1.55;
+}
+
+.lineage-edge {
+  cursor: pointer;
+}
+
+.lineage-edge:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.lineage-edge.is-direct {
+  stroke-dasharray: none;
+}
+
+.lineage-edge.is-transitive {
+  stroke-dasharray: 5 3;
+}
+
+.lineage-node--task .lineage-node__layer {
+  color: var(--blue);
+}
+
+.lineage-node--metric .lineage-node__layer {
+  color: #8261b2;
+}
+
+.impact-stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.lineage-blast-radius {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lineage-blast-radius p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-evidence,
+.lineage-path {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.lineage-evidence__heading {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.lineage-evidence__heading h3 {
+  margin: 5px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.lineage-evidence__heading p {
+  max-width: 245px;
+  margin: 3px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.lineage-evidence__edges {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.lineage-evidence__edge {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  cursor: pointer;
+  text-align: left;
+}
+
+.lineage-evidence__edge:hover,
+.lineage-evidence__edge.is-selected {
+  border-color: var(--teal);
+  background: #f4fbfa;
+}
+
+.lineage-evidence__edge strong,
+.lineage-evidence__edge small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineage-evidence__edge strong {
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+}
+
+.lineage-evidence__edge small {
+  color: var(--teal);
+  font-size: 9px;
+}
+
+.lineage-evidence__empty {
+  margin: 12px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-evidence__detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 15px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #c8e2dd;
+  border-radius: 8px;
+  background: #f4fbfa;
+}
+
+.lineage-evidence__detail strong,
+.lineage-evidence__detail p,
+.lineage-evidence__detail small {
+  display: block;
+  margin: 4px 0 0;
+}
+
+.lineage-evidence__detail strong {
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-evidence__detail p,
+.lineage-evidence__detail small {
+  grid-column: 1 / -1;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.lineage-evidence__detail small {
+  color: var(--teal);
+}
+
+.lineage-path ol {
+  display: flex;
+  gap: 9px;
+  align-items: stretch;
+  overflow-x: auto;
+  margin: 12px 0 0;
+  padding: 0 0 4px;
+  list-style: none;
+}
+
+.lineage-path li {
+  display: flex;
+  min-width: 130px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-muted);
+}
+
+.lineage-path li + li {
+  position: relative;
+}
+
+.lineage-path li + li::before {
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  color: var(--teal);
+  content: '→';
+  font-size: 11px;
+  transform: translateY(-50%);
+}
+
+.lineage-path strong {
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+}
+
+.lineage-path small {
+  color: var(--teal);
+  font-size: 9px;
+}
