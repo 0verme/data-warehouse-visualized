@@ -170,10 +170,15 @@ export function LearnShell({
                   aria-controls={`chapter-${chapter.id}`}
                   onClick={() => toggleChapter(chapter.id)}
                 >
-                  <span>{chapter.id}</span>
+                  <span className="course-chapter__index">{chapter.id}</span>
+                  <span className="course-chapter__separator" aria-hidden="true">
+                    /
+                  </span>
                   <strong>{chapter.title}</strong>
                   <span className="course-chapter__chevron" aria-hidden="true">
-                    {collapsedChapters[chapter.id] ? '+' : '−'}
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <path d="m4 6 4 4 4-4" />
+                    </svg>
                   </span>
                 </button>
                 <ul id={`chapter-${chapter.id}`} hidden={collapsedChapters[chapter.id]}>
