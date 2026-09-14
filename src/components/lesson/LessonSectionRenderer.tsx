@@ -5,6 +5,8 @@ import type {
   LessonVisualization,
 } from '../../content/types'
 import type { Lesson } from '../../data/course'
+import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
+import { getMessage } from '../../i18n/messages'
 import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
 import {
   BusinessSystemFlow,
@@ -30,6 +32,7 @@ interface LessonSectionRendererProps {
   legacyComparison?: LessonComparison
   legacyCode?: LessonCodeExample
   codeHighlights?: CodeHighlightMap
+  locale?: Locale
   engineeringTip?: string
   pitfalls?: string[]
 }
@@ -177,9 +180,11 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
 function LegacyTeachingNotes({
   engineeringTip,
   pitfalls,
+  locale,
 }: {
   engineeringTip?: string
   pitfalls?: string[]
+  locale: Locale
 }) {
   const hasPitfalls = Boolean(pitfalls && pitfalls.length > 0)
 
@@ -188,7 +193,7 @@ function LegacyTeachingNotes({
   }
 
   return (
-    <section className="lesson-insights" aria-label="教学旁注">
+    <section className="lesson-insights" aria-label={getMessage('teachingNotes', locale)}>
       {engineeringTip && <EngineeringNote text={engineeringTip} title="把定义放回真实场景" />}
       {hasPitfalls && <Pitfall text={pitfalls?.join(' ') ?? ''} title="记住边界，不要背成口号" />}
     </section>
@@ -211,6 +216,7 @@ function LegacyBlocks({
   codeHighlights,
   engineeringTip,
   pitfalls,
+  locale = DEFAULT_LOCALE,
 }: Omit<LessonSectionRendererProps, 'sections'>) {
   const visualizationCopy = legacyVisualization
     ? getLegacyVisualizationCopy(legacyVisualization)
@@ -239,7 +245,7 @@ function LegacyBlocks({
           headingId={`${lesson.id}-legacy-code-title`}
         />
       )}
-      <LegacyTeachingNotes engineeringTip={engineeringTip} pitfalls={pitfalls} />
+      <LegacyTeachingNotes engineeringTip={engineeringTip} pitfalls={pitfalls} locale={locale} />
     </>
   )
 }
@@ -327,6 +333,7 @@ export function LessonSectionRenderer({
   legacyComparison,
   legacyCode,
   codeHighlights,
+  locale = DEFAULT_LOCALE,
   engineeringTip,
   pitfalls,
 }: LessonSectionRendererProps) {
@@ -336,7 +343,7 @@ export function LessonSectionRenderer({
   if (!hasComposedSections) {
     return (
       <>
-        <section className="lesson-sections" aria-label="课程正文">
+        <section className="lesson-sections" aria-label={getMessage('lessonBody', locale)}>
           {legacySections.map((section, index) => (
             <NarrativeSection section={section} index={index} key={`${section.title}-${index}`} />
           ))}
@@ -347,6 +354,7 @@ export function LessonSectionRenderer({
           legacyComparison={legacyComparison}
           legacyCode={legacyCode}
           codeHighlights={codeHighlights}
+          locale={locale}
           engineeringTip={engineeringTip}
           pitfalls={pitfalls}
         />
@@ -355,7 +363,7 @@ export function LessonSectionRenderer({
   }
 
   return (
-    <section className="lesson-sequence" aria-label="课程内容">
+    <section className="lesson-sequence" aria-label={getMessage('lessonContent', locale)}>
       {sections.map((section, index) => renderSection(section, lesson.id, index, codeHighlights))}
       <LegacyBlocks
         lesson={lesson}
@@ -363,6 +371,7 @@ export function LessonSectionRenderer({
         legacyComparison={legacyComparison}
         legacyCode={legacyCode}
         codeHighlights={codeHighlights}
+        locale={locale}
         engineeringTip={engineeringTip}
         pitfalls={pitfalls}
       />

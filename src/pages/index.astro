@@ -2,6 +2,7 @@
 import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { chapters, lessons } from '../data/course'
+import { getMessage } from '../i18n/messages'
 
 const actualDemoCount = lessons.filter((lesson) => lesson.demo !== 'coming-soon').length
 const baseUrl = import.meta.env.BASE_URL
@@ -194,7 +195,7 @@ const baseUrl = import.meta.env.BASE_URL
                     <small>{lesson.title}</small>
                   </span>
                   <span class="home-course-row__status">
-                    {isReady ? '可学习' : '即将开放'}
+                    {isReady ? getMessage('availableLesson') : getMessage('comingSoon')}
                     <span aria-hidden="true">{isReady ? '→' : '·'}</span>
                   </span>
                 </a>

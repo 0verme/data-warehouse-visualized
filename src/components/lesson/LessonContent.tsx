@@ -1,5 +1,6 @@
 import type { Lesson } from '../../data/course'
 import type { LessonContent as LessonContentData } from '../../content/types'
+import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
 import { ConceptCard } from './ConceptCard'
 import { LessonSectionRenderer } from './LessonSectionRenderer'
@@ -8,9 +9,15 @@ interface LessonContentProps {
   lesson: Lesson
   content: LessonContentData
   codeHighlights?: CodeHighlightMap
+  locale?: Locale
 }
 
-export function LessonContent({ lesson, content, codeHighlights }: LessonContentProps) {
+export function LessonContent({
+  lesson,
+  content,
+  codeHighlights,
+  locale = DEFAULT_LOCALE,
+}: LessonContentProps) {
   return (
     <div className="lesson-content">
       {content.opening && (
@@ -42,6 +49,7 @@ export function LessonContent({ lesson, content, codeHighlights }: LessonContent
         legacyComparison={content.comparison}
         legacyCode={content.code}
         codeHighlights={codeHighlights}
+        locale={locale}
         engineeringTip={content.engineeringTip}
         pitfalls={content.pitfalls}
       />
