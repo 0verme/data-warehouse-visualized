@@ -5,6 +5,7 @@ import { dataModelingContent } from './data-modeling'
 import { lakehouseContent } from './lakehouse'
 import { metricSystemContent } from './metric-system'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
+import { sqlAndTransformationContent } from './sql-and-transformation'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { whyDataWarehouseContent } from './why-data-warehouse'
@@ -18,6 +19,7 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,
+  'sql-and-transformation': sqlAndTransformationContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {
