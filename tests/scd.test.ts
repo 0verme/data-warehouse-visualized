@@ -27,7 +27,7 @@ describe('SCD Type 2 维度历史', () => {
     expect(getLessonBySlug('slowly-changing-dimension')).toMatchObject({
       title: '维度为什么要保存历史？SCD Type 2',
       chapter: '03',
-      order: 5,
+      order: 300,
       demo: 'scd',
     })
     expect(visualization.initialVersion).toMatchObject({

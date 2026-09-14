@@ -1022,7 +1022,7 @@ pre {
 .course-lesson {
   display: grid;
   width: calc(100% - 14px);
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: 18px 31px minmax(0, 1fr);
   gap: 9px;
   align-items: center;
   min-height: 39px;
@@ -1049,6 +1049,17 @@ pre {
   color: var(--ink);
   font-weight: 600;
   box-shadow: inset 2px 0 0 rgb(45 108 223 / 38%);
+}
+
+.course-lesson__number {
+  overflow: hidden;
+  color: var(--blue);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 550;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .course-lesson__title {
@@ -1141,7 +1152,8 @@ pre {
 
 .lesson-number {
   display: inline-grid;
-  width: 25px;
+  width: 35px;
+  min-width: 35px;
   height: 25px;
   place-items: center;
   border-radius: 7px;
