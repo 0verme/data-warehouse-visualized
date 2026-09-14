@@ -1,0 +1,128 @@
+/* Shared container-query primitives for visualization cards. */
+
+@container visualization (max-width: 660px) {
+  .business-flow__diagram {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 13px;
+  }
+
+  .business-flow__source-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-flow__connector {
+    width: 100%;
+    height: 32px;
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .business-flow__connector-line {
+    width: 1px;
+    height: 100%;
+  }
+
+  .business-flow__connector-line::after {
+    top: auto;
+    right: -3px;
+    bottom: -1px;
+    border-top: 0;
+    border-right: 1px solid var(--line-strong);
+    border-bottom: 1px solid var(--line-strong);
+    transform: rotate(45deg);
+  }
+
+  .business-flow--phase-1 .business-flow__connector-line::after,
+  .business-flow--phase-2 .business-flow__connector-line::after,
+  .business-flow--phase-3 .business-flow__connector-line::after {
+    border-color: var(--teal);
+  }
+
+  .business-flow__connector-label {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    padding: 0 7px;
+    background: var(--surface);
+    transform: translateX(-50%);
+  }
+
+  .warehouse-node {
+    min-height: 118px;
+  }
+
+  .business-flow__packet {
+    justify-content: center;
+    margin: -3px 0 1px;
+  }
+
+  .business-flow--phase-1 .business-flow__packet,
+  .business-flow--phase-2 .business-flow__packet,
+  .business-flow--phase-3 .business-flow__packet {
+    animation-name: packet-pulse;
+  }
+
+  .pipeline-flow__track {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pipeline-flow__item {
+    align-items: stretch;
+  }
+
+  .pipeline-stage {
+    width: 100%;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .pipeline-stage p {
+    min-height: 0;
+  }
+
+  .pipeline-flow__arrow {
+    width: 100%;
+    height: 29px;
+  }
+
+  .pipeline-flow__arrow span {
+    height: 13px;
+  }
+
+  .pipeline-flow__legend {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .modeling-lab__toolbar,
+  .modeling-lab__panel-heading,
+  .star-topology__heading,
+  .star-grain__heading,
+  .star-error__heading,
+  .scd__scenario-heading,
+  .scd__subheading,
+  .scd__time-machine-heading,
+  .scd__time-result-heading,
+  .metric-lab__section-heading,
+  .lakehouse-lab__subheading {
+    display: block;
+  }
+
+  .modeling-lab__panel-heading p,
+  .star-topology__heading > p,
+  .star-grain__heading > p,
+  .star-error__heading > p,
+  .scd__scenario-heading p,
+  .scd__subheading > p,
+  .metric-lab__section-heading > p,
+  .lakehouse-lab__subheading p {
+    max-width: none;
+    margin-top: 8px;
+    text-align: left;
+  }
+}

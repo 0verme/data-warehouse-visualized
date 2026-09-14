@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import './LineageGraph.css'
+import '../../styles/lessons/lineage.css'
 import type {
   LineageEdge,
   LineageEntityType,

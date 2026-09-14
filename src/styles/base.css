@@ -1,0 +1,144 @@
+/* Shared site primitives and base layout surfaces. */
+
+.site-shell {
+  width: min(100% - 48px, var(--content-width));
+  margin: 0 auto;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 84px;
+  border-bottom: 1px solid rgb(223 230 239 / 70%);
+}
+
+.brand {
+  display: inline-flex;
+  gap: 11px;
+  align-items: center;
+  color: var(--navy);
+}
+
+.brand__mark {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 31px;
+  height: 31px;
+  gap: 4px;
+  padding: 6px 5px;
+  border-radius: 9px;
+  background: var(--navy);
+  box-shadow: 0 5px 12px rgb(23 59 104 / 16%);
+}
+
+.brand__mark i {
+  display: block;
+  width: 20px;
+  height: 3px;
+  border-radius: 20px;
+  background: #f7fbff;
+}
+
+.brand__mark i:first-child {
+  width: 12px;
+  background: var(--teal);
+}
+
+.brand__mark i:last-child {
+  width: 16px;
+  background: #7eaff4;
+}
+
+.brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.brand__text strong {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.brand__text small {
+  margin-top: 4px;
+  color: var(--ink-muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.site-header__nav {
+  display: flex;
+  gap: 27px;
+  align-items: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.site-header__nav > a:not(.button) {
+  transition: color 160ms ease;
+}
+
+.site-header__nav > a:not(.button):hover {
+  color: var(--blue);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 43px;
+  gap: 9px;
+  padding: 9px 17px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button--primary {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 7px 15px rgb(23 59 104 / 14%);
+}
+
+.button--primary:hover {
+  background: #205184;
+}
+
+.button--nav {
+  min-height: 36px;
+  padding: 8px 13px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.button--small {
+  min-height: 35px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.button--quiet {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.button--quiet:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+}

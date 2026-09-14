@@ -1,0 +1,46 @@
+/* Small shared UI utilities. */
+
+.eyebrow,
+.eyebrow-pill {
+  display: inline-flex;
+  align-items: center;
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  line-height: 1.3;
+}
+
+.eyebrow--small {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.eyebrow-row {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 21px;
+}
+
+.eyebrow-pill {
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid #cfeae5;
+  border-radius: 100px;
+  background: #f2fbfa;
+  letter-spacing: 0.05em;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px rgb(21 156 147 / 14%);
+}
+
+.eyebrow-muted {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
