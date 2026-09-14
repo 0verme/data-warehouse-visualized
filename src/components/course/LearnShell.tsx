@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Lesson } from '../../data/course'
 import { chapters } from '../../data/course'
 import type { LessonContent } from '../../content/types'
@@ -14,7 +14,7 @@ import {
   toggleLessonComplete,
   type ProgressState,
 } from '../../utils/progress'
-import { getAdjacentLessons } from '../../utils/lesson'
+import { getAdjacentLessons, getLessonFromPath, isLearnIndexPath } from '../../utils/lesson'
 import { getRoute } from '../../utils/routes'
 import {
   LessonContent as LessonBody,
@@ -148,10 +148,14 @@ const progressBootstrapScript = `(() => {
   })
 })()`
 
-function getLessonFromPath(pathname: string, lessons: Lesson[]): Lesson | undefined {
-  const normalizedPath = pathname.replace(/\/+$/, '')
+function subscribeToRouteChanges(onChange: () => void): () => void {
+  document.addEventListener('astro:after-swap', onChange)
 
-  return lessons.find((lesson) => normalizedPath.endsWith(`/learn/${lesson.slug}`))
+  return () => document.removeEventListener('astro:after-swap', onChange)
+}
+
+function getCurrentPathname(): string {
+  return window.location.pathname
 }
 
 function getInitialProgress(
@@ -191,28 +195,48 @@ export function LearnShell({
   const [progress, setProgress] = useState<ProgressState>(() =>
     getInitialProgress(fallbackProgress, lessons, initialLesson.id, isIndex),
   )
-  const [selectedLessonId, setSelectedLessonId] = useState(initialLesson.id)
+  const serverPathname = getRoute(isIndex ? '/learn/' : `/learn/${initialLesson.slug}/`)
+  const pathname = useSyncExternalStore(
+    subscribeToRouteChanges,
+    getCurrentPathname,
+    () => serverPathname,
+  )
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [collapsedChapters, setCollapsedChapters] = useState<Record<string, boolean>>({})
   const activeLessonRef = useRef<HTMLAnchorElement | null>(null)
+  const previousPathnameRef = useRef(pathname)
+  const shouldResetMainScrollRef = useRef(false)
+
+  const routeLesson = getLessonFromPath(pathname, lessons)
+  const isCourseIndex = isLearnIndexPath(pathname)
 
   useEffect(() => {
-    function handlePageLoad() {
-      const routeLesson = getLessonFromPath(window.location.pathname, lessons)
-      if (!routeLesson) {
+    function handleBeforePreparation(event: Event) {
+      const navigationType = (event as Event & { navigationType?: string }).navigationType
+      shouldResetMainScrollRef.current = navigationType !== 'traverse'
+    }
+
+    function handleRouteChange() {
+      setIsSidebarOpen(false)
+
+      const nextLesson = getLessonFromPath(window.location.pathname, lessons)
+      if (!nextLesson) {
         return
       }
 
-      setSelectedLessonId(routeLesson.id)
       setProgress((currentProgress) =>
-        currentProgress.currentLessonId === routeLesson.id
+        currentProgress.currentLessonId === nextLesson.id
           ? currentProgress
-          : setCurrentLesson(currentProgress, routeLesson.id),
+          : setCurrentLesson(currentProgress, nextLesson.id),
       )
     }
 
-    document.addEventListener('astro:after-swap', handlePageLoad)
-    return () => document.removeEventListener('astro:after-swap', handlePageLoad)
+    document.addEventListener('astro:before-preparation', handleBeforePreparation)
+    document.addEventListener('astro:after-swap', handleRouteChange)
+    return () => {
+      document.removeEventListener('astro:before-preparation', handleBeforePreparation)
+      document.removeEventListener('astro:after-swap', handleRouteChange)
+    }
   }, [lessons])
 
   useEffect(() => {
@@ -221,12 +245,33 @@ export function LearnShell({
     }
   }, [progress])
 
-  const activeLessonId = isIndex ? progress.currentLessonId : selectedLessonId
-  const activeLesson = lessons.find((lesson) => lesson.id === activeLessonId) ?? initialLesson
+  const activeLesson =
+    routeLesson ??
+    (isCourseIndex
+      ? (lessons.find((lesson) => lesson.id === progress.currentLessonId) ?? initialLesson)
+      : initialLesson)
 
   useEffect(() => {
-    activeLessonRef.current?.scrollIntoView({ block: 'nearest' })
+    activeLessonRef.current?.scrollIntoView({
+      behavior: 'instant',
+      block: 'nearest',
+      inline: 'nearest',
+    })
   }, [activeLesson.id])
+
+  useEffect(() => {
+    if (previousPathnameRef.current === pathname) {
+      return
+    }
+
+    previousPathnameRef.current = pathname
+    if (!shouldResetMainScrollRef.current) {
+      return
+    }
+
+    shouldResetMainScrollRef.current = false
+    window.scrollTo({ behavior: 'instant', left: 0, top: 0 })
+  }, [pathname])
   const activeContent =
     activeLesson.id === initialLesson.id ? initialContent : getLessonContent(activeLesson)
   const adjacentLessons = getAdjacentLessons(lessons, activeLesson.slug)
@@ -238,12 +283,6 @@ export function LearnShell({
     if (typeof window !== 'undefined') {
       saveProgress(window.localStorage, nextProgress)
     }
-  }
-
-  function navigateToLesson(lesson: Lesson) {
-    setSelectedLessonId(lesson.id)
-    updateProgress(setCurrentLesson(progress, lesson.id))
-    setIsSidebarOpen(false)
   }
 
   function toggleActiveLesson() {
@@ -360,7 +399,6 @@ export function LearnShell({
                             data-progress-lesson-link={lesson.id}
                             href={getRoute(`/learn/${lesson.slug}/`)}
                             aria-current={isActive ? 'page' : undefined}
-                            onClick={() => navigateToLesson(lesson)}
                           >
                             <span
                               className={`course-lesson__status${isActive ? ' is-active' : ''}${isCompleted ? ' is-completed' : ' is-pending'}`}
@@ -411,12 +449,10 @@ export function LearnShell({
             lessonId={activeLesson.id}
             isCompleted={isActiveLessonCompleted}
             onToggleComplete={toggleActiveLesson}
-            onNavigate={navigateToLesson}
           />
         </main>
       </div>
-      {/* pi-lens-ignore: dangerously-set-inner-html */}
-      <script data-astro-rerun dangerouslySetInnerHTML={{ __html: progressBootstrapScript }} />
+      <script data-astro-rerun>{progressBootstrapScript}</script>
     </div>
   )
 }
