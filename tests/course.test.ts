@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { getLessonContent } from '../src/content/lessons'
 import { getLessonBySlug, lessons } from '../src/data/course'
-import { getAdjacentLessons, sortLessons } from '../src/utils/lesson'
+import {
+  getAdjacentLessons,
+  getLessonFromPath,
+  isLearnIndexPath,
+  sortLessons,
+} from '../src/utils/lesson'
 
 const reversedLessons = [...lessons].reverse()
 
@@ -42,6 +47,43 @@ describe('课程数据与导航', () => {
       previous: expect.objectContaining({ slug: 'star-schema-and-grain' }),
       next: expect.objectContaining({ slug: 'metric-system' }),
     })
+  })
+
+  it('ClientRouter 按 URL 逐节推进建模课程链路', () => {
+    const expectedSlugs = [
+      'data-modeling',
+      'star-schema-and-grain',
+      'slowly-changing-dimension',
+      'metric-system',
+    ]
+    let pathname = `/learn/${expectedSlugs[0]}/`
+
+    expectedSlugs.forEach((expectedSlug, index) => {
+      const currentLesson = getLessonFromPath(pathname, lessons)
+
+      expect(currentLesson?.slug).toBe(expectedSlug)
+      if (index < expectedSlugs.length - 1) {
+        expect(getAdjacentLessons(lessons, currentLesson!.slug).next?.slug).toBe(
+          expectedSlugs[index + 1],
+        )
+      }
+
+      if (index < expectedSlugs.length - 1) {
+        pathname = `/learn/${expectedSlugs[index + 1]}/`
+      }
+    })
+  })
+
+  it('上一节通过 URL 逐节后退且支持部署 base path', () => {
+    const current = getLessonFromPath('/dw/learn/slowly-changing-dimension/', lessons)
+
+    expect(current?.slug).toBe('slowly-changing-dimension')
+    expect(getAdjacentLessons(lessons, current!.slug).previous?.slug).toBe('star-schema-and-grain')
+    expect(
+      getAdjacentLessons(lessons, getAdjacentLessons(lessons, current!.slug).previous!.slug)
+        .previous?.slug,
+    ).toBe('data-modeling')
+    expect(isLearnIndexPath('/dw/learn/')).toBe(true)
   })
 
   it('数据建模导入课不再使用课程骨架', () => {

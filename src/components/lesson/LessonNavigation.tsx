@@ -7,18 +7,9 @@ interface LessonNavigationProps {
   lessonId: string
   isCompleted: boolean
   onToggleComplete: () => void
-  onNavigate: (lesson: Lesson) => void
 }
 
-function LessonLink({
-  lesson,
-  direction,
-  onNavigate,
-}: {
-  lesson?: Lesson
-  direction: 'previous' | 'next'
-  onNavigate: (lesson: Lesson) => void
-}) {
+function LessonLink({ lesson, direction }: { lesson?: Lesson; direction: 'previous' | 'next' }) {
   if (!lesson) {
     return <div className={`lesson-nav__link lesson-nav__link--${direction} is-disabled`} />
   }
@@ -27,7 +18,6 @@ function LessonLink({
     <a
       className={`lesson-nav__link lesson-nav__link--${direction}`}
       href={getRoute(`/learn/${lesson.slug}/`)}
-      onClick={() => onNavigate(lesson)}
     >
       <span className="lesson-nav__direction">
         {direction === 'previous' ? '上一节' : '下一节'}
@@ -46,11 +36,10 @@ export function LessonNavigation({
   lessonId,
   isCompleted,
   onToggleComplete,
-  onNavigate,
 }: LessonNavigationProps) {
   return (
     <nav className="lesson-nav" aria-label="课程导航">
-      <LessonLink lesson={previous} direction="previous" onNavigate={onNavigate} />
+      <LessonLink lesson={previous} direction="previous" />
       <button
         className={`complete-button${isCompleted ? ' is-completed' : ''}`}
         data-progress-complete-lesson={lessonId}
@@ -61,7 +50,7 @@ export function LessonNavigation({
         <span aria-hidden="true">✓</span>
         {isCompleted ? '已学会' : '标记为已学会'}
       </button>
-      <LessonLink lesson={next} direction="next" onNavigate={onNavigate} />
+      <LessonLink lesson={next} direction="next" />
     </nav>
   )
 }
