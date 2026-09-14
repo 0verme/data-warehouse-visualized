@@ -4,6 +4,7 @@ import { getRoute } from '../../utils/routes'
 interface LessonNavigationProps {
   previous?: Lesson
   next?: Lesson
+  lessonId: string
   isCompleted: boolean
   onToggleComplete: () => void
   onNavigate: (lesson: Lesson) => void
@@ -42,6 +43,7 @@ function LessonLink({
 export function LessonNavigation({
   previous,
   next,
+  lessonId,
   isCompleted,
   onToggleComplete,
   onNavigate,
@@ -51,6 +53,7 @@ export function LessonNavigation({
       <LessonLink lesson={previous} direction="previous" onNavigate={onNavigate} />
       <button
         className={`complete-button${isCompleted ? ' is-completed' : ''}`}
+        data-progress-complete-lesson={lessonId}
         type="button"
         aria-pressed={isCompleted}
         onClick={onToggleComplete}

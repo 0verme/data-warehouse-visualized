@@ -7,6 +7,8 @@ import {
   createInitialProgress,
   getCompletedCount,
   loadProgress,
+  normalizeProgress,
+  PROGRESS_STORAGE_KEY,
   saveProgress,
   setCurrentLesson,
   toggleLessonComplete,
@@ -28,6 +30,154 @@ interface LearnShellProps {
   isIndex?: boolean
 }
 
+interface ProgressBootstrapState {
+  completedLessonIds: string[]
+  currentLessonId: string
+}
+
+declare global {
+  interface Window {
+    __DWV_PROGRESS__?: ProgressBootstrapState
+  }
+}
+
+const progressBootstrapScript = `(() => {
+  const root = document.currentScript?.closest('astro-island')
+  let stored = null
+
+  try {
+    const raw = window.localStorage.getItem(${JSON.stringify(PROGRESS_STORAGE_KEY)})
+    stored = raw ? JSON.parse(raw) : null
+  } catch {
+    stored = null
+  }
+
+  const completedLessonIds = Array.isArray(stored?.completedLessonIds)
+    ? [...new Set(stored.completedLessonIds.filter((id) => typeof id === 'string'))]
+    : []
+  const currentLessonId = typeof stored?.currentLessonId === 'string' ? stored.currentLessonId : ''
+  const progress = { completedLessonIds, currentLessonId }
+
+  window.__DWV_PROGRESS__ = progress
+  if (!root) return
+
+  const setFirstText = (element, value) => {
+    const textNode = Array.from(element.childNodes).find((node) => node.nodeType === Node.TEXT_NODE)
+    if (textNode) textNode.nodeValue = value
+  }
+
+  const statusElements = Array.from(root.querySelectorAll('[data-progress-lesson-id]'))
+  const knownLessonIds = new Set(
+    statusElements
+      .map((element) => element.getAttribute('data-progress-lesson-id'))
+      .filter(Boolean),
+  )
+  const validCompletedLessonIds = completedLessonIds.filter((id) => knownLessonIds.has(id))
+  const completedLessonSet = new Set(validCompletedLessonIds)
+  progress.completedLessonIds = validCompletedLessonIds
+
+  if (root.getAttribute('data-progress-index') === 'true' && currentLessonId) {
+    root.querySelectorAll('[data-progress-lesson-link]').forEach((link) => {
+      const isActive = link.getAttribute('data-progress-lesson-link') === currentLessonId
+      link.classList.toggle('is-active', isActive)
+      if (isActive) {
+        link.setAttribute('aria-current', 'page')
+      } else {
+        link.removeAttribute('aria-current')
+      }
+      link.querySelector('[data-progress-lesson-id]')?.classList.toggle('is-active', isActive)
+    })
+  }
+
+  statusElements.forEach((status) => {
+    const lessonId = status.getAttribute('data-progress-lesson-id')
+    const isCompleted = lessonId ? completedLessonSet.has(lessonId) : false
+    const isActive = status.classList.contains('is-active')
+    status.classList.toggle('is-completed', isCompleted)
+    status.classList.toggle('is-pending', !isCompleted)
+    status.setAttribute(
+      'aria-label',
+      isCompleted ? (isActive ? '已学会，当前课程' : '已学会') : isActive ? '当前课程' : '未完成',
+    )
+
+    if (isCompleted && !status.querySelector('svg')) {
+      status.insertAdjacentHTML(
+        'beforeend',
+        '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3.5 8.5 3 3 6-7"></path></svg>',
+      )
+    } else if (!isCompleted) {
+      status.querySelector('svg')?.remove()
+    }
+  })
+
+  const progressCount = root.querySelector('[data-progress-count]')
+  if (progressCount) {
+    setFirstText(progressCount, String(validCompletedLessonIds.length))
+  }
+
+  const progressBar = root.querySelector('[data-progress-bar]')
+  if (progressBar) {
+    const percent = knownLessonIds.size
+      ? Math.round((validCompletedLessonIds.length / knownLessonIds.size) * 100)
+      : 0
+    progressBar.setAttribute('aria-valuenow', String(validCompletedLessonIds.length))
+    progressBar.querySelector('span')?.style.setProperty('width', percent + '%')
+  }
+
+  root.querySelectorAll('[data-progress-chapter-lessons]').forEach((chapterProgress) => {
+    const lessonIds = (chapterProgress.getAttribute('data-progress-chapter-lessons') || '')
+      .split(',')
+      .filter(Boolean)
+    const completedCount = lessonIds.filter((id) => completedLessonSet.has(id)).length
+    const isComplete = lessonIds.length > 0 && completedCount === lessonIds.length
+    chapterProgress.classList.toggle('is-complete', isComplete)
+    chapterProgress.setAttribute('aria-label', completedCount + '/' + lessonIds.length + ' 节已完成')
+    setFirstText(chapterProgress, String(completedCount))
+  })
+
+  root.querySelectorAll('[data-progress-complete-lesson]').forEach((button) => {
+    const lessonId = button.getAttribute('data-progress-complete-lesson')
+    const isCompleted = lessonId ? completedLessonSet.has(lessonId) : false
+    button.classList.toggle('is-completed', isCompleted)
+    button.setAttribute('aria-pressed', String(isCompleted))
+    const textNodes = Array.from(button.childNodes).filter(
+      (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+    )
+    const labelNode = textNodes[textNodes.length - 1]
+    if (labelNode) labelNode.nodeValue = isCompleted ? '已学会' : '标记为已学会'
+  })
+})()`
+
+function getLessonFromPath(pathname: string, lessons: Lesson[]): Lesson | undefined {
+  const normalizedPath = pathname.replace(/\/+$/, '')
+
+  return lessons.find((lesson) => normalizedPath.endsWith(`/learn/${lesson.slug}`))
+}
+
+function getInitialProgress(
+  fallbackProgress: ProgressState,
+  lessons: Lesson[],
+  initialLessonId: string,
+  isIndex: boolean,
+): ProgressState {
+  if (typeof window === 'undefined') {
+    return fallbackProgress
+  }
+
+  const bootstrappedProgress = window.__DWV_PROGRESS__
+  if (bootstrappedProgress) {
+    delete window.__DWV_PROGRESS__
+  }
+  const storedProgress = bootstrappedProgress ?? loadProgress(window.localStorage, fallbackProgress)
+
+  return normalizeProgress(
+    storedProgress,
+    lessons.map((lesson) => lesson.id),
+    initialLessonId,
+    isIndex,
+  )
+}
+
 export function LearnShell({
   lessons,
   initialLesson,
@@ -38,50 +188,45 @@ export function LearnShell({
     () => createInitialProgress(initialLesson.id),
     [initialLesson.id],
   )
-  const [progress, setProgress] = useState<ProgressState>(fallbackProgress)
-  const [isHydrated, setIsHydrated] = useState(false)
+  const [progress, setProgress] = useState<ProgressState>(() =>
+    getInitialProgress(fallbackProgress, lessons, initialLesson.id, isIndex),
+  )
+  const [selectedLessonId, setSelectedLessonId] = useState(initialLesson.id)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [collapsedChapters, setCollapsedChapters] = useState<Record<string, boolean>>({})
   const activeLessonRef = useRef<HTMLAnchorElement | null>(null)
 
   useEffect(() => {
-    const hydrationTimer = window.setTimeout(() => {
-      const storedProgress = loadProgress(window.localStorage, fallbackProgress)
-      const availableLessonIds = new Set(lessons.map((lesson) => lesson.id))
-      const storedLessonIsValid = lessons.some(
-        (lesson) => lesson.id === storedProgress.currentLessonId,
+    function handlePageLoad() {
+      const routeLesson = getLessonFromPath(window.location.pathname, lessons)
+      if (!routeLesson) {
+        return
+      }
+
+      setSelectedLessonId(routeLesson.id)
+      setProgress((currentProgress) =>
+        currentProgress.currentLessonId === routeLesson.id
+          ? currentProgress
+          : setCurrentLesson(currentProgress, routeLesson.id),
       )
-      const currentLessonId =
-        isIndex && storedLessonIsValid ? storedProgress.currentLessonId : initialLesson.id
+    }
 
-      setProgress({
-        ...storedProgress,
-        completedLessonIds: storedProgress.completedLessonIds.filter((id) =>
-          availableLessonIds.has(id),
-        ),
-        currentLessonId,
-      })
-      setIsHydrated(true)
-    }, 0)
-
-    return () => window.clearTimeout(hydrationTimer)
-  }, [fallbackProgress, initialLesson.id, isIndex, lessons])
+    document.addEventListener('astro:after-swap', handlePageLoad)
+    return () => document.removeEventListener('astro:after-swap', handlePageLoad)
+  }, [lessons])
 
   useEffect(() => {
-    if (isHydrated) {
+    if (typeof window !== 'undefined') {
       saveProgress(window.localStorage, progress)
     }
-  }, [isHydrated, progress])
+  }, [progress])
+
+  const activeLessonId = isIndex ? progress.currentLessonId : selectedLessonId
+  const activeLesson = lessons.find((lesson) => lesson.id === activeLessonId) ?? initialLesson
 
   useEffect(() => {
-    if (isHydrated) {
-      activeLessonRef.current?.scrollIntoView({ block: 'nearest' })
-    }
-  }, [initialLesson.id, isHydrated, progress.currentLessonId])
-
-  const activeLesson = isIndex
-    ? (lessons.find((lesson) => lesson.id === progress.currentLessonId) ?? initialLesson)
-    : initialLesson
+    activeLessonRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [activeLesson.id])
   const activeContent =
     activeLesson.id === initialLesson.id ? initialContent : getLessonContent(activeLesson)
   const adjacentLessons = getAdjacentLessons(lessons, activeLesson.slug)
@@ -96,6 +241,7 @@ export function LearnShell({
   }
 
   function navigateToLesson(lesson: Lesson) {
+    setSelectedLessonId(lesson.id)
     updateProgress(setCurrentLesson(progress, lesson.id))
     setIsSidebarOpen(false)
   }
@@ -112,7 +258,7 @@ export function LearnShell({
   }
 
   return (
-    <div className="learn-app">
+    <div className="learn-app" data-progress-index={isIndex ? 'true' : 'false'}>
       <header className="learn-topbar">
         <a className="brand brand--learn" href={getRoute('/')} aria-label="返回数据仓库图解首页">
           <span className="brand__mark" aria-hidden="true">
@@ -186,6 +332,9 @@ export function LearnShell({
                     <strong>{chapter.title}</strong>
                     <span
                       className={`course-chapter__progress${isChapterComplete ? ' is-complete' : ''}`}
+                      data-progress-chapter-lessons={chapter.lessons
+                        .map((lesson) => lesson.id)
+                        .join(',')}
                       aria-label={`${completedLessonCount}/${chapter.lessons.length} 节已完成`}
                     >
                       {completedLessonCount}/{chapter.lessons.length}
@@ -208,12 +357,14 @@ export function LearnShell({
                           <a
                             ref={isActive ? activeLessonRef : undefined}
                             className={`course-lesson${isActive ? ' is-active' : ''}`}
+                            data-progress-lesson-link={lesson.id}
                             href={getRoute(`/learn/${lesson.slug}/`)}
                             aria-current={isActive ? 'page' : undefined}
                             onClick={() => navigateToLesson(lesson)}
                           >
                             <span
                               className={`course-lesson__status${isActive ? ' is-active' : ''}${isCompleted ? ' is-completed' : ' is-pending'}`}
+                              data-progress-lesson-id={lesson.id}
                               role="img"
                               aria-label={statusLabel}
                             >
@@ -257,12 +408,15 @@ export function LearnShell({
           <LessonNavigation
             previous={adjacentLessons.previous}
             next={adjacentLessons.next}
+            lessonId={activeLesson.id}
             isCompleted={isActiveLessonCompleted}
             onToggleComplete={toggleActiveLesson}
             onNavigate={navigateToLesson}
           />
         </main>
       </div>
+      {/* pi-lens-ignore: dangerously-set-inner-html */}
+      <script data-astro-rerun dangerouslySetInnerHTML={{ __html: progressBootstrapScript }} />
     </div>
   )
 }

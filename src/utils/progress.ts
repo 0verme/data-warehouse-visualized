@@ -77,6 +77,26 @@ export function saveProgress(storage: ProgressStorage | undefined, progress: Pro
   }
 }
 
+export function normalizeProgress(
+  progress: ProgressState,
+  availableLessonIds: Iterable<string>,
+  fallbackCurrentLessonId: string,
+  keepStoredCurrentLesson: boolean,
+): ProgressState {
+  const availableIds = new Set(availableLessonIds)
+  const completedLessonIds = [
+    ...new Set(progress.completedLessonIds.filter((id) => availableIds.has(id))),
+  ]
+
+  return {
+    completedLessonIds,
+    currentLessonId:
+      keepStoredCurrentLesson && availableIds.has(progress.currentLessonId)
+        ? progress.currentLessonId
+        : fallbackCurrentLessonId,
+  }
+}
+
 export function setCurrentLesson(progress: ProgressState, lessonId: string): ProgressState {
   return {
     ...progress,

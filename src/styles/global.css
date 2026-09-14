@@ -1035,8 +1035,8 @@ pre {
   font-weight: 450;
   line-height: 1.35;
   transition:
-    background-color 160ms ease,
-    color 160ms ease;
+    background-color 130ms ease,
+    color 130ms ease;
 }
 
 .course-lesson:hover {
@@ -4740,7 +4740,6 @@ pre {
     background: var(--canvas);
     box-shadow: 12px 0 30px rgb(28 51 84 / 12%);
     transform: translateX(-105%);
-    transition: transform 220ms ease;
   }
 
   .course-sidebar.is-open {
@@ -9926,5 +9925,22 @@ pre {
   100% {
     top: 100%;
     opacity: 0;
+  }
+}
+
+/* Client navigation should replace lesson content without animating the shared shell. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0ms !important;
   }
 }

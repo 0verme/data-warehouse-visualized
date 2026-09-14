@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from 'astro:transitions'
 import '../styles/global.css'
 
 interface Props {
@@ -35,6 +36,7 @@ const canonicalUrl =
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <title>{title}</title>
+    <ClientRouter fallback="none" />
   </head>
   <body>
     <slot />

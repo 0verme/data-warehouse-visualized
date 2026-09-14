@@ -15,12 +15,13 @@ export function ProgressIndicator({
     <div className={`progress-indicator${compact ? ' progress-indicator--compact' : ''}`}>
       <div className="progress-indicator__topline">
         <span>学习进度</span>
-        <strong>
+        <strong data-progress-count>
           {completedCount} <small>/ {totalLessons}</small>
         </strong>
       </div>
       <div
         className="progress-indicator__track"
+        data-progress-bar
         role="progressbar"
         aria-label="课程完成进度"
         aria-valuemin={0}
