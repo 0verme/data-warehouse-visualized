@@ -19,6 +19,19 @@ export interface PipelineStage {
   output: string
 }
 
+export type LineageEntityType = 'table' | 'field' | 'task' | 'metric'
+export type LineageRelationType = 'transform' | 'depends_on' | 'derives' | 'consumes'
+export type LineageEvidenceSource =
+  'sql_transformation' | 'task_dependency' | 'manual_metadata' | 'metric_definition'
+export type LineageConfidence = 'confirmed' | 'inferred' | 'manual'
+export type LineageEventType =
+  'field_change' | 'quality_alert' | 'task_failure' | 'sql_transformation'
+
+export interface LineageEvidence {
+  source: LineageEvidenceSource
+  detail: string
+}
+
 export interface LineageNode {
   id: string
   label: string
@@ -26,11 +39,24 @@ export interface LineageNode {
   role: string
   x: number
   y: number
+  /** Legacy table data may omit entityType; omitted values are treated as table nodes. */
+  entityType?: LineageEntityType
 }
 
 export interface LineageEdge {
   source: string
   target: string
+  relation?: LineageRelationType
+  evidence?: LineageEvidence
+  confidence?: LineageConfidence
+}
+
+export interface LineageInvestigationEvent {
+  id: string
+  sourceEntityId: string
+  eventType: LineageEventType
+  affectedEntityId: string
+  evidence: LineageEvidence
 }
 
 export type StarSchemaFieldRole = 'key' | 'attribute' | 'measure'
