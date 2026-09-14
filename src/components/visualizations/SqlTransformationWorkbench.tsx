@@ -26,7 +26,7 @@ import {
   selectTransformationStep,
   setTransformationPrediction,
 } from '../../utils/sql-transformation'
-import './SqlTransformationWorkbench.css'
+import '../../styles/lessons/sql-workbench.css'
 
 interface SqlTransformationWorkbenchProps {
   visualization: SqlTransformationVisualization

@@ -1,0 +1,448 @@
+/* Metric definition lesson. */
+
+/* Metric definition lesson */
+.metric-definition-lab {
+  color: var(--ink);
+}
+
+.metric-lab__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(265px, 0.85fr);
+  gap: 13px;
+  align-items: start;
+}
+
+.metric-lab__controls,
+.metric-lab__result-panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dce6f0;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.metric-lab__section-heading {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.metric-lab__section-heading h3 {
+  margin: 7px 0 0;
+  font-size: 18px;
+  letter-spacing: -0.035em;
+  line-height: 1.35;
+}
+
+.metric-lab__section-heading > p {
+  max-width: 245px;
+  margin: 20px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.65;
+  text-align: right;
+}
+
+.metric-lab__controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric-lab__control {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.metric-lab__control legend {
+  margin-bottom: 6px;
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.metric-lab__control-options {
+  display: grid;
+  gap: 5px;
+}
+
+.metric-lab__choice {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.metric-lab__choice:hover {
+  border-color: #a9c4e7;
+  background: #f8fbff;
+  transform: translateY(-1px);
+}
+
+.metric-lab__choice.is-selected {
+  border-color: #9fc1e9;
+  background: var(--surface-blue);
+  color: var(--blue-deep);
+}
+
+.metric-lab__choice-indicator {
+  display: grid;
+  width: 17px;
+  height: 17px;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: transparent;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.metric-lab__choice.is-selected .metric-lab__choice-indicator {
+  border-color: var(--blue);
+  background: var(--blue);
+  color: #fff;
+}
+
+.metric-lab__choice strong,
+.metric-lab__choice small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-lab__choice strong {
+  color: inherit;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.metric-lab__choice small {
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 9px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.metric-lab__result-card {
+  padding: 16px;
+  border: 1px solid #c8e5e1;
+  border-radius: 9px;
+  background: #f4fbfa;
+  text-align: center;
+}
+
+.metric-lab__result-card > span {
+  color: var(--teal);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.metric-lab__result-card > strong {
+  display: block;
+  margin: 7px 0 6px;
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: clamp(30px, 4vw, 42px);
+  letter-spacing: -0.06em;
+  line-height: 1.05;
+}
+
+.metric-lab__result-card > strong small {
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.metric-lab__result-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.metric-lab__definition {
+  margin-top: 13px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.metric-lab__definition-heading {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.metric-lab__definition-heading strong {
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.metric-lab__definition dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 12px;
+  margin: 0;
+}
+
+.metric-lab__definition dl div {
+  min-width: 0;
+}
+
+.metric-lab__definition dt {
+  color: var(--ink-muted);
+  font-size: 9px;
+}
+
+.metric-lab__definition dd {
+  overflow: hidden;
+  margin: 2px 0 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+}
+
+.metric-lab__orders,
+.metric-lab__grain {
+  margin-top: 29px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.metric-lab__table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.metric-lab__orders-table,
+.metric-lab__detail-table {
+  width: 100%;
+  min-width: 835px;
+  border-collapse: collapse;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.metric-lab__detail-table {
+  min-width: 405px;
+}
+
+.metric-lab__orders-table caption,
+.metric-lab__detail-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.metric-lab__orders-table th,
+.metric-lab__orders-table td,
+.metric-lab__detail-table th,
+.metric-lab__detail-table td {
+  padding: 9px 9px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.metric-lab__orders-table th:last-child,
+.metric-lab__orders-table td:last-child,
+.metric-lab__detail-table th:last-child,
+.metric-lab__detail-table td:last-child {
+  border-right: 0;
+}
+
+.metric-lab__orders-table tbody tr:last-child th,
+.metric-lab__orders-table tbody tr:last-child td,
+.metric-lab__detail-table tbody tr:last-child th,
+.metric-lab__detail-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.metric-lab__orders-table thead th,
+.metric-lab__detail-table thead th {
+  background: var(--surface-muted);
+  color: var(--ink-soft);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.metric-lab__orders-table tbody th,
+.metric-lab__detail-table tbody th {
+  color: var(--navy);
+  font-weight: 750;
+}
+
+.metric-lab__orders-table td,
+.metric-lab__detail-table td {
+  color: var(--ink-soft);
+}
+
+.metric-lab__orders-table tr.is-included {
+  background: #f7fcfb;
+}
+
+.metric-lab__orders-table tr.is-excluded {
+  background: #fafbfd;
+}
+
+.metric-lab__orders-table tr.is-excluded th,
+.metric-lab__orders-table tr.is-excluded td {
+  color: var(--ink-muted);
+}
+
+.metric-lab__contribution {
+  color: var(--navy) !important;
+  font-weight: 750;
+}
+
+.metric-lab__row-status {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 9px;
+}
+
+.metric-lab__row-status i {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--ink-muted);
+  font-style: normal;
+  font-size: 9px;
+}
+
+.is-included .metric-lab__row-status i {
+  border-color: #9bd9d1;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.metric-lab__grain-callout {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 13px 14px;
+  border-left: 3px solid var(--teal);
+  border-radius: 7px;
+  background: #f4fbfa;
+}
+
+.metric-lab__grain-callout.is-warning {
+  border-left-color: var(--danger);
+  background: #fff7f7;
+}
+
+.metric-lab__grain-callout span,
+.metric-lab__grain-callout strong {
+  display: block;
+}
+
+.metric-lab__grain-callout span {
+  color: var(--ink-muted);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+}
+
+.metric-lab__grain-callout strong {
+  margin-top: 4px;
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.metric-lab__grain-callout.is-warning strong {
+  color: var(--danger);
+}
+
+.metric-lab__grain-callout p {
+  max-width: 300px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: right;
+}
+
+@media (max-width: 680px) {
+  .metric-lab__workspace {
+    display: block;
+  }
+
+  .metric-lab__result-panel {
+    margin-top: 10px;
+  }
+
+  .metric-lab__section-heading {
+    display: block;
+  }
+
+  .metric-lab__section-heading > p {
+    max-width: none;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  .metric-lab__controls-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-lab__definition-heading {
+    display: block;
+  }
+
+  .metric-lab__definition-heading strong {
+    display: block;
+    margin-top: 4px;
+  }
+
+  .metric-lab__definition dl {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .metric-lab__grain-callout {
+    display: block;
+  }
+
+  .metric-lab__grain-callout p {
+    max-width: none;
+    margin-top: 8px;
+    text-align: left;
+  }
+}
