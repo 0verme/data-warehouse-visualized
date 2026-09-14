@@ -1,20 +1,19 @@
 ---
+import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { chapters, lessons } from '../data/course'
 
-const actualDemoCount = lessons.filter(
-  (lesson) => lesson.demo !== 'coming-soon' && lesson.demo !== 'modeling-intro',
-).length
+const actualDemoCount = lessons.filter((lesson) => lesson.demo !== 'coming-soon').length
 const baseUrl = import.meta.env.BASE_URL
 ---
 
 <BaseLayout
   title="数据仓库图解｜从一张表开始，看懂数据仓库"
-  description="面向中文学习者的交互式数据仓库可视化教材。通过图解、动画与模拟器，理解数据为什么这样流动、系统为什么这样设计。"
+  description="面向中文学习者的交互式数据仓库可视化教材。看一行数据如何流过仓库，最后变成一个指标。"
 >
-  <div class="site-shell">
+  <div class="site-shell home-page">
     <header class="site-header">
-      <a class="brand" href={baseUrl} aria-label="数据仓库图解首页">
+      <a class="brand home-brand" href={baseUrl} aria-label="数据仓库图解首页">
         <span class="brand__mark" aria-hidden="true">
           <i />
           <i />
@@ -24,9 +23,12 @@ const baseUrl = import.meta.env.BASE_URL
           <strong>数据仓库图解</strong>
           <small>交互式教材</small>
         </span>
+        <span class="home-brand__domain">
+          <code>sql.sb</code>
+        </span>
       </a>
       <nav class="site-header__nav" aria-label="主导航">
-        <a href="#course-map">课程路线</a>
+        <a href="#data-lesson">一行数据</a>
         <a href="#principles">学习方式</a>
         <a class="button button--nav" href={`${baseUrl}learn/`}>
           开始学习 <span aria-hidden="true">→</span>
@@ -34,144 +36,177 @@ const baseUrl = import.meta.env.BASE_URL
       </nav>
     </header>
 
-    <main>
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero__copy">
-          <div class="eyebrow-row">
-            <span class="eyebrow-pill">
-              <span class="status-dot" /> MVP · 正在生长
-            </span>
-            <span class="eyebrow-muted">面向中文学习者</span>
+    <main class="home-main">
+      <section class="home-hero" aria-labelledby="hero-title">
+        <div class="home-hero__copy">
+          <div class="home-hero__kicker">
+            <span class="home-hero__chapter">00 / INTRO</span>
+            <span>第 0 节 · 数据从哪里开始</span>
           </div>
           <h1 id="hero-title">
-            从一张表开始，<em>看懂</em>数据仓库。
+            从一张表开始，
+            <br class="home-hero__mobile-break" />
+            <em>看懂</em>数据仓库。
           </h1>
-          <p class="hero__lead">
-            一套把抽象概念变成数据流、状态变化和可操作实验的交互式教材。不是背概念，而是看懂数据如何流动。
-          </p>
-          <div class="hero__actions">
+          <p class="home-hero__lead">看一行数据如何流过仓库，最后变成一个指标。</p>
+          <div class="home-hero__actions">
             <a class="button button--primary" href={`${baseUrl}learn/`}>
-              开始学习 <span aria-hidden="true">→</span>
+              进入课程 <span aria-hidden="true">→</span>
             </a>
-            <a class="text-link" href="#course-map">
-              先看看课程路线 <span aria-hidden="true">↓</span>
+            <a class="home-text-link" href="#data-lesson">
+              继续看这行数据 <span aria-hidden="true">↓</span>
             </a>
           </div>
-          <div class="hero__meta">
-            <span>
-              <strong>{lessons.length}</strong> 节课程路线
+          <div class="home-hero__context">
+            <span>一条订单的旅程</span>
+            <code>source → transform → metric</code>
+          </div>
+        </div>
+
+        <div class="home-hero__demo" aria-labelledby="hero-demo-title">
+          <div class="home-hero__demo-heading">
+            <span class="home-section-kicker">INTERACTIVE DATA FLOW</span>
+            <h2 id="hero-demo-title">一行数据如何变成一个指标</h2>
+          </div>
+          <HeroDataFlow client:load />
+        </div>
+      </section>
+
+      <section class="home-data-lesson" id="data-lesson" aria-labelledby="data-lesson-title">
+        <div class="home-section-heading">
+          <span class="home-section-kicker">01 / FOLLOW THE ROW</span>
+          <h2 id="data-lesson-title">一行数据发生了什么？</h2>
+          <p>同一笔订单经过不同层，每一层都只负责一件清楚的事。</p>
+        </div>
+        <ol class="home-data-lesson__list">
+          <li class="home-data-lesson__row">
+            <span class="home-data-lesson__node" aria-hidden="true" />
+            <code class="home-data-lesson__step">01 / Source</code>
+            <div>
+              <strong>业务库 / orders</strong>
+              <p>先保存正在发生的业务事实。</p>
+            </div>
+            <span class="home-data-lesson__value">
+              <code>3 rows</code>
             </span>
-            <span class="hero__meta-separator" aria-hidden="true" />
-            <span>
-              <strong>{actualDemoCount}</strong> 个可操作 Demo
+          </li>
+          <li class="home-data-lesson__row">
+            <span class="home-data-lesson__node" aria-hidden="true" />
+            <code class="home-data-lesson__step">02 / ODS</code>
+            <div>
+              <strong>原样接入 / ods_order</strong>
+              <p>让来源数据有一个可回溯的落点。</p>
+            </div>
+            <span class="home-data-lesson__value">
+              <code>3 rows</code>
             </span>
-            <span class="hero__meta-separator" aria-hidden="true" />
+          </li>
+          <li class="home-data-lesson__row home-data-lesson__row--filter">
+            <span class="home-data-lesson__node" aria-hidden="true" />
+            <code class="home-data-lesson__step">03 / DWD</code>
+            <div>
+              <strong>过滤与清洗 / dwd_order</strong>
+              <p>
+                <code>WHERE status = 'PAID'</code>，只留下有效订单。
+              </p>
+            </div>
+            <span class="home-data-lesson__value">
+              <code>2 valid rows</code>
+            </span>
+          </li>
+          <li class="home-data-lesson__row home-data-lesson__row--metric">
+            <span class="home-data-lesson__node" aria-hidden="true" />
+            <code class="home-data-lesson__step">04 / Metric</code>
+            <div>
+              <strong>指标 / GMV</strong>
+              <p>
+                <code>SUM(amount)</code> 把明细聚合成可使用的数字。
+              </p>
+            </div>
+            <span class="home-data-lesson__value">
+              <code>¥598</code>
+            </span>
+          </li>
+        </ol>
+      </section>
+
+      <section class="home-principles" id="principles" aria-labelledby="principles-title">
+        <div class="home-section-heading home-section-heading--wide">
+          <span class="home-section-kicker">02 / METHOD</span>
+          <h2 id="principles-title">学习不是读完，而是让结果发生。</h2>
+          <p>把抽象的概念放进数据流里，看见结构、动作和工程取舍。</p>
+        </div>
+        <div class="home-principles__list">
+          <article class="home-principle-row">
+            <span class="home-principle-row__index">01</span>
+            <h3>看结构</h3>
+            <p>把抽象的数据流、依赖关系和分层画出来，让结构先于长篇定义出现。</p>
+            <code>table / node / flow</code>
+          </article>
+          <article class="home-principle-row">
+            <span class="home-principle-row__index">02</span>
+            <h3>动手改</h3>
+            <p>点击、播放、修改参数，看同一份数据在不同阶段如何变化。</p>
+            <code>click / play / inspect</code>
+          </article>
+          <article class="home-principle-row">
+            <span class="home-principle-row__index">03</span>
+            <h3>看工程现实</h3>
+            <p>不仅告诉你“是什么”，还解释生产系统为什么这样设计、如何承担变化。</p>
+            <code>trade-off / boundary</code>
+          </article>
+        </div>
+      </section>
+
+      <section class="home-course-map" id="course-map" aria-labelledby="course-map-title">
+        <div class="home-course-map__intro">
+          <span class="home-section-kicker">03 / COURSE MAP</span>
+          <h2 id="course-map-title">沿着数据继续走。</h2>
+          <p>从全局视角开始，逐步进入分层、建模、指标与工程实践。</p>
+          <div class="home-course-map__meta" aria-label="课程概览">
+            <span>
+              <code>{lessons.length}</code> 节路线
+            </span>
+            <span>
+              <code>{actualDemoCount}</code> 个交互实验
+            </span>
             <span>无需登录</span>
           </div>
-        </div>
-
-        <div class="hero__visual" aria-label="从业务系统到分析结果的数据流预览">
-          <div class="hero-card hero-card--source">
-            <span class="hero-card__label">业务系统</span>
-            <strong>订单 · 用户 · 商品</strong>
-            <small>记录正在发生的业务</small>
-          </div>
-          <div class="hero-flow-line hero-flow-line--one">
-            <span>接入</span>
-            <i />
-          </div>
-          <div class="hero-card hero-card--warehouse">
-            <span class="hero-card__label">数据仓库</span>
-            <strong>统一 · 加工 · 复用</strong>
-            <small>让数据可以被看懂</small>
-          </div>
-          <div class="hero-flow-line hero-flow-line--two">
-            <span>服务</span>
-            <i />
-          </div>
-          <div class="hero-card hero-card--result">
-            <span class="hero-card__label">分析结果</span>
-            <strong>报表 · 指标 · 决策</strong>
-            <small>从数据回到问题</small>
-          </div>
-          <span class="hero-visual__caption">数据不是静态名词，而是一条有方向的路径。</span>
-        </div>
-      </section>
-
-      <section class="principles-section" id="principles" aria-labelledby="principles-title">
-        <div class="section-heading section-heading--wide">
-          <span class="eyebrow">为什么是交互式</span>
-          <h2 id="principles-title">把“是什么”，变成“看见它怎么工作”。</h2>
-        </div>
-        <div class="principles-grid">
-          <article class="principle-card">
-            <span class="principle-card__index">01</span>
-            <div class="principle-card__icon principle-card__icon--teal" aria-hidden="true">
-              ↗
-            </div>
-            <h3>图解</h3>
-            <p>把分层、依赖与数据流画出来，让结构先于长篇定义出现。</p>
-          </article>
-          <article class="principle-card">
-            <span class="principle-card__index">02</span>
-            <div class="principle-card__icon principle-card__icon--blue" aria-hidden="true">
-              ⌁
-            </div>
-            <h3>交互</h3>
-            <p>通过点击、播放和模拟，观察同一份数据在不同阶段的变化。</p>
-          </article>
-          <article class="principle-card">
-            <span class="principle-card__index">03</span>
-            <div class="principle-card__icon principle-card__icon--amber" aria-hidden="true">
-              ⌘
-            </div>
-            <h3>工程实践</h3>
-            <p>不止讲定义，也解释真实生产环境为什么要做这样的取舍。</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="course-map" id="course-map" aria-labelledby="course-map-title">
-        <div class="course-map__intro">
-          <span class="eyebrow">课程路线</span>
-          <h2 id="course-map-title">
-            从全局到实践，
-            <br />
-            沿着数据继续走。
-          </h2>
-          <p>先理解数据为什么需要流动，再逐步进入建模、调度、质量和治理。</p>
-          <a class="text-link" href={`${baseUrl}learn/`}>
+          <a class="home-text-link" href={`${baseUrl}learn/`}>
             进入学习空间 <span aria-hidden="true">→</span>
           </a>
         </div>
-        <div class="course-map__list">
+        <ol class="home-course-map__list">
           {chapters.map((chapter) => {
             const lesson =
               chapter.lessons.find((chapterLesson) => chapterLesson.demo !== 'coming-soon') ??
               chapter.lessons[0]
+            const isReady = lesson.demo !== 'coming-soon'
             return (
-              <a
-                class={`roadmap-row${lesson.demo !== 'coming-soon' ? ' is-ready' : ''}`}
-                href={`${baseUrl}learn/${lesson.slug}/`}
-              >
-                <span class="roadmap-row__number">{chapter.id}</span>
-                <span class="roadmap-row__title">
-                  <strong>{chapter.title}</strong>
-                  <small>{lesson.title}</small>
-                </span>
-                <span class="roadmap-row__status">
-                  {lesson.demo !== 'coming-soon' ? '可学习' : '即将开放'}
-                  <span aria-hidden="true">{lesson.demo !== 'coming-soon' ? '→' : '·'}</span>
-                </span>
-              </a>
+              <li>
+                <a
+                  class={`home-course-row${isReady ? ' is-ready' : ''}`}
+                  href={`${baseUrl}learn/${lesson.slug}/`}
+                >
+                  <code class="home-course-row__number">{chapter.id}</code>
+                  <span class="home-course-row__title">
+                    <strong>{chapter.title}</strong>
+                    <small>{lesson.title}</small>
+                  </span>
+                  <span class="home-course-row__status">
+                    {isReady ? '可学习' : '即将开放'}
+                    <span aria-hidden="true">{isReady ? '→' : '·'}</span>
+                  </span>
+                </a>
+              </li>
             )
           })}
-        </div>
+        </ol>
       </section>
 
-      <section class="closing-note" aria-label="项目理念">
-        <span class="closing-note__mark" aria-hidden="true">
-          “
+      <section class="home-closing-note" aria-label="项目理念">
+        <span class="home-closing-note__mark" aria-hidden="true">
+          →
         </span>
         <p>
           真正理解数据仓库，不是记住每个缩写，而是能回答：
@@ -180,8 +215,8 @@ const baseUrl = import.meta.env.BASE_URL
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="brand brand--footer">
+    <footer class="site-footer home-footer">
+      <div class="brand brand--footer home-brand">
         <span class="brand__mark" aria-hidden="true">
           <i />
           <i />
@@ -193,6 +228,9 @@ const baseUrl = import.meta.env.BASE_URL
         </span>
       </div>
       <div class="site-footer__meta">
+        <span>
+          <code>sql.sb</code>
+        </span>
         <span>开源教材 · MVP</span>
         <span>License：待确定</span>
       </div>
