@@ -8,6 +8,7 @@ export type LessonDemo =
   | 'scd'
   | 'metric-definition'
   | 'lakehouse'
+  | 'sql-transformation'
   | 'coming-soon'
 
 export interface Lesson {
@@ -102,8 +103,8 @@ const lessonDrafts: Lesson[] = [
     order: 7,
     difficulty: 'intermediate',
     estimatedMinutes: 15,
-    tags: ['SQL', 'ETL'],
-    demo: 'coming-soon',
+    tags: ['SQL', 'ETL', '粒度', '数据加工'],
+    demo: 'sql-transformation',
   },
   {
     id: 'lesson-06',

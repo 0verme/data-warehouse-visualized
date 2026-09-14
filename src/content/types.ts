@@ -11,6 +11,7 @@ import type {
   SourceSystem,
   StarSchemaVisualization,
 } from '../types'
+import type { SqlTransformationVisualization } from '../features/sql-transformation/types'
 
 export interface LessonOpening {
   eyebrow: string
@@ -118,6 +119,7 @@ export type LessonVisualization =
   | ScdVisualization
   | MetricVisualization
   | LakehouseVisualization
+  | SqlTransformationVisualization
 
 export interface LessonContent {
   eyebrow: string

@@ -13,6 +13,7 @@ import {
   ModelingIntro,
   PipelineFlow,
   SlowlyChangingDimension,
+  SqlTransformationWorkbench,
   StarSchemaFlow,
 } from '../visualizations'
 import { CodeBlock } from './CodeBlock'
@@ -99,6 +100,8 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
       return <MetricDefinitionLab visualization={visualization} />
     case 'lakehouse':
       return <LakehouseArchitectureLab visualization={visualization} />
+    case 'sql-transformation':
+      return <SqlTransformationWorkbench visualization={visualization} />
   }
 }
 
@@ -152,6 +155,13 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
         title: '改变口径，数字就会改变',
         description:
           '先选择状态、退款、时间和粒度规则，再追踪哪些订单参与计算，以及最终数字如何被逐步加出来。',
+      }
+    case 'sql-transformation':
+      return {
+        eyebrow: 'SQL 工作台 · 表快照实验',
+        title: '昨天的销售额到底是多少？',
+        description:
+          '先选择目标粒度，再逐步执行去重、JOIN、聚合和分区重跑，观察每一行数据如何改变。',
       }
     default:
       return {
@@ -273,6 +283,9 @@ function renderSection(section: LessonSection, lessonId: string, index: number) 
     case 'pitfall':
       return <Pitfall text={section.text} title={section.title} key={`pitfall-${index}`} />
     case 'narrative':
+      return (
+        <NarrativeSection section={section} index={index} composed key={`narrative-${index}`} />
+      )
     default:
       if (!isNarrativeSection(section)) {
         return null
