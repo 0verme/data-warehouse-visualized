@@ -143,9 +143,9 @@ GitHub main
 工作流文件为 `.github/workflows/cloudflare-deploy.yml`：
 
 - `pull_request` 只执行 `npm ci`、`npm run test`、`npm run lint`、`npm run format:check` 和 `npm run build`，不会部署生产。
-- `main` 的 push 会先完成同样的验证并构建 `dist/`，再部署到 Cloudflare Workers。
+- `main` 的 push 会先完成同样的验证并构建 `dist/`，再在同一个 calling job 中通过 `0verme/ci-workflows/.github/actions/cloudflare-worker-deploy@v1` 部署到 Cloudflare Workers。
 - `workflow_dispatch` 支持手动生产发布；手动运行时请确认选择的 ref，建议使用 `main`。
-- 部署使用仓库内的 `wrangler`，生产构建默认使用根路径 `/`，不会设置 `BASE_PATH`。现有 `BASE_PATH` 兼容逻辑保留给 GitHub Pages 等路径部署场景。
+- CI 的 Cloudflare auth 和 Wrangler deploy 由共享 composite action 负责，无需在本仓库维护 artifact round-trip 或直接部署命令；本地仍可使用仓库内的 `wrangler` 和 `npm run deploy` 进行手动验证。生产构建默认使用根路径 `/`，不会设置 `BASE_PATH`。现有 `BASE_PATH` 兼容逻辑保留给 GitHub Pages 等路径部署场景。
 
 ### 需要手工配置的 GitHub 项
 
