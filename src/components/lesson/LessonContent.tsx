@@ -1,14 +1,16 @@
 import type { Lesson } from '../../data/course'
 import type { LessonContent as LessonContentData } from '../../content/types'
+import type { CodeHighlightMap } from '../../utils/code-highlight'
 import { ConceptCard } from './ConceptCard'
 import { LessonSectionRenderer } from './LessonSectionRenderer'
 
 interface LessonContentProps {
   lesson: Lesson
   content: LessonContentData
+  codeHighlights?: CodeHighlightMap
 }
 
-export function LessonContent({ lesson, content }: LessonContentProps) {
+export function LessonContent({ lesson, content, codeHighlights }: LessonContentProps) {
   return (
     <div className="lesson-content">
       {content.opening && (
@@ -39,6 +41,7 @@ export function LessonContent({ lesson, content }: LessonContentProps) {
         legacyVisualization={content.visualization}
         legacyComparison={content.comparison}
         legacyCode={content.code}
+        codeHighlights={codeHighlights}
         engineeringTip={content.engineeringTip}
         pitfalls={content.pitfalls}
       />

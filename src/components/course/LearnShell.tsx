@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lesson } from '../../data/course'
 import { chapters } from '../../data/course'
 import type { LessonContent } from '../../content/types'
+import type { CodeHighlightMap } from '../../utils/code-highlight'
 import { getLessonContent } from '../../content/lessons'
 import {
   createInitialProgress,
@@ -27,6 +28,7 @@ interface LearnShellProps {
   lessons: Lesson[]
   initialLesson: Lesson
   initialContent: LessonContent
+  codeHighlights?: CodeHighlightMap
   isIndex?: boolean
 }
 
@@ -182,6 +184,7 @@ export function LearnShell({
   lessons,
   initialLesson,
   initialContent,
+  codeHighlights,
   isIndex = false,
 }: LearnShellProps) {
   const fallbackProgress = useMemo(
@@ -404,7 +407,11 @@ export function LearnShell({
             <span>{activeLesson.title}</span>
           </div>
           <LessonHeader lesson={activeLesson} content={activeContent} />
-          <LessonBody lesson={activeLesson} content={activeContent} />
+          <LessonBody
+            lesson={activeLesson}
+            content={activeContent}
+            codeHighlights={codeHighlights}
+          />
           <LessonNavigation
             previous={adjacentLessons.previous}
             next={adjacentLessons.next}
