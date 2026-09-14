@@ -15,6 +15,7 @@ import {
   MetricDefinitionLab,
   ModelingIntro,
   PipelineFlow,
+  PerformanceLab,
   SlowlyChangingDimension,
   SqlTransformationWorkbench,
   StarSchemaFlow,
@@ -107,6 +108,8 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
       return <LakehouseArchitectureLab visualization={visualization} />
     case 'sql-transformation':
       return <SqlTransformationWorkbench visualization={visualization} />
+    case 'performance-lab':
+      return <PerformanceLab visualization={visualization} />
   }
 }
 
