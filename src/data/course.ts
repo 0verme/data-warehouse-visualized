@@ -7,6 +7,7 @@ export type LessonDemo =
   | 'star-schema'
   | 'scd'
   | 'metric-definition'
+  | 'lakehouse'
   | 'coming-soon'
 
 export interface Lesson {
@@ -181,13 +182,13 @@ const lessonDrafts: Lesson[] = [
     id: 'lesson-10',
     slug: 'lakehouse',
     chapter: '10',
-    title: '湖仓：数据湖和数仓如何靠近？',
-    summary: '了解湖仓架构试图解决的存储、计算和治理问题。',
+    title: '湖仓：为什么数据湖最终需要仓库能力',
+    summary: '用同一份订单、事件和文件数据切换三种架构，观察 schema、事务、版本和治理能力的取舍。',
     order: 12,
     difficulty: 'advanced',
-    estimatedMinutes: 15,
-    tags: ['湖仓', '架构'],
-    demo: 'coming-soon',
+    estimatedMinutes: 18,
+    tags: ['湖仓', '架构切换', '版本'],
+    demo: 'lakehouse',
   },
   {
     id: 'lesson-11',

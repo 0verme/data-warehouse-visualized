@@ -7,6 +7,7 @@ import type {
 import type { Lesson } from '../../data/course'
 import {
   BusinessSystemFlow,
+  LakehouseArchitectureLab,
   LineageGraph,
   MetricDefinitionLab,
   ModelingIntro,
@@ -96,6 +97,8 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
       return <SlowlyChangingDimension visualization={visualization} />
     case 'metric-definition':
       return <MetricDefinitionLab visualization={visualization} />
+    case 'lakehouse':
+      return <LakehouseArchitectureLab visualization={visualization} />
   }
 }
 
