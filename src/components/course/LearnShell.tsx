@@ -18,9 +18,11 @@ import {
 import {
   getAdjacentLessons,
   getChapterDisplayNumber,
+  getLessonChapterId,
   getLessonDisplayNumber,
   getLessonFromPath,
   isLearnIndexPath,
+  toggleExpandedChapter,
 } from '../../utils/lesson'
 import { getRoute } from '../../utils/routes'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
@@ -61,7 +63,7 @@ function createProgressBootstrapScript(locale: Locale): string {
   const markAsLearned = JSON.stringify(getMessage('markAsLearned', locale))
 
   return `(() => {
-  const root = document.currentScript?.closest('astro-island')
+  const root = document.currentScript?.closest('astro-island')?.querySelector('.learn-app')
   let stored = null
 
   try {
@@ -95,9 +97,44 @@ function createProgressBootstrapScript(locale: Locale): string {
   const completedLessonSet = new Set(validCompletedLessonIds)
   progress.completedLessonIds = validCompletedLessonIds
 
-  if (root.getAttribute('data-progress-index') === 'true' && currentLessonId) {
-    root.querySelectorAll('[data-progress-lesson-link]').forEach((link) => {
-      const isActive = link.getAttribute('data-progress-lesson-link') === currentLessonId
+  const normalizedPathname = window.location.pathname.replace(/\\/+$/, '')
+  const isCourseIndex = normalizedPathname === '/learn' || normalizedPathname.endsWith('/learn')
+  const lessonLinks = Array.from(root.querySelectorAll('[data-progress-lesson-link]'))
+  const routeLessonLink = lessonLinks.find((link) => {
+    const href = link.getAttribute('href')
+    if (!href) return false
+
+    try {
+      return new URL(href, window.location.href).pathname.replace(/\\/+$/, '') === normalizedPathname
+    } catch {
+      return false
+    }
+  })
+  const storedIndexLessonId =
+    isCourseIndex && knownLessonIds.has(currentLessonId) ? currentLessonId : ''
+  const sidebarLessonId =
+    routeLessonLink?.getAttribute('data-progress-lesson-link') ||
+    storedIndexLessonId ||
+    root.getAttribute('data-initial-lesson-id')
+  const activeLessonLink = lessonLinks.find(
+    (link) => link.getAttribute('data-progress-lesson-link') === sidebarLessonId,
+  )
+  const activeChapter = activeLessonLink?.closest('[data-course-chapter]')
+
+  root.querySelectorAll('[data-course-chapter]').forEach((chapter) => {
+    const isExpanded = chapter === activeChapter
+    chapter
+      .querySelector('.course-chapter__heading')
+      ?.setAttribute('aria-expanded', String(isExpanded))
+    const panel = chapter.querySelector('[data-course-chapter-panel]')
+    if (panel) {
+      panel.hidden = !isExpanded
+    }
+  })
+
+  if (storedIndexLessonId) {
+    lessonLinks.forEach((link) => {
+      const isActive = link.getAttribute('data-progress-lesson-link') === storedIndexLessonId
       link.classList.toggle('is-active', isActive)
       if (isActive) {
         link.setAttribute('aria-current', 'page')
@@ -226,7 +263,11 @@ export function LearnShell({
     () => serverPathname,
   )
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [collapsedChapters, setCollapsedChapters] = useState<Record<string, boolean>>({})
+  const [expandedChapterId, setExpandedChapterId] = useState<string | null>(
+    () =>
+      getLessonChapterId(lessons, isIndex ? progress.currentLessonId : initialLesson.id) ??
+      initialLesson.chapter,
+  )
   const activeLessonRef = useRef<HTMLAnchorElement | null>(null)
   const previousPathnameRef = useRef(pathname)
   const shouldResetMainScrollRef = useRef(false)
@@ -248,6 +289,7 @@ export function LearnShell({
         return
       }
 
+      setExpandedChapterId(nextLesson.chapter)
       setProgress((currentProgress) =>
         currentProgress.currentLessonId === nextLesson.id
           ? currentProgress
@@ -314,14 +356,15 @@ export function LearnShell({
   }
 
   function toggleChapter(chapterId: string) {
-    setCollapsedChapters((current) => ({
-      ...current,
-      [chapterId]: !current[chapterId],
-    }))
+    setExpandedChapterId((current) => toggleExpandedChapter(current, chapterId))
   }
 
   return (
-    <div className="learn-app" data-progress-index={isIndex ? 'true' : 'false'}>
+    <div
+      className="learn-app"
+      data-progress-index={isIndex ? 'true' : 'false'}
+      data-initial-lesson-id={initialLesson.id}
+    >
       <header className="learn-topbar">
         <a
           className="brand brand--learn"
@@ -382,12 +425,18 @@ export function LearnShell({
               const isChapterComplete =
                 chapter.lessons.length > 0 && completedLessonCount === chapter.lessons.length
 
+              const isExpanded = expandedChapterId === chapter.id
+
               return (
-                <section className="course-chapter" key={chapter.id}>
+                <section
+                  className="course-chapter"
+                  key={chapter.id}
+                  data-course-chapter={chapter.id}
+                >
                   <button
                     className="course-chapter__heading"
                     type="button"
-                    aria-expanded={!collapsedChapters[chapter.id]}
+                    aria-expanded={isExpanded}
                     aria-controls={`chapter-${chapter.id}`}
                     onClick={() => toggleChapter(chapter.id)}
                   >
@@ -410,7 +459,7 @@ export function LearnShell({
                       {completedLessonCount}/{chapter.lessons.length}
                     </span>
                   </button>
-                  <ul id={`chapter-${chapter.id}`} hidden={collapsedChapters[chapter.id]}>
+                  <ul id={`chapter-${chapter.id}`} data-course-chapter-panel hidden={!isExpanded}>
                     {chapter.lessons.map((lesson) => {
                       const isActive = lesson.id === activeLesson.id
                       const isCompleted = progress.completedLessonIds.includes(lesson.id)
