@@ -11,7 +11,11 @@ import {
 } from '../../utils/scheduler'
 import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { getTransformationStep } from '../../utils/sql-transformation'
-import { getLineageTaskNodeId, LINEAGE_TASK_NODE_IDS } from './mapping'
+import {
+  LEGACY_BANKING_LINEAGE_TASK_NODE_IDS,
+  LEGACY_ECOMMERCE_LINEAGE_TASK_NODE_IDS,
+  LINEAGE_TASK_NODE_IDS,
+} from './mapping'
 import type {
   LineageInvestigationContext,
   LineageInvestigationEventDefinition,
@@ -263,14 +267,32 @@ function createManualEvidence(edge: LineageEdge, nodes: readonly LineageNode[]):
   }
 }
 
+function getTaskNodeIdForGraph(taskId: string, nodes: readonly LineageNode[]): string | undefined {
+  const nodeIds = new Set(nodes.map((node) => node.id))
+  const candidateMaps = [
+    LINEAGE_TASK_NODE_IDS,
+    LEGACY_BANKING_LINEAGE_TASK_NODE_IDS,
+    LEGACY_ECOMMERCE_LINEAGE_TASK_NODE_IDS,
+  ]
+
+  for (const candidateMap of candidateMaps) {
+    const nodeId = candidateMap[taskId]
+    if (nodeId && nodeIds.has(nodeId)) {
+      return nodeId
+    }
+  }
+
+  return undefined
+}
+
 function bindNodes(
   nodes: readonly LineageNode[],
   schedulerTasks: readonly SchedulerTaskDefinition[],
 ): LineageProductionNode[] {
   return nodes.map((node) => {
-    const taskId = Object.entries(LINEAGE_TASK_NODE_IDS).find(
-      ([, nodeId]) => nodeId === node.id,
-    )?.[0]
+    const taskId = Object.keys(LINEAGE_TASK_NODE_IDS).find(
+      (candidateTaskId) => getTaskNodeIdForGraph(candidateTaskId, nodes) === node.id,
+    )
     if (taskId) {
       const task = getTask(schedulerTasks, taskId)
       return {
@@ -360,6 +382,7 @@ function createSchemaChangeEvent(): LineageInvestigationEventDefinition {
 
 function createTaskFailureEvent(
   scheduler: SchedulerVisualization,
+  baseNodes: readonly LineageNode[],
 ): LineageInvestigationEventDefinition {
   const failedTask = getTask(scheduler.tasks, SCHEDULER_TASK_IDS.dwd)
   const taskId = failedTask.taskId
@@ -393,7 +416,7 @@ function createTaskFailureEvent(
     entryPoint: 'task-failure',
     label: 'DWD task failure',
     summary: `${failedTask.taskId} 重试耗尽，DWS / ADS 需要沿任务依赖检查。`,
-    sourceEntityId: getLineageTaskNodeId(taskId),
+    sourceEntityId: getTaskNodeIdForGraph(taskId, baseNodes) ?? taskId,
     eventType: 'task_failure',
     affectedEntityId: 'metric-deposit-report',
     evidence: {
@@ -427,8 +450,10 @@ function validateBindingInput(input: LineageProductionBindingInput): void {
     schedulerContract.partition.value === transformationContract.partition.value
   const isLayeredBankingContract =
     sharesBusinessPartition && adsTask.contract.dependencies.includes(schedulerContract.outputTable)
+  const isLegacyOutputAlias =
+    sharesBusinessPartition && adsTask.contract.outputTable === 'ads_yesterday_sales'
 
-  if (!reusesTransformationContract && !isLayeredBankingContract) {
+  if (!reusesTransformationContract && !isLayeredBankingContract && !isLegacyOutputAlias) {
     throw new Error(
       `Scheduler ADS task 没有复用兼容的 SQL task contract: ${adsTask.taskId} !== ${transformationContract.taskId}`,
     )
@@ -446,7 +471,7 @@ export function bindLineageProductionChain(
     investigationEvents: [
       createFieldSemanticChangeEvent(),
       createSchemaChangeEvent(),
-      createTaskFailureEvent(input.scheduler),
+      createTaskFailureEvent(input.scheduler, input.baseNodes),
     ],
   }
 }

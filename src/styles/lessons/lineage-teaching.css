@@ -1,0 +1,1100 @@
+.lineage-teaching-lab {
+  color: var(--ink);
+}
+
+.lineage-teaching-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.lineage-teaching-panel-heading {
+  margin-bottom: 16px;
+}
+
+.lineage-teaching-panel-heading h3,
+.lineage-teaching-panel-heading h4 {
+  margin: 5px 0 6px;
+  color: var(--ink);
+  font-size: 17px;
+}
+
+.lineage-teaching-panel-heading h4 {
+  font-size: 14px;
+}
+
+.lineage-teaching-panel-heading p,
+.lineage-teaching-panel > p,
+.lineage-teaching-contrast > p,
+.lineage-teaching-action-block p,
+.lineage-teaching-direct-check > p,
+.lineage-teaching-investigation-branch > p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.lineage-teaching-overline,
+.lineage-teaching-flow__layer,
+.lineage-teaching-selection span,
+.lineage-teaching-quality-status,
+.lineage-teaching-event-facts dt,
+.lineage-teaching-contrast-grid > div > span,
+.lineage-teaching-field-tab span,
+.lineage-teaching-impact-choice small,
+.lineage-teaching-impact-chain span,
+.lineage-teaching-source-card small,
+.lineage-teaching-candidate > span,
+.lineage-teaching-candidate-detail > small,
+.lineage-teaching-evidence-record small,
+.lineage-teaching-evidence-detail dt {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.lineage-teaching-overline {
+  color: var(--teal);
+  text-transform: uppercase;
+}
+
+.lineage-teaching-flow {
+  display: grid;
+  max-width: 360px;
+  margin: 22px auto 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.lineage-teaching-flow > li {
+  display: grid;
+  justify-items: center;
+}
+
+.lineage-teaching-flow__node {
+  display: flex;
+  width: min(100%, 330px);
+  min-height: 67px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-muted);
+  text-align: left;
+}
+
+button.lineage-teaching-flow__node {
+  cursor: pointer;
+  font: inherit;
+}
+
+button.lineage-teaching-flow__node:hover,
+button.lineage-teaching-flow__node:focus-visible,
+.lineage-teaching-flow__node.is-selected {
+  border-color: var(--blue);
+  background: var(--surface-blue);
+  outline: none;
+}
+
+.lineage-teaching-flow__layer {
+  color: var(--teal);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.lineage-teaching-flow__node strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+}
+
+.lineage-teaching-flow__node small {
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-teaching-flow__arrow {
+  display: grid;
+  min-height: 25px;
+  place-items: center;
+  color: var(--teal);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.lineage-teaching-selection {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 24px;
+}
+
+.lineage-teaching-selection > div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-muted);
+}
+
+.lineage-teaching-selection strong {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.lineage-teaching-questions {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.lineage-teaching-question {
+  min-width: 0;
+  margin: 0;
+  padding: 12px 0 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.lineage-teaching-question legend {
+  max-width: 100%;
+  padding: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lineage-teaching-choice-list,
+.lineage-teaching-status-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.lineage-teaching-choice,
+.lineage-teaching-field-tab,
+.lineage-teaching-source-card,
+.lineage-teaching-candidate,
+.lineage-teaching-evidence-record,
+.lineage-teaching-impact-choice {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.lineage-teaching-choice {
+  padding: 7px 10px;
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+
+.lineage-teaching-choice:hover,
+.lineage-teaching-choice:focus-visible,
+.lineage-teaching-choice.is-selected,
+.lineage-teaching-choice.is-correct {
+  border-color: var(--teal);
+  background: #f3fbf9;
+  color: var(--teal);
+  outline: none;
+}
+
+.lineage-teaching-choice.is-correct {
+  box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.lineage-teaching-feedback {
+  margin: 8px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-feedback.is-success {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.lineage-teaching-contrast {
+  margin-top: 25px;
+  padding: 16px;
+  border: 1px solid #c8e2dd;
+  border-radius: 9px;
+  background: #f4fbfa;
+}
+
+.lineage-teaching-contrast-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.lineage-teaching-contrast-grid > div {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #d5ebe7;
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.lineage-teaching-mini-flow {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin: 9px 0 8px;
+}
+
+.lineage-teaching-mini-flow code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-teaching-mini-flow span {
+  flex: 0 0 auto;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.lineage-teaching-contrast-grid small {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-table-hop {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 18px 0 15px;
+  padding: 12px;
+  border-left: 3px solid var(--teal);
+  background: var(--surface-muted);
+}
+
+.lineage-teaching-table-hop code {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-teaching-table-hop > span:not(:last-child) {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.lineage-teaching-table-hop > span:last-child {
+  flex-basis: 100%;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-teaching-field-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.lineage-teaching-field-tab {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+}
+
+.lineage-teaching-field-tab:hover,
+.lineage-teaching-field-tab:focus-visible,
+.lineage-teaching-field-tab.is-selected {
+  border-color: var(--blue);
+  background: var(--surface-blue);
+  outline: none;
+}
+
+.lineage-teaching-field-tab strong {
+  color: var(--blue);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 11px;
+}
+
+.lineage-teaching-field-tab span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineage-teaching-field-detail {
+  margin-top: 12px;
+  padding: 15px;
+  border: 1px solid #c8e2dd;
+  border-radius: 8px;
+  background: #f4fbfa;
+}
+
+.lineage-teaching-field-detail__heading,
+.lineage-teaching-evidence-detail > div:first-child {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.lineage-teaching-field-detail h4,
+.lineage-teaching-evidence-detail h4 {
+  margin: 5px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.lineage-teaching-badge-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lineage-teaching-badge {
+  display: inline-flex;
+  padding: 3px 6px;
+  border: 1px solid #b9dbd6;
+  border-radius: 4px;
+  background: #f3fbf9;
+  color: var(--teal);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.lineage-teaching-badge--pending {
+  border-color: #ecd39b;
+  background: #fff9ec;
+  color: #9a6a08;
+}
+
+.lineage-teaching-field-path,
+.lineage-teaching-candidate-path {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  overflow-x: auto;
+  margin: 14px 0 11px;
+  padding: 0 0 4px;
+  list-style: none;
+}
+
+.lineage-teaching-field-path li,
+.lineage-teaching-candidate-path li {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+  align-items: center;
+}
+
+.lineage-teaching-field-path li:not(:last-child)::after,
+.lineage-teaching-candidate-path li:not(:last-child)::after {
+  color: var(--teal);
+  content: '→';
+  font-weight: 700;
+}
+
+.lineage-teaching-field-path code,
+.lineage-teaching-candidate-path code {
+  padding: 5px 7px;
+  border: 1px solid #d4e8e4;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-teaching-field-path code.is-operation {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.lineage-teaching-field-detail p,
+.lineage-teaching-evidence-detail p,
+.lineage-teaching-evidence-boundary p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.lineage-teaching-evidence-text,
+.lineage-teaching-field-detail > small,
+.lineage-teaching-candidate-detail > small {
+  display: block;
+  margin-top: 8px;
+  color: var(--teal);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-boundary {
+  margin-top: 16px !important;
+  padding-top: 11px;
+  border-top: 1px dashed var(--line-strong);
+  font-size: 10px !important;
+}
+
+.lineage-teaching-investigation-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.lineage-teaching-investigation-steps li {
+  display: flex;
+  gap: 7px;
+  min-width: 0;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-teaching-investigation-steps li.is-active {
+  border-color: #b9dbd6;
+  background: #f3fbf9;
+  color: var(--teal);
+}
+
+.lineage-teaching-investigation-steps li > span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+}
+
+.lineage-teaching-investigation-steps li.is-active > span {
+  background: var(--teal-soft);
+}
+
+.lineage-teaching-quality-event {
+  padding: 15px;
+  border: 1px solid #efb1b1;
+  border-radius: 9px;
+  background: #fff8f8;
+}
+
+.lineage-teaching-quality-status {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  color: var(--danger);
+  text-transform: uppercase;
+}
+
+.lineage-teaching-quality-status strong {
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #ffe6e6;
+  font-size: 9px;
+}
+
+.lineage-teaching-quality-event h4 {
+  margin: 9px 0 12px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.lineage-teaching-event-facts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.lineage-teaching-event-facts div {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #f0d2d2;
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.lineage-teaching-event-facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.lineage-teaching-quality-event > p {
+  margin: 11px 0 0;
+  color: var(--ink-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-quality-event > small {
+  display: block;
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-action-block,
+.lineage-teaching-direct-check,
+.lineage-teaching-investigation-branch {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.lineage-teaching-action-block .button {
+  margin-top: 11px;
+}
+
+.lineage-teaching-direct-check .lineage-teaching-flow {
+  max-width: 310px;
+  margin: 12px auto 14px;
+}
+
+.lineage-teaching-status-choice {
+  align-items: center;
+}
+
+.lineage-teaching-status-choice > span {
+  flex-basis: 100%;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lineage-teaching-decision {
+  padding: 10px 11px;
+  border-left: 3px solid var(--teal);
+  background: #f3fbf9;
+}
+
+.lineage-teaching-decision.is-expand {
+  border-left-color: var(--amber);
+  background: #fffaf0;
+}
+
+.lineage-teaching-check-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 13px;
+}
+
+.lineage-teaching-check-list label {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-teaching-check-list input {
+  flex: 0 0 auto;
+  accent-color: var(--teal);
+}
+
+.lineage-teaching-investigation-branch > small {
+  display: block;
+  margin-top: 9px;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-teaching-source-grid,
+.lineage-teaching-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.lineage-teaching-source-card,
+.lineage-teaching-candidate {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+
+.lineage-teaching-source-card:hover,
+.lineage-teaching-source-card:focus-visible,
+.lineage-teaching-source-card.is-selected,
+.lineage-teaching-candidate:hover,
+.lineage-teaching-candidate:focus-visible,
+.lineage-teaching-candidate.is-selected {
+  border-color: var(--amber);
+  background: #fffaf0;
+  outline: none;
+}
+
+.lineage-teaching-source-card strong,
+.lineage-teaching-candidate strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-teaching-selected-source {
+  margin-top: 10px !important;
+  color: var(--amber) !important;
+}
+
+.lineage-teaching-candidates {
+  margin-top: 17px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+}
+
+.lineage-teaching-candidate-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lineage-teaching-candidate > span {
+  color: var(--amber);
+}
+
+.lineage-teaching-candidate small {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lineage-teaching-candidate-detail {
+  margin-top: 10px;
+  padding: 11px;
+  border: 1px solid #ecd39b;
+  border-radius: 6px;
+  background: #fffdf6;
+}
+
+.lineage-teaching-candidate-detail > strong {
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 11px;
+}
+
+.lineage-teaching-candidate-detail p {
+  margin: 5px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-candidate-path {
+  margin-bottom: 0;
+}
+
+.lineage-teaching-candidate-path code {
+  font-size: 9px;
+}
+
+.lineage-teaching-prediction {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.lineage-teaching-prediction h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.lineage-teaching-impact-choices {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.lineage-teaching-impact-choice {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px;
+}
+
+.lineage-teaching-impact-choice:hover,
+.lineage-teaching-impact-choice:focus-visible,
+.lineage-teaching-impact-choice.is-selected {
+  border-color: var(--blue);
+  background: var(--surface-blue);
+  outline: none;
+}
+
+.lineage-teaching-impact-choice:disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.lineage-teaching-impact-choice strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-teaching-impact-choice small {
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.lineage-teaching-blast-radius {
+  margin-top: 15px;
+  padding: 15px;
+  border: 1px solid #c8e2dd;
+  border-radius: 8px;
+  background: #f4fbfa;
+}
+
+.lineage-teaching-impact-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0 15px;
+}
+
+.lineage-teaching-impact-stats > div {
+  padding: 9px;
+  border: 1px solid #d5ebe7;
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.lineage-teaching-impact-stats strong,
+.lineage-teaching-impact-stats span {
+  display: block;
+}
+
+.lineage-teaching-impact-stats strong {
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 20px;
+}
+
+.lineage-teaching-impact-stats span {
+  margin-top: 2px;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.lineage-teaching-impact-chain {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 13px;
+  padding: 0;
+  list-style: none;
+}
+
+.lineage-teaching-impact-chain li {
+  position: relative;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.lineage-teaching-impact-chain li + li::before {
+  position: absolute;
+  top: 50%;
+  left: -8px;
+  color: var(--teal);
+  content: '→';
+  font-weight: 700;
+  transform: translateY(-50%);
+}
+
+.lineage-teaching-impact-chain li.is-source {
+  border-color: var(--blue);
+  background: var(--surface-blue);
+}
+
+.lineage-teaching-impact-chain li.is-direct {
+  border-color: #9fd6ce;
+  background: #f3fbf9;
+}
+
+.lineage-teaching-impact-chain li.is-transitive {
+  border-style: dashed;
+}
+
+.lineage-teaching-impact-chain strong {
+  display: block;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.lineage-teaching-final-impact {
+  margin: 12px 0 0 !important;
+  color: var(--teal) !important;
+  font-size: 11px !important;
+}
+
+.lineage-teaching-evidence-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.lineage-teaching-evidence-list {
+  display: grid;
+  gap: 7px;
+}
+
+.lineage-teaching-evidence-record {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+
+.lineage-teaching-evidence-record:hover,
+.lineage-teaching-evidence-record:focus-visible,
+.lineage-teaching-evidence-record.is-selected {
+  border-color: var(--teal);
+  background: #f3fbf9;
+  outline: none;
+}
+
+.lineage-teaching-evidence-record strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.lineage-teaching-evidence-record small {
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.lineage-teaching-evidence-detail {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #c8e2dd;
+  border-radius: 8px;
+  background: #f4fbfa;
+}
+
+.lineage-teaching-evidence-detail h4 {
+  overflow-wrap: anywhere;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.lineage-teaching-evidence-detail > p {
+  margin-top: 11px;
+}
+
+.lineage-teaching-evidence-detail dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 13px 0 0;
+}
+
+.lineage-teaching-evidence-detail dl > div {
+  padding: 8px;
+  border: 1px solid #d5ebe7;
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.lineage-teaching-evidence-detail dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.lineage-teaching-evidence-detail dt {
+  font-weight: 400;
+}
+
+.lineage-teaching-pending-note {
+  padding: 8px;
+  border-left: 3px solid var(--amber);
+  background: #fffaf0;
+  color: #8a610a !important;
+  font-size: 10px !important;
+}
+
+.lineage-teaching-evidence-boundary {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid #ecd39b;
+  border-radius: 8px;
+  background: #fffdf6;
+}
+
+.lineage-teaching-evidence-boundary h4 {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.lineage-teaching-evidence-boundary code {
+  color: var(--ink);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+}
+
+.lineage-teaching-evidence-boundary small {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-empty {
+  padding: 20px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+@container visualization (max-width: 680px) {
+  .lineage-teaching-selection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lineage-teaching-selection > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .lineage-teaching-event-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lineage-teaching-event-facts div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .lineage-teaching-field-tabs,
+  .lineage-teaching-check-list,
+  .lineage-teaching-impact-choices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lineage-teaching-source-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lineage-teaching-candidate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-teaching-impact-chain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lineage-teaching-impact-chain li + li::before {
+    display: none;
+  }
+}
+
+@container visualization (max-width: 480px) {
+  .lineage-teaching-contrast-grid,
+  .lineage-teaching-evidence-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-teaching-investigation-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-teaching-field-tabs,
+  .lineage-teaching-check-list,
+  .lineage-teaching-impact-choices,
+  .lineage-teaching-event-facts,
+  .lineage-teaching-impact-stats,
+  .lineage-teaching-impact-chain {
+    grid-template-columns: 1fr;
+  }
+
+  .lineage-teaching-event-facts div:first-child {
+    grid-column: auto;
+  }
+
+  .lineage-teaching-field-detail__heading,
+  .lineage-teaching-evidence-detail > div:first-child {
+    display: block;
+  }
+
+  .lineage-teaching-field-detail__heading .lineage-teaching-badge-row,
+  .lineage-teaching-evidence-detail > div:first-child .lineage-teaching-badge-row {
+    margin-top: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lineage-teaching-lab *,
+  .lineage-teaching-lab *::before,
+  .lineage-teaching-lab *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

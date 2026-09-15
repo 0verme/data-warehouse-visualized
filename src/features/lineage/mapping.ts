@@ -1,8 +1,44 @@
-import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { LEGACY_SCHEDULER_TASK_IDS, SCHEDULER_TASK_IDS } from '../../utils/scheduler'
+import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
+import { BANKING_LINEAGE_NODE_IDS, BANKING_LINEAGE_TASK_NODE_IDS } from './banking'
 
-/** Scheduler identity → 血缘任务节点；兼容第 05/06 章的两套任务标识。 */
+/**
+ * Scheduler identity → canonical banking lineage task node.
+ *
+ * The old e-commerce task IDs stay readable and point to the preserved legacy graph nodes;
+ * current banking aliases and the explicit Banking Teaching Domain IDs point to the same
+ * canonical banking graph.
+ */
 export const LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
+  [SCHEDULER_TASK_IDS.accountBalanceSnapshot]: BANKING_LINEAGE_TASK_NODE_IDS.accountBalanceSnapshot,
+  [SCHEDULER_TASK_IDS.account]: BANKING_LINEAGE_TASK_NODE_IDS.account,
+  [SCHEDULER_TASK_IDS.customer]: BANKING_LINEAGE_TASK_NODE_IDS.customer,
+  [SCHEDULER_TASK_IDS.product]: BANKING_LINEAGE_TASK_NODE_IDS.product,
+  [SCHEDULER_TASK_IDS.branch]: BANKING_LINEAGE_TASK_NODE_IDS.branch,
+  [SCHEDULER_TASK_IDS.dwd]: BANKING_LINEAGE_TASK_NODE_IDS.dwd,
+  [SCHEDULER_TASK_IDS.dws]: BANKING_LINEAGE_TASK_NODE_IDS.dws,
+  [SCHEDULER_TASK_IDS.ads]: BANKING_LINEAGE_TASK_NODE_IDS.ads,
+  [BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot]:
+    BANKING_LINEAGE_TASK_NODE_IDS.accountBalanceSnapshot,
+  [BANKING_SCHEDULER_TASK_IDS.account]: BANKING_LINEAGE_TASK_NODE_IDS.account,
+  [BANKING_SCHEDULER_TASK_IDS.customer]: BANKING_LINEAGE_TASK_NODE_IDS.customer,
+  [BANKING_SCHEDULER_TASK_IDS.product]: BANKING_LINEAGE_TASK_NODE_IDS.product,
+  [BANKING_SCHEDULER_TASK_IDS.branch]: BANKING_LINEAGE_TASK_NODE_IDS.branch,
+  [BANKING_SCHEDULER_TASK_IDS.dwd]: BANKING_LINEAGE_TASK_NODE_IDS.dwd,
+  [BANKING_SCHEDULER_TASK_IDS.dws]: BANKING_LINEAGE_TASK_NODE_IDS.dws,
+  [BANKING_SCHEDULER_TASK_IDS.ads]: BANKING_LINEAGE_TASK_NODE_IDS.ads,
+  [LEGACY_SCHEDULER_TASK_IDS.odsOrders]: 'task-load-order',
+  [LEGACY_SCHEDULER_TASK_IDS.odsOrderItems]: 'task-load-order',
+  [LEGACY_SCHEDULER_TASK_IDS.odsUsers]: 'task-load-order',
+  [LEGACY_SCHEDULER_TASK_IDS.odsPayments]: 'task-load-order',
+  [LEGACY_SCHEDULER_TASK_IDS.odsRefunds]: 'task-load-order',
+  [LEGACY_SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
+  [LEGACY_SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
+  [LEGACY_SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
+}
+
+/** Current main's pre-PR72 banking graph remains available to production adapters. */
+export const LEGACY_BANKING_LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
   [SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-balance',
   [SCHEDULER_TASK_IDS.account]: 'task-load-balance',
   [SCHEDULER_TASK_IDS.customer]: 'task-load-balance',
@@ -19,30 +55,40 @@ export const LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
   [BANKING_SCHEDULER_TASK_IDS.dwd]: 'task-build-deposit-detail',
   [BANKING_SCHEDULER_TASK_IDS.dws]: 'task-build-deposit-topic',
   [BANKING_SCHEDULER_TASK_IDS.ads]: 'task-publish-deposit-balance',
-  [LEGACY_SCHEDULER_TASK_IDS.odsOrders]: 'task-load-balance',
-  [LEGACY_SCHEDULER_TASK_IDS.odsOrderItems]: 'task-load-balance',
-  [LEGACY_SCHEDULER_TASK_IDS.odsUsers]: 'task-load-balance',
-  [LEGACY_SCHEDULER_TASK_IDS.odsPayments]: 'task-load-balance',
-  [LEGACY_SCHEDULER_TASK_IDS.odsRefunds]: 'task-load-balance',
-  [LEGACY_SCHEDULER_TASK_IDS.dwd]: 'task-build-deposit-detail',
-  [LEGACY_SCHEDULER_TASK_IDS.dws]: 'task-build-deposit-topic',
-  [LEGACY_SCHEDULER_TASK_IDS.ads]: 'task-publish-deposit-balance',
 }
 
-/** Quality targets use the current Banking Teaching Domain lineage graph through compatibility maps. */
+/** The preserved e-commerce lineage fixture uses the current scheduler task IDs as aliases. */
+export const LEGACY_ECOMMERCE_LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
+  [SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-order',
+  [SCHEDULER_TASK_IDS.account]: 'task-load-order',
+  [SCHEDULER_TASK_IDS.customer]: 'task-load-order',
+  [SCHEDULER_TASK_IDS.product]: 'task-load-order',
+  [SCHEDULER_TASK_IDS.branch]: 'task-load-order',
+  [SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
+  [SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
+  [SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
+}
+
+/** Quality targets use the canonical Banking Teaching Domain lineage graph. */
 export const LINEAGE_TABLE_NODE_IDS: Readonly<Record<string, string>> = {
-  account_balance_snapshot: 'ods-account-balance',
-  dwd_deposit_balance_detail: 'dwd-deposit-balance',
-  dwd_deposit_account_balance: 'dwd-deposit-balance',
-  dws_deposit_balance_daily: 'dws-deposit-balance',
-  dws_deposit_balance_daily_staging: 'dws-deposit-balance',
-  ads_deposit_balance_daily: 'ads-deposit-balance',
-  ads_deposit_balance_metric: 'ads-deposit-balance',
-  ods_behavior_event: 'ads-deposit-balance',
-  /** Legacy table names remain mapped during migration. */
-  dwd_order_item: 'dwd-deposit-balance',
-  dws_sales_daily: 'dws-deposit-balance',
-  ads_yesterday_sales: 'ads-deposit-balance',
+  AccountBalanceSnapshot: BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
+  Account: BANKING_LINEAGE_NODE_IDS.account,
+  Customer: BANKING_LINEAGE_NODE_IDS.customer,
+  Product: BANKING_LINEAGE_NODE_IDS.product,
+  Branch: BANKING_LINEAGE_NODE_IDS.branch,
+  account_balance_snapshot: BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
+  dwd_deposit_balance_detail: BANKING_LINEAGE_NODE_IDS.dwd,
+  dwd_deposit_account_balance: BANKING_LINEAGE_NODE_IDS.dwd,
+  dws_deposit_balance_daily: BANKING_LINEAGE_NODE_IDS.dws,
+  dws_deposit_balance_daily_staging: BANKING_LINEAGE_NODE_IDS.dws,
+  ads_deposit_balance: BANKING_LINEAGE_NODE_IDS.ads,
+  ads_deposit_balance_daily: BANKING_LINEAGE_NODE_IDS.ads,
+  ads_deposit_balance_metric: BANKING_LINEAGE_NODE_IDS.metric,
+  ods_behavior_event: BANKING_LINEAGE_NODE_IDS.ads,
+  /** Legacy e-commerce table names remain mapped to the preserved legacy graph. */
+  dwd_order_item: 'dwd-order-detail',
+  dws_sales_daily: 'dws-sales',
+  ads_yesterday_sales: 'ads-report',
 }
 
 export function getLineageTaskNodeId(taskId: string): string {

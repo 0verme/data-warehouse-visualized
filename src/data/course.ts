@@ -540,9 +540,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['发布决定', 'BLOCK', 'quarantine'],
     },
     'lesson-08': {
-      title: '什么是数据血缘？',
-      summary: '沿表、字段、任务和指标的依赖关系，判断一次变更会影响哪些下游结果。',
-      tags: ['血缘', '影响分析'],
+      title: '这份数据到底从哪里来？',
+      summary: '沿银行存款余额的表级、字段级和证据关系，调查质量异常并判断下游影响。',
+      tags: ['血缘', '影响分析', 'Quality Event'],
     },
     'lesson-star-schema-grain': {
       title: '事实、维度与星型模型',
