@@ -2,1326 +2,715 @@ import { useMemo, useState } from 'react'
 import '../../styles/lessons/governance.css'
 import type {
   GovernanceAsset,
-  GovernanceCatalogFilters,
-  GovernanceDecisionRecord,
   GovernanceField,
-  GovernanceImpactObject,
-  GovernanceLifecycleEvent,
-  GovernanceLineageImpact,
-  GovernancePolicyDecisionResult,
-  GovernanceQualityEvidence,
   GovernancePurpose,
-  GovernanceRecommendationResult,
-  GovernanceRole,
-  GovernanceSensitivity,
+  GovernanceResponsibilityItem,
   GovernanceVisualization,
 } from '../../types'
 import {
-  applyGovernanceEvent,
-  createGovernanceDecisionRecord,
   DEFAULT_GOVERNANCE_FILTERS,
-  evaluateGovernancePolicy,
   filterGovernanceAssets,
-  getAssetLineageImpact,
-  getGovernanceLineageImpact,
+  getGovernanceEvidenceDecision,
+  getGovernanceFieldAccess,
   getGovernancePurposeLabel,
-  getGovernanceRecommendation,
-  GOVERNANCE_DECISION_LABELS,
-  GOVERNANCE_ENTITY_TYPE_LABELS,
+  getReplacementAsset,
   GOVERNANCE_LIFECYCLE_LABELS,
   GOVERNANCE_PURPOSE_OPTIONS,
-  GOVERNANCE_ROLE_OPTIONS,
-  GOVERNANCE_SENSITIVITY_LABELS,
+  maskGovernanceValue,
 } from '../../utils/governance'
 
 interface GovernanceWorkbenchProps {
   visualization: GovernanceVisualization
 }
 
-const SENSITIVITY_OPTIONS: Array<{ value: 'all' | GovernanceSensitivity; label: string }> = [
-  { value: 'all', label: '全部敏感等级' },
-  { value: 'public', label: GOVERNANCE_SENSITIVITY_LABELS.public },
-  { value: 'internal', label: GOVERNANCE_SENSITIVITY_LABELS.internal },
-  { value: 'sensitive', label: GOVERNANCE_SENSITIVITY_LABELS.sensitive },
-  { value: 'restricted', label: GOVERNANCE_SENSITIVITY_LABELS.restricted },
-]
-
-const LIFECYCLE_OPTIONS = [
-  { value: 'all', label: '全部生命周期' },
-  { value: 'active', label: GOVERNANCE_LIFECYCLE_LABELS.active },
-  { value: 'deprecated', label: GOVERNANCE_LIFECYCLE_LABELS.deprecated },
-  { value: 'retiring', label: GOVERNANCE_LIFECYCLE_LABELS.retiring },
-] as const
-
-const OWNER_OPTIONS = [
-  { value: 'all', label: 'Owner 状态' },
-  { value: 'assigned', label: 'Owner 已分配' },
-  { value: 'missing', label: 'Owner 缺失' },
-] as const
-
-const EVENT_TYPE_LABELS = {
-  'owner-missing': '责任缺口',
-  'field-change': '字段变更',
-  'asset-deprecated': '资产弃用',
-  'asset-retiring': '资产下线',
-  'sensitivity-change': '敏感等级变化',
-} as const
-
-const PRIORITY_LABELS = {
-  urgent: '立即通知',
-  first: '先通知',
-  next: '随后通知',
-  review: '待人工确认',
-} as const
-
-const QUALITY_STATUS_LABELS = {
-  pass: 'pass · 通过',
-  warn: 'warn · 告警',
-  fail: 'fail · 失败',
-} as const
-
-function RecommendationPill({ result }: { result: GovernanceRecommendationResult }) {
-  const label =
-    result.status === 'recommended'
-      ? 'recommended · 推荐使用'
-      : result.status === 'usable-with-caution'
-        ? 'usable-with-caution · 谨慎使用'
-        : 'not-recommended · 不推荐'
-
-  return <span className={`governance-pill governance-pill--${result.status}`}>{label}</span>
+function PanelHeading({
+  eyebrow,
+  title,
+  description,
+  id,
+}: {
+  eyebrow: string
+  title: string
+  description: string
+  id?: string
+}) {
+  return (
+    <div className="governance-heading">
+      <div>
+        <span className="governance-overline">{eyebrow}</span>
+        <h3 id={id}>{title}</h3>
+      </div>
+      <p>{description}</p>
+    </div>
+  )
 }
 
-function SensitivityPill({ sensitivity }: { sensitivity: GovernanceSensitivity }) {
+function LifecycleBadge({ asset }: { asset: GovernanceAsset }) {
   return (
-    <span className={`governance-pill governance-pill--sensitivity-${sensitivity}`}>
-      {GOVERNANCE_SENSITIVITY_LABELS[sensitivity]}
+    <span className={`governance-badge governance-badge--${asset.lifecycle}`}>
+      {GOVERNANCE_LIFECYCLE_LABELS[asset.lifecycle]}
     </span>
   )
 }
 
-function LifecyclePill({ lifecycle }: { lifecycle: GovernanceAsset['lifecycle'] }) {
-  return (
-    <span className={`governance-pill governance-pill--lifecycle-${lifecycle}`}>
-      {GOVERNANCE_LIFECYCLE_LABELS[lifecycle]}
-    </span>
-  )
-}
-
-function AssetCard({
+function AssetResultCard({
   asset,
-  isSelected,
+  selected,
   onSelect,
 }: {
   asset: GovernanceAsset
-  isSelected: boolean
+  selected: boolean
   onSelect: () => void
 }) {
-  const recommendation = getGovernanceRecommendation(asset)
-
   return (
     <button
-      className={`governance-asset-card${isSelected ? ' is-selected' : ''}`}
+      className={`governance-result-card${selected ? ' is-selected' : ''}`}
       type="button"
-      aria-pressed={isSelected}
+      aria-pressed={selected}
+      data-asset-id={asset.id}
       onClick={onSelect}
     >
-      <span className="governance-asset-card__type">
-        {asset.assetType} · {asset.technicalName.split('.')[0]}
-      </span>
+      <span className="governance-card-kicker">{asset.assetType}</span>
       <strong>{asset.businessName}</strong>
       <code>{asset.technicalName}</code>
-      <span className="governance-asset-card__badges">
-        <RecommendationPill result={recommendation} />
-        <LifecyclePill lifecycle={asset.lifecycle} />
-        <SensitivityPill sensitivity={asset.sensitivity} />
-      </span>
-      <span className="governance-asset-card__description">{asset.description}</span>
-      <span className="governance-asset-card__facts">
-        <span>
-          <span className="governance-asset-card__fact-label">Owner</span>
-          <strong className={!asset.owner ? 'is-missing' : ''}>{asset.owner ?? '缺失'}</strong>
-        </span>
-        <span>
-          <span className="governance-asset-card__fact-label">Freshness</span>
-          <strong>
-            {asset.freshnessMetadata?.status === 'current'
-              ? 'current'
-              : asset.freshnessMetadata?.status === 'delayed'
-                ? 'delayed'
-                : 'unknown'}
-          </strong>
-        </span>
-        <span>
-          <span className="governance-asset-card__fact-label">Quality</span>
-          <strong>{asset.qualityEvidence?.status ?? 'unknown'}</strong>
-        </span>
+      <span className="governance-card-description">{asset.description}</span>
+      <span className="governance-card-meta">
+        <span>{asset.businessDefinition.grain}</span>
+        <LifecycleBadge asset={asset} />
       </span>
     </button>
   )
 }
 
-function SearchFilters({
-  assets,
-  filters,
-  onChange,
-}: {
-  assets: readonly GovernanceAsset[]
-  filters: GovernanceCatalogFilters
-  onChange: <Key extends keyof GovernanceCatalogFilters>(
-    key: Key,
-    value: GovernanceCatalogFilters[Key],
-  ) => void
-}) {
-  const tags = useMemo(() => [...new Set(assets.flatMap((asset) => asset.tags))], [assets])
-
+function DefinitionPanel({ asset }: { asset: GovernanceAsset }) {
   return (
-    <div className="governance-catalog__filters">
-      <label className="governance-search">
-        <span>业务关键词 / 技术名</span>
-        <input
-          type="search"
-          value={filters.query}
-          placeholder="例如：销售、DWS.SALES、手机号"
-          onChange={(event) => onChange('query', event.target.value)}
-        />
-      </label>
-      <label>
-        <span>tag</span>
-        <select value={filters.tag} onChange={(event) => onChange('tag', event.target.value)}>
-          <option value="all">全部标签</option>
-          {tags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>lifecycle</span>
-        <select
-          value={filters.lifecycle}
-          onChange={(event) =>
-            onChange('lifecycle', event.target.value as GovernanceCatalogFilters['lifecycle'])
-          }
-        >
-          {LIFECYCLE_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>sensitivity</span>
-        <select
-          value={filters.sensitivity}
-          onChange={(event) =>
-            onChange('sensitivity', event.target.value as GovernanceCatalogFilters['sensitivity'])
-          }
-        >
-          {SENSITIVITY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>责任人</span>
-        <select
-          value={filters.ownerStatus}
-          onChange={(event) =>
-            onChange('ownerStatus', event.target.value as GovernanceCatalogFilters['ownerStatus'])
-          }
-        >
-          {OWNER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-    </div>
-  )
-}
-
-function DefinitionEvidence({ asset }: { asset: GovernanceAsset }) {
-  return (
-    <div className="governance-definition-evidence">
-      <div>
-        <span className="governance-overline">业务定义</span>
-        <p>{asset.businessDefinition.summary}</p>
-      </div>
-      <dl>
+    <div className="governance-definition-card">
+      <div className="governance-definition-card__topline">
         <div>
-          <dt>粒度</dt>
+          <span className="governance-overline">资产定义</span>
+          <h4>{asset.businessName}</h4>
+          <code>{asset.technicalName}</code>
+        </div>
+        <LifecycleBadge asset={asset} />
+      </div>
+      <p>{asset.businessDefinition.summary}</p>
+      <dl className="governance-definition-grid">
+        <div>
+          <dt>一行是什么</dt>
           <dd>{asset.businessDefinition.grain}</dd>
         </div>
         <div>
-          <dt>适用范围</dt>
+          <dt>包含什么</dt>
           <dd>{asset.businessDefinition.scope}</dd>
         </div>
-        {asset.businessDefinition.exclusions && (
-          <div>
-            <dt>不适用</dt>
-            <dd>{asset.businessDefinition.exclusions}</dd>
-          </div>
-        )}
-      </dl>
-      <div
-        className={`governance-definition-status governance-definition-status--${asset.definitionCompleteness}`}
-      >
-        <span>definition completeness</span>
-        <strong>{asset.definitionCompleteness}</strong>
-      </div>
-    </div>
-  )
-}
-
-function FieldTable({
-  fields,
-  selectedFieldName,
-  onSelectField,
-}: {
-  fields: readonly GovernanceField[]
-  selectedFieldName: string
-  onSelectField: (fieldName: string) => void
-}) {
-  return (
-    <div className="governance-table-wrap">
-      <table className="governance-fields-table">
-        <caption>字段目录与敏感等级</caption>
-        <thead>
-          <tr>
-            <th scope="col">字段</th>
-            <th scope="col">业务含义</th>
-            <th scope="col">敏感等级</th>
-            <th scope="col">使用提示</th>
-          </tr>
-        </thead>
-        <tbody>
-          {fields.map((field) => {
-            const isSelected = field.name === selectedFieldName
-            return (
-              <tr className={isSelected ? 'is-selected' : ''} key={field.name}>
-                <th scope="row">
-                  <button
-                    className="governance-field-button"
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => onSelectField(field.name)}
-                  >
-                    <code>{field.name}</code>
-                    {field.semanticStatus === 'review-needed' && <small>semantic change</small>}
-                  </button>
-                </th>
-                <td>
-                  <strong>{field.label}</strong>
-                  <span>{field.description}</span>
-                </td>
-                <td>
-                  <SensitivityPill sensitivity={field.sensitivity} />
-                </td>
-                <td>
-                  {field.maskingStrategy ? (
-                    <span className="governance-field-hint">脱敏：{field.maskingStrategy}</span>
-                  ) : (
-                    <span className="governance-field-hint">按用途最小化使用</span>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function MetricEvidence({ asset }: { asset: GovernanceAsset }) {
-  if (!asset.metricDefinition) {
-    return (
-      <div className="governance-evidence-empty">
-        <span className="governance-overline">Metric definition</span>
-        <p>当前资产没有指标关联；不要从表名猜测业务口径。</p>
-      </div>
-    )
-  }
-
-  const { definition } = asset.metricDefinition
-  return (
-    <div className="governance-metric-evidence">
-      <div>
-        <span className="governance-overline">Metric definition · 指标口径</span>
-        <strong>{asset.metricDefinition.name}</strong>
-        <p>{asset.metricDefinition.note}</p>
-      </div>
-      <dl>
         <div>
-          <dt>业务过程</dt>
-          <dd>{definition.businessProcess}</dd>
+          <dt>不包含什么</dt>
+          <dd>{asset.businessDefinition.exclusions ?? '未说明'}</dd>
         </div>
         <div>
-          <dt>统计对象</dt>
-          <dd>{definition.subject}</dd>
-        </div>
-        <div>
-          <dt>时间字段</dt>
-          <dd>{definition.timeField}</dd>
-        </div>
-        <div>
-          <dt>度量 / 退款</dt>
-          <dd>
-            {definition.measure} · {definition.refundRule}
-          </dd>
-        </div>
-        <div>
-          <dt>粒度</dt>
-          <dd>{definition.grain}</dd>
+          <dt>Owner</dt>
+          <dd>{asset.owner ?? '未登记'}</dd>
         </div>
       </dl>
     </div>
   )
 }
 
-function formatQualitySampleValues(
-  values: GovernanceQualityEvidence['evidence'][number]['samples'][number]['values'],
-): string {
-  return Object.entries(values)
-    .map(([key, value]) => `${key}=${value ?? 'null'}`)
-    .join(' · ')
-}
-
-function QualityEvidencePanel({ evidence }: { evidence?: GovernanceQualityEvidence }) {
-  if (!evidence) {
-    return (
-      <div className="governance-quality-evidence governance-quality-evidence--unknown">
-        <div>
-          <span className="governance-overline">Quality evidence · 质量检查</span>
-          <strong>unknown · 当前没有覆盖这项资产</strong>
-        </div>
-        <p>没有可关联的 Quality Check；质量未知，不把未知显示为 pass。</p>
-      </div>
-    )
-  }
-
-  const target = `${evidence.target.table}.${evidence.target.field ?? 'table-level'}`
-  const partition = `${evidence.target.partition.column} = ${evidence.target.partition.value}`
-
-  return (
-    <div className={`governance-quality-evidence governance-quality-evidence--${evidence.status}`}>
-      <div className="governance-quality-evidence__header">
-        <div>
-          <span className="governance-overline">Quality evidence · 质量检查</span>
-          <strong>
-            {QUALITY_STATUS_LABELS[evidence.status]} · {evidence.severity ?? 'severity 未提供'}
-          </strong>
-          <p>
-            {evidence.ruleName ?? evidence.ruleId} · {evidence.ruleId}
-            {evidence.eventId ? ` · ${evidence.eventId}` : ' · 质量检查结果'}
-          </p>
-        </div>
-        <span className="governance-quality-release">
-          Release Decision: {evidence.releaseDecision.action} / {evidence.releaseDecision.status}
-        </span>
-      </div>
-
-      <dl className="governance-quality-evidence__facts">
-        <div>
-          <dt>target</dt>
-          <dd>{target}</dd>
-        </div>
-        <div>
-          <dt>partition</dt>
-          <dd>{partition}</dd>
-        </div>
-        <div>
-          <dt>observed / expected</dt>
-          <dd>
-            {evidence.observedValue} / {evidence.expectedLabel}
-          </dd>
-        </div>
-        <div>
-          <dt>failed sample count</dt>
-          <dd>{evidence.failedSampleCount}</dd>
-        </div>
-        <div>
-          <dt>last checked</dt>
-          <dd>{evidence.lastCheckedAt}</dd>
-        </div>
-        <div>
-          <dt>Scheduler context</dt>
-          <dd>
-            {evidence.schedulerTaskId} · {evidence.schedulerRunId} · {evidence.taskStatus}
-          </dd>
-        </div>
-        <div>
-          <dt>affected outputs</dt>
-          <dd>{evidence.releaseDecision.affectedOutputs.join('、') || '无'}</dd>
-        </div>
-      </dl>
-
-      <div className="governance-quality-evidence__items">
-        <h4>Evidence detail</h4>
-        {evidence.evidence.map((item) => (
-          <article key={item.evidenceId}>
-            <strong>
-              {item.kind} · {item.evidenceId}
-            </strong>
-            <p>{item.detail}</p>
-            <span>
-              observed {item.observedValue} · expected {item.expectedLabel} · samples{' '}
-              {item.samples.length}
-            </span>
-            {item.samples.length > 0 && (
-              <ul>
-                {item.samples.map((sample) => (
-                  <li key={sample.sampleId}>
-                    <code>{sample.rowKey}</code>
-                    <span>{sample.reason}</span>
-                    <small>{formatQualitySampleValues(sample.values)}</small>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-        ))}
-      </div>
-
-      <div className="governance-quality-evidence__risk">
-        <span>remaining risk</span>
-        <p>{evidence.remainingRisk}</p>
-      </div>
-    </div>
-  )
-}
-
-function ImpactObjectList({
-  title,
-  objects,
-  emptyText,
-}: {
-  title: string
-  objects: readonly GovernanceImpactObject[]
-  emptyText: string
-}) {
-  return (
-    <div className="governance-impact-list">
-      <h4>{title}</h4>
-      {objects.length > 0 ? (
-        <ul>
-          {objects.map((object) => (
-            <li key={object.id}>
-              <strong>{object.label}</strong>
-              <span>
-                {GOVERNANCE_ENTITY_TYPE_LABELS[object.entityType]} · {object.role}
-                {object.confidence ? ` · confidence ${object.confidence}` : ''}
-              </span>
-              {object.evidence?.[0] && (
-                <small>
-                  evidence · {object.evidence[0].source}: {object.evidence[0].detail}
-                </small>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="governance-empty-text">{emptyText}</p>
-      )}
-    </div>
-  )
-}
-
-function AssetInspector({
-  asset,
-  selectedFieldName,
-  onSelectField,
-  assetImpact,
-  governanceImpact,
-}: {
-  asset: GovernanceAsset
-  selectedFieldName: string
-  onSelectField: (fieldName: string) => void
-  assetImpact: GovernanceLineageImpact
-  governanceImpact: GovernanceLineageImpact
-}) {
-  const recommendation = getGovernanceRecommendation(asset, { lineageImpact: governanceImpact })
-
-  return (
-    <div className="governance-inspector">
-      <div className="governance-inspector__header">
-        <div>
-          <span className="governance-overline">Evidence inspector</span>
-          <h3 id="governance-inspector-title">{asset.businessName}</h3>
-          <code>{asset.technicalName}</code>
-        </div>
-        <RecommendationPill result={recommendation} />
-      </div>
-
-      <p className="governance-inspector__description">{asset.description}</p>
-
-      <div className="governance-asset-facts">
-        <div>
-          <span>Asset type</span>
-          <strong>{asset.assetType}</strong>
-        </div>
-        <div>
-          <span>Owner</span>
-          <strong className={!asset.owner ? 'is-missing' : ''}>{asset.owner ?? '缺失'}</strong>
-        </div>
-        <div>
-          <span>Steward</span>
-          <strong>{asset.steward ?? '未填写'}</strong>
-        </div>
-        <div>
-          <span>Lifecycle</span>
-          <LifecyclePill lifecycle={asset.lifecycle} />
-        </div>
-        <div>
-          <span>Asset sensitivity</span>
-          <SensitivityPill sensitivity={asset.sensitivity} />
-        </div>
-      </div>
-
-      <DefinitionEvidence asset={asset} />
-
-      <section className="governance-inspector__section" aria-labelledby="governance-fields-title">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">Field catalog</span>
-            <h4 id="governance-fields-title">字段不是默认可见的附属信息</h4>
-          </div>
-          <p>选中一个字段，下一步在 policy simulation 中判断它能否被使用。</p>
-        </div>
-        <FieldTable
-          fields={asset.fields}
-          selectedFieldName={selectedFieldName}
-          onSelectField={onSelectField}
-        />
-      </section>
-
-      <section className="governance-inspector__section" aria-labelledby="governance-metric-title">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">Metric evidence</span>
-            <h4 id="governance-metric-title">指标关联</h4>
-          </div>
-          <p>目录引用指标定义，资产选择时不重复计算销售额。</p>
-        </div>
-        <MetricEvidence asset={asset} />
-      </section>
-
-      <section className="governance-inspector__section" aria-labelledby="governance-lineage-title">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">Lineage evidence</span>
-            <h4 id="governance-lineage-title">下游消费者与影响</h4>
-          </div>
-          <p>直接下游适合安排修改；传递影响和 consumers 用于通知与验证。</p>
-        </div>
-        <div className="governance-lineage-source">
-          <strong>{asset.lineageEvidence.status}</strong>
-          <span>{asset.lineageEvidence.note}</span>
-        </div>
-        <div className="governance-lineage-risk">
-          <span>Quality × Lineage risk</span>
-          <strong>{governanceImpact.riskLevel}</strong>
-          <p>{governanceImpact.riskReason}</p>
-        </div>
-        <div className="governance-impact-grid">
-          <ImpactObjectList
-            title="上游"
-            objects={assetImpact.upstreamImpacts}
-            emptyText="没有可用的上游血缘证据。"
-          />
-          <ImpactObjectList
-            title="直接下游"
-            objects={assetImpact.directImpacts}
-            emptyText="没有可用的直接下游血缘证据。"
-          />
-          <ImpactObjectList
-            title="传递影响"
-            objects={assetImpact.transitiveImpacts}
-            emptyText="没有可用的传递影响血缘证据。"
-          />
-          <ImpactObjectList
-            title="消费者"
-            objects={assetImpact.consumers}
-            emptyText="当前节点没有识别出的表或指标消费者。"
-          />
-        </div>
-      </section>
-
-      <section className="governance-inspector__section" aria-labelledby="governance-quality-title">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">Quality evidence</span>
-            <h4 id="governance-quality-title">质量证据会改变是否推荐使用</h4>
-          </div>
-          <p>质量结果来自检查记录，治理根据证据做资产判断。</p>
-        </div>
-        <QualityEvidencePanel evidence={asset.qualityEvidence} />
-      </section>
-
-      <div className="governance-inspector__footer">
-        <span>tags</span>
-        <div>
-          {asset.tags.map((tag) => (
-            <span className="governance-tag" key={tag}>
-              #{tag}
-            </span>
-          ))}
-        </div>
-        <span className="governance-freshness">
-          Freshness metadata：
-          {asset.freshnessMetadata
-            ? `${asset.freshnessMetadata.lastUpdatedAt} · ${asset.freshnessMetadata.status}`
-            : 'unknown · 未提供'}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function PolicySimulation({
-  fields,
-  selectedFieldName,
-  role,
-  purpose,
-  policyDecision,
-  onFieldChange,
-  onRoleChange,
-  onPurposeChange,
-}: {
-  fields: readonly GovernanceField[]
-  selectedFieldName: string
-  role: GovernanceRole
-  purpose: GovernancePurpose
-  policyDecision?: GovernancePolicyDecisionResult
-  onFieldChange: (fieldName: string) => void
-  onRoleChange: (role: GovernanceRole) => void
-  onPurposeChange: (purpose: GovernancePurpose) => void
-}) {
-  return (
-    <section className="governance-policy" aria-labelledby="governance-policy-title">
-      <div className="governance-section-heading">
-        <div>
-          <span className="governance-overline">权限策略试算</span>
-          <h3 id="governance-policy-title">同一个字段，换角色和用途再判断一次</h3>
-        </div>
-        <p>同一个字段的使用方式，会随角色和业务用途改变。</p>
-      </div>
-      <div className="governance-policy__controls">
-        <label>
-          <span>角色</span>
-          <select
-            value={role}
-            onChange={(event) => onRoleChange(event.target.value as GovernanceRole)}
-          >
-            {GOVERNANCE_ROLE_OPTIONS.map((option) => (
-              <option value={option.value} key={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <small>{GOVERNANCE_ROLE_OPTIONS.find((option) => option.value === role)?.detail}</small>
-        </label>
-        <label>
-          <span>用途</span>
-          <select
-            value={purpose}
-            onChange={(event) => onPurposeChange(event.target.value as GovernancePurpose)}
-          >
-            {GOVERNANCE_PURPOSE_OPTIONS.map((option) => (
-              <option value={option.value} key={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <small>
-            {getGovernancePurposeLabel(purpose)}：
-            {GOVERNANCE_PURPOSE_OPTIONS.find((option) => option.value === purpose)?.detail}
-          </small>
-        </label>
-        <label>
-          <span>字段</span>
-          <select value={selectedFieldName} onChange={(event) => onFieldChange(event.target.value)}>
-            {fields.map((field) => (
-              <option value={field.name} key={field.name}>
-                {field.name} · {field.sensitivity}
-              </option>
-            ))}
-          </select>
-          <small>字段敏感等级决定默认边界</small>
-        </label>
-      </div>
-
-      {policyDecision && (
-        <div
-          className={`governance-policy-result governance-policy-result--${policyDecision.decision}`}
-          aria-live="polite"
-        >
-          <div className="governance-policy-result__header">
-            <div>
-              <span className="governance-overline">decision</span>
-              <strong>{GOVERNANCE_DECISION_LABELS[policyDecision.decision]}</strong>
-            </div>
-            <span>
-              {GOVERNANCE_ROLE_OPTIONS.find((option) => option.value === role)?.label} ·{' '}
-              {GOVERNANCE_PURPOSE_OPTIONS.find((option) => option.value === purpose)?.label}
-            </span>
-          </div>
-          <p className="governance-policy-result__reason">{policyDecision.reason}</p>
-          <div className="governance-policy-result__body">
-            <div>
-              <h4>Policy factors</h4>
-              <ul className="governance-factor-list">
-                {policyDecision.policyFactors.map((factor) => (
-                  <li className={`is-${factor.tone}`} key={factor.label}>
-                    <span>{factor.label}</span>
-                    <strong>{factor.value}</strong>
-                    <small>{factor.implication}</small>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Evidence</h4>
-              <ul className="governance-evidence-list">
-                {policyDecision.evidence.map((evidence) => (
-                  <li key={evidence}>{evidence}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="governance-risk-callout">
-            <span>remaining risk</span>
-            <p>{policyDecision.remainingRisk}</p>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function ChangeImpactPanel({
-  event,
-  impact,
-  onApply,
-  eventMessage,
-}: {
-  event?: GovernanceLifecycleEvent
-  impact?: ReturnType<typeof getGovernanceLineageImpact>
-  onApply: () => void
-  eventMessage: string
-}) {
-  if (!event) {
-    return null
-  }
-
-  return (
-    <section className="governance-change" aria-labelledby="governance-change-title">
-      <div className="governance-section-heading">
-        <div>
-          <span className="governance-overline">Lifecycle & impact</span>
-          <h3 id="governance-change-title">处理变更，再决定通知范围</h3>
-        </div>
-        <p>事件会沿已登记的血缘关系展开，帮助确定需要迁移和通知的对象。</p>
-      </div>
-      <div className="governance-event-tabs" role="list" aria-label="治理事件">
-        <span className="governance-event-tabs__hint">选择事件：</span>
-        <span className="governance-event-tabs__selected">
-          {EVENT_TYPE_LABELS[event.eventType]} · {event.label}
-        </span>
-      </div>
-      <div className="governance-event-detail">
-        <div>
-          <strong>{event.label}</strong>
-          <p>{event.description}</p>
-          <small>
-            evidence · {event.evidence.source}：{event.evidence.detail}
-          </small>
-        </div>
-        <button className="button button--primary button--small" type="button" onClick={onApply}>
-          应用事件
-        </button>
-      </div>
-      {eventMessage && (
-        <p className="governance-event-message" aria-live="polite">
-          {eventMessage}
-        </p>
-      )}
-
-      <div className="governance-change-summary">
-        <div>
-          <strong>{impact?.directImpacts.length ?? 0}</strong>
-          <span>直接受影响</span>
-        </div>
-        <div>
-          <strong>{impact?.transitiveImpacts.length ?? 0}</strong>
-          <span>传递影响</span>
-        </div>
-        <div>
-          <strong>{impact?.consumers.length ?? 0}</strong>
-          <span>消费者</span>
-        </div>
-        <div>
-          <strong>{impact?.notificationTargets.length ?? 0}</strong>
-          <span>通知对象</span>
-        </div>
-      </div>
-
-      <div className="governance-lineage-risk governance-lineage-risk--change">
-        <span>Lineage risk</span>
-        <strong>{impact?.riskLevel ?? 'standard'}</strong>
-        <p>{impact?.riskReason ?? '没有可计算的影响范围。'}</p>
-      </div>
-      <div className="governance-impact-grid governance-impact-grid--change">
-        <ImpactObjectList
-          title="上游证据"
-          objects={impact?.upstreamImpacts ?? []}
-          emptyText="该事件没有可用的上游血缘对象。"
-        />
-        <ImpactObjectList
-          title="直接受影响对象"
-          objects={impact?.directImpacts ?? []}
-          emptyText="该事件没有可用的直接血缘对象。"
-        />
-        <ImpactObjectList
-          title="传递影响对象"
-          objects={impact?.transitiveImpacts ?? []}
-          emptyText="该事件没有可用的传递血缘对象。"
-        />
-        <ImpactObjectList
-          title="下游 consumers"
-          objects={impact?.consumers ?? []}
-          emptyText="没有识别出的表或指标消费者。"
-        />
-      </div>
-
-      <div className="governance-notification-order">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">Notification plan</span>
-            <h4>建议处理顺序</h4>
-          </div>
-          <p>通知范围按直接依赖和传递影响逐层展开；Owner 缺失的对象会明确标注待确认。</p>
-        </div>
-        {impact && impact.notificationTargets.length > 0 ? (
-          <ol>
-            {impact.notificationTargets.map((target) => (
-              <li key={target.id}>
-                <span>{PRIORITY_LABELS[target.priority]}</span>
-                <div>
-                  <strong>{target.recipient}</strong>
-                  <p>
-                    {target.label} · {target.reason}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="governance-empty-text">没有 lineage evidence，无法负责任地生成通知范围。</p>
-        )}
-      </div>
-    </section>
-  )
-}
-
-function DecisionRecordPanel({
-  record,
-  onCreate,
-  disabled,
-}: {
-  record: GovernanceDecisionRecord | null
-  onCreate: () => void
-  disabled: boolean
-}) {
-  return (
-    <section className="governance-record" aria-labelledby="governance-record-title">
-      <div className="governance-section-heading">
-        <div>
-          <span className="governance-overline">Decision record</span>
-          <h3 id="governance-record-title">留下这次治理决定</h3>
-        </div>
-        <button
-          className="button button--primary button--small"
-          type="button"
-          disabled={disabled}
-          onClick={onCreate}
-        >
-          生成治理记录
-        </button>
-      </div>
-      {!record ? (
-        <p className="governance-empty-text">
-          记录会保存当前资产、字段、角色 / 用途、访问决定、血缘影响、通知对象和剩余风险。
-        </p>
-      ) : (
-        <div className="governance-record__body" aria-live="polite">
-          <div className="governance-record__headline">
-            <span>recordedAt · {record.recordedAt}</span>
-            <strong>{record.selectedAssetName}</strong>
-            <code>{record.fieldName}</code>
-          </div>
-          <dl className="governance-record__facts">
-            <div>
-              <dt>推荐</dt>
-              <dd>{record.recommendation}</dd>
-            </div>
-            <div>
-              <dt>访问决定</dt>
-              <dd>{record.accessDecision}</dd>
-            </div>
-            <div>
-              <dt>角色 / 用途</dt>
-              <dd>
-                {record.role} · {record.purpose}
-              </dd>
-            </div>
-            <div>
-              <dt>生命周期</dt>
-              <dd>{record.lifecycle}</dd>
-            </div>
-            <div>
-              <dt>Owner</dt>
-              <dd>{record.owner ?? '缺失'}</dd>
-            </div>
-            <div>
-              <dt>敏感等级</dt>
-              <dd>{record.sensitivity}</dd>
-            </div>
-            <div>
-              <dt>影响事件</dt>
-              <dd>{record.impactEventId ?? '未选择'}</dd>
-            </div>
-          </dl>
-          <p className="governance-record__reason">{record.decisionReason}</p>
-          <div className="governance-record__lists">
-            <div>
-              <h4>Quality evidence used</h4>
-              <ul>
-                {record.qualityEvidenceUsed.map((evidence) => (
-                  <li key={evidence}>{evidence}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Lineage evidence used</h4>
-              <ul>
-                {record.lineageEvidenceUsed.map((evidence) => (
-                  <li key={evidence}>{evidence}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Direct impact</h4>
-              <ul>
-                {record.directImpact.map((impact) => (
-                  <li key={impact}>{impact}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Transitive impact</h4>
-              <ul>
-                {record.transitiveImpact.map((impact) => (
-                  <li key={impact}>{impact}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Consumers</h4>
-              <ul>
-                {record.consumers.map((consumer) => (
-                  <li key={consumer}>{consumer}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Notifications</h4>
-              <ul>
-                {record.notifications.map((notification) => (
-                  <li key={notification}>{notification}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Remaining risks</h4>
-              <ul>
-                {record.remainingRisks.map((risk) => (
-                  <li key={risk}>{risk}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps) {
-  const defaultAsset =
-    visualization.assets.find((asset) => asset.id === 'dws-sales') ?? visualization.assets[0]
-  const [filters, setFilters] = useState<GovernanceCatalogFilters>(DEFAULT_GOVERNANCE_FILTERS)
-  const [selectedAssetId, setSelectedAssetId] = useState(defaultAsset?.id ?? '')
-  const [selectedFieldName, setSelectedFieldName] = useState(defaultAsset?.fields[0]?.name ?? '')
-  const [role, setRole] = useState<GovernanceRole>('analyst')
-  const [purpose, setPurpose] = useState<GovernancePurpose>('business-analysis')
-  const [selectedEventId, setSelectedEventId] = useState(visualization.events[0]?.id ?? '')
-  const [assetOverrides, setAssetOverrides] = useState<Record<string, GovernanceAsset>>({})
-  const [eventMessage, setEventMessage] = useState('')
-  const [decisionRecord, setDecisionRecord] = useState<GovernanceDecisionRecord | null>(null)
-
-  const catalogAssets = useMemo(
-    () => visualization.assets.map((asset) => assetOverrides[asset.id] ?? asset),
-    [assetOverrides, visualization.assets],
-  )
+function AssetSelectionLab({ visualization }: { visualization: GovernanceVisualization }) {
+  const [query, setQuery] = useState('存款余额')
+  const [selectedAssetId, setSelectedAssetId] = useState('dws-deposit-balance-daily')
+  const [confirmedAssetId, setConfirmedAssetId] = useState('')
   const filteredAssets = useMemo(
-    () => filterGovernanceAssets(catalogAssets, filters),
-    [catalogAssets, filters],
+    () =>
+      filterGovernanceAssets(visualization.assets, {
+        ...DEFAULT_GOVERNANCE_FILTERS,
+        query,
+      }),
+    [query, visualization.assets],
   )
   const selectedAsset =
-    catalogAssets.find((asset) => asset.id === selectedAssetId) ??
-    filteredAssets[0] ??
-    catalogAssets[0]
-  const selectedField = selectedAsset?.fields.find((field) => field.name === selectedFieldName)
-  const activeField = selectedField ?? selectedAsset?.fields[0]
-  const assetImpact = selectedAsset
-    ? getAssetLineageImpact(
-        selectedAsset,
-        catalogAssets,
-        visualization.lineageNodes,
-        visualization.lineageEdges,
-      )
-    : undefined
-  const governanceImpact = selectedAsset
-    ? getAssetLineageImpact(
-        selectedAsset,
-        catalogAssets,
-        visualization.lineageNodes,
-        visualization.lineageEdges,
-        {
-          includeCrossEntity: true,
-          qualityEvidence: selectedAsset.qualityEvidence,
-        },
-      )
-    : undefined
-  const recommendation = selectedAsset
-    ? getGovernanceRecommendation(selectedAsset, { lineageImpact: governanceImpact })
-    : undefined
-  const selectedEvent = visualization.events.find((event) => event.id === selectedEventId)
-  const eventImpact = selectedEvent
-    ? getGovernanceLineageImpact(
-        catalogAssets,
-        visualization.lineageNodes,
-        visualization.lineageEdges,
-        selectedEvent,
-      )
-    : undefined
-  const decisionImpact =
-    selectedEvent?.assetId === selectedAsset?.id ? eventImpact : governanceImpact
-  const policyDecision =
-    selectedAsset && activeField
-      ? evaluateGovernancePolicy({
-          asset: selectedAsset,
-          fieldName: activeField.name,
-          role,
-          purpose,
-        })
-      : undefined
-
-  function updateFilters<Key extends keyof GovernanceCatalogFilters>(
-    key: Key,
-    value: GovernanceCatalogFilters[Key],
-  ) {
-    setFilters((current) => ({ ...current, [key]: value }))
-  }
-
-  function selectAsset(assetId: string) {
-    const asset = catalogAssets.find((candidate) => candidate.id === assetId)
-    setSelectedAssetId(assetId)
-    setSelectedFieldName(asset?.fields[0]?.name ?? '')
-    setDecisionRecord(null)
-  }
-
-  function selectEvent(eventId: string) {
-    const event = visualization.events.find((candidate) => candidate.id === eventId)
-    setSelectedEventId(eventId)
-    if (event) {
-      setSelectedAssetId(event.assetId)
-      setSelectedFieldName(event.fieldName ?? '')
-    }
-    setEventMessage('')
-    setDecisionRecord(null)
-  }
-
-  function applySelectedEvent() {
-    if (!selectedEvent || !selectedAsset) {
-      return
-    }
-
-    const result = applyGovernanceEvent(selectedAsset, selectedEvent)
-    if (result.changed) {
-      setAssetOverrides((current) => ({ ...current, [result.asset.id]: result.asset }))
-      const nextFieldName = selectedEvent.newFieldName ?? selectedEvent.fieldName
-      setSelectedFieldName(
-        result.asset.fields.find((field) => field.name === nextFieldName)?.name ??
-          result.asset.fields[0]?.name ??
-          '',
-      )
-    }
-    setEventMessage(result.message)
-    setDecisionRecord(null)
-  }
-
-  function createRecord() {
-    if (!selectedAsset || !activeField || !recommendation || !policyDecision) {
-      return
-    }
-
-    setDecisionRecord(
-      createGovernanceDecisionRecord({
-        asset: selectedAsset,
-        field: activeField,
-        recommendation,
-        policyDecision,
-        impact: decisionImpact,
-        event: selectedEvent?.assetId === selectedAsset.id ? selectedEvent : undefined,
-      }),
-    )
-  }
-
-  function resetWorkbench() {
-    setFilters({ ...DEFAULT_GOVERNANCE_FILTERS })
-    setAssetOverrides({})
-    setSelectedAssetId(defaultAsset?.id ?? '')
-    setSelectedFieldName(defaultAsset?.fields[0]?.name ?? '')
-    setRole('analyst')
-    setPurpose('business-analysis')
-    setSelectedEventId(visualization.events[0]?.id ?? '')
-    setEventMessage('')
-    setDecisionRecord(null)
-  }
+    visualization.assets.find((asset) => asset.id === selectedAssetId) ?? filteredAssets[0]
 
   return (
-    <div className="governance-workbench">
+    <div className="governance-workbench" data-governance-focus="asset-selection">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">
-            Asset Catalog · Governance Decision Workbench
-          </span>
-          <p aria-live="polite">
-            {filteredAssets.length} / {catalogAssets.length}{' '}
-            个资产匹配当前搜索；按匹配结果核验证据。
-          </p>
+          <span className="visualization-toolbar__label">09-1 · 资产搜索结果</span>
+          <p aria-live="polite">搜索“存款余额”，比较每一行实际代表什么。</p>
         </div>
         <button
           className="button button--quiet button--small"
           type="button"
-          onClick={resetWorkbench}
+          onClick={() => {
+            setQuery('存款余额')
+            setSelectedAssetId('dws-deposit-balance-daily')
+            setConfirmedAssetId('')
+          }}
         >
-          重置工作台
+          重置选择
         </button>
       </div>
 
-      <section className="governance-catalog" aria-labelledby="governance-catalog-title">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">01 · Discover assets</span>
-            <h3 id="governance-catalog-title">先用业务语义搜索订单域资产</h3>
-          </div>
-          <p>结果卡片直接暴露 definition、Owner、lifecycle、sensitivity 和 freshness 差异。</p>
-        </div>
-        <SearchFilters assets={catalogAssets} filters={filters} onChange={updateFilters} />
-        <div className="governance-catalog__body">
-          <div className="governance-catalog__results" aria-label="资产搜索结果">
+      <section className="governance-panel" aria-labelledby="governance-asset-selection-title">
+        <PanelHeading
+          id="governance-asset-selection-title"
+          eyebrow="Search → compare → choose"
+          title="先看定义，再决定哪份资产回答当前问题"
+          description="DWD、DWS、ADS 只是技术位置；当前业务问题决定选择。"
+        />
+        <label className="governance-search-field">
+          <span>业务关键词</span>
+          <input
+            type="search"
+            value={query}
+            aria-label="搜索资产"
+            placeholder="例如：存款余额"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <div className="governance-selection-layout">
+          <div className="governance-result-list" aria-label="资产搜索结果">
             {filteredAssets.length > 0 ? (
               filteredAssets.map((asset) => (
-                <AssetCard
-                  asset={asset}
-                  isSelected={asset.id === selectedAsset?.id}
+                <AssetResultCard
                   key={asset.id}
-                  onSelect={() => selectAsset(asset.id)}
+                  asset={asset}
+                  selected={asset.id === selectedAsset?.id}
+                  onSelect={() => setSelectedAssetId(asset.id)}
                 />
               ))
             ) : (
-              <p className="governance-empty-text">没有匹配资产；换一个业务关键词或清除筛选。</p>
+              <p className="governance-empty">没有匹配资产。换一个业务关键词。</p>
             )}
           </div>
-          {selectedAsset && assetImpact && governanceImpact ? (
-            <AssetInspector
-              asset={selectedAsset}
-              selectedFieldName={activeField?.name ?? ''}
-              onSelectField={setSelectedFieldName}
-              assetImpact={assetImpact}
-              governanceImpact={governanceImpact}
-            />
+          {selectedAsset ? (
+            <div className="governance-detail-column">
+              <DefinitionPanel asset={selectedAsset} />
+              <div className="governance-decision-card">
+                <div>
+                  <span className="governance-overline">当前问题</span>
+                  <strong>按机构查看某业务日的存款余额</strong>
+                  <p>需要 Branch × Product × business_date 的日汇总。</p>
+                </div>
+                <button
+                  className="button button--primary button--small"
+                  type="button"
+                  onClick={() => setConfirmedAssetId(selectedAsset.id)}
+                >
+                  选择这份资产
+                </button>
+              </div>
+              {confirmedAssetId && (
+                <p className="governance-live-message" aria-live="polite">
+                  已选择{' '}
+                  <code>
+                    {
+                      visualization.assets.find((asset) => asset.id === confirmedAssetId)
+                        ?.technicalName
+                    }
+                  </code>
+                  ： 定义与当前机构分析需求匹配。
+                </p>
+              )}
+            </div>
           ) : (
-            <p className="governance-empty-text">请选择一项资产查看证据。</p>
+            <p className="governance-empty">请选择一项资产查看定义。</p>
           )}
         </div>
       </section>
-
-      {selectedAsset && (
-        <PolicySimulation
-          fields={selectedAsset.fields}
-          selectedFieldName={activeField?.name ?? ''}
-          role={role}
-          purpose={purpose}
-          policyDecision={policyDecision}
-          onFieldChange={setSelectedFieldName}
-          onRoleChange={setRole}
-          onPurposeChange={setPurpose}
-        />
-      )}
-
-      <section className="governance-event-picker" aria-labelledby="governance-event-picker-title">
-        <div className="governance-section-heading">
-          <div>
-            <span className="governance-overline">02 · Change governance</span>
-            <h3 id="governance-event-picker-title">一个变更事件，如何查影响范围？</h3>
-          </div>
-          <p>选择事件后，沿节点和边查看直接下游、传递影响与通知对象。</p>
-        </div>
-        <div className="governance-event-picker__options" role="list" aria-label="治理事件选择">
-          {visualization.events.map((event) => (
-            <button
-              className={`governance-event-option${event.id === selectedEvent?.id ? ' is-selected' : ''}`}
-              type="button"
-              aria-pressed={event.id === selectedEvent?.id}
-              key={event.id}
-              onClick={() => selectEvent(event.id)}
-            >
-              <span>{EVENT_TYPE_LABELS[event.eventType]}</span>
-              <strong>{event.label}</strong>
-              <small>
-                {catalogAssets.find((asset) => asset.id === event.assetId)?.technicalName}
-              </small>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <ChangeImpactPanel
-        event={selectedEvent}
-        impact={eventImpact}
-        onApply={applySelectedEvent}
-        eventMessage={eventMessage}
-      />
-
-      <DecisionRecordPanel
-        record={decisionRecord}
-        onCreate={createRecord}
-        disabled={!selectedAsset || !activeField || !recommendation || !policyDecision}
-      />
-
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        每个决定都回到资产定义、质量证据、访问用途和血缘影响；未覆盖的质量状态保持 unknown。
+        选择依据是业务定义、已有 Grain、范围和排除项，不是层级高低。
       </p>
     </div>
   )
+}
+
+function EvidenceStatusBadge({ status }: { status: 'recommended' | 'not-recommended' }) {
+  return (
+    <span className={`governance-badge governance-badge--${status}`}>
+      {status === 'recommended' ? '当前建议使用' : '暂不建议使用'}
+    </span>
+  )
+}
+
+function EvidenceCheckLab({ visualization }: { visualization: GovernanceVisualization }) {
+  const cases = visualization.qualityCases ?? []
+  const [selectedCaseId, setSelectedCaseId] = useState(cases[0]?.id ?? '')
+  const selectedCase = cases.find((qualityCase) => qualityCase.id === selectedCaseId) ?? cases[0]
+  const decision = selectedCase ? getGovernanceEvidenceDecision(selectedCase) : undefined
+
+  return (
+    <div className="governance-workbench" data-governance-focus="evidence-check">
+      <div className="visualization-toolbar">
+        <div>
+          <span className="visualization-toolbar__label">09-2 · Quality + Freshness</span>
+          <p aria-live="polite">当前需求：今天查看昨天业务日的机构存款余额。</p>
+        </div>
+        <span className="governance-toolbar-hint">只消费第 07 章已提供的证据</span>
+      </div>
+      <section className="governance-panel" aria-labelledby="governance-evidence-title">
+        <PanelHeading
+          id="governance-evidence-title"
+          eyebrow="Evidence → decision"
+          title="语义匹配以后，还要看今天能不能用"
+          description="Quality PASS 和 Freshness 都要放回当前业务日期判断。"
+        />
+        <div
+          className="governance-evidence-choices"
+          role="list"
+          aria-label="Quality 与 Freshness 候选"
+        >
+          {cases.map((qualityCase) => {
+            const caseDecision = getGovernanceEvidenceDecision(qualityCase)
+            return (
+              <button
+                className={`governance-evidence-choice${qualityCase.id === selectedCase?.id ? ' is-selected' : ''}`}
+                type="button"
+                aria-pressed={qualityCase.id === selectedCase?.id}
+                key={qualityCase.id}
+                onClick={() => setSelectedCaseId(qualityCase.id)}
+              >
+                <span className="governance-card-kicker">{qualityCase.label}</span>
+                <strong>{caseDecision.headline}</strong>
+                <span>Quality：{qualityCase.qualityStatus.toUpperCase()}</span>
+                <span>Freshness：{qualityCase.freshnessLabel}</span>
+              </button>
+            )
+          })}
+        </div>
+        {selectedCase && decision && (
+          <div className={`governance-evidence-result is-${decision.status}`} aria-live="polite">
+            <div className="governance-evidence-result__header">
+              <div>
+                <span className="governance-overline">判断结果</span>
+                <h4>{decision.headline}</h4>
+              </div>
+              <EvidenceStatusBadge status={decision.status} />
+            </div>
+            <p className="governance-evidence-reason">{decision.reason}</p>
+            <div className="governance-evidence-columns">
+              <div>
+                <h5>证据</h5>
+                <ul>
+                  {decision.evidence.map((evidence) => (
+                    <li key={evidence}>{evidence}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h5>当前需求</h5>
+                <p>按机构查看昨天业务日的存款余额。</p>
+                <p>定义与 Grain 已匹配，变化点在 Quality 和 Freshness。</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+      <p className="visualization-note">
+        <span aria-hidden="true">↳</span>
+        这里没有综合分数：决定来自结论、证据和原因。
+      </p>
+    </div>
+  )
+}
+
+function FieldAccessResult({
+  field,
+  purpose,
+}: {
+  field: GovernanceField
+  purpose: GovernancePurpose
+}) {
+  const access = getGovernanceFieldAccess({ field, purpose })
+  return (
+    <div className={`governance-access-result is-${access.outcome}`} aria-live="polite">
+      <div className="governance-access-result__header">
+        <div>
+          <span className="governance-overline">字段使用结论</span>
+          <h4>{access.label}</h4>
+        </div>
+        <code>{field.name}</code>
+      </div>
+      <p>{access.reason}</p>
+      {access.value && (
+        <div className="governance-masked-sample">
+          <span>教学展示值</span>
+          <code>{access.value}</code>
+        </div>
+      )}
+      <ul className="governance-evidence-list">
+        {access.evidence.map((evidence) => (
+          <li key={evidence}>{evidence}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function FieldAccessLab({ visualization }: { visualization: GovernanceVisualization }) {
+  const asset = visualization.assets.find(
+    (candidate) => candidate.id === 'dwd-account-balance-detail',
+  )
+  const fields = asset?.fields ?? []
+  const requiredFieldNames = ['business_date', 'branch_id', 'product_type', 'deposit_balance']
+  const [selectedFields, setSelectedFields] = useState<string[]>(requiredFieldNames)
+  const [activeFieldName, setActiveFieldName] = useState('deposit_balance')
+  const [purpose, setPurpose] = useState<GovernancePurpose>('business-analysis')
+  const activeField = fields.find((field) => field.name === activeFieldName) ?? fields[0]
+
+  function toggleField(fieldName: string) {
+    setSelectedFields((current) =>
+      current.includes(fieldName)
+        ? current.filter((name) => name !== fieldName)
+        : [...current, fieldName],
+    )
+    setActiveFieldName(fieldName)
+  }
+
+  return (
+    <div className="governance-workbench" data-governance-focus="field-access">
+      <div className="visualization-toolbar">
+        <div>
+          <span className="visualization-toolbar__label">09-3 · 字段级使用</span>
+          <p aria-live="polite">当前角色：经营分析人员；只选择真正需要的字段。</p>
+        </div>
+        <span className="governance-toolbar-hint">资产可用 ≠ 所有字段都可直接用</span>
+      </div>
+      <section className="governance-panel" aria-labelledby="governance-field-access-title">
+        <PanelHeading
+          id="governance-field-access-title"
+          eyebrow="Role + purpose + field"
+          title="勾选字段，再换一个业务用途"
+          description="同一位使用者切换用途后，字段的必要性和处理方式也会变化。"
+        />
+        <div className="governance-purpose-controls">
+          <label>
+            <span>使用角色</span>
+            <select aria-label="使用角色" value="analyst" disabled>
+              <option value="analyst">经营分析人员</option>
+            </select>
+          </label>
+          <label>
+            <span>使用用途</span>
+            <select
+              aria-label="使用用途"
+              value={purpose}
+              onChange={(event) => setPurpose(event.target.value as GovernancePurpose)}
+            >
+              {GOVERNANCE_PURPOSE_OPTIONS.map((option) => (
+                <option value={option.value} key={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <small>
+              {getGovernancePurposeLabel(purpose)}：
+              {GOVERNANCE_PURPOSE_OPTIONS.find((option) => option.value === purpose)?.detail}
+            </small>
+          </label>
+        </div>
+        <div className="governance-field-layout">
+          <div className="governance-field-picker">
+            <div className="governance-subheading">
+              <span className="governance-overline">AccountBalanceSnapshot fields</span>
+              <h4>勾选真正需要的字段</h4>
+            </div>
+            <div className="governance-field-options">
+              {fields.map((field) => (
+                <label
+                  className={selectedFields.includes(field.name) ? 'is-selected' : ''}
+                  key={field.name}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedFields.includes(field.name)}
+                    onChange={() => toggleField(field.name)}
+                  />
+                  <span>
+                    <code>{field.name}</code>
+                    <strong>{field.label}</strong>
+                    {field.sensitivity !== 'public' && field.sensitivity !== 'internal' && (
+                      <small>敏感字段 · {field.sensitivity}</small>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="governance-selected-fields">
+              <span>当前字段集合</span>
+              {selectedFields.length > 0 ? (
+                selectedFields.map((fieldName) => <code key={fieldName}>{fieldName}</code>)
+              ) : (
+                <small>还没有选择字段</small>
+              )}
+            </div>
+          </div>
+          {activeField ? (
+            <FieldAccessResult field={activeField} purpose={purpose} />
+          ) : (
+            <p className="governance-empty">先选择一个字段。</p>
+          )}
+        </div>
+      </section>
+      <p className="visualization-note">
+        <span aria-hidden="true">↳</span>
+        {maskGovernanceValue('6222 1234 5678 9012')} 是一次脱敏展示；这里只观察字段处理后的结果。
+      </p>
+    </div>
+  )
+}
+
+function LifecycleLab({ visualization }: { visualization: GovernanceVisualization }) {
+  const [query, setQuery] = useState('旧')
+  const [selectedAssetId, setSelectedAssetId] = useState('ads-deposit-balance-old')
+  const [migrationMessage, setMigrationMessage] = useState('')
+  const filteredAssets = useMemo(
+    () =>
+      filterGovernanceAssets(visualization.assets, {
+        ...DEFAULT_GOVERNANCE_FILTERS,
+        query,
+      }),
+    [query, visualization.assets],
+  )
+  const selectedAsset =
+    visualization.assets.find((asset) => asset.id === selectedAssetId) ?? filteredAssets[0]
+  const replacement = selectedAsset
+    ? getReplacementAsset(selectedAsset, visualization.assets)
+    : undefined
+
+  function switchToReplacement() {
+    if (!replacement) {
+      return
+    }
+
+    setSelectedAssetId(replacement.id)
+    setQuery('存款余额')
+    setMigrationMessage(`已切换到 ${replacement.technicalName}；新的依赖不再指向 deprecated 资产。`)
+  }
+
+  return (
+    <div className="governance-workbench" data-governance-focus="lifecycle">
+      <div className="visualization-toolbar">
+        <div>
+          <span className="visualization-toolbar__label">09-4 · 生命周期</span>
+          <p aria-live="polite">搜索仍可访问的旧资产，判断是否继续建立新的依赖。</p>
+        </div>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => {
+            setQuery('旧')
+            setSelectedAssetId('ads-deposit-balance-old')
+            setMigrationMessage('')
+          }}
+        >
+          重置迁移判断
+        </button>
+      </div>
+      <section className="governance-panel" aria-labelledby="governance-lifecycle-title">
+        <PanelHeading
+          id="governance-lifecycle-title"
+          eyebrow="Search → lifecycle → migrate"
+          title="能查到，不代表仍然推荐使用"
+          description="生命周期状态改变的是新依赖的推荐结论。"
+        />
+        <label className="governance-search-field">
+          <span>搜索资产</span>
+          <input
+            type="search"
+            value={query}
+            aria-label="搜索旧资产"
+            placeholder="例如：旧、deprecated"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+        <div className="governance-lifecycle-layout">
+          <div className="governance-result-list" aria-label="生命周期搜索结果">
+            {filteredAssets.length > 0 ? (
+              filteredAssets.map((asset) => (
+                <AssetResultCard
+                  key={asset.id}
+                  asset={asset}
+                  selected={asset.id === selectedAsset?.id}
+                  onSelect={() => setSelectedAssetId(asset.id)}
+                />
+              ))
+            ) : (
+              <p className="governance-empty">没有匹配资产。搜索“旧”或“deprecated”。</p>
+            )}
+          </div>
+          {selectedAsset ? (
+            <div className="governance-detail-column">
+              <DefinitionPanel asset={selectedAsset} />
+              <div className={`governance-lifecycle-callout is-${selectedAsset.lifecycle}`}>
+                <div>
+                  <span className="governance-overline">当前状态</span>
+                  <strong>{GOVERNANCE_LIFECYCLE_LABELS[selectedAsset.lifecycle]}</strong>
+                  <p>
+                    {selectedAsset.lifecycle === 'deprecated'
+                      ? '仍可读取，但不应再建立新的生产依赖。'
+                      : '当前可以作为新的分析来源，仍需核对用途和证据。'}
+                  </p>
+                </div>
+                {replacement && (
+                  <button
+                    className="button button--primary button--small"
+                    type="button"
+                    onClick={switchToReplacement}
+                  >
+                    切换到替代资产
+                  </button>
+                )}
+              </div>
+              {migrationMessage && (
+                <p className="governance-live-message" aria-live="polite">
+                  {migrationMessage}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="governance-empty">请选择一项资产查看生命周期。</p>
+          )}
+        </div>
+      </section>
+      <p className="visualization-note">
+        <span aria-hidden="true">↳</span>
+        本节核心只保留 active 与 deprecated；retiring 只作为现实系统中的扩展说明。
+      </p>
+    </div>
+  )
+}
+
+function ResponsibilityCard({
+  item,
+  expanded,
+  onToggle,
+}: {
+  item: GovernanceResponsibilityItem
+  expanded: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      className={`governance-responsibility-card${expanded ? ' is-expanded' : ''}`}
+      type="button"
+      aria-expanded={expanded}
+      onClick={onToggle}
+    >
+      <span className="governance-card-kicker">
+        {item.kind === 'source' ? '变更字段' : item.kind === 'asset' ? '受影响资产' : '下游消费者'}
+      </span>
+      <strong>{item.label}</strong>
+      <span>Owner：{item.owner}</span>
+      {expanded && <small>{item.action}</small>}
+    </button>
+  )
+}
+
+function ChangeResponsibilityLab({ visualization }: { visualization: GovernanceVisualization }) {
+  const impact = visualization.changeImpact
+  const responsibilities = impact?.responsibilities ?? []
+  const [expandedId, setExpandedId] = useState(responsibilities[0]?.id ?? '')
+  const [showChecklist, setShowChecklist] = useState(false)
+
+  if (!impact) {
+    return <p className="governance-empty">没有可用的前置影响分析结果。</p>
+  }
+
+  return (
+    <div className="governance-workbench" data-governance-focus="change-responsibility">
+      <div className="visualization-toolbar">
+        <div>
+          <span className="visualization-toolbar__label">09-5 · Owner responsibility</span>
+          <p aria-live="polite">{impact.evidenceLabel}；本节不重新计算血缘。</p>
+        </div>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => {
+            setExpandedId(responsibilities[0]?.id ?? '')
+            setShowChecklist(false)
+          }}
+        >
+          重置责任清单
+        </button>
+      </div>
+      <section className="governance-panel" aria-labelledby="governance-change-title">
+        <PanelHeading
+          id="governance-change-title"
+          eyebrow="Read impact → map Owner → act"
+          title="字段变了以后，谁需要处理？"
+          description="影响路径已经存在；现在把每个确认动作交给对应 Owner。"
+        />
+        <div className="governance-change-field">
+          <span className="governance-overline">变更字段</span>
+          <strong>{impact.changedField}</strong>
+          <span>不重新遍历血缘，直接读取下面这条影响路径。</span>
+        </div>
+        <ol className="governance-impact-path" aria-label="已有影响路径">
+          {impact.path.map((step, index) => (
+            <li key={step}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{step}</strong>
+            </li>
+          ))}
+        </ol>
+        <div className="governance-responsibility-grid" aria-label="受影响对象与 Owner">
+          {responsibilities.map((item) => (
+            <ResponsibilityCard
+              key={item.id}
+              item={item}
+              expanded={item.id === expandedId}
+              onToggle={() => setExpandedId(item.id)}
+            />
+          ))}
+        </div>
+        <div className="governance-checklist-action">
+          <div>
+            <span className="governance-overline">输出</span>
+            <strong>变更责任清单</strong>
+            <p>字段、受影响资产、Owner 和需要确认的动作都已对齐。</p>
+          </div>
+          <button
+            className="button button--primary button--small"
+            type="button"
+            onClick={() => setShowChecklist((current) => !current)}
+          >
+            {showChecklist ? '收起责任清单' : '展开责任清单'}
+          </button>
+        </div>
+        {showChecklist && (
+          <div className="governance-checklist" aria-live="polite">
+            {responsibilities.map((item) => (
+              <div className="governance-checklist-row" key={item.id}>
+                <span>{item.label}</span>
+                <strong>{item.owner}</strong>
+                <p>{item.action}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <p className="visualization-note">
+        <span aria-hidden="true">↳</span>
+        这里结束于责任清单，实际组织流程由真实工作环境承接。
+      </p>
+    </div>
+  )
+}
+
+export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps) {
+  switch (visualization.focus) {
+    case 'asset-selection':
+      return <AssetSelectionLab visualization={visualization} />
+    case 'evidence-check':
+      return <EvidenceCheckLab visualization={visualization} />
+    case 'field-access':
+      return <FieldAccessLab visualization={visualization} />
+    case 'lifecycle':
+      return <LifecycleLab visualization={visualization} />
+    case 'change-responsibility':
+      return <ChangeResponsibilityLab visualization={visualization} />
+  }
 }
