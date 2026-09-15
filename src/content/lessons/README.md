@@ -16,7 +16,7 @@
 - `fact-table-types.ts`：Transaction Fact、Periodic Snapshot Fact、Accumulating Snapshot Fact 对照
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
 - `data-lineage.ts`：血缘关系与影响分析
-- `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
+- `data-governance.ts`：第 09 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
 - `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
 - `metric-system.ts`：存款余额的统计集合与口径差异
 - `deposit-metric-definition.ts`：指标定义卡逐项补全
