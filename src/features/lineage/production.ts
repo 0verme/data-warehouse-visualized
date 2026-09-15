@@ -9,6 +9,7 @@ import {
   buildSchedulerTimeline,
   createInitialSchedulerRun,
 } from '../../utils/scheduler'
+import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { getTransformationStep } from '../../utils/sql-transformation'
 import { getLineageTaskNodeId, LINEAGE_TASK_NODE_IDS } from './mapping'
 import type {
@@ -188,11 +189,26 @@ function edgeKey(edge: Pick<LineageEdge, 'source' | 'target'>): string {
   return `${edge.source}->${edge.target}`
 }
 
+const SCHEDULER_TASK_ID_PAIRS = [
+  [SCHEDULER_TASK_IDS.accountBalanceSnapshot, BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot],
+  [SCHEDULER_TASK_IDS.account, BANKING_SCHEDULER_TASK_IDS.account],
+  [SCHEDULER_TASK_IDS.customer, BANKING_SCHEDULER_TASK_IDS.customer],
+  [SCHEDULER_TASK_IDS.product, BANKING_SCHEDULER_TASK_IDS.product],
+  [SCHEDULER_TASK_IDS.branch, BANKING_SCHEDULER_TASK_IDS.branch],
+  [SCHEDULER_TASK_IDS.dwd, BANKING_SCHEDULER_TASK_IDS.dwd],
+  [SCHEDULER_TASK_IDS.dws, BANKING_SCHEDULER_TASK_IDS.dws],
+  [SCHEDULER_TASK_IDS.ads, BANKING_SCHEDULER_TASK_IDS.ads],
+] as const
+
 function getTask(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition {
-  const task = tasks.find((candidate) => candidate.taskId === taskId)
+  const pair = SCHEDULER_TASK_ID_PAIRS.find(([left, right]) => taskId === left || taskId === right)
+  const task = tasks.find(
+    (candidate) =>
+      candidate.taskId === taskId || (pair?.some((id) => id === candidate.taskId) ?? false),
+  )
   if (!task) {
     throw new Error(`血缘绑定找不到 Scheduler task: ${taskId}`)
   }
@@ -302,7 +318,7 @@ function bindEdges(
       ...edge,
       evidence,
       confidence: binding?.confidence ?? edge.confidence ?? 'manual',
-      schedulerTaskId: binding?.taskId,
+      schedulerTaskId: schedulerTask?.taskId,
       transformationStepId: binding?.stepId,
     }
   })
@@ -345,12 +361,13 @@ function createSchemaChangeEvent(): LineageInvestigationEventDefinition {
 function createTaskFailureEvent(
   scheduler: SchedulerVisualization,
 ): LineageInvestigationEventDefinition {
-  const taskId = SCHEDULER_TASK_IDS.dwd
-  const failedTask = getTask(scheduler.tasks, taskId)
+  const failedTask = getTask(scheduler.tasks, SCHEDULER_TASK_IDS.dwd)
+  const taskId = failedTask.taskId
   const timeline = buildSchedulerTimeline(
     createInitialSchedulerRun(scheduler.tasks, {
       businessDate: scheduler.targetDate,
       scenario: 'dwd-blocked',
+      failureTaskId: taskId,
     }),
   )
   const failedState = timeline.find((frame) => frame.taskRuns[taskId]?.status === 'failed')
@@ -399,12 +416,21 @@ function validateBindingInput(input: LineageProductionBindingInput): void {
   }
 
   const adsTask = getTask(input.scheduler.tasks, SCHEDULER_TASK_IDS.ads)
-  if (
-    adsTask.contract.taskId !== input.transformation.taskContract.taskId ||
-    adsTask.contract.outputTable !== input.transformation.taskContract.outputTable
-  ) {
+  const transformationContract = input.transformation.taskContract
+  const schedulerContract = input.scheduler.taskContract
+  const reusesTransformationContract =
+    adsTask.contract.taskId === transformationContract.taskId &&
+    adsTask.contract.outputTable === transformationContract.outputTable
+  const sharesBusinessPartition =
+    schedulerContract.businessDate === transformationContract.businessDate &&
+    schedulerContract.partition.column === transformationContract.partition.column &&
+    schedulerContract.partition.value === transformationContract.partition.value
+  const isLayeredBankingContract =
+    sharesBusinessPartition && adsTask.contract.dependencies.includes(schedulerContract.outputTable)
+
+  if (!reusesTransformationContract && !isLayeredBankingContract) {
     throw new Error(
-      `Scheduler ADS task 没有复用 SQL task contract: ${adsTask.taskId} !== ${input.transformation.taskContract.taskId}`,
+      `Scheduler ADS task 没有复用兼容的 SQL task contract: ${adsTask.taskId} !== ${transformationContract.taskId}`,
     )
   }
 }

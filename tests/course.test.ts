@@ -95,33 +95,88 @@ describe('课程数据与导航', () => {
     ).toEqual(['plan', 'cleaning', 'join', 'layers', 'contract'])
   })
 
-  it('第六章已注册时间轴驱动的调度实验', () => {
-    const lesson = getLessonBySlug('scheduling-system')!
-    const content = getLessonContent(lesson)
+  it('第六章拆成五节不同学习目标的调度实验', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '06')
+    const expectedSlugs = [
+      'scheduling-system',
+      'scheduling-readiness',
+      'scheduling-failure',
+      'scheduling-rerun',
+      'scheduling-sla',
+    ]
 
-    expect(lesson.demo).toBe('scheduler')
-    expect(content.eyebrow).toBe('第 06 课 · 时间轴驱动 DAG Run')
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(expectedSlugs)
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'scheduler',
+      'scheduler',
+      'scheduler',
+      'scheduler',
+      'scheduler',
+    ])
+    expect(chapterLessons.map((lesson) => getLessonContent(lesson).concept.term)).toEqual([
+      '业务日期（Business Date）',
+      '运行条件（Run Condition）',
+      '失败传播（Failure Propagation）',
+      '幂等（Idempotency）',
+      'SLA（服务级别约定）',
+    ])
     expect(
-      content.sections.some(
-        (section) => section.kind === 'visualization' && section.visualization.kind === 'scheduler',
+      chapterLessons.map(
+        (lesson) =>
+          getLessonContent(lesson).sections.find((section) => section.kind === 'visualization')
+            ?.visualization.kind,
       ),
-    ).toBe(true)
-    expect(content.visualization).toBeUndefined()
+    ).toEqual(['scheduler', 'scheduler', 'scheduler', 'scheduler', 'scheduler'])
+    expect(
+      chapterLessons.map(
+        (lesson) =>
+          getLessonContent(lesson).sections.find((section) => section.kind === 'visualization')
+            ?.visualization,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ lessonFocus: 'business-date' }),
+        expect.objectContaining({ lessonFocus: 'readiness' }),
+        expect.objectContaining({ lessonFocus: 'failure' }),
+        expect.objectContaining({ lessonFocus: 'rerun' }),
+        expect.objectContaining({ lessonFocus: 'sla' }),
+      ]),
+    )
+    expect(getAdjacentLessons(lessons, 'scheduling-system').next?.slug).toBe('scheduling-readiness')
+    expect(getAdjacentLessons(lessons, 'scheduling-sla').next?.slug).toBe('data-quality')
   })
 
-  it('第七章已注册数据质量事件调查台', () => {
-    const lesson = getLessonBySlug('data-quality')!
-    const content = getLessonContent(lesson)
+  it('第七章稳定注册为 7-1 到 7-5，并保留 data-quality slug', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '07')
 
-    expect(lesson).toMatchObject({ chapter: '07', demo: 'data-quality' })
-    expect(content.eyebrow).toBe('第 07 课 · 质量事件调查台')
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
+      'data-quality',
+      'data-quality-rules',
+      'data-quality-dataset',
+      'data-quality-evidence',
+      'data-quality-release',
+    ])
+    expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
+      '7-1',
+      '7-2',
+      '7-3',
+      '7-4',
+      '7-5',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.title)).toEqual([
+      '任务成功了，数据就可信了吗？',
+      '一张表到底应该检查什么？',
+      '每一行都正常，为什么结果还是可能错？',
+      '质量失败以后，我们到底应该看什么？',
+      '发现问题以后，这份数据还能发布吗？',
+    ])
+    expect(getLessonBySlug('data-quality')?.demo).toBe('data-quality')
     expect(
-      content.sections.some(
+      getLessonContent(getLessonBySlug('data-quality-release')!).sections.some(
         (section) =>
           section.kind === 'visualization' && section.visualization.kind === 'data-quality',
       ),
     ).toBe(true)
-    expect(content.visualization).toBeUndefined()
   })
 
   it('返回当前课程的上一节和下一节', () => {
@@ -182,6 +237,9 @@ describe('课程数据与导航', () => {
       'fact-table-types',
       'slowly-changing-dimension',
       'metric-system',
+      'deposit-metric-definition',
+      'deposit-metric-time',
+      'deposit-metric-derivations',
     ]
     let pathname = `/learn/${expectedSlugs[0]}/`
 
@@ -289,20 +347,45 @@ describe('课程数据与导航', () => {
     expect(scd.pitfalls).toBeUndefined()
   })
 
-  it('指标体系已升级为正式交互课程并连接 SQL 章节', () => {
-    expect(getLessonBySlug('metric-system')).toMatchObject({
-      title: '指标体系：同一个数字为什么不一样？',
-      order: 100,
-      chapter: '04',
-      demo: 'metric-definition',
-    })
-    expect(getLessonContent(getLessonBySlug('metric-system')!)).toMatchObject({
-      visualization: { kind: 'metric-definition' },
-      opening: { title: '昨天 GMV 到底是多少？' },
-    })
+  it('第 04 章按存款余额口径、定义、时间和派生连成四节课程', () => {
+    expect(lessons.slice(7, 11).map((lesson) => lesson.slug)).toEqual([
+      'metric-system',
+      'deposit-metric-definition',
+      'deposit-metric-time',
+      'deposit-metric-derivations',
+    ])
+    expect(lessons.slice(7, 11).map((lesson) => lesson.title)).toEqual([
+      '同一个“存款余额”，为什么会有不同答案？',
+      '一个指标到底由什么组成？',
+      '“截至某天”和“一段时间”有什么区别？',
+      '一个“存款余额”为什么能派生出这么多指标？',
+    ])
+    expect(lessons.slice(7, 11).map((lesson) => lesson.demo)).toEqual([
+      'banking-metric-scope',
+      'banking-metric-definition',
+      'banking-metric-time',
+      'banking-metric-derivations',
+    ])
+
     expect(getAdjacentLessons(lessons, 'metric-system')).toEqual({
       previous: expect.objectContaining({ slug: 'slowly-changing-dimension' }),
+      next: expect.objectContaining({ slug: 'deposit-metric-definition' }),
+    })
+    expect(getAdjacentLessons(lessons, 'deposit-metric-definition')).toEqual({
+      previous: expect.objectContaining({ slug: 'metric-system' }),
+      next: expect.objectContaining({ slug: 'deposit-metric-time' }),
+    })
+    expect(getAdjacentLessons(lessons, 'deposit-metric-time')).toEqual({
+      previous: expect.objectContaining({ slug: 'deposit-metric-definition' }),
+      next: expect.objectContaining({ slug: 'deposit-metric-derivations' }),
+    })
+    expect(getAdjacentLessons(lessons, 'deposit-metric-derivations')).toEqual({
+      previous: expect.objectContaining({ slug: 'deposit-metric-time' }),
       next: expect.objectContaining({ slug: 'sql-and-transformation' }),
+    })
+
+    expect(getLessonContent(getLessonBySlug('metric-system')!)).toMatchObject({
+      opening: { title: '截至 2026-09-30，全行存款余额是多少？' },
     })
   })
 

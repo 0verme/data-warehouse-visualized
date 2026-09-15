@@ -415,11 +415,11 @@ const lineageEdges: LineageEdge[] = [
 ]
 
 const qualityEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'missing-balance-snapshot',
+  injection: 'missing-branch-reference',
   action: 'block',
 })
 const qualityEvent = qualityEvaluation.events.find(
-  (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
+  (event) => event.ruleId === QUALITY_RULE_IDS.branchReference,
 )
 if (!qualityEvent) {
   throw new Error('第 08 课需要第 07 课的完整性 Quality Event 作为调查入口')

@@ -1,7 +1,17 @@
 import type { Lesson } from '../../data/course'
 import { getChapterDisplayNumber } from '../../utils/lesson'
 import type { LessonContent } from '../types'
-import { dataGovernanceContent } from './data-governance'
+import {
+  dataGovernanceContent,
+  governanceChangeResponsibilityContent,
+  governanceEvidenceContent,
+  governanceFieldAccessContent,
+  governanceLifecycleContent,
+} from './data-governance'
+import { dataQualityDatasetContent } from './data-quality-dataset'
+import { dataQualityEvidenceContent } from './data-quality-evidence'
+import { dataQualityReleaseContent } from './data-quality-release'
+import { dataQualityRulesContent } from './data-quality-rules'
 import { dataQualityContent } from './data-quality'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
@@ -9,9 +19,16 @@ import { factTableTypesContent } from './fact-table-types'
 import { grainContent } from './grain'
 import { lakehouseContent } from './lakehouse'
 import { metricSystemContent } from './metric-system'
+import { depositMetricDefinitionContent } from './deposit-metric-definition'
+import { depositMetricDerivationsContent } from './deposit-metric-derivations'
+import { depositMetricTimeContent } from './deposit-metric-time'
 import { performanceAndPracticeContent } from './performance-and-practice'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
-import { schedulingSystemContent } from './scheduling-system'
+import { schedulingBusinessDateContent } from './scheduling-business-date'
+import { schedulingFailureContent } from './scheduling-failure'
+import { schedulingReadinessContent } from './scheduling-readiness'
+import { schedulingRerunContent } from './scheduling-rerun'
+import { schedulingSlaContent } from './scheduling-sla'
 import { sqlAndTransformationContent } from './sql-and-transformation'
 import { sqlTransformationCleaningContent } from './sql-and-transformation-cleaning'
 import { sqlTransformationContractContent } from './sql-and-transformation-contract'
@@ -23,7 +40,15 @@ import { whyDataWarehouseContent } from './why-data-warehouse'
 
 const lessonContentBySlug: Record<string, LessonContent> = {
   'data-governance': dataGovernanceContent,
+  'data-governance-evidence': governanceEvidenceContent,
+  'data-governance-field-access': governanceFieldAccessContent,
+  'data-governance-lifecycle': governanceLifecycleContent,
+  'data-governance-change-responsibility': governanceChangeResponsibilityContent,
   'data-quality': dataQualityContent,
+  'data-quality-rules': dataQualityRulesContent,
+  'data-quality-dataset': dataQualityDatasetContent,
+  'data-quality-evidence': dataQualityEvidenceContent,
+  'data-quality-release': dataQualityReleaseContent,
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,
@@ -31,10 +56,17 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'fact-table-types': factTableTypesContent,
   grain: grainContent,
   'metric-system': metricSystemContent,
+  'deposit-metric-definition': depositMetricDefinitionContent,
+  'deposit-metric-time': depositMetricTimeContent,
+  'deposit-metric-derivations': depositMetricDerivationsContent,
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,
-  'scheduling-system': schedulingSystemContent,
+  'scheduling-system': schedulingBusinessDateContent,
+  'scheduling-readiness': schedulingReadinessContent,
+  'scheduling-failure': schedulingFailureContent,
+  'scheduling-rerun': schedulingRerunContent,
+  'scheduling-sla': schedulingSlaContent,
   'sql-and-transformation': sqlAndTransformationContent,
   'sql-transformation-cleaning': sqlTransformationCleaningContent,
   'sql-transformation-join': sqlTransformationJoinContent,

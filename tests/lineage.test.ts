@@ -4,7 +4,7 @@ import { qualityEventToLineageInvestigation } from '../src/features/lineage/qual
 import { dataLineageContent } from '../src/content/lessons/data-lineage'
 import { dataQualityVisualization } from '../src/content/lessons/data-quality'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../src/utils/data-quality'
-import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
+import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 import {
   analyzeLineageInvestigation,
   getBlastRadius,
@@ -102,13 +102,13 @@ describe('数据血缘分析', () => {
         edge.source === 'task-build-account-profile' && edge.target === 'dws-account-profile',
     )
 
-    expect(dwdTask?.role).toContain(SCHEDULER_TASK_IDS.dwd)
+    expect(dwdTask?.role).toContain(BANKING_SCHEDULER_TASK_IDS.dwd)
     expect((dwdTask as LineageProductionNode | undefined)?.schedulerTaskId).toBe(
-      SCHEDULER_TASK_IDS.dwd,
+      BANKING_SCHEDULER_TASK_IDS.dwd,
     )
     expect(getLineageEdgeEvidence(sqlEdge!).detail).toContain('SQL transformation')
-    expect(getLineageEdgeEvidence(sqlEdge!).detail).toContain(SCHEDULER_TASK_IDS.dwd)
-    expect(getLineageEdgeEvidence(taskEdge!).detail).toContain(SCHEDULER_TASK_IDS.dws)
+    expect(getLineageEdgeEvidence(sqlEdge!).detail).toContain(BANKING_SCHEDULER_TASK_IDS.dwd)
+    expect(getLineageEdgeEvidence(taskEdge!).detail).toContain(BANKING_SCHEDULER_TASK_IDS.dws)
     expect(getLineageEdgeEvidence(manualEdge!).source).toBe('manual_metadata')
     expect(edges.every((edge) => edge.evidence && edge.confidence)).toBe(true)
   })
@@ -129,7 +129,7 @@ describe('数据血缘分析', () => {
       eventType: 'task_failure',
       evidence: { source: 'task_dependency' },
       context: {
-        taskId: SCHEDULER_TASK_IDS.dwd,
+        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
         status: 'failed',
         outputState: 'not-produced',
       },
@@ -139,23 +139,23 @@ describe('数据血缘分析', () => {
 
     const qualityInvestigation = events.find((event) => event.entryPoint === 'quality-event')
     expect(qualityInvestigation?.qualityEvent).toMatchObject({
-      ruleId: QUALITY_RULE_IDS.completeness,
+      ruleId: QUALITY_RULE_IDS.branchReference,
       target: {
-        table: 'dwd_deposit_balance_detail',
-        field: 'account_id',
-        partition: { column: 'snapshot_date', value: dataQualityVisualization.targetDate },
+        table: 'dwd_deposit_account_balance',
+        field: 'branch_id',
+        partition: { column: 'business_date', value: dataQualityVisualization.targetDate },
       },
-      schedulerContext: { taskId: SCHEDULER_TASK_IDS.dwd },
+      schedulerContext: { taskId: BANKING_SCHEDULER_TASK_IDS.dwd },
     })
   })
 
   it('把真实 QualityEvent 确定性适配为 Lineage investigation 且不丢上下文', () => {
     const evaluation = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'missing-balance-snapshot',
+      injection: 'missing-branch-reference',
       action: 'block',
     })
     const qualityEvent = evaluation.events.find(
-      (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
+      (event) => event.ruleId === QUALITY_RULE_IDS.branchReference,
     )
 
     if (!qualityEvent) {
@@ -173,10 +173,10 @@ describe('数据血缘分析', () => {
       affectedEntityId: 'metric-deposit-report',
       evidence: { source: 'quality_event' },
       context: {
-        taskId: SCHEDULER_TASK_IDS.dwd,
+        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
         runId: qualityEvent.schedulerContext.runId,
         businessDate: dataQualityVisualization.targetDate,
-        partition: qualityEvent.schedulerContext.partition,
+        partition: qualityEvent.target.partition,
         status: qualityEvent.schedulerContext.taskStatus,
       },
       rootCauseCandidate: {
@@ -185,12 +185,10 @@ describe('数据血缘分析', () => {
       },
       qualityEvent,
     })
-    expect(first.qualityEvent?.ruleId).toBe(QUALITY_RULE_IDS.completeness)
+    expect(first.qualityEvent?.ruleId).toBe(QUALITY_RULE_IDS.branchReference)
     expect(first.qualityEvent?.target).toEqual(qualityEvent.target)
-    expect(first.qualityEvent?.investigationContext.downstreamImpacts).toContain(
-      'dws_deposit_balance_daily_staging',
-    )
-    expect(first.qualityEvent?.evidence[0]?.samples[0]?.rowKey).toBe('2026-09-30 / A002 / 200000')
+    expect(first.qualityEvent).not.toHaveProperty('investigationContext')
+    expect(first.qualityEvent?.evidence[0]?.sample?.rowKey).toBe('A003 / 2026-09-30')
   })
 
   it('从 Quality Event 找到可能根因并区分直接、传递和最终指标影响', () => {

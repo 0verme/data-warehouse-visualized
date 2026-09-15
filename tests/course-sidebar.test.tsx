@@ -50,4 +50,16 @@ describe('课程 Sidebar Accordion', () => {
     expect(markup).toContain('aria-current="page"')
     expect(markup).toContain('>0/5</span>')
   })
+
+  it('SSR 展开第 04 章时显示四节存款指标课程', () => {
+    const markup = renderSidebarForLesson('metric-system')
+    const chapterMarkup = getChapterMarkup(markup, '04')
+
+    expect(chapterMarkup).toContain('aria-expanded="true"')
+    expect(chapterMarkup).toContain('>0/4</span>')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-04"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-metric-definition"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-metric-time"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-metric-derivations"')
+  })
 })

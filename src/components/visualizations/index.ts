@@ -1,6 +1,12 @@
 export { BankingCustomerHistoryLab } from './BankingCustomerHistoryLab'
 export { BankingFactTypesLab } from './BankingFactTypesLab'
 export { BankingStarSchemaLab } from './BankingStarSchemaLab'
+export {
+  BankingMetricDefinitionLab,
+  BankingMetricDerivationLab,
+  BankingMetricScopeLab,
+  BankingMetricTimeLab,
+} from './BankingMetricLabs'
 export { BusinessSystemFlow } from './BusinessSystemFlow'
 export { DataQualityWorkbench } from './DataQualityWorkbench'
 export { GovernanceWorkbench } from './GovernanceWorkbench'

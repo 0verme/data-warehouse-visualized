@@ -9,6 +9,10 @@ import type {
   LineageInvestigationEvent,
   LineageNode,
   MetricVisualization,
+  BankingMetricDefinitionVisualization,
+  BankingMetricDerivationVisualization,
+  BankingMetricScopeVisualization,
+  BankingMetricTimeVisualization,
   LoanBusinessProcessVisualization,
   LoanGrainVisualization,
   ModelingIntroVisualization,
@@ -134,6 +138,10 @@ export type LessonVisualization =
   | StarSchemaVisualization
   | ScdVisualization
   | MetricVisualization
+  | BankingMetricScopeVisualization
+  | BankingMetricDefinitionVisualization
+  | BankingMetricTimeVisualization
+  | BankingMetricDerivationVisualization
   | LakehouseVisualization
   | SqlTransformationVisualization
   | GovernanceVisualization

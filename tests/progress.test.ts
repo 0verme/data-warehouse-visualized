@@ -62,7 +62,13 @@ describe('学习进度', () => {
 
   it('新增第三章课程后仍保留旧课程的完成记录', () => {
     const legacyProgress = {
-      completedLessonIds: ['lesson-01', 'lesson-03', 'lesson-scd-type-2'],
+      completedLessonIds: [
+        'lesson-01',
+        'lesson-03',
+        'lesson-04',
+        'lesson-scd-type-2',
+        'lesson-metric-time',
+      ],
       currentLessonId: 'lesson-03',
     }
 

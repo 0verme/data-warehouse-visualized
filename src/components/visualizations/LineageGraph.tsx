@@ -476,46 +476,42 @@ export function LineageGraph({
                     </code>
                   </span>
                   <span>
-                    状态 <code>{activeInvestigationEvent.qualityEvent.status}</code> · 严重级别{' '}
-                    <code>{activeInvestigationEvent.qualityEvent.severity}</code>
+                    状态 <code>{activeInvestigationEvent.qualityEvent.status}</code>
+                    {activeInvestigationEvent.qualityEvent.severity && (
+                      <>
+                        {' · '}严重级别{' '}
+                        <code>{activeInvestigationEvent.qualityEvent.severity}</code>
+                      </>
+                    )}
                   </span>
                   <span>
-                    实际值{' '}
+                    expected / observed{' '}
                     <code>
-                      {activeInvestigationEvent.qualityEvent.observedValue} /{' '}
-                      {activeInvestigationEvent.qualityEvent.threshold.value}{' '}
-                      {activeInvestigationEvent.qualityEvent.threshold.unit}
+                      {String(activeInvestigationEvent.qualityEvent.expected)} /{' '}
+                      {String(activeInvestigationEvent.qualityEvent.observed)}
                     </code>
                   </span>
                   <span>
-                    发布决定{' '}
-                    <code>
-                      {activeInvestigationEvent.qualityEvent.releaseImpact.downstreamRelease}
-                    </code>
+                    failed_rows{' '}
+                    <code>{activeInvestigationEvent.qualityEvent.failedRows ?? '—'}</code>
                   </span>
                 </div>
                 <ul className="lineage-investigation__quality-evidence">
                   {activeInvestigationEvent.qualityEvent.evidence.map((evidence) => (
                     <li key={evidence.evidenceId}>
                       <code>{evidence.evidenceId}</code> · {evidence.detail} ·{' '}
-                      {evidence.samples.length} 条样本
+                      {evidence.sample ? 1 : 0} 条样本
                     </li>
                   ))}
                 </ul>
                 <div className="lineage-investigation__quality-context">
                   <span>调查摘要</span>
                   <p>
-                    上游线索：
-                    {activeInvestigationEvent.qualityEvent.investigationContext.upstreamHints.join(
-                      ' ',
-                    )}
+                    Quality Event 保留质量事实；当前 task：
+                    {activeInvestigationEvent.qualityEvent.schedulerContext.taskId}，run：
+                    {activeInvestigationEvent.qualityEvent.schedulerContext.runId}。
                   </p>
-                  <p>
-                    下游影响：
-                    {activeInvestigationEvent.qualityEvent.investigationContext.downstreamImpacts.join(
-                      '、',
-                    )}
-                  </p>
+                  <p>下游影响和可能根因由当前血缘图根据表、字段与任务关系计算。</p>
                 </div>
               </div>
             )}

@@ -1,19 +1,20 @@
 import { useMemo, useState } from 'react'
 import type {
   DataQualityVisualization,
-  QualityAction,
   QualityCheckResult,
   QualityCheckStatus,
-  QualityEvidence,
   QualityEvent,
+  QualityEvidence,
   QualityReleaseDecision,
-  QualityRemediation,
   QualityRuleDefinition,
+  QualityBalanceRow,
   QualitySample,
+  QualityScalar,
+  QualityScenario,
+  QualityScenarioOption,
   QualityThreshold,
 } from '../../features/data-quality/types'
 import {
-  QUALITY_ACTION_OPTIONS,
   QUALITY_DIMENSION_LABELS,
   QUALITY_RELEASE_STATUS_LABELS,
   QUALITY_RULE_TYPE_LABELS,
@@ -28,40 +29,47 @@ interface DataQualityWorkbenchProps {
 }
 
 const EVIDENCE_KIND_LABELS = {
-  'failed-sample': '失败样本',
-  'metric-comparison': '指标对账',
-  'scheduler-context': '调度上下文',
-  'partition-freshness': '分区时效',
-} satisfies Record<QualityEvidence['kind'], string>
+  row: '行级证据',
+  set: '应到集合',
+  date: '日期证据',
+  aggregate: '聚合证据',
+  scheduler: 'Scheduler 上下文',
+} as const
 
-function formatQualityValue(value: number, unit: QualityThreshold['unit']): string {
-  switch (unit) {
-    case 'currency':
-      return `¥${value}`
-    case 'minutes':
-      return `${value} min`
-    default:
-      return `${value} 行`
+function formatScalar(value: QualityScalar): string {
+  if (value === null) {
+    return 'NULL'
   }
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false'
+  }
+  return String(value)
+}
+
+function formatCurrency(value: number): string {
+  return `¥${new Intl.NumberFormat('zh-CN').format(value)}`
 }
 
 function formatThreshold(threshold: QualityThreshold): string {
-  let operator = '='
-  if (threshold.operator === 'at-most') {
-    operator = '≤'
-  } else if (threshold.operator === 'at-least') {
-    operator = '≥'
-  }
-  return `${operator} ${formatQualityValue(threshold.value, threshold.unit)}`
+  const operator =
+    threshold.operator === 'at-most' ? '≤' : threshold.operator === 'at-least' ? '≥' : '='
+  const value =
+    threshold.unit === 'currency'
+      ? formatCurrency(threshold.value)
+      : threshold.unit === 'days'
+        ? `${threshold.value} 天`
+        : threshold.unit === 'accounts'
+          ? `${threshold.value} 个账户`
+          : `${threshold.value} 行`
+  return `${operator} ${value}`
 }
 
-function formatTarget(rule: QualityRuleDefinition): string {
-  const field = rule.target.field ? ` · ${rule.target.field}` : ''
-  return `${rule.target.table}${field} · ${rule.target.partition.column} = ${rule.target.partition.value}`
-}
-
-function formatSampleValue(value: string | number | null): string {
-  return value === null ? 'NULL' : String(value)
+function StatusBadge({ status }: { status: QualityCheckStatus | string }) {
+  const label =
+    status in QUALITY_STATUS_LABELS
+      ? QUALITY_STATUS_LABELS[status as QualityCheckStatus]
+      : status.toUpperCase()
+  return <span className={`data-quality-status data-quality-status--${status}`}>{label}</span>
 }
 
 function getGateStatus(checks: readonly QualityCheckResult[]): QualityCheckStatus {
@@ -74,333 +82,85 @@ function getGateStatus(checks: readonly QualityCheckResult[]): QualityCheckStatu
   return 'pass'
 }
 
-function getThresholdRange(rule: QualityRuleDefinition): { max: number; step: number } {
-  if (rule.threshold.unit === 'minutes') {
-    return { max: 60, step: 5 }
-  }
-  if (rule.threshold.unit === 'currency') {
-    return { max: 100, step: 10 }
-  }
-  return { max: 3, step: 1 }
+function getVisibleChecks(
+  visualization: DataQualityVisualization,
+  checks: readonly QualityCheckResult[],
+): QualityCheckResult[] {
+  return checks.filter((check) => visualization.visibleRuleIds.includes(check.ruleId))
 }
 
-function getThresholdHint(threshold: QualityThreshold): string {
-  if (threshold.operator === 'at-most' && threshold.warningRange !== undefined) {
-    const warningLimit = threshold.value + threshold.warningRange
-    return `pass ${formatThreshold(threshold)}；warn ≤ ${formatQualityValue(warningLimit, threshold.unit)}；再往上 fail。`
-  }
-  return `超过 ${formatThreshold(threshold)} 即视为 fail。`
+function getRule(
+  visualization: DataQualityVisualization,
+  ruleId: string | undefined,
+): QualityRuleDefinition | undefined {
+  return visualization.rules.find((rule) => rule.ruleId === ruleId)
 }
 
-function getReleaseTone(status: QualityReleaseDecision['status']): QualityCheckStatus {
-  if (status === 'blocked' || status === 'quarantined') {
-    return 'fail'
-  }
-  if (status === 'released') {
-    return 'pass'
-  }
-  return 'warn'
+function getCheck(
+  checks: readonly QualityCheckResult[],
+  ruleId: string | undefined,
+): QualityCheckResult | undefined {
+  return checks.find((check) => check.ruleId === ruleId)
 }
 
-function SchedulerStatus({ status }: { status: string }) {
-  return <span className={`data-quality-status data-quality-status--${status}`}>{status}</span>
-}
-
-function QualityStatus({ status }: { status: QualityCheckStatus }) {
-  return (
-    <span className={`data-quality-status data-quality-status--${status}`}>
-      {QUALITY_STATUS_LABELS[status]}
-    </span>
-  )
-}
-
-function QualityChain({ evaluation }: { evaluation: ReturnType<typeof evaluateDataQuality> }) {
-  const gateStatus = getGateStatus(evaluation.checks)
-  const evidenceCount = evaluation.events.reduce(
-    (count, event) => count + event.evidence.flatMap((evidence) => evidence.samples).length,
-    0,
-  )
-  const releaseTone = getReleaseTone(evaluation.releaseDecision.status)
-  const steps = [
-    {
-      key: 'scheduler',
-      label: 'Scheduler Run',
-      value: evaluation.schedulerRun.status,
-      detail: `${evaluation.schedulerRun.runId} · ${evaluation.schedulerRun.partition.column} = ${evaluation.schedulerRun.partition.value}`,
-      tone: evaluation.schedulerRun.status === 'success' ? 'pass' : 'fail',
-    },
-    {
-      key: 'check',
-      label: 'Quality Check',
-      value: QUALITY_STATUS_LABELS[gateStatus],
-      detail: `${evaluation.releaseDecision.checkCounts.fail} fail · ${evaluation.releaseDecision.checkCounts.warn} warn · ${evaluation.releaseDecision.checkCounts.pass} pass`,
-      tone: gateStatus,
-    },
-    {
-      key: 'event',
-      label: 'Quality Event',
-      value: `${evaluation.events.length} events`,
-      detail: evaluation.events.length > 0 ? '失败或告警规则已生成事件' : '没有非 pass 事件',
-      tone: evaluation.events.length > 0 ? 'warn' : 'pass',
-    },
-    {
-      key: 'evidence',
-      label: 'Evidence',
-      value: `${evidenceCount} samples`,
-      detail: '规则、阈值、字段和分区保持可回放',
-      tone: evidenceCount > 0 ? 'warn' : 'pass',
-    },
-    {
-      key: 'release',
-      label: 'Release Decision',
-      value: QUALITY_RELEASE_STATUS_LABELS[evaluation.releaseDecision.status],
-      detail: evaluation.releaseDecision.isBlocked
-        ? '完整下游发布被阻断'
-        : '下游按策略继续或正常发布',
-      tone: releaseTone,
-    },
-  ] as const
-
-  return (
-    <ol className="data-quality-chain" aria-label="Scheduler Run 到 Release Decision 的质量链路">
-      {steps.map((step, index) => (
-        <li className={`data-quality-chain__step is-${step.tone}`} key={step.key}>
-          <span className="data-quality-chain__index">0{index + 1}</span>
-          <span className="data-quality-chain__label">{step.label}</span>
-          <strong>{step.value}</strong>
-          <small>{step.detail}</small>
-          {index < steps.length - 1 && (
-            <span className="data-quality-chain__arrow" aria-hidden="true">
-              →
-            </span>
-          )}
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function InjectionControls({
-  visualization,
-  injection,
+function ScenarioTabs({
+  options,
+  selected,
   onChange,
+  label,
 }: {
-  visualization: DataQualityVisualization
-  injection: DataQualityVisualization['defaultInjection']
-  onChange: (injection: DataQualityVisualization['defaultInjection']) => void
+  options: readonly QualityScenarioOption[]
+  selected: QualityScenario
+  onChange: (scenario: QualityScenario) => void
+  label: string
 }) {
   return (
-    <section className="data-quality-injections" aria-labelledby="data-quality-injections-title">
-      <div className="data-quality-section-heading">
-        <div>
-          <span className="data-quality-overline">01 · 异常场景</span>
-          <h3 id="data-quality-injections-title">从一条异常记录开始</h3>
-        </div>
-        <p>选择一个异常场景，观察同一批运行记录如何暴露质量问题。</p>
-      </div>
-      <div className="data-quality-injection-grid" role="list" aria-label="质量异常场景">
-        {visualization.injections.map((option) => (
-          <button
-            className={`data-quality-injection${option.id === injection ? ' is-selected' : ''}`}
-            type="button"
-            aria-pressed={option.id === injection}
-            key={option.id}
-            onClick={() => onChange(option.id)}
-          >
-            <span>
-              {option.dimension ? QUALITY_DIMENSION_LABELS[option.dimension] : 'baseline'}
-            </span>
-            <strong>{option.label}</strong>
-            <small>{option.description}</small>
-          </button>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function ThresholdControls({
-  rules,
-  selectedRuleId,
-  selectedCheck,
-  onRuleChange,
-  onThresholdChange,
-}: {
-  rules: readonly QualityRuleDefinition[]
-  selectedRuleId: string
-  selectedCheck: QualityCheckResult
-  onRuleChange: (ruleId: string) => void
-  onThresholdChange: (ruleId: string, value: number) => void
-}) {
-  const rule = rules.find((candidate) => candidate.ruleId === selectedRuleId) ?? rules[0]
-  if (!rule) {
-    return null
-  }
-
-  const range = getThresholdRange(rule)
-  const max = Math.max(range.max, selectedCheck.threshold.value)
-
-  return (
-    <section className="data-quality-threshold" aria-labelledby="data-quality-threshold-title">
-      <div className="data-quality-section-heading">
-        <div>
-          <span className="data-quality-overline">02 · 阈值</span>
-          <h3 id="data-quality-threshold-title">阈值是规则的一部分，不是装饰</h3>
-        </div>
-        <p>放宽阈值会改变判定状态，但不会删除失败样本或隐藏事件。</p>
-      </div>
-      <label className="data-quality-threshold__select">
-        <span>调整哪一条规则？</span>
-        <select value={rule.ruleId} onChange={(event) => onRuleChange(event.target.value)}>
-          {rules.map((candidate) => (
-            <option value={candidate.ruleId} key={candidate.ruleId}>
-              {candidate.name} · {candidate.ruleId}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="data-quality-threshold__range">
-        <span>
-          <strong>允许上限</strong>
-          <output>{formatQualityValue(selectedCheck.threshold.value, rule.threshold.unit)}</output>
-        </span>
-        <input
-          type="range"
-          min="0"
-          max={max}
-          step={range.step}
-          value={selectedCheck.threshold.value}
-          aria-label={`调整 ${rule.name} 的质量阈值`}
-          onChange={(event) => onThresholdChange(rule.ruleId, Number(event.target.value))}
-        />
-      </label>
-      <p className="data-quality-threshold__hint">
-        <code>{rule.ruleId}</code> · {getThresholdHint(selectedCheck.threshold)}
-      </p>
-    </section>
-  )
-}
-
-function SchedulerHandoff({
-  evaluation,
-  activeCheck,
-}: {
-  evaluation: ReturnType<typeof evaluateDataQuality>
-  activeCheck: QualityCheckResult
-}) {
-  const context = activeCheck.schedulerContext
-  return (
-    <section className="data-quality-scheduler" aria-labelledby="data-quality-scheduler-title">
-      <div className="data-quality-section-heading">
-        <div>
-          <span className="data-quality-overline">运行状态与质量检查</span>
-          <h3 id="data-quality-scheduler-title">任务成功后，还要核对数据质量</h3>
-        </div>
-        <p>当前检查对应选中规则的产出任务，运行状态与质量结果放在同一条记录里。</p>
-      </div>
-      <div className="data-quality-scheduler__headline" aria-live="polite">
-        <div>
-          <span>任务状态</span>
-          <strong>
-            <SchedulerStatus status={context.taskStatus} />
-          </strong>
-        </div>
-        <div>
-          <span>质量闸门</span>
-          <strong>
-            <QualityStatus status={getGateStatus(evaluation.checks)} />
-          </strong>
-        </div>
-        <p>success 只说明代码执行结束；质量检查还要回答数据是否可信。</p>
-      </div>
-      <dl className="data-quality-facts">
-        <div>
-          <dt>任务标识</dt>
-          <dd>
-            <code>{context.taskId}</code>
-          </dd>
-        </div>
-        <div>
-          <dt>运行实例</dt>
-          <dd>
-            <code>{context.runId}</code>
-          </dd>
-        </div>
-        <div>
-          <dt>业务日期 / 分区</dt>
-          <dd>
-            <code>
-              {context.partition.column} = {context.partition.value}
-            </code>
-          </dd>
-        </div>
-        <div>
-          <dt>输出表</dt>
-          <dd>
-            <code>{context.outputTable}</code>
-          </dd>
-        </div>
-        <div>
-          <dt>运行状态</dt>
-          <dd>
-            <SchedulerStatus status={context.runStatus} />
-          </dd>
-        </div>
-        <div>
-          <dt>起止时间</dt>
-          <dd>
-            {context.startedAt ?? '—'} → {context.endedAt ?? '—'}
-          </dd>
-        </div>
-      </dl>
-    </section>
-  )
-}
-
-function EvidenceList({
-  evidence,
-  unit,
-}: {
-  evidence: readonly QualityEvidence[]
-  unit: QualityThreshold['unit']
-}) {
-  return (
-    <div className="data-quality-evidence-list">
-      {evidence.map((item) => (
-        <div className="data-quality-evidence" key={item.evidenceId}>
-          <div className="data-quality-evidence__heading">
-            <div>
-              <span className="data-quality-overline">{EVIDENCE_KIND_LABELS[item.kind]}</span>
-              <strong>{item.evidenceId}</strong>
-            </div>
-            <span>
-              observed {formatQualityValue(item.observedValue, unit)} · expected{' '}
-              {item.expectedLabel}
-            </span>
-          </div>
-          <p>{item.detail}</p>
-          {item.samples.length > 0 ? (
-            <div className="data-quality-samples">
-              <div className="data-quality-samples__heading">
-                <strong>失败样本</strong>
-                <span>{item.samples.length} 条展示</span>
-              </div>
-              {item.samples.map((sample) => (
-                <SampleCard sample={sample} key={sample.sampleId} />
-              ))}
-            </div>
-          ) : (
-            <p className="data-quality-evidence__empty">当前观察没有失败样本。</p>
-          )}
-        </div>
+    <div className="data-quality-scenarios" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button
+          className={`data-quality-scenario${option.id === selected ? ' is-selected' : ''}`}
+          type="button"
+          aria-pressed={option.id === selected}
+          onClick={() => onChange(option.id)}
+          key={option.id}
+        >
+          <span>{option.label}</span>
+          <small>{option.description}</small>
+        </button>
       ))}
     </div>
   )
 }
 
+function EvidenceBlock({ evidence }: { evidence: QualityEvidence }) {
+  return (
+    <article className="data-quality-evidence">
+      <div className="data-quality-evidence__heading">
+        <div>
+          <span className="data-quality-overline">{EVIDENCE_KIND_LABELS[evidence.kind]}</span>
+          <strong>{evidence.evidenceId}</strong>
+        </div>
+        <span>
+          expected <code>{formatScalar(evidence.expected)}</code> · observed{' '}
+          <code>{formatScalar(evidence.observed)}</code>
+        </span>
+      </div>
+      <p>{evidence.detail}</p>
+      {evidence.failedRows !== undefined && (
+        <p className="data-quality-evidence__count">failed_rows = {evidence.failedRows}</p>
+      )}
+      {evidence.sample ? (
+        <SampleCard sample={evidence.sample} />
+      ) : (
+        <p className="data-quality-evidence__empty">这是聚合或日期证据，没有需要伪造的 sample。</p>
+      )}
+    </article>
+  )
+}
+
 function SampleCard({ sample }: { sample: QualitySample }) {
   return (
-    <article className="data-quality-sample">
+    <div className="data-quality-sample">
       <div className="data-quality-sample__heading">
         <code>{sample.sampleId}</code>
         <span>{sample.rowKey}</span>
@@ -410,17 +170,17 @@ function SampleCard({ sample }: { sample: QualitySample }) {
           <div key={field}>
             <dt>{field}</dt>
             <dd>
-              <code>{formatSampleValue(value)}</code>
+              <code>{formatScalar(value)}</code>
             </dd>
           </div>
         ))}
       </dl>
       <p>{sample.reason}</p>
-    </article>
+    </div>
   )
 }
 
-function QualityRuleCard({
+function RuleResult({
   rule,
   check,
   selected,
@@ -432,369 +192,673 @@ function QualityRuleCard({
   onSelect: () => void
 }) {
   return (
-    <article className={`data-quality-rule is-${check.status}${selected ? ' is-selected' : ''}`}>
-      <button
-        className="data-quality-rule__button"
-        type="button"
-        aria-pressed={selected}
-        onClick={onSelect}
-      >
-        <span className="data-quality-rule__identity">
-          <code>{rule.ruleId}</code>
-          <QualityStatus status={check.status} />
+    <button
+      className={`data-quality-rule${selected ? ' is-selected' : ''} is-${check.status}`}
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+    >
+      <span className="data-quality-rule__topline">
+        <code>{rule.ruleId}</code>
+        <StatusBadge status={check.status} />
+      </span>
+      <strong>{rule.name}</strong>
+      <span className="data-quality-rule__meta">
+        {QUALITY_DIMENSION_LABELS[rule.dimension]} · {QUALITY_RULE_TYPE_LABELS[rule.ruleType]}
+        {rule.severity ? ` · ${QUALITY_SEVERITY_LABELS[rule.severity]}` : ''}
+      </span>
+      <span className="data-quality-rule__target">
+        {rule.target.table} · {rule.target.field ?? 'table-level'} · {rule.target.partition.column}{' '}
+        = {rule.target.partition.value}
+      </span>
+      <span className="data-quality-rule__values">
+        <span>
+          <small>expected</small>
+          <b>{formatScalar(check.expected)}</b>
         </span>
-        <strong>{rule.name}</strong>
-        <span className="data-quality-rule__meta">
-          {QUALITY_DIMENSION_LABELS[rule.dimension]} · {QUALITY_RULE_TYPE_LABELS[rule.ruleType]} ·{' '}
-          {QUALITY_SEVERITY_LABELS[rule.severity]}
+        <span>
+          <small>observed</small>
+          <b>{formatScalar(check.observed)}</b>
         </span>
-        <span className="data-quality-rule__target">{formatTarget(rule)}</span>
-      </button>
-      <div className="data-quality-rule__metrics">
-        <div>
-          <span>observed</span>
-          <strong>{formatQualityValue(check.observedValue, check.threshold.unit)}</strong>
-        </div>
-        <div>
-          <span>threshold</span>
-          <strong>{formatThreshold(check.threshold)}</strong>
-        </div>
-        <div>
-          <span>violations / scanned</span>
-          <strong>
-            {check.violationCount} / {check.evaluatedRowCount}
-          </strong>
-        </div>
-      </div>
-      <p className="data-quality-rule__description">{rule.description}</p>
-      {check.status !== 'pass' || check.evidence.some((evidence) => evidence.samples.length > 0) ? (
-        <>
-          {check.status === 'pass' && (
-            <p className="data-quality-rule__pass">
-              当前阈值下 pass · 原始证据仍保留，放宽阈值不会隐藏异常样本。
-            </p>
-          )}
-          <EvidenceList evidence={check.evidence} unit={check.threshold.unit} />
-        </>
-      ) : (
-        <p className="data-quality-rule__pass">无失败样本 · 该规则在当前注入和阈值下 pass。</p>
-      )}
-    </article>
+      </span>
+    </button>
   )
 }
 
-function QualityCheckResults({
-  rules,
-  checks,
+function FocusedEvidence({
+  rule,
+  check,
+  thresholdOverride,
+  onThresholdChange,
+}: {
+  rule: QualityRuleDefinition | undefined
+  check: QualityCheckResult | undefined
+  thresholdOverride: number | undefined
+  onThresholdChange: (ruleId: string, value: number) => void
+}) {
+  if (!rule || !check) {
+    return null
+  }
+
+  return (
+    <section className="data-quality-focus" aria-label="当前规则证据">
+      <div className="data-quality-focus__heading">
+        <div>
+          <span className="data-quality-overline">当前规则</span>
+          <h4>{rule.teachingQuestion}</h4>
+        </div>
+        <StatusBadge status={check.status} />
+      </div>
+      <p>{rule.description}</p>
+      <dl className="data-quality-facts data-quality-facts--compact">
+        <div>
+          <dt>expected</dt>
+          <dd>{formatScalar(check.expected)}</dd>
+        </div>
+        <div>
+          <dt>observed</dt>
+          <dd>{formatScalar(check.observed)}</dd>
+        </div>
+        <div>
+          <dt>threshold</dt>
+          <dd>{formatThreshold(check.threshold)}</dd>
+        </div>
+        <div>
+          <dt>failed_rows</dt>
+          <dd>{check.failedRows ?? 0}</dd>
+        </div>
+      </dl>
+      <div className="data-quality-evidence-list">
+        {check.evidence.map((evidence) => (
+          <EvidenceBlock evidence={evidence} key={evidence.evidenceId} />
+        ))}
+      </div>
+      <div className="data-quality-threshold-note">
+        <strong>阈值说明</strong>
+        {rule.strict || rule.releaseScope === 'banking' ? (
+          <p>
+            这是关键数据规则，阈值基线为 {formatThreshold(rule.threshold)}；
+            不能通过放宽规则把重复、非法值或关键结果差异变成正确。
+          </p>
+        ) : (
+          <label>
+            允许多少异常？
+            <input
+              type="number"
+              min="0"
+              value={thresholdOverride ?? check.threshold.value}
+              onChange={(event) => onThresholdChange(rule.ruleId, Number(event.target.value))}
+            />
+            <span>修改的是质量规则，不是数据本身。</span>
+          </label>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function SnapshotTable({
+  rows,
+  sample,
+}: {
+  rows: readonly QualityBalanceRow[]
+  sample: QualitySample | undefined
+}) {
+  const sampleAccountId = sample?.values.account_id
+  return (
+    <div className="data-quality-table-wrap">
+      <table className="data-quality-table">
+        <caption>AccountBalanceSnapshot 的教学样本</caption>
+        <thead>
+          <tr>
+            <th>account_id</th>
+            <th>snapshot_date</th>
+            <th>balance</th>
+            <th>currency</th>
+            <th>branch_id</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.slice(0, 8).map((row, index) => (
+            <tr
+              className={row.accountId === sampleAccountId ? 'is-evidence' : ''}
+              key={`${row.accountId}-${row.snapshotDate}-${index}`}
+            >
+              <td>{row.accountId || 'NULL'}</td>
+              <td>{row.snapshotDate || 'NULL'}</td>
+              <td>{row.balance === null ? 'NULL' : formatCurrency(row.balance)}</td>
+              <td>{row.currency}</td>
+              <td>{row.branch}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function StatusFlow({
+  visualization,
+  evaluation,
+  onReset,
+}: {
+  visualization: DataQualityVisualization
+  evaluation: ReturnType<typeof evaluateDataQuality>
+  onReset: () => void
+}) {
+  const [showEvidence, setShowEvidence] = useState(false)
+  const visibleChecks = getVisibleChecks(visualization, evaluation.checks)
+  const qualityStatus = getGateStatus(visibleChecks)
+  const qualityEvent = evaluation.events[0]
+  const steps = [
+    {
+      label: 'Run Status',
+      value: evaluation.schedulerRun.status.toUpperCase(),
+      detail: `run ${evaluation.schedulerRun.runId}`,
+      tone: evaluation.schedulerRun.status === 'success' ? 'pass' : 'fail',
+    },
+    {
+      label: 'Quality Status',
+      value: QUALITY_STATUS_LABELS[qualityStatus],
+      detail: `${evaluation.events.length} 个质量事件`,
+      tone: qualityStatus,
+    },
+    {
+      label: 'Release Status',
+      value: QUALITY_RELEASE_STATUS_LABELS[evaluation.releaseDecision.status],
+      detail: evaluation.releaseDecision.isBlocked ? '银行关键结果暂不发布' : '可以继续处理',
+      tone: evaluation.releaseDecision.isBlocked ? 'fail' : 'pass',
+    },
+  ] as const
+
+  return (
+    <div className="data-quality-view data-quality-view--status">
+      <div className="data-quality-view__toolbar">
+        <div>
+          <span className="data-quality-overline">RUN → QUALITY → RELEASE</span>
+          <p>business_date = {visualization.targetDate} · SLA MET</p>
+        </div>
+        <button className="button button--quiet button--small" type="button" onClick={onReset}>
+          重置检查
+        </button>
+      </div>
+      <ol className="data-quality-status-flow" aria-label="运行、质量与发布状态">
+        {steps.map((step, index) => (
+          <li className={`is-${step.tone}`} key={step.label}>
+            <span>{step.label}</span>
+            <strong>{step.value}</strong>
+            <small>{step.detail}</small>
+            {index < steps.length - 1 && <b aria-hidden="true">→</b>}
+          </li>
+        ))}
+      </ol>
+      <div className="data-quality-status-summary">
+        <div>
+          <span>Scheduler</span>
+          <strong>SUCCESS</strong>
+          <small>07:20 完成 · SLA MET</small>
+        </div>
+        <div>
+          <span>Quality</span>
+          <strong className="is-fail">FAILED</strong>
+          <small>同口径 DWD / DWS 对账不一致</small>
+        </div>
+        <div>
+          <span>Release</span>
+          <strong className="is-fail">BLOCKED</strong>
+          <small>需要修复证据指向的数据后再发布</small>
+        </div>
+      </div>
+      <button
+        className="data-quality-text-button"
+        type="button"
+        aria-expanded={showEvidence}
+        onClick={() => setShowEvidence((current) => !current)}
+      >
+        {showEvidence ? '收起质量证据' : '查看为什么 Quality FAILED'}
+      </button>
+      {showEvidence && qualityEvent && <EventEvidence event={qualityEvent} />}
+    </div>
+  )
+}
+
+function RuleReasoningLab({
+  visualization,
+  evaluation,
   selectedRuleId,
   onSelectRule,
+  onScenarioChange,
+  onThresholdChange,
+  thresholdOverrides,
 }: {
-  rules: readonly QualityRuleDefinition[]
-  checks: readonly QualityCheckResult[]
+  visualization: DataQualityVisualization
+  evaluation: ReturnType<typeof evaluateDataQuality>
   selectedRuleId: string
   onSelectRule: (ruleId: string) => void
+  onScenarioChange: (scenario: QualityScenario) => void
+  onThresholdChange: (ruleId: string, value: number) => void
+  thresholdOverrides: Readonly<Record<string, number>>
 }) {
+  const visibleChecks = getVisibleChecks(visualization, evaluation.checks)
+  const activeRule = getRule(visualization, selectedRuleId)
+  const activeCheck = getCheck(evaluation.checks, selectedRuleId)
+  const activeEvidence = activeCheck?.evidence.find((evidence) => evidence.sample)
+
   return (
-    <section className="data-quality-rules" aria-labelledby="data-quality-rules-title">
-      <div className="data-quality-section-heading">
-        <div>
-          <span className="data-quality-overline">03 · Quality checks</span>
-          <h3 id="data-quality-rules-title">不要只看质量分数，逐条看规则证据</h3>
-        </div>
-        <p>每张结果卡都包含 rule identity、目标、阈值、严重级别和扫描规模。</p>
+    <div className="data-quality-view data-quality-view--rules">
+      <div className="data-quality-view__intro">
+        <span className="data-quality-overline">GRAIN → RULE → EVIDENCE</span>
+        <h3>一行代表 Account × snapshot_date</h3>
+        <p>从记录身份出发，依次看关键字段、字段语义和对象关系。</p>
       </div>
-      <div className="data-quality-rule-list">
-        {rules.map((rule) => {
-          const check = checks.find((candidate) => candidate.ruleId === rule.ruleId)
-          if (!check) {
+      <div className="data-quality-grain-callout">
+        <span>核心 Grain</span>
+        <strong>Account × snapshot_date</strong>
+        <small>同一身份重复数 = 0；这是关键记录身份的严格规则。</small>
+      </div>
+      <ScenarioTabs
+        options={visualization.scenarios}
+        selected={evaluation.scenario}
+        onChange={onScenarioChange}
+        label="记录级质量故障"
+      />
+      <SnapshotTable rows={evaluation.rows} sample={activeEvidence?.sample} />
+      <div className="data-quality-rule-grid">
+        {visualization.visibleRuleIds.map((ruleId) => {
+          const rule = getRule(visualization, ruleId)
+          const check = getCheck(visibleChecks, ruleId)
+          if (!rule || !check) {
             return null
           }
           return (
-            <QualityRuleCard
+            <RuleResult
               rule={rule}
               check={check}
-              selected={selectedRuleId === rule.ruleId}
-              onSelect={() => onSelectRule(rule.ruleId)}
-              key={rule.ruleId}
+              selected={selectedRuleId === ruleId}
+              onSelect={() => onSelectRule(ruleId)}
+              key={ruleId}
             />
           )
         })}
       </div>
-    </section>
+      <FocusedEvidence
+        rule={activeRule}
+        check={activeCheck}
+        thresholdOverride={activeRule ? thresholdOverrides[activeRule.ruleId] : undefined}
+        onThresholdChange={onThresholdChange}
+      />
+    </div>
   )
 }
 
-function QualityEventLog({ events }: { events: readonly QualityEvent[] }) {
-  return (
-    <section className="data-quality-events" aria-labelledby="data-quality-events-title">
-      <div className="data-quality-section-heading">
-        <div>
-          <span className="data-quality-overline">04 · Quality events</span>
-          <h3 id="data-quality-events-title">失败结果要变成可调查的事件</h3>
-        </div>
-        <p>事件把证据、Scheduler run、下游影响和 remediation 绑定在一起。</p>
-      </div>
-      {events.length === 0 ? (
-        <p className="data-quality-empty">当前没有非 pass 规则，因此没有新的 Quality Event。</p>
-      ) : (
-        <ol className="data-quality-event-list">
-          {events.map((event) => (
-            <li className={`data-quality-event is-${event.status}`} key={event.eventId}>
-              <div className="data-quality-event__heading">
-                <div>
-                  <code>{event.eventId}</code>
-                  <strong>{event.ruleId}</strong>
-                </div>
-                <QualityStatus status={event.status} />
-              </div>
-              <p className="data-quality-event__target">
-                {event.target.table} · {event.target.field ?? 'table-level'} ·{' '}
-                {event.target.partition.column} = {event.target.partition.value} ·{' '}
-                {QUALITY_SEVERITY_LABELS[event.severity]}
-              </p>
-              <dl className="data-quality-event__facts">
-                <div>
-                  <dt>scheduler task / run</dt>
-                  <dd>
-                    <code>
-                      {event.schedulerContext.taskId} / {event.schedulerContext.runId}
-                    </code>
-                  </dd>
-                </div>
-                <div>
-                  <dt>evidence</dt>
-                  <dd>
-                    {event.evidence.map((item) => item.evidenceId).join(' · ')} ·{' '}
-                    {event.evidence.flatMap((item) => item.samples).length} samples
-                  </dd>
-                </div>
-                <div>
-                  <dt>downstream release</dt>
-                  <dd>{QUALITY_RELEASE_STATUS_LABELS[event.releaseImpact.downstreamRelease]}</dd>
-                </div>
-              </dl>
-              <p className="data-quality-event__impact">{event.releaseImpact.explanation}</p>
-              <div className="data-quality-event__investigation">
-                <div>
-                  <span>investigation context · upstream</span>
-                  <ul>
-                    {event.investigationContext.upstreamHints.map((hint) => (
-                      <li key={hint}>{hint}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <span>downstream impact</span>
-                  <ul>
-                    {event.investigationContext.downstreamImpacts.map((impact) => (
-                      <li key={impact}>{impact}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <div className="data-quality-event__remediation">
-                <span>remediation · {event.remediation.label}</span>
-                <p>{event.remediation.steps.join(' ')}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
-  )
-}
-
-function RemediationList({ remediations }: { remediations: readonly QualityRemediation[] }) {
-  if (remediations.length === 0) {
-    return <p className="data-quality-empty">没有遗留质量事件，不需要 remediation。</p>
-  }
-
-  return (
-    <ul className="data-quality-remediation-list">
-      {remediations.map((remediation, index) => (
-        <li key={`${remediation.rerunTaskId}-${index}`}>
-          <strong>{remediation.label}</strong>
-          <span>{remediation.steps.join(' ')}</span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function ReleaseDecisionPanel({
-  decision,
-  onActionChange,
+function DatasetQualityLab({
+  visualization,
+  evaluation,
+  onScenarioChange,
+  onReset,
+  thresholdOverrides,
+  onThresholdChange,
 }: {
-  decision: QualityReleaseDecision
-  onActionChange: (action: QualityAction) => void
+  visualization: DataQualityVisualization
+  evaluation: ReturnType<typeof evaluateDataQuality>
+  onScenarioChange: (scenario: QualityScenario) => void
+  onReset: () => void
+  thresholdOverrides: Readonly<Record<string, number>>
+  onThresholdChange: (ruleId: string, value: number) => void
 }) {
+  const option = visualization.scenarios.find((candidate) => candidate.id === evaluation.scenario)
+  const check = getCheck(evaluation.checks, option?.ruleId)
+  const evidence = check?.evidence[0]
+  const model = visualization.model
+
   return (
-    <section className="data-quality-release" aria-labelledby="data-quality-release-title">
-      <div className="data-quality-section-heading">
+    <div className="data-quality-view data-quality-view--dataset">
+      <div className="data-quality-view__toolbar">
         <div>
-          <span className="data-quality-overline">05 · Release decision</span>
-          <h3 id="data-quality-release-title">同一份证据，选择处置后会发生什么？</h3>
+          <span className="data-quality-overline">ROW → BATCH → PIPELINE</span>
+          <p>收到的行都合法，不代表应到的集合和加工链都正确。</p>
         </div>
-        <p>策略不改写 check；它只决定非 pass 结果如何影响下游发布。</p>
+        <button className="button button--quiet button--small" type="button" onClick={onReset}>
+          重置场景
+        </button>
       </div>
-      <fieldset className="data-quality-actions">
-        <legend>选择处置动作</legend>
-        <div className="data-quality-action-grid">
-          {QUALITY_ACTION_OPTIONS.map((option) => (
-            <button
-              className={`data-quality-action${option.value === decision.action ? ' is-selected' : ''}`}
-              type="button"
-              aria-pressed={option.value === decision.action}
-              key={option.value}
-              onClick={() => onActionChange(option.value)}
-            >
-              <strong>{option.label}</strong>
-              <small>{option.detail}</small>
-            </button>
-          ))}
+      <ScenarioTabs
+        options={visualization.scenarios}
+        selected={evaluation.scenario}
+        onChange={onScenarioChange}
+        label="整批质量场景"
+      />
+      {evaluation.scenario === 'batch-incomplete' && (
+        <div className="data-quality-comparison data-quality-comparison--batch">
+          <div>
+            <span>应到集合</span>
+            <strong>{model.expectedActiveAccountCount.toLocaleString('zh-CN')}</strong>
+            <small>2026-09-30 有效 Account</small>
+          </div>
+          <b aria-hidden="true">−</b>
+          <div>
+            <span>实际快照</span>
+            <strong>{model.incompleteSnapshotAccountCount.toLocaleString('zh-CN')}</strong>
+            <small>AccountBalanceSnapshot</small>
+          </div>
+          <b aria-hidden="true">=</b>
+          <div className="is-fail">
+            <span>缺口</span>
+            <strong>
+              {(
+                model.expectedActiveAccountCount - model.incompleteSnapshotAccountCount
+              ).toLocaleString('zh-CN')}
+            </strong>
+            <small>即使现有 7000 行都合法</small>
+          </div>
         </div>
-      </fieldset>
-      <div
-        className={`data-quality-decision data-quality-decision--${decision.status}`}
-        aria-live="polite"
-      >
-        <div className="data-quality-decision__headline">
+      )}
+      {evaluation.scenario === 'stale-snapshot' && (
+        <div className="data-quality-comparison data-quality-comparison--date">
           <div>
-            <span className="data-quality-overline">decision.{decision.action}</span>
-            <strong>{QUALITY_RELEASE_STATUS_LABELS[decision.status]}</strong>
+            <span>Scheduler</span>
+            <strong>SUCCESS</strong>
+            <small>SLA MET · 07:20</small>
           </div>
-          <span>{decision.decisionId}</span>
+          <b aria-hidden="true">但</b>
+          <div>
+            <span>business_date</span>
+            <strong>{model.targetDate}</strong>
+            <small>期望业务日期</small>
+          </div>
+          <b aria-hidden="true">≠</b>
+          <div className="is-fail">
+            <span>MAX(snapshot_date)</span>
+            <strong>2026-09-29</strong>
+            <small>数据内容还停在昨天</small>
+          </div>
         </div>
-        <p className="data-quality-decision__rationale">{decision.rationale}</p>
-        <dl className="data-quality-decision__facts">
+      )}
+      {evaluation.scenario === 'balance-reconciliation-drift' && (
+        <div className="data-quality-reconciliation">
+          <div className="data-quality-scope-line">
+            <span>同一对账口径</span>
+            <strong>
+              {model.reconciliation.businessDate} · {model.reconciliation.branch} ·{' '}
+              {model.reconciliation.customerScope} · {model.reconciliation.product} ·{' '}
+              {model.reconciliation.currency}
+            </strong>
+          </div>
+          <div className="data-quality-reconciliation__values">
+            <div>
+              <span>DWD 重聚合</span>
+              <strong>{formatCurrency(model.reconciliation.expectedDwdBalance)}</strong>
+            </div>
+            <b aria-hidden="true">→</b>
+            <div className="is-fail">
+              <span>DWS 主题</span>
+              <strong>{formatCurrency(model.reconciliation.observedDwsBalance)}</strong>
+            </div>
+            <div className="data-quality-reconciliation__delta">
+              <span>delta</span>
+              <strong>{formatCurrency(-200_000_000)}</strong>
+            </div>
+          </div>
+        </div>
+      )}
+      {check && evidence && (
+        <FocusedEvidence
+          rule={getRule(visualization, option?.ruleId)}
+          check={check}
+          thresholdOverride={option?.ruleId ? thresholdOverrides[option.ruleId] : undefined}
+          onThresholdChange={onThresholdChange}
+        />
+      )}
+    </div>
+  )
+}
+
+function EventEvidence({ event }: { event: QualityEvent }) {
+  return (
+    <article className="data-quality-event" aria-label="Quality Event 质量事实">
+      <div className="data-quality-event__heading">
+        <div>
+          <span className="data-quality-overline">QUALITY EVENT · 质量事实</span>
+          <strong>{event.ruleId}</strong>
+        </div>
+        <StatusBadge status={event.status} />
+      </div>
+      <dl className="data-quality-event__facts">
+        <div>
+          <dt>event_id</dt>
+          <dd>{event.eventId}</dd>
+        </div>
+        <div>
+          <dt>business_date</dt>
+          <dd>{event.businessDate}</dd>
+        </div>
+        <div>
+          <dt>table / partition</dt>
+          <dd>
+            {event.target.table} · {event.partition.column} = {event.partition.value}
+          </dd>
+        </div>
+        <div>
+          <dt>field</dt>
+          <dd>{event.field ?? 'table-level'}</dd>
+        </div>
+        <div>
+          <dt>expected</dt>
+          <dd>{formatScalar(event.expected)}</dd>
+        </div>
+        <div>
+          <dt>observed</dt>
+          <dd>{formatScalar(event.observed)}</dd>
+        </div>
+        <div>
+          <dt>failed_rows</dt>
+          <dd>{event.failedRows ?? '不适用'}</dd>
+        </div>
+        <div>
+          <dt>scheduler context</dt>
+          <dd>
+            {event.schedulerContext.taskId} · {event.schedulerContext.taskStatus} ·{' '}
+            {event.schedulerContext.runId}
+          </dd>
+        </div>
+      </dl>
+      <div className="data-quality-event__evidence">
+        {event.evidence.map((evidence) => (
+          <EvidenceBlock evidence={evidence} key={evidence.evidenceId} />
+        ))}
+      </div>
+      <p className="data-quality-event__boundary">
+        这里保存质量事实；根因候选和下游影响由后续血缘调查根据任务、表和字段映射推导。
+      </p>
+    </article>
+  )
+}
+
+function EvidencePanel({
+  visualization,
+  evaluation,
+  onScenarioChange,
+  onReset,
+}: {
+  visualization: DataQualityVisualization
+  evaluation: ReturnType<typeof evaluateDataQuality>
+  onScenarioChange: (scenario: QualityScenario) => void
+  onReset: () => void
+}) {
+  const option = visualization.scenarios.find((candidate) => candidate.id === evaluation.scenario)
+  const event = evaluation.events.find((candidate) => candidate.ruleId === option?.ruleId)
+  return (
+    <div className="data-quality-view data-quality-view--evidence">
+      <div className="data-quality-view__toolbar">
+        <div>
+          <span className="data-quality-overline">QUALITY EVENT · FACTS ONLY</span>
+          <p>每个失败事件都必须能回到可检查证据。</p>
+        </div>
+        <button className="button button--quiet button--small" type="button" onClick={onReset}>
+          重置证据
+        </button>
+      </div>
+      <ScenarioTabs
+        options={visualization.scenarios}
+        selected={evaluation.scenario}
+        onChange={onScenarioChange}
+        label="质量证据类型"
+      />
+      {event ? (
+        <EventEvidence event={event} />
+      ) : (
+        <p className="data-quality-empty">当前场景没有非 pass 事件。</p>
+      )}
+    </div>
+  )
+}
+
+function ReleaseDecisionLab({
+  visualization,
+  evaluation,
+  onScenarioChange,
+  onReset,
+}: {
+  visualization: DataQualityVisualization
+  evaluation: ReturnType<typeof evaluateDataQuality>
+  onScenarioChange: (scenario: QualityScenario) => void
+  onReset: () => void
+}) {
+  const isBanking = evaluation.scenario === 'bank-critical-branch-failure'
+  const option = visualization.scenarios.find((candidate) => candidate.id === evaluation.scenario)
+  const event = evaluation.events.find((candidate) => candidate.ruleId === option?.ruleId)
+  const decision: QualityReleaseDecision = evaluation.releaseDecision
+
+  return (
+    <div className="data-quality-view data-quality-view--release">
+      <div className="data-quality-view__toolbar">
+        <div>
+          <span className="data-quality-overline">QUALITY FACT → RELEASE DECISION</span>
+          <p>严重程度描述问题；发布动作结合数据用途和业务影响判断。</p>
+        </div>
+        <button className="button button--quiet button--small" type="button" onClick={onReset}>
+          重置发布判断
+        </button>
+      </div>
+      <ScenarioTabs
+        options={visualization.scenarios}
+        selected={evaluation.scenario}
+        onChange={onScenarioChange}
+        label="发布对照案例"
+      />
+      <div className={`data-quality-release-decision is-${decision.status}`} aria-live="polite">
+        <div>
+          <span>{isBanking ? '银行关键数据' : '非关键行为埋点'}</span>
+          <strong>{QUALITY_RELEASE_STATUS_LABELS[decision.status]}</strong>
+        </div>
+        <p>{decision.rationale}</p>
+        <dl>
           <div>
-            <dt>完整下游发布</dt>
-            <dd>{decision.isBlocked ? 'blocked · 是' : 'released · 否'}</dd>
+            <dt>Quality</dt>
+            <dd>{decision.checkCounts.fail > 0 ? 'FAILED' : 'PASS'}</dd>
           </div>
           <div>
-            <dt>规则结果</dt>
-            <dd>
-              {decision.checkCounts.fail} fail · {decision.checkCounts.warn} warn ·{' '}
-              {decision.checkCounts.pass} pass
-            </dd>
-          </div>
-          <div>
-            <dt>affected outputs</dt>
+            <dt>affected output</dt>
             <dd>{decision.affectedOutputs.join(' · ') || '无'}</dd>
           </div>
           <div>
-            <dt>quarantine samples</dt>
-            <dd>{decision.quarantinedSampleCount}</dd>
+            <dt>failed rows</dt>
+            <dd>{event?.failedRows ?? 0}</dd>
+          </div>
+          <div>
+            <dt>下一步</dt>
+            <dd>{decision.nextStep}</dd>
           </div>
         </dl>
-        <div className="data-quality-decision__lists">
-          <div>
-            <h4>失败 / 告警规则</h4>
-            <ul>
-              {[...decision.failedRuleIds, ...decision.warningRuleIds].map((ruleId) => (
-                <li key={ruleId}>
-                  <code>{ruleId}</code>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4>Remediation</h4>
-            <RemediationList remediations={decision.remediation} />
-          </div>
-        </div>
       </div>
-    </section>
+      {isBanking ? (
+        <div className="data-quality-release-rule data-quality-release-rule--block">
+          <strong>存款余额：默认 BLOCK</strong>
+          <p>
+            3 条 branch_id 异常中有一条余额为 {formatCurrency(230_000_000)}
+            。异常行少，不代表业务影响小；不能删掉它们后继续发布已知不可信的余额结果。
+          </p>
+        </div>
+      ) : (
+        <div className="data-quality-release-rule data-quality-release-rule--quarantine">
+          <strong>行为埋点：只有三个条件同时满足才 quarantine</strong>
+          <ul>
+            <li>异常记录彼此独立。</li>
+            <li>移除后不改变剩余记录的业务语义。</li>
+            <li>业务允许少量格式损失，并保留告警。</li>
+          </ul>
+        </div>
+      )}
+      {event && <EventEvidence event={event} />}
+    </div>
   )
 }
 
 export function DataQualityWorkbench({ visualization }: DataQualityWorkbenchProps) {
-  const firstRuleId = visualization.rules[0]?.ruleId ?? ''
-  const [injection, setInjection] = useState(visualization.defaultInjection)
-  const [action, setAction] = useState<QualityAction>('block')
+  const firstRuleId = visualization.visibleRuleIds[0] ?? visualization.rules[0]?.ruleId ?? ''
+  const [scenario, setScenario] = useState<QualityScenario>(visualization.defaultScenario)
   const [selectedRuleId, setSelectedRuleId] = useState(firstRuleId)
   const [thresholdOverrides, setThresholdOverrides] = useState<Record<string, number>>({})
   const evaluation = useMemo(
-    () =>
-      evaluateDataQuality(visualization, {
-        injection,
-        action,
-        thresholdOverrides,
-      }),
-    [action, injection, thresholdOverrides, visualization],
+    () => evaluateDataQuality(visualization, { scenario, thresholdOverrides }),
+    [scenario, thresholdOverrides, visualization],
   )
-  const activeCheck =
-    evaluation.checks.find((check) => check.ruleId === selectedRuleId) ?? evaluation.checks[0]
 
-  if (!activeCheck) {
-    return null
-  }
-
-  function selectInjection(nextInjection: typeof injection) {
-    setInjection(nextInjection)
-    const option = visualization.injections.find((candidate) => candidate.id === nextInjection)
-    setSelectedRuleId(option?.ruleId ?? firstRuleId)
+  function selectScenario(nextScenario: QualityScenario) {
+    setScenario(nextScenario)
+    const option = visualization.scenarios.find((candidate) => candidate.id === nextScenario)
+    if (option?.ruleId) {
+      setSelectedRuleId(option.ruleId)
+    }
   }
 
   function changeThreshold(ruleId: string, value: number) {
-    setThresholdOverrides((current) => ({ ...current, [ruleId]: value }))
+    setThresholdOverrides((current) => ({ ...current, [ruleId]: Math.max(0, value) }))
   }
 
   function resetWorkbench() {
-    setInjection(visualization.defaultInjection)
-    setAction('block')
+    setScenario(visualization.defaultScenario)
     setSelectedRuleId(firstRuleId)
     setThresholdOverrides({})
   }
 
+  const sharedProps = {
+    visualization,
+    evaluation,
+    onScenarioChange: selectScenario,
+    onReset: resetWorkbench,
+  }
+
   return (
     <div className="data-quality-workbench">
-      <div className="visualization-toolbar">
-        <div>
-          <span className="visualization-toolbar__label">
-            Quality Gate · Scheduler Run → Evidence → Release
-          </span>
-          <p aria-live="polite">
-            当前注入：{visualization.injections.find((option) => option.id === injection)?.label} ·{' '}
-            {evaluation.events.length} 个 Quality Event · {evaluation.releaseDecision.status}
-          </p>
-        </div>
-        <button
-          className="button button--quiet button--small"
-          type="button"
-          onClick={resetWorkbench}
-        >
-          重置质量实验
-        </button>
-      </div>
-
-      <QualityChain evaluation={evaluation} />
-      <SchedulerHandoff evaluation={evaluation} activeCheck={activeCheck} />
-      <div className="data-quality-controls">
-        <InjectionControls
+      {visualization.lessonMode === 'status' && (
+        <StatusFlow
           visualization={visualization}
-          injection={injection}
-          onChange={selectInjection}
+          evaluation={evaluation}
+          onReset={resetWorkbench}
         />
-        <ThresholdControls
-          rules={visualization.rules}
+      )}
+      {visualization.lessonMode === 'rules' && (
+        <RuleReasoningLab
+          {...sharedProps}
           selectedRuleId={selectedRuleId}
-          selectedCheck={activeCheck}
-          onRuleChange={setSelectedRuleId}
+          onSelectRule={setSelectedRuleId}
+          onThresholdChange={changeThreshold}
+          thresholdOverrides={thresholdOverrides}
+        />
+      )}
+      {visualization.lessonMode === 'dataset' && (
+        <DatasetQualityLab
+          {...sharedProps}
+          thresholdOverrides={thresholdOverrides}
           onThresholdChange={changeThreshold}
         />
-      </div>
-      <QualityCheckResults
-        rules={visualization.rules}
-        checks={evaluation.checks}
-        selectedRuleId={selectedRuleId}
-        onSelectRule={setSelectedRuleId}
-      />
-      <QualityEventLog events={evaluation.events} />
-      <ReleaseDecisionPanel decision={evaluation.releaseDecision} onActionChange={setAction} />
+      )}
+      {visualization.lessonMode === 'evidence' && <EvidencePanel {...sharedProps} />}
+      {visualization.lessonMode === 'release' && <ReleaseDecisionLab {...sharedProps} />}
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        每条质量结果都回到具体表、字段、分区和失败样本；沿着证据链判断报表是否可以发布。
+        本实验使用确定性的存款余额教学数据；重置后仍会得到同一组行、证据和发布判断。
       </p>
     </div>
   )

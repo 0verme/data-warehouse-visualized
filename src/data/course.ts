@@ -16,6 +16,10 @@ export type LessonDemo =
   | 'star-schema'
   | 'scd'
   | 'metric-definition'
+  | 'banking-metric-scope'
+  | 'banking-metric-definition'
+  | 'banking-metric-time'
+  | 'banking-metric-derivations'
   | 'lakehouse'
   | 'sql-transformation'
   | 'governance'
@@ -123,7 +127,34 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
-    demo: 'metric-definition',
+    demo: 'banking-metric-scope',
+  },
+  {
+    id: 'lesson-metric-definition',
+    slug: 'deposit-metric-definition',
+    chapter: '04',
+    order: 200,
+    difficulty: 'beginner',
+    estimatedMinutes: 10,
+    demo: 'banking-metric-definition',
+  },
+  {
+    id: 'lesson-metric-time',
+    slug: 'deposit-metric-time',
+    chapter: '04',
+    order: 300,
+    difficulty: 'beginner',
+    estimatedMinutes: 10,
+    demo: 'banking-metric-time',
+  },
+  {
+    id: 'lesson-metric-derivations',
+    slug: 'deposit-metric-derivations',
+    chapter: '04',
+    order: 400,
+    difficulty: 'beginner',
+    estimatedMinutes: 12,
+    demo: 'banking-metric-derivations',
   },
   {
     id: 'lesson-05',
@@ -176,6 +207,42 @@ export const lessonDefinitions = [
     chapter: '06',
     order: 100,
     difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'scheduler',
+  },
+  {
+    id: 'lesson-scheduling-readiness',
+    slug: 'scheduling-readiness',
+    chapter: '06',
+    order: 200,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'scheduler',
+  },
+  {
+    id: 'lesson-scheduling-failure',
+    slug: 'scheduling-failure',
+    chapter: '06',
+    order: 300,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'scheduler',
+  },
+  {
+    id: 'lesson-scheduling-rerun',
+    slug: 'scheduling-rerun',
+    chapter: '06',
+    order: 400,
+    difficulty: 'intermediate',
+    estimatedMinutes: 14,
+    demo: 'scheduler',
+  },
+  {
+    id: 'lesson-scheduling-sla',
+    slug: 'scheduling-sla',
+    chapter: '06',
+    order: 500,
+    difficulty: 'intermediate',
     estimatedMinutes: 12,
     demo: 'scheduler',
   },
@@ -185,7 +252,43 @@ export const lessonDefinitions = [
     chapter: '07',
     order: 100,
     difficulty: 'intermediate',
+    estimatedMinutes: 8,
+    demo: 'data-quality',
+  },
+  {
+    id: 'lesson-07-rules',
+    slug: 'data-quality-rules',
+    chapter: '07',
+    order: 200,
+    difficulty: 'intermediate',
     estimatedMinutes: 12,
+    demo: 'data-quality',
+  },
+  {
+    id: 'lesson-07-dataset',
+    slug: 'data-quality-dataset',
+    chapter: '07',
+    order: 300,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'data-quality',
+  },
+  {
+    id: 'lesson-07-evidence',
+    slug: 'data-quality-evidence',
+    chapter: '07',
+    order: 400,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'data-quality',
+  },
+  {
+    id: 'lesson-07-release',
+    slug: 'data-quality-release',
+    chapter: '07',
+    order: 500,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
     demo: 'data-quality',
   },
   {
@@ -225,10 +328,46 @@ export const lessonDefinitions = [
     demo: 'banking-customer-history',
   },
   {
-    id: 'lesson-09',
+    id: 'lesson-09-1',
     slug: 'data-governance',
     chapter: '09',
     order: 100,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'governance',
+  },
+  {
+    id: 'lesson-09-2',
+    slug: 'data-governance-evidence',
+    chapter: '09',
+    order: 200,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'governance',
+  },
+  {
+    id: 'lesson-09-3',
+    slug: 'data-governance-field-access',
+    chapter: '09',
+    order: 300,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'governance',
+  },
+  {
+    id: 'lesson-09-4',
+    slug: 'data-governance-lifecycle',
+    chapter: '09',
+    order: 400,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'governance',
+  },
+  {
+    id: 'lesson-09-5',
+    slug: 'data-governance-change-responsibility',
+    chapter: '09',
+    order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
     demo: 'governance',
@@ -305,9 +444,24 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['Grain', '粒度', 'Join'],
     },
     'lesson-04': {
-      title: '指标体系：同一个数字为什么不一样？',
-      summary: '拆开指标口径、统计粒度与时间范围，理解指标管理的必要性。',
-      tags: ['指标', '口径'],
+      title: '同一个“存款余额”，为什么会有不同答案？',
+      summary: '用三个确定性的存款余额结果，理解统计集合不同会造成口径差异。',
+      tags: ['指标', '口径', '存款余额'],
+    },
+    'lesson-metric-definition': {
+      title: '一个指标到底由什么组成？',
+      summary: '用指标定义卡补齐统计时间、对象、度量、范围、单位和底层 Grain。',
+      tags: ['指标定义', '口径', 'Grain'],
+    },
+    'lesson-metric-time': {
+      title: '“截至某天”和“一段时间”有什么区别？',
+      summary: '对照存款余额状态与累计存入事件，理解时点和期间两种时间语义。',
+      tags: ['时间语义', '快照', '交易事实'],
+    },
+    'lesson-metric-derivations': {
+      title: '一个“存款余额”为什么能派生出这么多指标？',
+      summary: '切换客户、产品、币种、机构和日期，观察基础度量如何形成指标族。',
+      tags: ['指标派生', '存款余额', '口径组合'],
     },
     'lesson-05': {
       title: '口径已经说清楚，为什么还不能直接算？',
@@ -335,15 +489,55 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['加工契约', '业务日期', '分区'],
     },
     'lesson-06': {
-      title: '调度系统：数据任务如何按时到达？',
-      summary:
-        '从 06:00 日批到迟到补数，理解任务依赖、运行状态、SLA 与业务分区如何决定报表何时可用。',
-      tags: ['DAG', '调度', '重跑'],
+      title: '今天凌晨跑的，为什么是昨天的数据？',
+      summary: '沿一条存款余额日批时间轴，区分业务日期、到达时间、触发时间和目标分区。',
+      tags: ['业务日期', '时间语义', '调度'],
+    },
+    'lesson-scheduling-readiness': {
+      title: '一个任务，到底什么时候才可以开始？',
+      summary: '用三种真实运行方式理解 Trigger、输入就绪和任务依赖如何共同决定任务何时启动。',
+      tags: ['DAG', '运行条件', '任务依赖'],
+    },
+    'lesson-scheduling-failure': {
+      title: '一个任务失败，后面的任务会怎样？',
+      summary: '注入 DWD 故障，观察等待、失败传播、Attempt 和 Retry 如何改变同一条存款余额链。',
+      tags: ['失败传播', 'Retry', '状态'],
+    },
+    'lesson-scheduling-rerun': {
+      title: '同样是“再跑一次”，到底有什么不同？',
+      summary: '比较 Retry、Rerun、Backfill 和重跑范围，用重复写入反例理解幂等。',
+      tags: ['Rerun', 'Backfill', '幂等'],
+    },
+    'lesson-scheduling-sla': {
+      title: '任务都成功了，为什么数据还是可能迟到？',
+      summary: '拖动上游到达时间，观察延迟如何传到 ADS，并用业务可用时间判断 SLA。',
+      tags: ['SLA', '迟到数据', '业务交付'],
     },
     'lesson-07': {
-      title: '数据质量：怎样知道数据可信？',
-      summary: '调度显示成功却少了一行时，用质量规则、失败样本和发布决定定位问题。',
-      tags: ['质量', '校验', '证据', '发布闸门'],
+      title: '任务成功了，数据就可信了吗？',
+      summary: '从 Scheduler SUCCESS 和 SLA MET 出发，区分运行状态、质量状态与发布状态。',
+      tags: ['质量状态', '调度边界', '发布'],
+    },
+    'lesson-07-rules': {
+      title: '一张表到底应该检查什么？',
+      summary:
+        '从 Account × snapshot_date 的 Grain 出发，检查记录身份、关键字段、字段语义和对象关系。',
+      tags: ['Grain', '质量规则', '存款余额'],
+    },
+    'lesson-07-dataset': {
+      title: '每一行都正常，为什么结果还是可能错？',
+      summary: '用应到集合、Freshness 和同口径对账，判断整批数据与加工链是否可信。',
+      tags: ['整批完整性', 'Freshness', '对账'],
+    },
+    'lesson-07-evidence': {
+      title: '质量失败以后，我们到底应该看什么？',
+      summary: '把规则、目标、期望、观察值和行级或聚合证据组织成可调查的 Quality Event。',
+      tags: ['Quality Event', '证据', '调查'],
+    },
+    'lesson-07-release': {
+      title: '发现问题以后，这份数据还能发布吗？',
+      summary: '存款余额质量失败默认 BLOCK，并用极小的非关键埋点案例说明 quarantine 的适用条件。',
+      tags: ['发布决定', 'BLOCK', 'quarantine'],
     },
     'lesson-08': {
       title: '什么是数据血缘？',
@@ -365,11 +559,30 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary: '用客户等级和机构变更，比较覆盖更新与拉链表如何影响历史 LoanNote 的分析结果。',
       tags: ['维度历史', '拉链表', '代理键'],
     },
-    'lesson-09': {
-      title: '数据治理：当数据平台开始失控',
-      summary:
-        '新员工申请存款余额数据时，比较资产定义、字段权限、责任人和生命周期，留下可追溯的使用决定。',
-      tags: ['治理', '资产目录', '决策台', '血缘影响'],
+    'lesson-09-1': {
+      title: '搜到三张“存款余额”，我到底该用哪张？',
+      summary: '用业务定义、已有 Grain、范围和排除项，对比三类存款余额候选资产。',
+      tags: ['治理', '资产发现', 'Grain'],
+    },
+    'lesson-09-2': {
+      title: '找对了资产，今天这份数据真的能用吗？',
+      summary: '结合 Quality status 和 Freshness，判断昨天业务日的存款余额是否适合使用。',
+      tags: ['治理', 'Quality', 'Freshness'],
+    },
+    'lesson-09-3': {
+      title: '这张表能用，里面的字段都能直接用吗？',
+      summary: '按角色和用途勾选最小字段集合，比较直接使用、脱敏和当前不能直接使用。',
+      tags: ['治理', '字段使用', '脱敏'],
+    },
+    'lesson-09-4': {
+      title: '旧表还能查到，为什么不应该继续用了？',
+      summary: '从 deprecated 旧资产切换到替代资产，理解可访问不等于仍然推荐使用。',
+      tags: ['治理', '生命周期', '迁移'],
+    },
+    'lesson-09-5': {
+      title: '字段变了以后，谁需要处理？',
+      summary: '读取第 08 章已有影响分析，映射受影响资产 Owner，形成变更责任清单。',
+      tags: ['治理', 'Owner', '变更责任'],
     },
     'lesson-10': {
       title: '湖仓：为什么数据湖最终需要仓库能力',

@@ -1,570 +1,726 @@
 import type {
   GovernanceAsset,
-  GovernanceBusinessDefinition,
+  GovernanceChangeImpact,
   GovernanceField,
   GovernanceLifecycleEvent,
-  GovernanceMetricReference,
+  GovernanceQualityCase,
   GovernanceVisualization,
-  LineageEvidence,
-  MetricDefinition,
+  LineageEdge,
+  LineageNode,
 } from '../../types'
-import {
-  qualityEventToGovernanceEvidence,
-  qualityEvaluationToGovernanceEvidence,
-} from '../../features/governance/quality-adapter'
-import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
-import { dataLineageContent } from './data-lineage'
-import { dataQualityVisualization } from './data-quality'
 import type { LessonContent } from '../types'
 
-const lineageVisualization = dataLineageContent.visualization
-
-if (!lineageVisualization || lineageVisualization.kind !== 'lineage') {
-  throw new Error('数据治理课程缺少血缘可视化数据')
-}
-
-const qualityIncidentEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'missing-balance-snapshot',
-  action: 'block',
-})
-const qualityIncident = qualityIncidentEvaluation.events.find(
-  (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
-)
-if (!qualityIncident) {
-  throw new Error('数据治理课程缺少完整性质量事件')
-}
-
-const qualityBaselineEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'none',
-  action: 'block',
-})
-const dwsBalanceQualityRule = dataQualityVisualization.rules.find(
-  (rule) => rule.ruleId === QUALITY_RULE_IDS.reconciliation,
-)
-if (!dwsBalanceQualityRule) {
-  throw new Error('数据治理课程缺少对账质量规则')
-}
-
-const dwdQualityEvidence = qualityEventToGovernanceEvidence(qualityIncident, 'DWD 账户余额完整性')
-const dwsBalanceQualityEvidence = qualityEvaluationToGovernanceEvidence(
-  qualityBaselineEvaluation,
-  dwsBalanceQualityRule,
-)
-
-const currentFreshness = {
-  lastUpdatedAt: '2026-09-30 23:59',
-  expectedRefresh: '每天 06:30',
-  observedDelayMinutes: 3,
-  status: 'current',
-} as const
-
-const delayedFreshness = {
-  lastUpdatedAt: '2026-10-01 06:00',
-  expectedRefresh: '每天 06:30',
-  observedDelayMinutes: 210,
-  status: 'delayed',
-} as const
-
-const depositBalanceMetric: MetricDefinition = {
-  name: '存款余额',
-  businessProcess: '账户余额日终快照',
-  subject: '存款余额',
-  statusRule: '杭州分行、小微、定期、CNY',
-  grain: '快照日 × 机构 × 客户口径 × 产品 × 币种',
-  timeField: 'snapshot_date',
-  measure: 'SUM(balance)',
-  refundRule: '不涉及退款；余额按快照日取值',
-  period: '截至业务日期的日终余额',
-}
-
-const depositBalanceReference: GovernanceMetricReference = {
-  name: '存款余额',
-  definition: depositBalanceMetric,
-  sourceLessonSlug: 'sql-and-transformation',
-  note: '引用第 05 章的存款余额定义；治理目录只引用口径，不重新计算余额。',
-}
-
-const dwdDefinition: GovernanceBusinessDefinition = {
-  summary: '一行代表一个账户在一个快照日的余额，保留维度缺失的事实行。',
-  grain: '账户 × 快照日',
-  scope: '去重、关联和币种标准化后的账户日余额明细。',
-  exclusions: '不代表指标卡汇总；需要业务分组时应继续使用 DWS。',
-}
-
-const dwsDefinition: GovernanceBusinessDefinition = {
-  summary: '按快照日、机构、客户口径、产品和币种汇总存款余额。',
-  grain: '快照日 × 机构 × 客户口径 × 产品 × 币种',
-  scope: '承载存款余额主题汇总，供指标卡和经营分析复用。',
-  exclusions: '不提供账户介质明细，也不用于直接识别客户。',
-}
-
-const adsDefinition: GovernanceBusinessDefinition = {
-  summary: '存款余额指标卡的发布视图，一行对应一个快照日和一组固定业务条件。',
-  grain: '快照日 × 指标卡',
-  scope: '面向经营分析读取杭州分行、小微、定期、CNY 的余额。',
-  exclusions: '不应作为原始账户明细或外部共享的直接数据源。',
-}
-
-const profileDefinition: GovernanceBusinessDefinition = {
-  summary: '由账户关系和客户口径构成的辅助主题，帮助解释指标维度来源。',
-  grain: '账户或客户？',
-  scope: '当前定义不完整，暂时不能确认能否支撑更多客户分析。',
-  exclusions: '用途、字段范围和 Owner 待补齐。',
-}
-
-const legacyDefinition: GovernanceBusinessDefinition = {
-  summary: '历史存款余额发布视图的旧版本。',
-  grain: '报表日',
-  scope: '只用于迁移期间的结果比对。',
-  exclusions: '不应再建立新的生产依赖。',
-}
-
-const balanceFields: GovernanceField[] = [
+const accountBalanceFields: GovernanceField[] = [
   {
-    name: 'snapshot_date',
-    label: '快照日期',
+    name: 'business_date',
+    label: '业务日期',
     type: 'date',
-    description: '账户余额所属的业务日期，不由数据到达日期替代。',
+    description: '这条余额快照归属的业务日，不是数据到达平台的时间。',
     sensitivity: 'public',
   },
   {
-    name: 'account_id',
-    label: '账户标识',
+    name: 'branch_id',
+    label: '机构标识',
     type: 'string',
-    description: '账户的内部关联键，用于账户日去重和维度关联。',
+    description: '账户所属 Branch，用于机构维度的经营分析。',
     sensitivity: 'internal',
-  },
-  {
-    name: 'customer_id',
-    label: '客户标识',
-    type: 'string',
-    description: '客户维度的内部关联键，不能据此推断可以直接触达客户。',
-    sensitivity: 'sensitive',
-  },
-  {
-    name: 'branch_name',
-    label: '机构名称',
-    type: 'string',
-    description: '机构汇总维度，可用于分行范围筛选。',
-    sensitivity: 'internal',
-  },
-  {
-    name: 'currency',
-    label: '标准币种',
-    type: 'string',
-    description: '进入 DWD 后的标准币种编码，当前指标只接受 CNY。',
-    sensitivity: 'public',
-  },
-  {
-    name: 'balance',
-    label: '账户余额',
-    type: 'decimal',
-    description: '账户在快照日的余额度量；复用前要确认统计日期和业务范围。',
-    sensitivity: 'internal',
-    semanticStatus: 'stable',
-    lineageNodeId: 'field-dwd-balance',
-  },
-]
-
-const dwsFields: GovernanceField[] = [
-  {
-    name: 'snapshot_date',
-    label: '快照日期',
-    type: 'date',
-    description: '主题汇总的业务日期边界。',
-    sensitivity: 'public',
-  },
-  {
-    name: 'branch_name',
-    label: '机构名称',
-    type: 'string',
-    description: '分行汇总维度。',
-    sensitivity: 'internal',
-  },
-  {
-    name: 'customer_scope',
-    label: '客户口径',
-    type: 'string',
-    description: '客户维度映射出的分析口径。',
-    sensitivity: 'internal',
-    lineageNodeId: 'field-dws-account-scope',
   },
   {
     name: 'product_type',
-    label: '产品类型',
+    label: '存款产品类型',
     type: 'string',
-    description: '产品维度映射出的产品分类。',
+    description: 'Account 关联的 Product 分类，例如活期、定期。分类语义发生变化时需要重新确认。',
     sensitivity: 'internal',
+    semanticStatus: 'stable',
+    lineageNodeId: 'field-account-product-type',
   },
   {
-    name: 'currency',
-    label: '标准币种',
-    type: 'string',
-    description: '主题层使用的统一币种编码。',
-    sensitivity: 'public',
-  },
-  {
-    name: 'balance',
+    name: 'deposit_balance',
     label: '存款余额',
     type: 'decimal',
-    description: '按指标维度汇总后的余额，必须回到指标定义核对口径。',
+    description: 'AccountBalanceSnapshot 在该业务日的余额状态，不是 Transaction 发生额。',
     sensitivity: 'internal',
-    lineageNodeId: 'field-dws-balance',
-  },
-]
-
-const adsFields: GovernanceField[] = [
-  {
-    name: 'snapshot_date',
-    label: '指标日期',
-    type: 'date',
-    description: '指标卡对应的业务日期。',
-    sensitivity: 'public',
   },
   {
-    name: 'branch_name',
-    label: '机构名称',
+    name: 'customer_name',
+    label: 'Customer.name',
     type: 'string',
-    description: '发布结果的机构范围。',
-    sensitivity: 'internal',
+    description: '账户关联 Customer 的名称，经营分析不需要读取个体姓名。',
+    sensitivity: 'sensitive',
   },
   {
-    name: 'customer_scope',
-    label: '客户口径',
+    name: 'mobile',
+    label: 'AccountMedium.mobile',
     type: 'string',
-    description: '发布结果的客户范围。',
-    sensitivity: 'internal',
-  },
-  {
-    name: 'balance',
-    label: '存款余额',
-    type: 'decimal',
-    description: '指标卡展示的余额，必须回到第 05 章契约核对定义。',
-    sensitivity: 'internal',
-    lineageNodeId: 'field-ads-balance',
-  },
-]
-
-const profileFields: GovernanceField[] = [
-  {
-    name: 'account_id',
-    label: '账户标识',
-    type: 'string',
-    description: '账户画像的关联键，业务用途和访问范围尚未写清。',
-    sensitivity: 'internal',
-  },
-  {
-    name: 'customer_scope',
-    label: '客户口径',
-    type: 'string',
-    description: '客户分析范围的粗粒度标签。',
-    sensitivity: 'internal',
-    lineageNodeId: 'field-dws-account-scope',
-  },
-  {
-    name: 'customer_id',
-    label: '客户标识',
-    type: 'string',
-    description: '客户关联键，扩大关联能力前必须先确认用途。',
+    description: '账户介质中的手机号，客户服务可能需要，但不应暴露完整原值。',
     sensitivity: 'restricted',
+    maskingStrategy: '只保留前三位和末四位',
+    maskingSample: '13812345678',
+  },
+  {
+    name: 'account_no',
+    label: 'AccountMedium.account_no',
+    type: 'string',
+    description: '账户介质中的账号。经营分析只需要聚合结果，不能把完整账号带入导出。',
+    sensitivity: 'restricted',
+    maskingStrategy: '保留前四位和后四位',
+    maskingSample: '6222 1234 5678 9012',
   },
 ]
+
+const dwsFieldNames = ['business_date', 'branch_id', 'product_type', 'deposit_balance']
+const dwsFields: GovernanceField[] = accountBalanceFields.filter(
+  (field) => dwsFieldNames.indexOf(field.name) >= 0,
+)
 
 const governanceAssets: GovernanceAsset[] = [
   {
-    id: 'ods-account-balance',
-    technicalName: 'ODS.ACCOUNT_BALANCE_SNAPSHOT',
-    businessName: '账户余额原始快照',
-    description: '原始账户余额快照，保留来源差异，适合排查接入问题而非直接做指标分析。',
+    id: 'dwd-account-balance-detail',
+    technicalName: 'dwd_account_balance_detail',
+    businessName: '账户余额明细',
+    description:
+      'AccountBalanceSnapshot 的账户级明细，保留 Account、Branch、Product 和账户介质字段，适合核对单个账户。',
     assetType: 'table',
-    owner: '账户数据接入组',
-    steward: '存款域 Steward',
-    tags: ['存款', '原始层', '账户余额'],
+    owner: '账户数据组',
+    tags: ['存款余额', '账户明细', 'AccountBalanceSnapshot'],
     lifecycle: 'active',
-    freshnessMetadata: currentFreshness,
-    sensitivity: 'sensitive',
-    fields: balanceFields.slice(0, 2),
+    freshnessMetadata: {
+      lastUpdatedAt: '昨天 06:20',
+      expectedRefresh: '每天 06:30',
+      observedDelayMinutes: 0,
+      status: 'current',
+    },
+    qualityStatus: 'pass',
+    qualityNote: '第 07 章已经提供通过状态；本节只消费这个结果。',
+    sensitivity: 'restricted',
+    fields: accountBalanceFields,
     businessDefinition: {
-      summary: '一行代表一条账户余额原始快照记录。',
-      grain: '账户 × 快照日（原始记录）',
-      scope: '用于追溯来源、重复快照和迟到输入。',
-      exclusions: '不保证已去重、补齐维度或统一编码。',
+      summary: '一行代表一个 Account 在某个 business_date 的余额快照。',
+      grain: 'Account × business_date',
+      scope: '包含账户、机构、产品和账户介质字段，适合明细核对。',
+      exclusions: '不代表一笔 Transaction，也不直接回答机构汇总问题。',
     },
     definitionCompleteness: 'complete',
     lineageEvidence: {
       status: 'linked',
-      nodeId: 'ods-account-balance',
-      note: '已连接 ODS.ACCOUNT_BALANCE_SNAPSHOT 节点，可沿血缘追踪到可信明细。',
+      nodeId: 'dwd-account-balance-detail',
+      note: '第 08 章已经登记 Account.product_type 到该明细资产的影响关系。',
     },
   },
   {
-    id: 'dwd-deposit-balance',
-    technicalName: 'DWD.DEPOSIT_BALANCE',
-    businessName: 'DWD 账户日余额',
-    description: '去重、关联和币种标准化后的可信明细，是存款余额指标和下游主题的可复用来源。',
+    id: 'dws-deposit-balance-daily',
+    technicalName: 'dws_deposit_balance_daily',
+    businessName: '机构存款余额日汇总',
+    description:
+      '按 Branch、Product 和 business_date 汇总的存款余额，正好服务普通经营分析人员的机构视角。',
     assetType: 'table',
-    owner: '存款数据组',
-    steward: '存款域 Steward',
-    tags: ['存款', '明细', 'DWD', '可复用'],
+    owner: '存款指标组',
+    tags: ['存款余额', '机构分析', '产品分析', '日汇总'],
     lifecycle: 'active',
-    freshnessMetadata: currentFreshness,
-    sensitivity: 'sensitive',
-    fields: balanceFields,
-    businessDefinition: dwdDefinition,
-    definitionCompleteness: 'complete',
-    metricDefinition: depositBalanceReference,
-    lineageEvidence: {
-      status: 'linked',
-      nodeId: 'dwd-deposit-balance',
-      note: '已连接 DWD.DEPOSIT_BALANCE 节点；下游关系来自同一条血缘。',
+    freshnessMetadata: {
+      lastUpdatedAt: '昨天 06:35',
+      expectedRefresh: '每天 06:40',
+      observedDelayMinutes: 0,
+      status: 'current',
     },
-    qualityEvidence: dwdQualityEvidence,
-  },
-  {
-    id: 'dws-deposit-balance',
-    technicalName: 'DWS.DEPOSIT_BALANCE',
-    businessName: 'DWS 存款余额主题',
-    description: '按指标维度汇总存款余额，不带账户介质明细，适合经营分析从主题层开始复用。',
-    assetType: 'table',
-    owner: '指标平台组',
-    steward: '存款域 Steward',
-    tags: ['存款', '余额', '主题层', '推荐起点'],
-    lifecycle: 'active',
-    freshnessMetadata: currentFreshness,
+    qualityStatus: 'pass',
+    qualityNote: '第 07 章已经确认昨天业务日的 Quality；本节不重新运行检查。',
     sensitivity: 'internal',
     fields: dwsFields,
-    businessDefinition: dwsDefinition,
+    businessDefinition: {
+      summary: '一行代表一个 Branch、Product 在一个 business_date 的存款余额汇总。',
+      grain: 'Branch × Product × business_date',
+      scope: '服务机构和产品维度的经营分析，不暴露账户级联系方式。',
+      exclusions: '不用于单个账户核对，也不包含 Customer.name、mobile 或 account_no。',
+    },
     definitionCompleteness: 'complete',
-    metricDefinition: depositBalanceReference,
     lineageEvidence: {
       status: 'linked',
-      nodeId: 'dws-deposit-balance',
-      note: '已连接 DWS.DEPOSIT_BALANCE 节点，可追踪到指标结果。',
+      nodeId: 'dws-deposit-balance-daily',
+      note: '第 08 章已经登记该日汇总受 Account.product_type 变化影响。',
     },
-    qualityEvidence: dwsBalanceQualityEvidence,
   },
   {
     id: 'ads-deposit-balance',
-    technicalName: 'ADS.DEPOSIT_BALANCE',
-    businessName: 'ADS 存款余额指标',
-    description: '面向经营分析的发布视图，一行对应一张固定条件的存款余额指标卡。',
+    technicalName: 'ads_deposit_balance',
+    businessName: '存款余额经营分析结果',
+    description: '为固定经营分析页面准备的结果资产，查询更直接，但使用范围依赖该页面的分析口径。',
     assetType: 'view',
     owner: '经营分析组',
-    steward: 'BI Steward',
-    tags: ['存款', '余额', '经营分析', '指标'],
+    tags: ['存款余额', '应用结果', '经营分析'],
     lifecycle: 'active',
-    freshnessMetadata: currentFreshness,
+    freshnessMetadata: {
+      lastUpdatedAt: '昨天 07:05',
+      expectedRefresh: '每天 07:10',
+      observedDelayMinutes: 0,
+      status: 'current',
+    },
+    qualityStatus: 'pass',
+    qualityNote: '第 07 章已确认发布结果状态；仍需核对它是否回答当前问题。',
     sensitivity: 'internal',
-    fields: adsFields,
-    businessDefinition: adsDefinition,
+    fields: dwsFields,
+    businessDefinition: {
+      summary: '一行代表经营分析页面所需的机构、产品和业务日余额结果。',
+      grain: 'Branch × Product × business_date',
+      scope: '适合该页面的固定查询和展示。',
+      exclusions: '不等于所有存款余额问题的通用明细来源，复用前要核对页面范围。',
+    },
     definitionCompleteness: 'complete',
-    metricDefinition: depositBalanceReference,
     lineageEvidence: {
       status: 'linked',
       nodeId: 'ads-deposit-balance',
-      note: '已连接 ADS.DEPOSIT_BALANCE 节点，可同时查看指标和发布依赖。',
+      note: '第 08 章已经登记该应用结果受日汇总语义变化影响。',
     },
   },
   {
-    id: 'dws-account-profile',
-    technicalName: 'DWS.ACCOUNT_PROFILE',
-    businessName: 'DWS 账户画像辅助主题',
-    description: '账户、客户和机构的辅助主题，字段用途与责任边界还需要补充。',
-    assetType: 'table',
-    steward: '账户域 Steward',
-    tags: ['账户', '客户口径', '辅助主题'],
-    lifecycle: 'active',
-    freshnessMetadata: currentFreshness,
-    sensitivity: 'restricted',
-    fields: profileFields,
-    businessDefinition: profileDefinition,
-    definitionCompleteness: 'ambiguous',
-    lineageEvidence: {
-      status: 'linked',
-      nodeId: 'dws-account-profile',
-      note: '已连接 DWS.ACCOUNT_PROFILE 节点，但辅助主题的消费边界仍需人工确认。',
-    },
-  },
-  {
-    id: 'ads-deposit-balance-v1',
-    technicalName: 'ADS.DEPOSIT_BALANCE_V1',
-    businessName: '旧版存款余额报表 V1',
-    description: '历史存款余额发布视图，仍有少量使用方，但已经有新的 ADS.DEPOSIT_BALANCE 替代。',
+    id: 'ads-deposit-balance-old',
+    technicalName: 'ads_deposit_balance_old',
+    businessName: '旧版存款余额应用资产',
+    description: '仍能搜索和查询的历史结果资产，但已经 deprecated，并有明确的替代资产。',
     assetType: 'view',
     owner: '经营分析组',
-    steward: 'BI Steward',
-    tags: ['存款', 'deprecated', '迁移'],
+    tags: ['存款余额', 'deprecated', '迁移'],
     lifecycle: 'deprecated',
-    freshnessMetadata: delayedFreshness,
+    replacementAssetId: 'ads-deposit-balance',
+    freshnessMetadata: {
+      lastUpdatedAt: '7 天前',
+      expectedRefresh: '已停止更新',
+      observedDelayMinutes: 10080,
+      status: 'delayed',
+    },
+    qualityStatus: 'pass',
+    qualityNote: '即使历史检查曾通过，也不能抵消 deprecated 状态。',
     sensitivity: 'internal',
-    fields: [
-      {
-        name: 'report_date',
-        label: '报表日期',
-        type: 'date',
-        description: '旧版报表的统计日期。',
-        sensitivity: 'public',
-      },
-      {
-        name: 'deposit_balance',
-        label: '旧版存款余额',
-        type: 'decimal',
-        description: '历史字段，可能与当前存款余额指标口径不同。',
-        sensitivity: 'internal',
-      },
-    ],
-    businessDefinition: legacyDefinition,
-    definitionCompleteness: 'partial',
-    metricDefinition: depositBalanceReference,
+    fields: dwsFields,
+    businessDefinition: {
+      summary: '历史页面使用的机构存款余额结果。',
+      grain: 'Branch × business_date',
+      scope: '只用于迁移期间的结果比对。',
+      exclusions: '不应建立新的生产依赖。',
+    },
+    definitionCompleteness: 'complete',
     lineageEvidence: {
-      status: 'unavailable',
-      note: '当前血缘目录没有旧版视图的可确认节点，只保留人工迁移说明。',
+      status: 'partial',
+      note: '第 08 章影响结果只保留迁移提示，不能把旧资产当作新的默认来源。',
     },
   },
 ]
 
-const governanceEventEvidence: LineageEvidence = {
-  source: 'manual_metadata',
-  detail: '该治理事件的影响对象，沿已登记的血缘关系计算。',
-}
-
-const governanceEvents: GovernanceLifecycleEvent[] = [
+const bankingLineageNodes: LineageNode[] = [
   {
-    id: 'governance-balance-semantic-change',
-    assetId: 'dwd-deposit-balance',
-    eventType: 'field-change',
-    label: 'balance 语义变化',
-    description: 'balance 从“快照日余额”调整为新的业务定义，需要重新确认指标卡和下游汇总。',
-    sourceEntityId: 'field-dwd-balance',
-    affectedEntityId: 'metric-deposit-balance',
-    fieldName: 'balance',
-    newFieldName: 'available_balance',
-    semanticChange: '余额改为可用余额，快照时点和业务边界需要重新评审。',
-    evidence: lineageVisualization.investigationEvent?.evidence ?? governanceEventEvidence,
+    id: 'field-account-product-type',
+    label: 'Account.product_type',
+    layer: 'SOURCE',
+    role: 'Product 分类字段',
+    x: 80,
+    y: 130,
+    entityType: 'field',
   },
   {
-    id: 'governance-ads-deposit-balance-deprecated',
-    assetId: 'ads-deposit-balance',
-    eventType: 'asset-deprecated',
-    label: 'ADS 存款余额指标准备下线',
-    description: '发布视图进入 deprecated，停止新增依赖，并沿指标字段通知下游消费者。',
-    sourceEntityId: 'field-ads-balance',
-    affectedEntityId: 'metric-deposit-report',
-    evidence: governanceEventEvidence,
+    id: 'dwd-account-balance-detail',
+    label: 'dwd_account_balance_detail',
+    layer: 'DWD',
+    role: '账户余额明细',
+    x: 300,
+    y: 130,
+    entityType: 'table',
   },
   {
-    id: 'governance-account-profile-owner-missing',
-    assetId: 'dws-account-profile',
-    eventType: 'owner-missing',
-    label: '账户辅助主题 Owner 缺失',
-    description: '目录只能找到 Steward，不能把账户辅助主题交给新的使用方，先补齐责任人。',
-    evidence: governanceEventEvidence,
+    id: 'dws-deposit-balance-daily',
+    label: 'dws_deposit_balance_daily',
+    layer: 'DWS',
+    role: '机构 × 产品日汇总',
+    x: 520,
+    y: 130,
+    entityType: 'table',
   },
   {
-    id: 'governance-legacy-deposit-balance-retiring',
-    assetId: 'ads-deposit-balance-v1',
-    eventType: 'asset-retiring',
-    label: '旧版存款余额报表进入 retiring',
-    description: 'deprecated 资产完成迁移确认后进入 retiring，停止消费并保留迁移记录。',
-    evidence: governanceEventEvidence,
+    id: 'ads-deposit-balance',
+    label: 'ads_deposit_balance',
+    layer: 'ADS',
+    role: '经营分析结果',
+    x: 740,
+    y: 130,
+    entityType: 'table',
   },
   {
-    id: 'governance-customer-id-classification-change',
-    assetId: 'dwd-deposit-balance',
-    eventType: 'sensitivity-change',
-    label: 'customer_id 敏感等级上调',
-    description: '关联能力扩大后，将 customer_id 从 internal 调整为 sensitive。',
-    fieldName: 'customer_id',
-    newSensitivity: 'sensitive',
-    evidence: governanceEventEvidence,
+    id: 'metric-deposit-product-mix',
+    label: '存款产品结构分析',
+    layer: 'METRIC',
+    role: '下游消费者',
+    x: 960,
+    y: 130,
+    entityType: 'metric',
   },
 ]
 
-export const governanceVisualization: GovernanceVisualization = {
-  kind: 'governance',
-  assets: governanceAssets,
-  lineageNodes: lineageVisualization.nodes,
-  lineageEdges: lineageVisualization.edges,
-  events: governanceEvents,
+const bankingLineageEdges: LineageEdge[] = [
+  {
+    source: 'field-account-product-type',
+    target: 'dwd-account-balance-detail',
+    relation: 'transform',
+    confidence: 'confirmed',
+    evidence: {
+      source: 'manual_metadata',
+      detail: '第 08 章已确认字段进入账户余额明细。',
+    },
+  },
+  {
+    source: 'dwd-account-balance-detail',
+    target: 'dws-deposit-balance-daily',
+    relation: 'transform',
+    confidence: 'confirmed',
+    evidence: {
+      source: 'manual_metadata',
+      detail: '第 08 章已确认账户明细参与机构产品日汇总。',
+    },
+  },
+  {
+    source: 'dws-deposit-balance-daily',
+    target: 'ads-deposit-balance',
+    relation: 'derives',
+    confidence: 'confirmed',
+    evidence: {
+      source: 'manual_metadata',
+      detail: '第 08 章已确认日汇总进入应用结果。',
+    },
+  },
+  {
+    source: 'ads-deposit-balance',
+    target: 'metric-deposit-product-mix',
+    relation: 'consumes',
+    confidence: 'confirmed',
+    evidence: {
+      source: 'manual_metadata',
+      detail: '第 08 章已确认应用结果服务存款产品结构分析。',
+    },
+  },
+]
+
+const productTypeChangeImpact: GovernanceChangeImpact = {
+  evidenceLabel: '第 08 章已经完成的影响分析结果',
+  changedField: 'Account.product_type',
+  path: [
+    'Account.product_type',
+    'dwd_account_balance_detail',
+    'dws_deposit_balance_daily',
+    'ads_deposit_balance',
+    '存款产品结构分析',
+  ],
+  responsibilities: [
+    {
+      id: 'responsibility-source-product-type',
+      kind: 'source',
+      label: 'Account.product_type',
+      assetId: 'dwd-account-balance-detail',
+      owner: '账户数据组',
+      action: '确认新的产品分类语义与生效时间。',
+    },
+    {
+      id: 'responsibility-dwd-product-type',
+      kind: 'asset',
+      label: 'dwd_account_balance_detail',
+      assetId: 'dwd-account-balance-detail',
+      owner: '账户数据组',
+      action: '确认明细加工是否需要调整，并重新核对字段定义。',
+    },
+    {
+      id: 'responsibility-dws-product-type',
+      kind: 'asset',
+      label: 'dws_deposit_balance_daily',
+      assetId: 'dws-deposit-balance-daily',
+      owner: '存款指标组',
+      action: '确认机构 × 产品汇总逻辑是否需要调整。',
+    },
+    {
+      id: 'responsibility-ads-product-type',
+      kind: 'asset',
+      label: 'ads_deposit_balance',
+      assetId: 'ads-deposit-balance',
+      owner: '经营分析组',
+      action: '确认应用结果和展示逻辑是否需要调整。',
+    },
+    {
+      id: 'responsibility-consumer-product-type',
+      kind: 'consumer',
+      label: '存款产品结构分析',
+      owner: '经营分析使用方',
+      action: '确认分析结论是否需要重新解释或迁移。',
+    },
+  ],
 }
 
+const productTypeChangeEvent: GovernanceLifecycleEvent = {
+  id: 'governance-account-product-type-change',
+  assetId: 'dwd-account-balance-detail',
+  eventType: 'field-change',
+  label: 'Account.product_type 语义变化',
+  description: '产品分类规则发生调整；第 08 章已经给出受影响资产，本节只分配处理责任。',
+  sourceEntityId: 'field-account-product-type',
+  fieldName: 'product_type',
+  semanticChange: '活期、定期的分类边界需要重新确认。',
+  evidence: {
+    source: 'manual_metadata',
+    detail: '消费第 08 章已完成的字段影响分析。',
+  },
+}
+
+const baseVisualization = {
+  assets: governanceAssets,
+  lineageNodes: bankingLineageNodes,
+  lineageEdges: bankingLineageEdges,
+  events: [productTypeChangeEvent],
+} satisfies Omit<GovernanceVisualization, 'kind' | 'focus'>
+
+export const governanceVisualizations = {
+  assetSelection: {
+    kind: 'governance',
+    focus: 'asset-selection',
+    ...baseVisualization,
+  },
+  evidenceCheck: {
+    kind: 'governance',
+    focus: 'evidence-check',
+    ...baseVisualization,
+    qualityCases: [
+      {
+        id: 'quality-case-a',
+        label: '资产 A',
+        assetId: 'dws-deposit-balance-daily',
+        semanticMatch: true,
+        grainMatch: true,
+        qualityStatus: 'pass',
+        freshnessLabel: '昨天',
+        freshnessStatus: 'current',
+        evidence: ['第 07 章 Quality status：PASS', '检查目标覆盖昨天业务日分区'],
+      },
+      {
+        id: 'quality-case-b',
+        label: '资产 B',
+        assetId: 'dws-deposit-balance-daily',
+        semanticMatch: true,
+        grainMatch: true,
+        qualityStatus: 'pass',
+        freshnessLabel: '7 天前',
+        freshnessStatus: 'delayed',
+        evidence: ['第 07 章 Quality status：PASS', 'Freshness 已超过当前业务日需求'],
+      },
+      {
+        id: 'quality-case-c',
+        label: '资产 C',
+        assetId: 'dws-deposit-balance-daily',
+        semanticMatch: true,
+        grainMatch: true,
+        qualityStatus: 'unknown',
+        freshnessLabel: '昨天',
+        freshnessStatus: 'current',
+        evidence: ['Freshness 显示昨天', '没有可确认的 Quality status'],
+      },
+    ] satisfies GovernanceQualityCase[],
+  },
+  fieldAccess: {
+    kind: 'governance',
+    focus: 'field-access',
+    ...baseVisualization,
+  },
+  lifecycle: {
+    kind: 'governance',
+    focus: 'lifecycle',
+    ...baseVisualization,
+  },
+  changeResponsibility: {
+    kind: 'governance',
+    focus: 'change-responsibility',
+    ...baseVisualization,
+    changeImpact: productTypeChangeImpact,
+  },
+} satisfies Record<string, GovernanceVisualization>
+
+export const governanceVisualization = governanceVisualizations.assetSelection
+export const governanceEvidenceVisualization = governanceVisualizations.evidenceCheck
+export const governanceFieldAccessVisualization = governanceVisualizations.fieldAccess
+export const governanceLifecycleVisualization = governanceVisualizations.lifecycle
+export const governanceChangeResponsibilityVisualization =
+  governanceVisualizations.changeResponsibility
+
+const sharedOpeningCards = [
+  { label: '角色', value: '经营分析人员', detail: '按机构和产品查看业务日余额' },
+  { label: '资产', value: '存款余额', detail: '业务词还不是技术资产' },
+  { label: '判断', value: '能不能用', detail: '每一步都要有证据' },
+]
+
 export const dataGovernanceContent: LessonContent = {
-  eyebrow: '第 09 课 · 数据资产如何被安全复用',
-  subtitle: '面对一条“我要存款余额数据”的申请，沿着资产定义、字段敏感等级和责任人做出使用决定。',
-  quickSummary:
-    '数据治理要回答三件事：资产是什么、字段能否使用、发生变更后要通知谁；每个决定都要留下证据。',
+  eyebrow: '第 09 章 · 选对资产',
+  subtitle: '搜索到相关资产以后，先读懂它的一行含义，再决定它是否回答当前问题。',
+  quickSummary: '名称相似的资产可能有不同 Grain、范围和排除项；当前需求决定哪一份更合适。',
   opening: {
-    eyebrow: '新同事：“我该查哪张表？找谁要权限？”',
-    title: '存款余额应该从哪一层取？',
-    intro: '新同事已经知道业务词，却不知道该选哪张表、哪些字段能看，以及资产变更后要通知谁。',
-    cards: [
-      { label: '需求', value: '存款余额', detail: '业务词，不是技术表名' },
-      { label: '风险', value: '同名 ≠ 同义', detail: '定义、Owner、生命周期都可能不同' },
-      { label: '目标', value: '可复盘决定', detail: '留下依据、影响和剩余风险' },
-    ],
-    question: '搜索“余额”后，比较候选资产：名字最像的那张，不一定最适合当前分析。',
+    eyebrow: '经营分析人员今天要看昨天的机构存款余额',
+    title: '搜到三张“存款余额”，我到底该用哪张？',
+    intro: '搜索框给了你四个结果。它们都能返回数字，但数字回答的问题并不相同。',
+    cards: sharedOpeningCards,
+    question: '名字最像的，未必是当前问题真正需要的资产。',
   },
   concept: {
-    term: '可执行的数据治理',
+    term: '搜索到了 ≠ 适合使用',
     definition:
-      '治理把业务定义、责任人、字段敏感等级、生命周期、新鲜度和血缘影响组合成一个可以被解释的使用决定；它不等于真实 IAM，也不把未知质量伪装成通过。',
+      '用业务定义、已有 Grain、范围和排除项对照当前需求。Grain 在第 03 章已经学过，本节只消费它来判断一行是否回答当前问题。',
   },
   sections: [
     {
       kind: 'narrative',
-      title: '业务词找到候选表，技术名不能代替定义',
+      title: '“存款余额”只是搜索词，不是答案',
       paragraphs: [
-        '目录里故意放入多个“余额”候选：DWS.DEPOSIT_BALANCE 适合经营分析，ADS.DEPOSIT_BALANCE 更接近指标消费，旧版 V1 已经 deprecated，而 DWS.ACCOUNT_PROFILE 虽然相关，却缺 Owner 且粒度含糊。搜索结果要让这些治理差异直接可见。',
+        '经营分析人员需要按机构查看某业务日的余额。账户明细、机构产品日汇总和应用结果都可能被搜到，不能只看技术名里的 DWD、DWS 或 ADS。',
+        '先问一行代表什么：账户明细回答单个 Account 的核对问题，日汇总回答 Branch × Product 的经营分析问题，应用结果还要继续核对它服务的页面范围。',
       ],
       bullets: [
-        '业务名和 tag 帮助新同事发现候选资产。',
-        'definition completeness、Owner 和 lifecycle 影响推荐程度。',
-        'sensitivity 只是资产入口；最终还要下钻到字段。',
+        '业务名称帮助发现候选。',
+        '技术名称帮助定位资产。',
+        '定义、Grain、范围和排除项决定能否回答当前问题。',
       ],
     },
     {
       kind: 'visualization',
-      eyebrow: 'Governance Decision Workbench',
-      title: '找到表后，留下可复盘的治理记录',
-      description:
-        '在目录中搜索资产，打开定义、质量和血缘证据，切换角色与用途，再处理生命周期事件并安排通知。',
+      eyebrow: '09-1 · 资产发现',
+      title: '对比候选定义，再做一次选择',
+      description: '输入“存款余额”，打开候选资产的定义卡，选择真正匹配机构经营分析的那一份。',
       visualization: governanceVisualization,
     },
     {
-      kind: 'narrative',
-      title: '字段能找到，不等于字段应该直接可见',
-      paragraphs: [
-        '同一个 customer_id，分析师做经营分析时可以使用内部关联键；营销人员做用户触达时需要审批；外部协作者在外部共享场景则被拒绝。策略输出必须告诉学习者依据，而不是只说“无权限”。',
-        'allow、masked、approval-required、deny 分别对应直接使用、脱敏后使用、审批后使用和拒绝；申请时要把业务用途写清楚。',
-      ],
-    },
-    {
-      kind: 'narrative',
-      title: '变更治理要沿现有血缘找影响',
-      paragraphs: [
-        'balance 的语义变化和 ADS 存款余额指标的下线事件，沿节点和边找到直接下游、传递影响、消费者和通知顺序。发布视图下线时，责任人可以据此安排迁移和通知。',
-        '质量检查结果也要进入资产判断：DWD.DEPOSIT_BALANCE 展示缺余额事件、目标字段、分区、失败样本和阻断决定；DWS.DEPOSIT_BALANCE 保留一次通过结果作为对照。资产目录根据这些证据提示风险，不把缺少检查的资产当作通过。',
-      ],
-    },
-    {
       kind: 'takeaway',
-      title: '治理的闭环是发现、证据、决定、影响和责任',
-      text: '一张表是否值得复用，取决于它能否被找到、被理解、被安全使用，并在变更时找到真正需要处理的人。',
+      title: '当前场景选择 dws_deposit_balance_daily',
+      text: '它的一行是 Branch × Product × business_date，正好回答机构和产品维度的昨天余额。这个结论只对当前问题成立。',
       bullets: [
-        '推荐判断要能解释：定义、Owner、生命周期、敏感等级、血缘和 freshness metadata 分别贡献了什么。',
-        '访问判断要落到字段、角色和用途，不能把岗位名称当成万能权限。',
-        '变更通知要沿生产链路的血缘证据生成，并由责任人确认接收范围。',
+        'DWD 不低级，只是更适合账户明细核对。',
+        'ADS 不天然更高级，还要核对它服务的应用范围。',
       ],
-    },
-    {
-      kind: 'engineering-note',
-      title: '质量证据如何参与治理决定',
-      text: '质量状态、检查规则、目标分区、失败样本、发布决定和剩余风险都会影响资产推荐。未被质量规则覆盖的资产仍显示 unknown，不能把未知状态当成 pass。',
     },
     {
       kind: 'pitfall',
-      title: '不要把治理做成评分卡或 IAM 仿制品',
-      text: 'recommended、usable-with-caution、not-recommended 是根据定义、责任、敏感等级、血缘和质量证据给出的解释性结论，不能代替组织正式的权限审批。',
+      title: '别把层级当成推荐理由',
+      text: 'DWS、DWD、ADS 是技术位置。资产是否正确，取决于它是否真正回答当前问题。',
+    },
+  ],
+}
+
+export const governanceEvidenceContent: LessonContent = {
+  eyebrow: '第 09 章 · 使用前核对证据',
+  subtitle: '语义匹配以后，再看 Quality status 和 Freshness 是否满足昨天业务日的需求。',
+  quickSummary:
+    '当前是否适合使用，要同时看定义、Grain、Quality 和 Freshness，结论必须带证据和原因。',
+  opening: {
+    eyebrow: '今天需要查看昨天业务日的数据',
+    title: '找对了资产，今天这份数据真的能用吗？',
+    intro: '三份候选的定义都能回答机构存款余额，但它们的质量状态和更新时间不同。',
+    cards: [
+      { label: '语义', value: '匹配', detail: '都能回答同一个分析问题' },
+      { label: '证据', value: 'Quality + Freshness', detail: '两项都要看' },
+      { label: '输出', value: '结论 + 依据', detail: '不要编造分数' },
+    ],
+    question: 'PASS 但停在 7 天前的数据，仍然不适合回答昨天的业务问题。',
+  },
+  concept: {
+    term: '使用判断需要证据',
+    definition:
+      'Quality status 和 Freshness 是第 07 章已经提供的判断输入。本节不重新运行检查，只把它们与当前业务日期放在一起比较。',
+  },
+  sections: [
+    {
+      kind: 'narrative',
+      title: 'PASS 只说明质量检查的结果',
+      paragraphs: [
+        '资产 A 的 Quality 是 PASS，Freshness 是昨天；资产 B 的 Quality 也是 PASS，但只更新到 7 天前；资产 C 更新到昨天，却没有可确认的 Quality status。',
+        '这三份证据不能压成一个数字。当前是否适合使用，要说明哪一项满足、哪一项阻断，以及阻断的原因。',
+      ],
+      bullets: [
+        'Quality PASS 不会自动保证数据满足今天的时间要求。',
+        'Freshness 新也不会把 UNKNOWN 变成 PASS。',
+      ],
+    },
+    {
+      kind: 'visualization',
+      eyebrow: '09-2 · 证据对比',
+      title: '把“能不能用”说成一组证据',
+      description: '依次查看三份候选，观察结论如何随 Quality status 和 Freshness 改变。',
+      visualization: governanceEvidenceVisualization,
+    },
+    {
+      kind: 'takeaway',
+      title: '结论要能被复核',
+      text: '资产 A 可以使用，因为定义和 Grain 匹配、Quality 已确认、Freshness 满足昨天业务日。B 因为过期暂不建议使用，C 因为 Quality UNKNOWN 暂不建议使用。',
+      bullets: ['治理判断消费前置证据。', '证据不足时，明确说“不建议使用”，不要给出精确可信度。'],
+    },
+    {
+      kind: 'pitfall',
+      title: '本节不重新讲质量检查',
+      text: '完整性、唯一性、一致性和及时性如何检查属于第 07 章。本节只读取 Quality status 和 Freshness，判断当前业务目的是否有足够证据。',
+    },
+  ],
+}
+
+export const governanceFieldAccessContent: LessonContent = {
+  eyebrow: '第 09 章 · 字段级使用',
+  subtitle: '资产可以使用，不代表其中的每个字段都应该直接暴露。',
+  quickSummary: '同一个经营分析人员换一个用途，必要字段和字段处理方式也可能改变。',
+  opening: {
+    eyebrow: '同一位使用者，今天有两个业务用途',
+    title: '这张表能用，里面的字段都能直接用吗？',
+    intro: '按机构和产品分析余额只需要四个字段。账户明细里还有 Customer 和 AccountMedium 的信息。',
+    cards: [
+      { label: '真正需要', value: '4 个字段', detail: '业务日期、机构、产品、余额' },
+      { label: '额外字段', value: 'Customer / AccountMedium', detail: '不因存在就默认可见' },
+      { label: '使用输入', value: '角色 + 用途', detail: '同一使用者也要重新判断' },
+    ],
+    question: '表可以用，字段仍然要按当前目的缩小范围。',
+  },
+  concept: {
+    term: '最小必要数据',
+    definition:
+      '访问判断可以细到字段：能直接使用的字段直接读，需要保留业务价值的敏感字段先处理，当前用途不需要的字段不直接使用。',
+  },
+  sections: [
+    {
+      kind: 'narrative',
+      title: '先勾选业务真正需要的字段',
+      paragraphs: [
+        '经营分析人员按 Branch 和 Product 汇总余额，只需要 business_date、branch_id、product_type 和 deposit_balance。customer_name、mobile、account_no 不是这个分析的必要输入。',
+        '切换到客户服务用途后，Customer.name 可能变得必要；手机号仍然只展示脱敏值。角色和用途共同决定字段使用范围，不能用一个岗位名称代替判断。',
+      ],
+      bullets: [
+        '公共和内部分析字段可以直接使用。',
+        '敏感字段至少要说明为什么需要，以及是否要处理。',
+        '页面只保留三类结果：直接使用、处理后使用、当前不能直接使用。',
+      ],
+    },
+    {
+      kind: 'visualization',
+      eyebrow: '09-3 · 字段选择',
+      title: '勾选字段，再切换业务用途',
+      description: '选择最小字段集合，查看同一个经营分析人员在两个用途下得到的字段级使用结果。',
+      visualization: governanceFieldAccessVisualization,
+    },
+    {
+      kind: 'takeaway',
+      title: '字段不是整张资产的附属信息',
+      text: 'Account.account_no 可以在保留首尾的情况下用于核对，customer_name 在经营分析中当前不能直接使用，business_date 和 deposit_balance 则可直接使用。',
+      bullets: ['“能用”要落到具体字段。', '脱敏是处理后使用，不等于把原值全部给出。'],
+    },
+    {
+      kind: 'pitfall',
+      title: '字段判断要回到当前用途',
+      text: '这里用角色和用途练习字段判断，不把一个岗位名称当成所有字段都能读取的理由。',
+    },
+  ],
+}
+
+export const governanceLifecycleContent: LessonContent = {
+  eyebrow: '第 09 章 · 生命周期判断',
+  subtitle: '能搜索、能查询、有数据，不代表资产仍然适合建立新的依赖。',
+  quickSummary: '看到 deprecated 后，停止把旧资产当默认来源，找到替代资产并完成迁移判断。',
+  opening: {
+    eyebrow: '目录里还留着一张旧结果表',
+    title: '旧表还能查到，为什么不应该继续用了？',
+    intro:
+      '旧资产没有消失，所以搜索和查询都还成功。但它已经 deprecated，历史可访问性不能代替当前推荐。',
+    cards: [
+      { label: '搜索结果', value: '仍然存在', detail: '能搜索、能查询、有历史数据' },
+      { label: '生命周期', value: 'deprecated', detail: '不应建立新的生产依赖' },
+      { label: '下一步', value: '迁移', detail: '找到替代资产并核对范围' },
+    ],
+    question: '可访问不等于仍然推荐继续使用。',
+  },
+  concept: {
+    term: 'deprecated',
+    definition:
+      'deprecated 表示资产仍可能可读，但已经不再推荐作为新的默认来源。真实系统还可能有 retiring 等过渡状态，本节不展开完整状态机。',
+  },
+  sections: [
+    {
+      kind: 'narrative',
+      title: '状态会改变“现在该不该继续用”',
+      paragraphs: [
+        '旧版存款余额应用资产仍有数据，甚至能让查询顺利返回结果。问题在于它的生命周期已经告诉你：这份资产正在退出推荐范围。',
+        '迁移时要找到 replacement，比较一行含义和字段范围，再把新的查询依赖切换过去。不能因为旧资产暂时还能查，就继续把它当作默认来源。',
+      ],
+      bullets: [
+        'active：当前可进入使用判断。',
+        'deprecated：停止建立新的依赖，寻找替代资产。',
+        'retiring 只作为真实系统中的扩展说明。',
+      ],
+    },
+    {
+      kind: 'visualization',
+      eyebrow: '09-4 · 生命周期',
+      title: '看到 deprecated，切换到替代资产',
+      description: '搜索旧版资产，查看状态和替代关系，再切换到当前推荐的应用结果。',
+      visualization: governanceLifecycleVisualization,
+    },
+    {
+      kind: 'takeaway',
+      title: '迁移是生命周期判断的实际动作',
+      text: '旧资产不是因为查询失败才需要迁移。deprecated 状态已经改变了推荐结论，替代资产才是新依赖的落点。',
+      bullets: ['先看状态，再看替代关系。', '不要把完整生命周期状态机变成本节的记忆清单。'],
+    },
+    {
+      kind: 'pitfall',
+      title: '不要把 9-4 和 9-5 混在一起',
+      text: '本节处理旧资产迁移。字段语义变化后的责任分配属于下一节，两者的学习目标不同。',
+    },
+  ],
+}
+
+export const governanceChangeResponsibilityContent: LessonContent = {
+  eyebrow: '第 09 章 · 变化后的责任',
+  subtitle: '第 08 章已经告诉我们谁会受影响；现在要把影响结果交给对应 Owner 处理。',
+  quickSummary: '读取已有影响分析，展开受影响资产，映射 Owner，形成一份可以执行的变更责任清单。',
+  opening: {
+    eyebrow: 'Account.product_type 的分类语义发生了调整',
+    title: '字段变了以后，谁需要处理？',
+    intro:
+      '影响路径已经由第 08 章整理好。治理判断不再重新跑血缘，而是把路径上的处理动作交给正确的人。',
+    cards: [
+      { label: '变化', value: 'Account.product_type', detail: '产品分类语义调整' },
+      { label: '影响', value: 'DWD → DWS → ADS', detail: '下游分析结果也可能变化' },
+      { label: '输出', value: '责任清单', detail: '字段、资产、Owner、动作' },
+    ],
+    question: '影响范围已经知道以后，真正缺的是：每个受影响对象由谁处理？',
+  },
+  concept: {
+    term: '变更责任清单',
+    definition:
+      '把前置影响分析中的字段、受影响资产、下游消费者和各自 Owner 对齐，并写出每个 Owner 需要确认的动作。',
+  },
+  sections: [
+    {
+      kind: 'narrative',
+      title: '第 08 章的影响结果在这里变成动作',
+      paragraphs: [
+        'Account.product_type 从活期、定期的分类规则开始变化。第 08 章已经确认它会沿 dwd_account_balance_detail、dws_deposit_balance_daily 和 ads_deposit_balance 影响存款产品结构分析。',
+        '第 09 章不重复计算这条路径。现在要回答的是：源字段谁确认新语义，日汇总谁确认加工逻辑，应用结果和消费者谁确认展示与分析结论。',
+      ],
+      bullets: ['先读取已有影响结果。', '再展开受影响资产。', '最后把每个动作交给对应 Owner。'],
+    },
+    {
+      kind: 'visualization',
+      eyebrow: '09-5 · 责任清单',
+      title: '沿已有影响结果找到处理人',
+      description: '展开 Account.product_type 的影响路径，查看每个资产 Owner 需要确认的具体动作。',
+      visualization: governanceChangeResponsibilityVisualization,
+    },
+    {
+      kind: 'takeaway',
+      title: '影响分析告诉你范围，Owner 决定下一步动作',
+      text: '字段变化不会自动变成一张工单。治理课程做到这里：列出受影响对象、对应 Owner 和确认动作，剩下的组织流程由真实系统承接。',
+      bullets: [
+        '源资产 Owner 确认语义和生效时间。',
+        '受影响资产 Owner 确认加工逻辑。',
+        '消费者确认分析结果和展示是否需要调整。',
+      ],
+    },
+    {
+      kind: 'pitfall',
+      title: '责任清单要写到具体动作',
+      text: '本节消费第 08 章的影响结果，列出每个 Owner 需要确认的动作；实际组织流程由真实工作环境承接。',
     },
   ],
 }

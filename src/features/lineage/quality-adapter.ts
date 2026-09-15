@@ -10,16 +10,16 @@ import type {
 const QUALITY_FINAL_IMPACT_NODE_ID = 'metric-deposit-report'
 
 function formatQualityTarget(event: QualityEvent): string {
-  const field = event.target.field ?? 'table-level'
+  const field = event.field ?? event.target.field ?? 'table-level'
   return `${event.target.table}.${field}`
 }
 
 function createQualityEventEvidence(event: QualityEvent): LineageEvidence {
   const evidenceIds = event.evidence.map((evidence) => evidence.evidenceId).join('、')
-  const downstreamImpacts = event.investigationContext.downstreamImpacts.join('、')
+  const sampleText = event.sample ? `，包含样本 ${event.sample.rowKey}` : '，没有行级样本'
   return {
     source: 'quality_event',
-    detail: `Quality Event ${event.eventId} 由规则 ${event.ruleId} 触发：${formatQualityTarget(event)} 在 ${event.target.partition.column} = ${event.target.partition.value} 上为 ${event.status}（${event.severity}），观察值 ${event.observedValue} ${event.threshold.unit}；质量证据 ${evidenceIds || '未提供'}，QualityInvestigationContext 指向下游 ${downstreamImpacts || '未提供'}。`,
+    detail: `Quality Event ${event.eventId} 记录规则 ${event.ruleId} 在 ${formatQualityTarget(event)} 的事实：expected ${String(event.expected)}，observed ${String(event.observed)}；证据 ${evidenceIds || '未提供'}${sampleText}。根因与影响仍需沿血缘调查。`,
   }
 }
 
@@ -27,42 +27,44 @@ function createRootCauseCandidate(
   event: QualityEvent,
   targetLabel: string,
 ): NonNullable<LineageInvestigationEventDefinition['rootCauseCandidate']> {
-  const entityId = getLineageTaskNodeId(event.investigationContext.schedulerTaskId)
-  const upstreamHints = event.investigationContext.upstreamHints.join(' ')
+  const taskId = event.schedulerContext.taskId
+  const entityId = getLineageTaskNodeId(taskId)
   const evidence: LineageEvidence = {
     source: 'task_dependency',
-    detail: `候选依据：Quality Event ${event.eventId} 的 QualityInvestigationContext 指向 ${event.investigationContext.schedulerTaskId}，该任务负责产出 ${event.schedulerContext.outputTable}；先复核它的输入、过滤和 JOIN。这个对象只是优先复核的可能根因，不等于已经证明业务因果。`,
+    detail: `Quality Event 只提供 ${taskId}、${event.schedulerContext.runId} 和质量证据。该 task 负责产出 ${event.schedulerContext.schedulerOutputTable}，因此被列为优先复核入口；这不是已经证明的根因。`,
   }
 
   return {
     entityId,
     confidence: 'inferred',
     evidence,
-    rationale: `${targetLabel} 的质量检查失败，${event.investigationContext.schedulerTaskId} 是对应输出的生产任务，因此列为可能根因候选；${upstreamHints || '仍需检查 QualityEvidence 指向的上游数据'}仍需结合上游数据和业务规则确认。`,
+    rationale: `${targetLabel} 的质量检查失败，先沿 ${taskId} 的输入、过滤和 JOIN 复核；最终根因需要结合血缘证据与业务规则确认。`,
   }
 }
 
 /**
- * 将第 07 章拥有的真实 QualityEvent 投影成既有 Lineage investigation event。
- * adapter 不重定义质量规则、状态、严重级别或 Scheduler context。
+ * Quality Event owns observed facts. This adapter derives the lineage investigation context from
+ * the scheduler task and the compatibility table map instead of reading upstream/downstream hints
+ * from the event.
  */
 export function qualityEventToLineageInvestigation(
   event: QualityEvent,
 ): LineageInvestigationEventDefinition {
   const sourceEntityId = getLineageTableNodeId(event.target.table)
+  const schedulerContext = event.schedulerContext
   const context: LineageInvestigationContext = {
-    taskId: event.investigationContext.schedulerTaskId,
-    runId: event.investigationContext.schedulerRunId,
-    businessDate: event.schedulerContext.businessDate,
-    partition: event.investigationContext.target.partition,
-    status: event.schedulerContext.taskStatus,
+    taskId: schedulerContext.taskId,
+    runId: schedulerContext.runId,
+    businessDate: event.businessDate,
+    partition: event.partition,
+    status: schedulerContext.taskStatus,
   }
 
   return {
     id: `investigate-${event.eventId}`,
     entryPoint: 'quality-event',
     label: `Quality Event · ${event.ruleId}`,
-    summary: `规则 ${event.ruleId} 在 ${formatQualityTarget(event)} 的 ${event.target.partition.column} = ${event.target.partition.value} 分区失败；从产出表开始复核 Scheduler task、上游证据和下游影响。血缘路径只表示依赖，不自动证明业务因果。`,
+    summary: `规则 ${event.ruleId} 在 ${formatQualityTarget(event)} 的 ${event.partition.column} = ${event.partition.value} 分区失败；从产出表和生产 task 开始复核，根因与下游影响由血缘关系推导。`,
     sourceEntityId,
     eventType: 'quality_alert',
     affectedEntityId: QUALITY_FINAL_IMPACT_NODE_ID,

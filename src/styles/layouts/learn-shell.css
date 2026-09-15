@@ -124,7 +124,7 @@
 .learn-layout {
   display: grid;
   grid-template-columns: 276px minmax(0, 1fr);
-  max-width: 1440px;
+  max-width: 1600px;
   min-height: calc(100vh - 68px);
   margin: 0 auto;
 }
@@ -353,8 +353,9 @@
 }
 
 .learn-main {
-  width: min(100%, 940px);
-  padding: 30px clamp(30px, 6vw, 88px) 70px;
+  width: min(100%, 1000px);
+  margin: 0 auto;
+  padding: 30px clamp(24px, 3.5vw, 44px) 70px;
 }
 
 .learn-main__crumbs {
@@ -409,7 +410,6 @@
 }
 
 .lesson-header h1 {
-  max-width: 720px;
   margin-bottom: 10px;
   color: var(--ink);
   font-size: clamp(28px, 4vw, 43px);
@@ -419,7 +419,6 @@
 }
 
 .lesson-header__subtitle {
-  max-width: 680px;
   margin-bottom: 16px;
   color: var(--ink-soft);
   font-size: 15px;
@@ -444,7 +443,6 @@
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  max-width: 760px;
   padding: 17px 19px;
   border: 1px solid #c8e5e1;
   border-radius: var(--radius-sm);
@@ -484,7 +482,6 @@
 }
 
 .lesson-opening__heading {
-  max-width: 620px;
 }
 
 .lesson-opening__heading h2 {
@@ -614,7 +611,6 @@
 }
 
 .lesson-section p {
-  max-width: 700px;
   margin-bottom: 12px;
   font-size: 14px;
   line-height: 1.9;
@@ -623,7 +619,6 @@
 .check-list {
   display: grid;
   gap: 7px;
-  max-width: 670px;
   margin-top: 15px;
 }
 
@@ -652,7 +647,7 @@
 
 @media (max-width: 1120px) {
   .learn-main {
-    padding-inline: 45px;
+    padding-inline: 36px;
   }
 }
 

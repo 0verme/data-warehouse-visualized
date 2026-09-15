@@ -4,52 +4,89 @@ import type {
   SchedulerTaskRunRecord,
 } from '../scheduler/types'
 
+/** Each lesson focuses on a different question while sharing the same model. */
+export type QualityLessonMode = 'status' | 'rules' | 'dataset' | 'evidence' | 'release'
+
+/** Where a rule gets its meaning; these are teaching anchors, not a score taxonomy. */
 export type QualityDimension =
-  | 'completeness'
-  | 'uniqueness'
-  | 'validity'
-  | 'referential-integrity'
-  | 'reconciliation'
-  | 'freshness'
+  'grain' | 'field' | 'relationship' | 'dataset' | 'freshness' | 'reconciliation' | 'format'
 
 export type QualityRuleType =
-  | 'row-count'
-  | 'not-null'
-  | 'unique-key'
-  | 'enum'
-  | 'range'
-  | 'foreign-key'
-  | 'aggregate-match'
-  | 'max-delay'
+  | 'grain-unique'
+  | 'required-field'
+  | 'field-semantic'
+  | 'reference'
+  | 'expected-set'
+  | 'freshness-date'
+  | 'reconciliation'
+  | 'record-format'
 
 export type QualitySeverity = 'critical' | 'high' | 'medium' | 'low'
 export type QualityCheckStatus = 'pass' | 'warn' | 'fail'
-export type QualityAction = 'block' | 'warn' | 'quarantine' | 'continue-with-risk'
-export type QualityReleaseStatus =
-  'released' | 'released-with-warning' | 'released-with-risk' | 'quarantined' | 'blocked'
+
+/** Release has two deliberately non-peer examples: banking blocks, telemetry may quarantine. */
+export type QualityAction = 'block' | 'quarantine'
+export type QualityReleaseStatus = 'released' | 'quarantined' | 'blocked'
 
 export type QualityEventType = 'quality-check'
-export type QualityEvidenceKind =
-  'failed-sample' | 'metric-comparison' | 'scheduler-context' | 'partition-freshness'
+export type QualityEvidenceKind = 'row' | 'set' | 'date' | 'aggregate' | 'scheduler'
 
-export type QualityInjection =
-  | 'none'
-  | 'missing-balance-snapshot'
-  | 'duplicate-account-snapshot'
+export type QualityScenario =
+  | 'baseline'
+  | 'duplicate-grain'
+  | 'missing-required-field'
   | 'invalid-currency'
-  | 'orphan-account-balance'
-  | 'deposit-reconciliation-drift'
-  | 'late-partition'
-  /** Legacy injection aliases retained for callers of the former e-commerce demo. */
-  | 'missing-order-item'
-  | 'duplicate-order-item'
-  | 'invalid-payment-status'
-  | 'orphan-order-item'
-  | 'sales-reconciliation-drift'
+  | 'missing-branch-reference'
+  | 'bank-critical-branch-failure'
+  | 'batch-incomplete'
+  | 'stale-snapshot'
+  | 'balance-reconciliation-drift'
+  | 'telemetry-invalid-records'
 
-export type QualityThresholdUnit = 'rows' | 'minutes' | 'currency'
+export type QualityThresholdUnit = 'rows' | 'accounts' | 'days' | 'currency'
 export type QualityThresholdOperator = 'at-most' | 'at-least' | 'equals'
-export type QualityScalar = string | number | null
+export type QualityScalar = string | number | boolean | null
+
+/**
+ * A small projection of the existing BankingMetricAccountSnapshot.
+ * It is a faulty teaching row, not a second Account/Customer/Product/Branch model.
+ */
+export interface QualityBalanceRow {
+  accountId: string
+  snapshotDate: string | null
+  customerScope: string
+  product: string
+  branch: string
+  currency: string
+  status: string
+  balance: number | null
+}
+
+export interface QualityBankingModel {
+  targetDate: string
+  sourceSnapshots: readonly QualityBalanceRow[]
+  previousSnapshots: readonly QualityBalanceRow[]
+  knownBranchIds: readonly string[]
+  knownProductIds: readonly string[]
+  knownCurrencyCodes: readonly string[]
+  expectedActiveAccountCount: number
+  receivedSnapshotAccountCount: number
+  incompleteSnapshotAccountCount: number
+  reconciliation: {
+    businessDate: string
+    branch: string
+    customerScope: string
+    product: string
+    currency: string
+    expectedDwdBalance: number
+    observedDwsBalance: number
+  }
+  telemetry: {
+    totalRecords: number
+    invalidRecords: number
+    sample: QualitySample
+  }
+}
 
 export interface QualityTarget {
   table: string
@@ -57,10 +94,6 @@ export interface QualityTarget {
   partition: SchedulerPartition
 }
 
-/**
- * A rule threshold is intentionally numeric and deterministic for the lesson.
- * warningRange describes the interval after the pass boundary that becomes warn.
- */
 export interface QualityThreshold {
   operator: QualityThresholdOperator
   value: number
@@ -74,12 +107,14 @@ export interface QualityRuleDefinition {
   dimension: QualityDimension
   ruleType: QualityRuleType
   target: QualityTarget
-  severity: QualitySeverity
+  severity?: QualitySeverity
   threshold: QualityThreshold
   description: string
-  remediationHint: string
+  teachingQuestion: string
   schedulerTaskId: string
-  downstreamImpacts: readonly string[]
+  /** Strict rules keep their boundary even if a learner edits a non-critical threshold. */
+  strict: boolean
+  releaseScope: 'banking' | 'telemetry'
 }
 
 export interface QualitySample {
@@ -89,14 +124,15 @@ export interface QualitySample {
   reason: string
 }
 
+/** Evidence can be row-level or aggregate; aggregate evidence intentionally has no sample. */
 export interface QualityEvidence {
   evidenceId: string
   kind: QualityEvidenceKind
   detail: string
-  observedValue: number
-  expectedValue: number
-  expectedLabel: string
-  samples: readonly QualitySample[]
+  expected: QualityScalar
+  observed: QualityScalar
+  failedRows?: number
+  sample?: QualitySample
 }
 
 /** Stable bridge from a quality result to the existing Scheduler domain. */
@@ -107,7 +143,10 @@ export interface QualitySchedulerContext {
   taskStatus: SchedulerTaskRunRecord['status']
   businessDate: string
   partition: SchedulerPartition
+  /** The quality target table. */
   outputTable: string
+  /** The table name exposed by the current Scheduler task contract. */
+  schedulerOutputTable: string
   scheduledAt: string
   startedAt: string | null
   endedAt: string | null
@@ -118,64 +157,18 @@ export interface QualityCheckResult {
   ruleId: string
   status: QualityCheckStatus
   summary: string
+  expected: QualityScalar
+  observed: QualityScalar
   observedValue: number
   violationCount: number
   evaluatedRowCount: number
+  failedRows?: number
   threshold: QualityThreshold
   schedulerContext: QualitySchedulerContext
   evidence: readonly QualityEvidence[]
 }
 
-export interface QualityReleaseImpact {
-  downstreamRelease: QualityReleaseStatus
-  isBlocked: boolean
-  affectedOutputs: readonly string[]
-  explanation: string
-}
-
-export interface QualityRemediation {
-  action: QualityAction
-  label: string
-  steps: readonly string[]
-  canRerun: boolean
-  rerunTaskId: string
-}
-
-/** Context that a later lineage or governance chapter can import without UI coupling. */
-export interface QualityInvestigationContext {
-  target: QualityTarget
-  schedulerTaskId: string
-  schedulerRunId: string
-  upstreamHints: readonly string[]
-  downstreamImpacts: readonly string[]
-  relatedRuleIds: readonly string[]
-}
-
-/** A non-score quality event carries the failed rule, evidence, and release consequence. */
-export interface QualityEvent {
-  eventId: string
-  eventType: QualityEventType
-  checkId: string
-  ruleId: string
-  status: QualityCheckStatus
-  severity: QualitySeverity
-  occurredAt: string
-  target: QualityTarget
-  threshold: QualityThreshold
-  observedValue: number
-  evidence: readonly QualityEvidence[]
-  schedulerContext: QualitySchedulerContext
-  releaseImpact: QualityReleaseImpact
-  remediation: QualityRemediation
-  investigationContext: QualityInvestigationContext
-}
-
-export interface QualityCheckCounts {
-  pass: number
-  warn: number
-  fail: number
-}
-
+/** Release consequence is calculated after facts and evidence; it is not copied into events. */
 export interface QualityReleaseDecision {
   decisionId: string
   action: QualityAction
@@ -190,37 +183,72 @@ export interface QualityReleaseDecision {
   warningRuleIds: readonly string[]
   affectedOutputs: readonly string[]
   quarantinedSampleCount: number
-  remediation: readonly QualityRemediation[]
+  nextStep: string
   rationale: string
 }
 
-export interface QualityInjectionOption {
-  id: QualityInjection
+/** The event stops at the observed quality fact. Lineage derives investigation conclusions later. */
+export interface QualityEvent {
+  eventId: string
+  eventType: QualityEventType
+  checkId: string
+  ruleId: string
+  status: QualityCheckStatus
+  severity?: QualitySeverity
+  occurredAt: string
+  businessDate: string
+  target: QualityTarget
+  partition: SchedulerPartition
+  field?: string
+  expected: QualityScalar
+  observed: QualityScalar
+  threshold: QualityThreshold
+  observedValue: number
+  failedRows?: number
+  evidence: readonly QualityEvidence[]
+  sample?: QualitySample
+  schedulerContext: QualitySchedulerContext
+}
+
+export interface QualityCheckCounts {
+  pass: number
+  warn: number
+  fail: number
+}
+
+export interface QualityScenarioOption {
+  id: QualityScenario
   label: string
   description: string
-  dimension?: QualityDimension
   ruleId?: string
 }
 
 export interface DataQualityVisualization {
   kind: 'data-quality'
+  lessonMode: QualityLessonMode
   targetDate: string
   schedulerRun: SchedulerRunState
+  model: QualityBankingModel
   rules: readonly QualityRuleDefinition[]
-  injections: readonly QualityInjectionOption[]
-  defaultInjection: QualityInjection
+  scenarios: readonly QualityScenarioOption[]
+  defaultScenario: QualityScenario
+  visibleRuleIds: readonly string[]
 }
 
 export interface QualityEvaluationOptions {
-  injection?: QualityInjection
+  /** `injection` remains as a small compatibility name for existing lesson consumers. */
+  injection?: QualityScenario
+  scenario?: QualityScenario
   action?: QualityAction
   thresholdOverrides?: Readonly<Record<string, number>>
 }
 
 export interface QualityEvaluation {
   schedulerRun: SchedulerRunState
-  injection: QualityInjection
+  scenario: QualityScenario
+  injection: QualityScenario
   action: QualityAction
+  rows: readonly QualityBalanceRow[]
   checks: readonly QualityCheckResult[]
   events: readonly QualityEvent[]
   releaseDecision: QualityReleaseDecision

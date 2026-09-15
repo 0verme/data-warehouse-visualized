@@ -67,16 +67,11 @@ export const SCHEDULER_DEFAULT_SCHEDULED_AT = '2026-10-01 06:00'
 export const SCHEDULER_LATE_DATA_ARRIVAL_AT = '2026-10-01 06:20'
 export const SCHEDULER_DEFAULT_MAX_CONCURRENT_TASKS = 2
 
-const SCHEDULER_TASK_ID_LIST: readonly string[] = [
-  SCHEDULER_TASK_IDS.accountBalanceSnapshot,
-  SCHEDULER_TASK_IDS.account,
-  SCHEDULER_TASK_IDS.customer,
-  SCHEDULER_TASK_IDS.product,
-  SCHEDULER_TASK_IDS.branch,
-  SCHEDULER_TASK_IDS.dwd,
-  SCHEDULER_TASK_IDS.dws,
-  SCHEDULER_TASK_IDS.ads,
-]
+function isLateDataScenario(scenario: SchedulerScenario): boolean {
+  return (
+    scenario === 'upstream-late' || scenario === 'upstream-signal' || scenario === 'ftp-detection'
+  )
+}
 
 function createTaskContract(
   taskId: string,
@@ -458,11 +453,10 @@ function createTaskRun(
   scheduledAt: string,
   isLateDataAvailable: boolean,
   scenario: SchedulerScenario,
+  lateDataTaskId: string,
 ): SchedulerTaskRunRecord {
   const isLateSource =
-    scenario === 'upstream-late' &&
-    task.taskId === SCHEDULER_TASK_IDS.accountBalanceSnapshot &&
-    !isLateDataAvailable
+    isLateDataScenario(scenario) && task.taskId === lateDataTaskId && !isLateDataAvailable
   const dependencyState = isLateSource
     ? 'waiting'
     : task.dependsOn.length === 0
@@ -589,8 +583,8 @@ function syncTaskRuns(state: SchedulerRunState, skipBlocked = true): SchedulerRu
 
     const dependencyState = getDependencyState(task, nextTaskRuns)
     const isLateSource =
-      state.scenario === 'upstream-late' &&
-      taskId === SCHEDULER_TASK_IDS.accountBalanceSnapshot &&
+      isLateDataScenario(state.scenario) &&
+      taskId === state.lateDataTaskId &&
       !state.isLateDataAvailable
 
     if (
@@ -695,11 +689,33 @@ export function createInitialSchedulerRun(
   }
   const runId = options.runId ?? createRunId(options.businessDate, trigger)
   const scenario = options.scenario ?? 'happy-path'
-  const lateDataAvailableAt = scenario === 'upstream-late' ? SCHEDULER_LATE_DATA_ARRIVAL_AT : null
+  const defaultLateDataTaskId =
+    tasks.find((task) =>
+      task.contract.inputTables.some((table) => table === 'AccountBalanceSnapshot'),
+    )?.taskId ?? SCHEDULER_TASK_IDS.odsPayments
+  const defaultFailureTaskId =
+    tasks.find((task) => task.layer === 'dwd')?.taskId ?? SCHEDULER_TASK_IDS.dwd
+  const lateDataTaskId = options.lateDataTaskId ?? defaultLateDataTaskId
+  const failureTaskId = options.failureTaskId ?? defaultFailureTaskId
+  const lateDataAvailableAt = isLateDataScenario(scenario)
+    ? (options.lateDataAvailableAt ?? SCHEDULER_LATE_DATA_ARRIVAL_AT)
+    : null
+  const lateDataDetectedAt = isLateDataScenario(scenario)
+    ? (options.lateDataDetectedAt ?? lateDataAvailableAt)
+    : null
   const initialTaskRuns = Object.fromEntries(
     tasks.map((task) => [
       task.taskId,
-      createTaskRun(task, runId, options.businessDate, partition, scheduledAt, false, scenario),
+      createTaskRun(
+        task,
+        runId,
+        options.businessDate,
+        partition,
+        scheduledAt,
+        false,
+        scenario,
+        lateDataTaskId,
+      ),
     ]),
   ) as Record<string, SchedulerTaskRunRecord>
 
@@ -717,7 +733,10 @@ export function createInitialSchedulerRun(
       options.maxConcurrentTasks ?? SCHEDULER_DEFAULT_MAX_CONCURRENT_TASKS,
     ),
     lateDataAvailableAt,
-    isLateDataAvailable: scenario !== 'upstream-late',
+    lateDataDetectedAt,
+    lateDataTaskId: isLateDataScenario(scenario) ? lateDataTaskId : null,
+    failureTaskId,
+    isLateDataAvailable: !isLateDataScenario(scenario),
     recoveredTaskIds: [],
     tasks,
     taskRuns: initialTaskRuns,
@@ -785,8 +804,8 @@ export function getReadyTaskIds(state: SchedulerRunState): string[] {
     }
 
     if (
-      state.scenario === 'upstream-late' &&
-      task.taskId === SCHEDULER_TASK_IDS.accountBalanceSnapshot &&
+      isLateDataScenario(state.scenario) &&
+      task.taskId === state.lateDataTaskId &&
       !state.isLateDataAvailable
     ) {
       return false
@@ -809,8 +828,8 @@ function startTask(state: SchedulerRunState, taskId: string): SchedulerRunState 
     !current ||
     (current.status !== 'queued' && current.status !== 'retry') ||
     getDependencyState(task, state.taskRuns) !== 'ready' ||
-    (state.scenario === 'upstream-late' &&
-      taskId === SCHEDULER_TASK_IDS.accountBalanceSnapshot &&
+    (isLateDataScenario(state.scenario) &&
+      taskId === state.lateDataTaskId &&
       !state.isLateDataAvailable) ||
     getRunningTaskIds(state).length >= state.maxConcurrentTasks
   ) {
@@ -919,7 +938,7 @@ function shouldRetryTask(
   task: SchedulerTaskDefinition,
   attempt: number,
 ): boolean {
-  if (state.recoveredTaskIds.includes(task.taskId) || task.taskId !== SCHEDULER_TASK_IDS.dwd) {
+  if (state.recoveredTaskIds.includes(task.taskId) || task.taskId !== state.failureTaskId) {
     return false
   }
 
@@ -931,11 +950,11 @@ function shouldRetryTask(
 }
 
 function getFailureReason(state: SchedulerRunState, task: SchedulerTaskDefinition): string {
-  if (task.taskId === SCHEDULER_TASK_IDS.dwd && state.scenario === 'dwd-retry') {
+  if (task.taskId === state.failureTaskId && state.scenario === 'dwd-retry') {
     return '确定性故障：DWD 第一次执行失败，下一次 attempt 可恢复。'
   }
 
-  if (task.taskId === SCHEDULER_TASK_IDS.dwd && state.scenario === 'dwd-blocked') {
+  if (task.taskId === state.failureTaskId && state.scenario === 'dwd-blocked') {
     return '确定性故障：DWD 重试耗尽，依赖它的 DWS / ADS 不能误报成功。'
   }
 
@@ -1007,27 +1026,26 @@ function failTask(state: SchedulerRunState, taskId: string, reason?: string): Sc
 
 function markLateData(state: SchedulerRunState): SchedulerRunState {
   if (
-    state.scenario !== 'upstream-late' ||
+    !isLateDataScenario(state.scenario) ||
     state.isLateDataAvailable ||
     !state.lateDataAvailableAt
   ) {
     return state
   }
 
-  const clock = state.clock < state.lateDataAvailableAt ? state.lateDataAvailableAt : state.clock
+  const detectionTime = state.lateDataDetectedAt ?? state.lateDataAvailableAt
+  const clock = state.clock < detectionTime ? detectionTime : state.clock
   let nextState = syncTaskRuns({
     ...state,
     clock,
     isLateDataAvailable: true,
   })
-  const lateTask = nextState.taskRuns[SCHEDULER_TASK_IDS.accountBalanceSnapshot]
-  nextState = appendEvent(
-    nextState,
-    'upstream-late',
-    clock,
-    `账户余额快照迟到，到达 ${clock}；${SCHEDULER_TASK_IDS.accountBalanceSnapshot} 现在可以入队，DWD 之前一直在等待。`,
-    lateTask,
-  )
+  const lateTask = state.lateDataTaskId ? nextState.taskRuns[state.lateDataTaskId] : undefined
+  const readinessMessage =
+    state.scenario === 'upstream-signal'
+      ? `上游运行在 ${clock} 从 PROCESSING 变为 SUCCESS；${state.lateDataTaskId} 现在满足下游运行条件。`
+      : `当前业务日期所需输入在 ${state.lateDataAvailableAt} 到达，系统于 ${clock} 检测到它；${state.lateDataTaskId} 现在可以入队，DWD 之前一直在等待。`
+  nextState = appendEvent(nextState, 'upstream-late', clock, readinessMessage, lateTask)
   return syncTaskRuns(nextState)
 }
 
@@ -1122,8 +1140,7 @@ function getNextRunningTask(state: SchedulerRunState): SchedulerTaskDefinition |
         right.durationMinutes,
       )
       return (
-        leftEnd.localeCompare(rightEnd) ||
-        SCHEDULER_TASK_ID_LIST.indexOf(left.taskId) - SCHEDULER_TASK_ID_LIST.indexOf(right.taskId)
+        leftEnd.localeCompare(rightEnd) || state.tasks.indexOf(left) - state.tasks.indexOf(right)
       )
     })
 
@@ -1142,7 +1159,7 @@ export function advanceSchedulerRun(state: SchedulerRunState): SchedulerRunState
     const advanced = { ...state, clock: nextClock }
     const shouldFail =
       !state.recoveredTaskIds.includes(runningTask.taskId) &&
-      runningTask.taskId === SCHEDULER_TASK_IDS.dwd &&
+      runningTask.taskId === state.failureTaskId &&
       ((state.scenario === 'dwd-retry' && current.attempt === 1) ||
         (state.scenario === 'dwd-blocked' && current.attempt <= runningTask.maxAttempts))
 
@@ -1159,7 +1176,7 @@ export function advanceSchedulerRun(state: SchedulerRunState): SchedulerRunState
     return startReadyTasks(state)
   }
 
-  if (state.scenario === 'upstream-late' && !state.isLateDataAvailable) {
+  if (isLateDataScenario(state.scenario) && !state.isLateDataAvailable) {
     return markLateData(state)
   }
 
@@ -1210,12 +1227,17 @@ export function createPartitionRerunPlan(
   tasks: readonly SchedulerTaskDefinition[],
   businessDate: string,
   mode: SchedulerRerunMode,
-  targetTaskId: string = SCHEDULER_TASK_IDS.ads,
+  targetTaskId?: string,
 ): SchedulerRerunPlan {
-  const canonicalTargetTaskId = getCanonicalSchedulerTaskId(targetTaskId)
-  const targetTask = getTaskOrThrow(tasks, canonicalTargetTaskId)
   const allTaskIds = getTopologicalTaskIds(tasks)
-  const taskIds = mode === 'full' ? allTaskIds : getDownstreamTaskIds(tasks, canonicalTargetTaskId)
+  const requestedTargetTaskId = targetTaskId ?? allTaskIds[allTaskIds.length - 1]
+  if (!requestedTargetTaskId) {
+    throw new Error('至少需要一个任务才能生成重跑计划')
+  }
+
+  const resolvedTargetTaskId = getCanonicalSchedulerTaskId(requestedTargetTaskId)
+  const targetTask = getTaskOrThrow(tasks, resolvedTargetTaskId)
+  const taskIds = mode === 'full' ? allTaskIds : getDownstreamTaskIds(tasks, resolvedTargetTaskId)
   const unsupportedTask = taskIds
     .map((taskId) => getTaskOrThrow(tasks, taskId))
     .find((task) => !task.contract.supportsPartialRerun)
@@ -1234,7 +1256,7 @@ export function createPartitionRerunPlan(
       column: targetTask.contract.partition.column,
       value: businessDate,
     },
-    targetTaskId: canonicalTargetTaskId,
+    targetTaskId: resolvedTargetTaskId,
     taskIds,
     reusedTaskIds,
     outputTables,
