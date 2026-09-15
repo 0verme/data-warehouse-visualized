@@ -16,7 +16,7 @@ export const lakehouseContent: LessonContent = {
   },
   subtitle: '湖仓的价值不在于给出唯一终点，而在于把存储、表、计算和治理的边界摆出来比较。',
   quickSummary:
-    '用同一份订单、事件和文件数据切换 Warehouse、Data Lake、Lakehouse，再用 workload 和约束写下一份条件式 Architecture Decision Record。',
+    '用同一份订单、事件和文件数据切换 Warehouse、Data Lake、Lakehouse，再用同一订单案例对照传统数仓、Medallion 与 dbt 的建模组织视角。',
   concept: {
     term: 'Lakehouse：开放存储上的可管理表',
     definition:
@@ -28,7 +28,7 @@ export const lakehouseContent: LessonContent = {
       title: '先让同一份数据进入三条路径',
       paragraphs: [
         '订单适合结构化管理，但 click / event 日志和 JSON 文件往往先到、先存、先被理解。数据湖让接入变得灵活；问题是，当 BI 需要稳定口径、多个任务同时写入，或分析师要回答“昨天当时看到了什么”，文件本身并不会自动提供答案。',
-        '下面的架构切换不会替换成三张静态介绍卡。它保持相同的 Ingestion 和 Consumer，让你观察 Storage、Table Layer、Compute、Governance 的能力如何改变。',
+        '下面的架构切换不会替换成三张静态介绍卡。它保持相同的 Ingestion 和 Consumer，让你观察 Storage、Table Layer、Compute、Governance 的能力如何改变。完成这组存储架构实验后，同一个实验台还会固定一份订单案例，切换三种 transformation 组织视角；它不改变上面的 Storage / Compute 选择。',
       ],
       bullets: [
         '订单、事件和 JSON 文件是同一组输入，不因为架构切换而消失。',
@@ -37,11 +37,24 @@ export const lakehouseContent: LessonContent = {
       ],
     },
     {
+      kind: 'narrative',
+      title: '先分清“数据放在哪里”和“加工如何组织”',
+      paragraphs: [
+        'Warehouse、Data Lake、Lakehouse 比较的是存储、表能力、计算和工作负载边界；传统数仓、Medallion 与 dbt / Analytics Engineering 比较的是 transformation 如何分层、由谁拥有，以及什么对象交给消费者。两组问题有关联，但不是同一层面的答案。',
+        '三套体系都可能处理原始保留、清洗、明细、复用和业务语义，却不会因此得到可互换的层名。下面的建模视角实验固定订单 1001、1002 和三条订单明细，让差异停留在职责与协作边界上。',
+      ],
+      bullets: [
+        '上半段观察“承接数据的能力”；下半段观察“组织 transformation 的方式”。',
+        '相似只表示问题有交集；owner、Grain、历史和消费者边界需要分别判断。',
+        '不把 ODS / DWD / DWS / ADS、Bronze / Silver / Gold 和 Sources / Staging / Marts 当成翻译表。',
+      ],
+    },
+    {
       kind: 'visualization',
       eyebrow: '架构切换台 · 数据流与能力边界',
       title: '切换架构，观察结果而不是背优缺点',
       description:
-        '先切换三种架构，再改变 workload 和约束。数据流画布、能力矩阵、决策证据和开放表格式实验会使用同一组状态。',
+        '先切换三种架构，再改变 workload 和约束。数据流画布、能力矩阵、决策证据和开放表格式实验会使用同一组状态；实验末尾还可以切换三种建模组织视角，比较 transformation 的责任边界。',
       visualization: {
         kind: 'lakehouse',
         dataSources: [
