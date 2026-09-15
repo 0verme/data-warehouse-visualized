@@ -336,6 +336,10 @@
   color: inherit;
 }
 
+.sql-workbench__sql .shiki {
+  background: #162842 !important;
+}
+
 .sql-workbench__sql > small {
   display: block;
   margin-top: 9px;

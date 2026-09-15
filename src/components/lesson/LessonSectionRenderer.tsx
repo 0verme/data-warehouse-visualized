@@ -42,6 +42,7 @@ interface LessonSectionRendererProps {
 interface VisualizationBlockProps {
   lessonId: string
   visualization: LessonVisualization
+  codeHighlights?: CodeHighlightMap
   eyebrow: string
   title: string
   description: string
@@ -77,7 +78,13 @@ function NarrativeSection({
   )
 }
 
-function VisualizationBody({ visualization }: { visualization: LessonVisualization }) {
+function VisualizationBody({
+  visualization,
+  codeHighlights,
+}: {
+  visualization: LessonVisualization
+  codeHighlights?: CodeHighlightMap
+}) {
   switch (visualization.kind) {
     case 'systems':
       return (
@@ -108,7 +115,9 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
     case 'lakehouse':
       return <LakehouseArchitectureLab visualization={visualization} />
     case 'sql-transformation':
-      return <SqlTransformationWorkbench visualization={visualization} />
+      return (
+        <SqlTransformationWorkbench visualization={visualization} codeHighlights={codeHighlights} />
+      )
     case 'performance-lab':
       return <PerformanceLab visualization={visualization} />
     case 'scheduler':
@@ -123,6 +132,7 @@ function VisualizationBlock({
   title,
   description,
   blockId,
+  codeHighlights,
 }: VisualizationBlockProps) {
   const headingId = `${lessonId}-${blockId}-title`
 
@@ -133,7 +143,7 @@ function VisualizationBlock({
         <h2 id={headingId}>{title}</h2>
         <p>{description}</p>
       </div>
-      <VisualizationBody visualization={visualization} />
+      <VisualizationBody visualization={visualization} codeHighlights={codeHighlights} />
     </section>
   )
 }
@@ -243,6 +253,7 @@ function LegacyBlocks({
           visualization={legacyVisualization}
           {...visualizationCopy}
           blockId="legacy-visualization"
+          codeHighlights={codeHighlights}
         />
       )}
       {legacyComparison && (
@@ -304,6 +315,7 @@ function renderSection(
         <VisualizationBlock
           {...section}
           blockId={`section-${index}`}
+          codeHighlights={codeHighlights}
           key={`visualization-${index}`}
           lessonId={lessonId}
         />

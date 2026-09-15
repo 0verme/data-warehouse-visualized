@@ -3,7 +3,12 @@ import { bundledLanguages, type BundledLanguage } from 'shiki/langs'
 import { getLessonContent } from '../content/lessons'
 import type { Lesson } from '../data/course'
 import type { LessonContent } from '../content/types'
-import { getCodeHighlightKey, type CodeHighlightMap } from './code-highlight'
+import {
+  getCodeHighlightKey,
+  type CodeHighlightExample,
+  type CodeHighlightMap,
+} from './code-highlight'
+import { getVisualizationCodeExamples } from './visualization-code-examples'
 
 const SHIKI_THEME = 'nord' as const
 const LANGUAGE_ALIASES = {
@@ -14,11 +19,6 @@ const LANGUAGE_ALIASES = {
   shell: 'shellscript',
   ts: 'typescript',
   yml: 'yaml',
-}
-
-interface CodeExample {
-  language: string
-  code: string
 }
 
 type ShikiLanguage = BundledLanguage | 'plaintext'
@@ -33,8 +33,8 @@ function getShikiLanguage(language: string): ShikiLanguage {
     : 'plaintext'
 }
 
-function getCodeExamples(content: LessonContent): CodeExample[] {
-  const examples: CodeExample[] = []
+function getCodeExamples(content: LessonContent): CodeHighlightExample[] {
+  const examples: CodeHighlightExample[] = []
 
   if (content.code) {
     examples.push(content.code)
@@ -44,16 +44,23 @@ function getCodeExamples(content: LessonContent): CodeExample[] {
     if (section.kind === 'sql') {
       examples.push(section)
     }
+
+    if (section.kind === 'visualization') {
+      examples.push(...getVisualizationCodeExamples(section.visualization))
+    }
+  }
+
+  if (content.visualization) {
+    examples.push(...getVisualizationCodeExamples(content.visualization))
   }
 
   return examples
 }
 
-export async function buildLessonCodeHighlightMap(
-  lessons: readonly Lesson[],
+export async function buildCodeHighlightMap(
+  examples: readonly CodeHighlightExample[],
 ): Promise<CodeHighlightMap> {
-  const examples = lessons.flatMap((lesson) => getCodeExamples(getLessonContent(lesson)))
-  const uniqueExamples = new Map<string, CodeExample>()
+  const uniqueExamples = new Map<string, CodeHighlightExample>()
 
   for (const example of examples) {
     uniqueExamples.set(getCodeHighlightKey(example.language, example.code), example)
@@ -74,4 +81,11 @@ export async function buildLessonCodeHighlightMap(
   }
 
   return highlights
+}
+
+export async function buildLessonCodeHighlightMap(
+  lessons: readonly Lesson[],
+): Promise<CodeHighlightMap> {
+  const examples = lessons.flatMap((lesson) => getCodeExamples(getLessonContent(lesson)))
+  return buildCodeHighlightMap(examples)
 }
