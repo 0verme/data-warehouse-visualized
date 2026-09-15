@@ -1,233 +1,166 @@
-# 数据仓库图解
+<div align="center">
 
-> 从一张表开始，看懂数据仓库。
+# 数据仓库图解 (sql.sb)
 
-线上站点：[https://sql.sb](https://sql.sb)
+> **从一张表开始，看懂数据仓库。**  
+> 一套专为数据工程师与分析人员设计的交互式、可视化学习平台。
 
-数据仓库图解是一套面向中文学习者的交互式数据仓库可视化教材。
+[![Online](https://img.shields.io/badge/线上体验-sql.sb-0070f3?style=for-the-badge&logo=googlechrome&logoColor=white)](https://sql.sb)
+[![Demos](https://img.shields.io/badge/交互实验-13+_Interactive_Demos-success?style=for-the-badge)](https://sql.sb)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge)](LICENSE)
 
-不只是解释“是什么”，更希望通过图解、动画和模拟器解释：
+<br />
 
-**数据为什么这样流动，系统为什么这样设计。**
+### [👉 立即在线体验：sql.sb（免安装，浏览器开箱即用）](https://sql.sb)
 
-## 项目介绍
+</div>
 
-这里的“一节课”不是一页普通 Markdown，而是一个可以阅读、观察、操作、理解的交互式知识页面。你可以点击节点、播放加工过程、模拟依赖影响，在数据状态变化中建立数据仓库的整体认识。
+---
 
-项目参考了交互式教学和“一节课一个可视化实验”的产品理念，但没有复制任何源码、课程文本、图片、SVG、品牌元素或页面代码。本项目使用自己的视觉设计、内容和组件体系。
+## 为什么做这个项目？
 
-## 项目预览
+很多数据仓库资料从缩写和概念定义（ODS / DWD / DWS / ADS、Kimball 维度建模、SCD）开始，但真实的工程痛点往往发生在数据流动的细节里：
 
-### 从一张表开始
+- **数据如何流转**：业务库里分散的订单、用户、支付与库存明细，如何一步步加工成经营报表上的稳定指标？
+- **为什么必须分层**：直接在大宽表上写分析 SQL 会遇到什么麻烦？为什么会引发数据膨胀与重复计算？
+- **线上故障的波及范围**：修改维表的一个枚举值，下游究竟有多少张汇总表和仪表盘会静悄悄地出错？
+
+**数据仓库图解**不堆砌静态的长篇概念。这里的每一节课都是一个**可阅读、可交互、可观察状态变化的实验沙盘**。你可以手动拖动时间轴、模拟任务故障、切换数据粒度，在数据状态的流动变化中建立系统性的工程认知。
+
+---
+
+## 核心交互实验一览
+
+项目内置了 13+ 个针对真实数仓工程痛点打造的交互实验：
+
+| 交互实验                    | 解决的工程疑问与操作体验                                                                                   |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------------- |
+| 🧩 **星型模型与粒度实验室** | 将单张混乱的大宽表拆解为事实表与维度表；实时切换聚合粒度，亲眼观察粒度错配如何导致金额成倍重复计算。       |
+| ⏳ **SCD Type 2 时间机器**  | 模拟会员等级变更。对比直接 `UPDATE` 导致历史报表失真，体验拉链表如何利用时间区间完整保留“当时”的维度状态。 |
+| ⏱️ **调度 DAG Run 模拟器**  | 沿时间轴推进依赖链路。真实模拟任务延迟到达、级联重试策略、下游阻断，以及指定分区的回滚与重跑。             |
+| 🕸️ **血缘追踪与爆炸半径**   | 点击任意一张底表或字段，动态推演上游异常对下游报表与核心指标看板的连锁冲击，直观评估变更风险。             |
+| 🚨 **数据质量决策台**       | 注入脏数据与空值样本，观察调度校验门控如何在数据进入汇总层前实现自动阻断与报警拦截。                       |
+| ⚖️ **湖仓架构全景沙盘**     | 切换数据库、数据湖与湖仓三种架构，对比同一组订单事件在 Schema 约束、ACID 事务与存储成本上的工程权衡。      |
+
+---
+
+## 视觉预览
+
+<div align="center">
+
+### 从订单、用户、支付与库存业务表出发
 
 ![数据仓库图解首页](docs/images/home.png)
 
-### 数据建模
+### 亲手搭建星型模型与事实维度关联
 
 ![数据建模交互课程](docs/images/data-modeling.png)
 
-### 数据血缘
+### 点击观察全链路血缘与下游影响面
 
 ![数据血缘交互课程](docs/images/lineage.png)
 
-## 为什么做这个项目
+</div>
 
-很多数据仓库资料从缩写和定义开始，却很少把数据从哪里来、为什么要加工、修改一张表会影响哪里讲清楚。这个项目希望优先把结构和流动展示出来，再用简短文字补足工程语境：
+---
 
-- 用图解代替不必要的长篇概念堆叠
-- 用交互观察状态变化，而不只是看静态图片
-- 用工程提示解释常见方案的边界，而不是把实践写成唯一标准
+## 课程体系路线
 
-## 当前能力
+平台按照生产数仓的建设链路设计了 12 个渐进式章节，目前已上线 13 个深度交互实验：
 
-- 首页产品介绍与完整课程路线骨架
-- 统一 `Lesson` Schema 驱动课程目录和页面
-- `/learn/` 学习 Shell：课程目录、当前课程、上一节 / 下一节
-- `localStorage` 学习进度：完成课程、当前课程和完成数量
-- 业务系统到数据仓库的数据流 Demo
-- ODS / DWD / DWS / ADS 分层加工 Demo
-- 可点击的数据血缘图与 Impact Analysis 模拟
-- 数据建模导入课：原始订单数据、Grain 声明与四步建模思路
-- 星型模型与粒度交互实验：大宽表拆分、粒度切换与重复计算修复
-- SCD Type 2 维度历史实验：直接 UPDATE 冲突、版本区间与时间点查询
-- 指标口径交互实验：状态、退款、时间语义与粒度变化
-- SQL 与数据加工实验：ODS → DWD → DWS → ADS 表快照和任务契约
-- 时间轴驱动 DAG Run 模拟：依赖门控、迟到、重试、阻断、分区重跑和 SLA
-- 数据质量事件调查台：故障注入、规则证据、Scheduler 闸门和发布决定
-- Desktop、Tablet、Mobile 响应式布局
-- `prefers-reduced-motion` 降级支持
-- 基础 title、description、canonical 和 Open Graph 元数据
+- **第 01 章：数据仓库是什么**（OLTP 业务账本 vs OLAP 独立分析空间）
+- **第 02 章：数据仓库分层**（ODS → DWD → DWS → ADS 全流程流动模拟）
+- **第 03 章：数据建模专题**
+  - 建模思维导入：业务过程、声明粒度与维度拆分
+  - 星型模型与粒度：避免重复计算陷阱
+  - 慢变化维 SCD Type 2：保留历史维度的拉链表设计
+- **第 04 章：指标体系**（消除口径歧义：状态过滤、退款对齐与时间语义）
+- **第 05 章：SQL 与数据加工**（分层快照与任务加工契约）
+- **第 06 章：调度系统**（DAG 依赖、定时触发、故障重试与分区补数）
+- **第 07 章：数据质量**（规则校验、异常证据链与发布闸门）
+- **第 08 章：数据血缘**（表级与字段级血缘追踪、变更影响面分析）
+- **第 09 章：数据治理**（资产盘点、字段策略与生命周期管理）
+- **第 10 章：湖仓架构**（数据湖的灵活性与数仓治理能力的结合）
+- **第 11 章：性能与工程实践**（分区裁剪与 Shuffle 数据倾斜模拟）
+- **第 12 章：从 0 搭一套数据仓库**（_规划中_）
 
-## Internationalization
+---
 
-当前产品语言为 `zh-CN`，本次只提供 i18n-ready 基础：课程 `id`、`slug` 等稳定 identity 与标题、摘要、标签等展示文本已经解耦，默认 locale 为 `zh-CN`。公共 UI 文案统一从 `src/i18n/` 获取，业务组件不应散落 locale 判断。
+## 适合人群
 
-未来第二语言计划采用 `/en/...` 路径；英文课程内容尚未维护，本次不提供 `/en` 页面、不修改现有中文 URL，也不改变课程进度存储格式。
+- **数据工程师 / ETL 工程师**：系统性梳理数仓分层规范、建模范式、调度设计与治理思维。
+- **后端工程师 / 架构师**：理解业务数据转入分析平台的流向与底层机制，看懂 OLAP 系统设计。
+- **数据分析师 / BI 工程师**：深入理解底层数据模型与指标口径差异，搞清楚“数字为什么对不上”。
+- **备战技术面试的学习者**：通过直观实验吃透 SCD2、粒度、DAG 调度、数据倾斜等高频工程考点。
 
-## 课程路线
+---
 
-1. 数据仓库是什么
-2. 数据仓库分层
-3. 数据建模（导入课 → 星型模型与粒度 → SCD Type 2）
-4. 指标体系
-5. SQL 与数据加工
-6. 调度系统
-7. 数据质量
-8. 数据血缘
-9. 数据治理
-10. 湖仓
-11. 性能与工程实践
-12. 从 0 搭一套数据仓库
+## 本地运行
 
-当前已完成 13 个真实交互 Demo，覆盖课程顺序第 1、2、3（含导入、星型模型与 SCD Type 2）、4、5、6、7、8、9、10、11 课；其余课程先保留在完整路线中。
-
-## 本地开发
-
-要求：Node.js 22.12+、npm（Astro 7 的运行要求）。
+本项目基于静态站点生成架构，本地无须安装繁重的数据库或大数据环境：
 
 ```bash
+# 1. 克隆仓库并安装依赖 (要求 Node.js >= 22.12)
+git clone https://github.com/0verme/data-warehouse-visualized.git
+cd data-warehouse-visualized
 npm install
+
+# 2. 启动本地开发服务
 npm run dev
+
+# 3. 访问本地页面
+# 打开 http://localhost:4321
 ```
 
-常用命令：
+<details>
+<summary><b>查看项目目录结构与常用命令</b></summary>
 
 ```bash
-npm run test         # 运行 Vitest
-npm run lint         # 运行 ESLint
-npm run build        # 构建静态站点
-npm run preview      # 预览生产构建
-npm run format:check # 检查 Prettier 格式
+npm run test         # 运行 Vitest 单元测试
+npm run lint         # 运行 ESLint 静态代码检查
+npm run format:check # 检查 Prettier 代码格式
+npm run build        # 构建静态站点产物 (dist/)
+npm run preview      # 本地预览生产构建
 ```
-
-构建产物位于 `dist/`，不依赖服务端运行时，可部署到 GitHub Pages、Cloudflare Pages 或 Vercel。部署到 GitHub Pages 的项目子路径时，可设置 `BASE_PATH=/data-warehouse-visualized/` 后再运行 `npm run build`；默认值 `/` 适合域名根路径部署。若需要生成绝对 canonical，可额外设置 `PUBLIC_SITE_URL=https://你的域名`。
-
-## 项目结构
 
 ```text
 src/
 ├── components/
-│   ├── course/          # 学习 Shell、目录和进度交互
-│   ├── lesson/          # LessonHeader、卡片、代码块、课程导航
-│   └── visualizations/  # 数据驱动的交互可视化
-├── content/             # 每节课的文案和实验输入数据
-├── data/                # Lesson Schema、课程元数据和章节路线
-├── i18n/                # Locale 定义和公共 UI 文案
-├── layouts/             # 网站级 Astro Layout 与 SEO
-├── pages/               # 首页、学习入口和动态 Lesson 路由
-├── styles/              # CSS Variables、组件样式和响应式规则
-├── types.ts             # 可视化通用数据类型
+│   ├── course/          # 学习 Shell、目录与进度交互
+│   ├── lesson/          # LessonHeader、卡片、代码块与课程导航
+│   └── visualizations/  # 数据驱动的交互可视化组件
+├── content/             # 每节课的文案与实验输入数据
+├── data/                # Lesson Schema、课程元数据与章节路线
+├── i18n/                # Locale 定义与公共 UI 文案
+├── layouts/             # 网站级 Astro Layout 与 SEO 配置
+├── pages/               # 首页、学习入口与动态 Lesson 路由
+├── styles/              # 全局样式、CSS Variables 与响应式规则
+├── types.ts             # 可视化通用数据模型类型定义
 └── utils/               # 课程导航、进度持久化、血缘与调度计算
 ```
 
-新增课程通常只需要在 `src/data/course.ts` 添加元数据，并在 `src/content/lessons/` 添加内容；新增可视化组件后，可通过 `LessonVisualization` 数据类型复用到不同 Lesson。
+</details>
 
-## Roadmap
+> **生产构建与部署**：  
+> 完整的生产构建规范、CI/CD 自动化流水线以及 Cloudflare Workers 部署说明，请参阅 [部署指南 (docs/DEPLOYMENT.md)](docs/DEPLOYMENT.md)。
 
-### Phase 1
+---
 
-- [x] 课程框架
-- [x] 学习进度
-- [x] 基础教学组件
-- [x] 数仓分层交互 Demo
-- [x] 血缘交互 Demo
+## 参与贡献
 
-### Phase 2
+欢迎围绕课程内容、新的交互模拟器、工程案例、无障碍体验和性能优化提交 Issue 或 Pull Request！
 
-- [x] 星型模型可视化
-- [x] 粒度变化模拟
-- [x] SCD2 拉链表时间轴
-- [x] Partition Pruning 模拟
-- [x] Shuffle / 数据倾斜模拟
+新增内容建议：
 
-### Phase 3
+1. **文案与组件分离**：课程文字统一维护在 `src/content/lessons/`，业务展示文本与底层组件解耦。
+2. **组件复用**：优先复用数据驱动的可视化组件体系。
+3. **单元测试**：核心数据计算、状态推演与血缘调度逻辑需补充 Vitest 测试验证。
+4. **轻量纯粹**：避免引入与交互教学无关的重量级外部依赖。
 
-- [x] DAG 调度模拟器
-- [x] 补数与重跑模拟
-- [x] 数据质量实验
-- [ ] SQL 血缘演示
-- [ ] 爆炸半径高级模式
+---
 
-## Cloudflare 部署
+## 开源协议
 
-生产发布使用 Cloudflare Workers Static Assets，不使用 SSR、Astro Cloudflare Adapter 或 Worker 服务端业务代码：
+本项目源代码基于 [Apache License 2.0](LICENSE) 协议开源。
 
-```text
-GitHub main
-→ GitHub Actions
-→ Astro build
-→ dist/
-→ Cloudflare Workers Static Assets
-→ https://sql.sb
-```
-
-### GitHub Actions
-
-工作流文件为 `.github/workflows/cloudflare-deploy.yml`：
-
-- `pull_request` 只执行 `npm ci`、`npm run test`、`npm run lint`、`npm run format:check` 和 `npm run build`，不会部署生产。
-- `main` 的 push 会先完成同样的验证并构建 `dist/`，再在同一个 calling job 中通过 `0verme/ci-workflows/.github/actions/cloudflare-worker-deploy@v1` 部署到 Cloudflare Workers。
-- `workflow_dispatch` 支持手动生产发布；手动运行时请确认选择的 ref，建议使用 `main`。
-- CI 的 Cloudflare auth 和 Wrangler deploy 由共享 composite action 负责，无需在本仓库维护 artifact round-trip 或直接部署命令；本地仍可使用仓库内的 `wrangler` 和 `npm run deploy` 进行手动验证。生产构建默认使用根路径 `/`，不会设置 `BASE_PATH`。现有 `BASE_PATH` 兼容逻辑保留给 GitHub Pages 等路径部署场景。
-
-### 需要手工配置的 GitHub 项
-
-在 `GitHub → Repository → Settings → Secrets and variables → Actions` 中自行维护：
-
-- **Secret**：`CLOUDFLARE_API_TOKEN`
-- **Variable**：`CLOUDFLARE_ACCOUNT_ID`
-
-不要把 Token、Account ID 或其他生产凭证写入仓库、`wrangler.jsonc`、`README`、`package.json` 或 `.env`。Account ID 通过 GitHub Actions Variable 传给 Wrangler，以避免部署时选错 Account；PR 验证不会读取生产 Secret。
-
-### Cloudflare API Token
-
-请使用 **API Token**，不要使用 `Global API Key`。按当前 Cloudflare 权限界面为目标 Account 创建并尽量收窄范围：
-
-- `Account → Workers Scripts → Edit`（部分 Cloudflare 页面显示为 `Workers Scripts Write`）
-- `Account → Account Settings → Read`
-
-本项目只上传 Worker Static Assets，不使用 Workers Routes、KV、R2、D1、Pages 或数据库绑定，因此不应为本 workflow 额外授予这些权限。Cloudflare 的 `Edit Cloudflare Workers` 模板可作为创建起点，但请检查并移除本项目不需要的产品权限，并只选择实际部署的 Account。
-
-### 绑定 `sql.sb`
-
-本次代码不把 Custom Domain 写入 `wrangler.jsonc`，以避免首次域名绑定、DNS 和 CI 凭证耦合。首次成功部署后，在 Cloudflare Dashboard 手工绑定一次：
-
-```text
-Workers & Pages
-→ 对应 Worker
-→ Settings / Domains & Routes
-→ Add Custom Domain
-→ sql.sb
-```
-
-`sql.sb` 必须是 Cloudflare 中已激活的 zone；Custom Domain 会由 Cloudflare 负责对应 DNS 记录和证书。绑定完成后，后续 `main` 自动部署只更新同一个 Worker 的静态资源。
-
-### 本地验证
-
-```bash
-npm ci
-npm run test
-npm run lint
-npm run format:check
-npm run build
-npm run deploy -- --dry-run
-```
-
-最后一条只验证 Wrangler 能读取 `wrangler.jsonc` 并识别 `./dist`，不会上传到 Cloudflare；真实部署仍需要上述 GitHub 凭证和 Cloudflare 账号权限。
-
-## Contributing
-
-欢迎围绕课程内容、可视化交互、无障碍、响应式体验和工程实践提交 Issue 或 Pull Request。
-
-建议新增内容时：
-
-1. 保持课程文案与组件代码分离
-2. 优先复用数据驱动的教学组件
-3. 为计算逻辑补充有价值的 Vitest 测试
-4. 避免加入与教学无关的重量级依赖
-
-## License
-
-本项目源代码基于 [Apache License 2.0](LICENSE) 开源。
-
-除非另有说明，课程内容、教学文案、图解及其他教育材料的版权仍归原作者所有。
+课程内容、教学文案、图解及其他教育材料的版权归原作者所有。
