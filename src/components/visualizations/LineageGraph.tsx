@@ -50,6 +50,7 @@ const EVIDENCE_LABELS = {
   task_dependency: 'task dependency',
   manual_metadata: 'manual metadata',
   metric_definition: 'metric definition',
+  quality_event: 'Quality Event · 第 07 章',
 } as const
 
 const CONFIDENCE_LABELS = {
@@ -70,7 +71,7 @@ const EVENT_ENTRY_POINT_LABELS: Record<LineageInvestigationEventDefinition['entr
     'field-semantic-change': '字段语义变化',
     'schema-change': 'schema / field change',
     'task-failure': 'task failure',
-    'quality-event': 'quality event · 待 #13 接入',
+    'quality-event': 'quality event · 第 07 章质量异常',
   }
 
 function getNode(nodes: readonly LineageNode[], nodeId: string): LineageNode | undefined {
@@ -178,6 +179,10 @@ export function LineageGraph({
     : undefined
   const investigationTarget = activeInvestigationEvent
     ? getNode(nodes, activeInvestigationEvent.affectedEntityId)
+    : undefined
+  const rootCauseCandidate = investigationResult?.rootCauseCandidate
+  const rootCauseCandidateNode = rootCauseCandidate
+    ? getNode(nodes, rootCauseCandidate.entityId)
     : undefined
   const displayedImpact =
     isInvestigationActive && investigationResult ? investigationResult.impact : analysis
@@ -444,6 +449,86 @@ export function LineageGraph({
                 {activeInvestigationEvent.context.attempt !== undefined && (
                   <span>attempt {activeInvestigationEvent.context.attempt}</span>
                 )}
+              </div>
+            )}
+            {activeInvestigationEvent.qualityEvent && (
+              <div className="lineage-investigation__quality" aria-label="质量事件详情">
+                <div className="lineage-investigation__quality-heading">
+                  <span>Quality Event · 第 07 章真实领域事件</span>
+                  <code>{activeInvestigationEvent.qualityEvent.eventId}</code>
+                </div>
+                <div className="lineage-investigation__quality-facts">
+                  <span>
+                    rule <code>{activeInvestigationEvent.qualityEvent.ruleId}</code>
+                  </span>
+                  <span>
+                    target{' '}
+                    <code>
+                      {activeInvestigationEvent.qualityEvent.target.table} ·{' '}
+                      {activeInvestigationEvent.qualityEvent.target.field ?? 'table-level'}
+                    </code>
+                  </span>
+                  <span>
+                    partition{' '}
+                    <code>
+                      {activeInvestigationEvent.qualityEvent.target.partition.column} ={' '}
+                      {activeInvestigationEvent.qualityEvent.target.partition.value}
+                    </code>
+                  </span>
+                  <span>
+                    status <code>{activeInvestigationEvent.qualityEvent.status}</code> · severity{' '}
+                    <code>{activeInvestigationEvent.qualityEvent.severity}</code>
+                  </span>
+                  <span>
+                    observed{' '}
+                    <code>
+                      {activeInvestigationEvent.qualityEvent.observedValue} /{' '}
+                      {activeInvestigationEvent.qualityEvent.threshold.value}{' '}
+                      {activeInvestigationEvent.qualityEvent.threshold.unit}
+                    </code>
+                  </span>
+                  <span>
+                    release{' '}
+                    <code>
+                      {activeInvestigationEvent.qualityEvent.releaseImpact.downstreamRelease}
+                    </code>
+                  </span>
+                </div>
+                <ul className="lineage-investigation__quality-evidence">
+                  {activeInvestigationEvent.qualityEvent.evidence.map((evidence) => (
+                    <li key={evidence.evidenceId}>
+                      <code>{evidence.evidenceId}</code> · {evidence.detail} ·{' '}
+                      {evidence.samples.length} samples
+                    </li>
+                  ))}
+                </ul>
+                <div className="lineage-investigation__quality-context">
+                  <span>QualityInvestigationContext</span>
+                  <p>
+                    upstream hint：
+                    {activeInvestigationEvent.qualityEvent.investigationContext.upstreamHints.join(
+                      ' ',
+                    )}
+                  </p>
+                  <p>
+                    downstream impact：
+                    {activeInvestigationEvent.qualityEvent.investigationContext.downstreamImpacts.join(
+                      '、',
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+            {rootCauseCandidate && (
+              <div className="lineage-investigation__candidate" aria-label="可能根因候选">
+                <span>root cause candidate · 可能根因</span>
+                <strong>{rootCauseCandidateNode?.label ?? rootCauseCandidate.entityId}</strong>
+                <p>{rootCauseCandidate.rationale}</p>
+                <small>
+                  {EVIDENCE_LABELS[rootCauseCandidate.evidence.source]} ·{' '}
+                  {CONFIDENCE_LABELS[rootCauseCandidate.confidence]} ·{' '}
+                  {rootCauseCandidate.evidence.detail}
+                </small>
               </div>
             )}
             <div className="lineage-investigation__event-picker">
@@ -791,8 +876,8 @@ export function LineageGraph({
 
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        这是教学模拟：图中的 SQL / Scheduler 证据来自第 05、06
-        章静态确定性契约；本图不替代真实质量、调度或元数据系统。
+        这是教学模拟：图中的 Quality Event 来自第 07 章确定性质量 fixture，SQL / Scheduler
+        证据来自第 05、06 章契约；本图不替代真实质量、调度或元数据系统。
       </p>
     </div>
   )

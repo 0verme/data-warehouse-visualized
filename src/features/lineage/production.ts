@@ -10,6 +10,7 @@ import {
   createInitialSchedulerRun,
 } from '../../utils/scheduler'
 import { getTransformationStep } from '../../utils/sql-transformation'
+import { getLineageTaskNodeId, LINEAGE_TASK_NODE_IDS } from './mapping'
 import type {
   LineageInvestigationContext,
   LineageInvestigationEventDefinition,
@@ -28,13 +29,6 @@ export interface LineageProductionGraph {
   nodes: LineageProductionNode[]
   edges: LineageProductionEdge[]
   investigationEvents: LineageInvestigationEventDefinition[]
-}
-
-const TASK_NODE_IDS: Readonly<Record<string, string>> = {
-  [SCHEDULER_TASK_IDS.odsOrders]: 'task-load-order',
-  [SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
-  [SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
-  [SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
 }
 
 const REQUIRED_TASK_IDS = [
@@ -204,15 +198,6 @@ function getTask(
   return task
 }
 
-function getTaskNodeId(taskId: string): string {
-  const nodeId = TASK_NODE_IDS[taskId]
-  if (!nodeId) {
-    throw new Error(`血缘绑定没有为 Scheduler task 配置节点: ${taskId}`)
-  }
-
-  return nodeId
-}
-
 function createSqlEvidence(
   transformation: SqlTransformationVisualization,
   schedulerTask: SchedulerTaskDefinition | undefined,
@@ -266,7 +251,9 @@ function bindNodes(
   schedulerTasks: readonly SchedulerTaskDefinition[],
 ): LineageProductionNode[] {
   return nodes.map((node) => {
-    const taskId = Object.entries(TASK_NODE_IDS).find(([, nodeId]) => nodeId === node.id)?.[0]
+    const taskId = Object.entries(LINEAGE_TASK_NODE_IDS).find(
+      ([, nodeId]) => nodeId === node.id,
+    )?.[0]
     if (taskId) {
       const task = getTask(schedulerTasks, taskId)
       return {
@@ -388,7 +375,7 @@ function createTaskFailureEvent(
     entryPoint: 'task-failure',
     label: 'DWD task failure',
     summary: `${failedTask.taskId} 重试耗尽，DWS / ADS 需要沿任务依赖检查。`,
-    sourceEntityId: getTaskNodeId(taskId),
+    sourceEntityId: getLineageTaskNodeId(taskId),
     eventType: 'task_failure',
     affectedEntityId: 'metric-report-status',
     evidence: {
