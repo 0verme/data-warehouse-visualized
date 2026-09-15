@@ -550,8 +550,8 @@
 .concept-card {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
-  gap: 12px 30px;
-  align-items: baseline;
+  gap: 30px;
+  align-items: center;
   padding: 23px 25px;
   border: 1px solid #cbdaf0;
   border-radius: var(--radius-md);
@@ -583,8 +583,7 @@
 }
 
 .concept-card p {
-  grid-column: 2;
-  margin: -5px 0 0;
+  margin: 7px 0 0;
   color: var(--ink-soft);
   font-size: 13px;
 }
