@@ -26,11 +26,20 @@ function getAdsPreview(includeLateData: boolean): Pick<
 
 const beforeLate = getAdsPreview(false)
 const afterLate = getAdsPreview(true)
+const legacyTasks = createSchedulerTasks(sqlTransformationTaskContract)
+const legacySchedulerTasks = legacyTasks.map((task, index) =>
+  index === legacyTasks.length - 1
+    ? {
+        ...task,
+        contract: { ...task.contract, outputTable: 'ads_yesterday_sales' },
+      }
+    : task,
+)
 
 export const legacySchedulerVisualization: SchedulerVisualization = {
   kind: 'scheduler',
   targetDate: sqlTransformationDataset.targetDate,
-  tasks: createSchedulerTasks(sqlTransformationTaskContract),
+  tasks: legacySchedulerTasks,
   taskContract: sqlTransformationTaskContract,
   outputPreview: {
     beforeLateRows: beforeLate.beforeLateRows,

@@ -7,7 +7,7 @@ import type {
   LineageInvestigationEventDefinition,
 } from './types'
 
-const QUALITY_FINAL_IMPACT_NODE_ID = 'metric-report-status'
+const QUALITY_FINAL_IMPACT_NODE_ID = 'metric-deposit-report'
 
 function formatQualityTarget(event: QualityEvent): string {
   const field = event.field ?? event.target.field ?? 'table-level'

@@ -214,14 +214,14 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
     case 'sql-transformation':
       return {
         eyebrow: 'SQL 工作台 · 表快照实验',
-        title: '昨天的销售额到底是多少？',
+        title: '存款余额这条指标是怎样加工出来的？',
         description:
-          '先选择目标粒度，再逐步执行去重、JOIN、聚合和分区重跑，观察每一行数据如何改变。',
+          '按章节关注点切换指标计划、可信明细、Join 对照、分层聚合和加工契约，观察每一行数据如何改变。',
       }
     case 'scheduler':
       return {
         eyebrow: '调度系统 · DAG Run 模拟器',
-        title: '早上 8 点，报表为什么还没到？',
+        title: '存款余额指标为什么还没更新？',
         description:
           '沿着时间轴推进第 05 章的 ODS → DWD → DWS → ADS，观察迟到、失败、重试和重跑如何传播。',
       }

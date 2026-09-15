@@ -9,6 +9,7 @@ import {
   buildSchedulerTimeline,
   createInitialSchedulerRun,
 } from '../../utils/scheduler'
+import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { getTransformationStep } from '../../utils/sql-transformation'
 import { getLineageTaskNodeId, LINEAGE_TASK_NODE_IDS } from './mapping'
 import type {
@@ -32,7 +33,7 @@ export interface LineageProductionGraph {
 }
 
 const REQUIRED_TASK_IDS = [
-  SCHEDULER_TASK_IDS.odsOrders,
+  SCHEDULER_TASK_IDS.accountBalanceSnapshot,
   SCHEDULER_TASK_IDS.dwd,
   SCHEDULER_TASK_IDS.dws,
   SCHEDULER_TASK_IDS.ads,
@@ -46,137 +47,139 @@ type EdgeBinding = {
 }
 
 const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
-  'ods-order->dwd-order-detail': {
-    stepId: 'fix-join',
+  'ods-account-balance->dwd-deposit-balance': {
+    stepId: 'clean-detail',
     taskId: SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
-  'dwd-order-detail->dws-sales': {
-    stepId: 'build-dws',
+  'dwd-deposit-balance->dws-deposit-balance': {
+    stepId: 'aggregate-layers',
     taskId: SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
-  'dws-sales->ads-report': {
-    evidence: 'metric',
-    confidence: 'inferred',
+  'dws-deposit-balance->ads-deposit-balance': {
+    stepId: 'contract',
+    taskId: SCHEDULER_TASK_IDS.ads,
+    confidence: 'confirmed',
   },
-  'dws-user->ads-report': {
+  'dws-account-profile->ads-deposit-balance': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'field-dwd-order-status->task-build-order-detail': {
+  'field-dwd-balance->task-build-deposit-detail': {
+    stepId: 'clean-detail',
     taskId: SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
-  'task-build-order-detail->dwd-order-detail': {
-    stepId: 'fix-join',
+  'task-build-deposit-detail->dwd-deposit-balance': {
+    stepId: 'clean-detail',
     taskId: SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
-  'dwd-order-detail->task-build-sales': {
+  'dwd-deposit-balance->task-build-deposit-topic': {
     taskId: SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
-  'dwd-order-detail->task-build-user': {
+  'dwd-deposit-balance->task-build-account-profile': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'task-build-sales->dws-sales': {
-    stepId: 'build-dws',
+  'task-build-deposit-topic->dws-deposit-balance': {
+    stepId: 'aggregate-layers',
     taskId: SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
-  'task-build-user->dws-user': {
+  'task-build-account-profile->dws-account-profile': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'dws-sales->metric-sales-status-rate': {
+  'dws-deposit-balance->metric-deposit-balance': {
     evidence: 'metric',
     confidence: 'confirmed',
   },
-  'dws-user->metric-user-status-rate': {
+  'dws-account-profile->metric-account-coverage': {
     evidence: 'metric',
     confidence: 'inferred',
   },
-  'task-build-sales->field-dws-sales-status': {
-    stepId: 'build-dws',
+  'task-build-deposit-topic->field-dws-balance': {
+    stepId: 'aggregate-layers',
     taskId: SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
-  'task-build-user->field-dws-user-status': {
+  'task-build-account-profile->field-dws-account-scope': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'field-dws-sales-status->task-publish-report': {
+  'field-dws-balance->task-publish-deposit-balance': {
     taskId: SCHEDULER_TASK_IDS.ads,
     confidence: 'inferred',
   },
-  'field-dws-user-status->task-publish-report': {
+  'field-dws-account-scope->task-publish-deposit-balance': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'task-publish-report->ads-report': {
-    stepId: 'build-ads',
+  'task-publish-deposit-balance->ads-deposit-balance': {
+    stepId: 'contract',
     taskId: SCHEDULER_TASK_IDS.ads,
     confidence: 'confirmed',
   },
-  'task-publish-report->field-ads-report-status': {
-    stepId: 'build-ads',
+  'task-publish-deposit-balance->field-ads-balance': {
+    stepId: 'contract',
     taskId: SCHEDULER_TASK_IDS.ads,
     confidence: 'confirmed',
   },
-  'field-ads-report-status->metric-report-status': {
+  'field-ads-balance->metric-deposit-report': {
     evidence: 'metric',
     confidence: 'confirmed',
   },
-  'metric-sales-status-rate->metric-report-status': {
+  'metric-deposit-balance->metric-deposit-report': {
     evidence: 'metric',
     confidence: 'inferred',
   },
-  'metric-user-status-rate->metric-report-status': {
+  'metric-account-coverage->metric-deposit-report': {
     evidence: 'metric',
     confidence: 'inferred',
   },
-  'field-ods-order-status->field-dwd-order-status': {
-    stepId: 'deduplicate',
+  'field-ods-balance->field-dwd-balance': {
+    stepId: 'clean-detail',
     taskId: SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
-  'field-dwd-order-status->field-dws-sales-status': {
-    stepId: 'build-dws',
+  'field-dwd-balance->field-dws-balance': {
+    stepId: 'aggregate-layers',
     taskId: SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
-  'field-dwd-order-status->field-dws-user-status': {
+  'field-dwd-balance->field-dws-account-scope': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'field-dws-sales-status->field-ads-report-status': {
-    stepId: 'build-ads',
+  'field-dws-balance->field-ads-balance': {
+    stepId: 'contract',
     taskId: SCHEDULER_TASK_IDS.ads,
     confidence: 'inferred',
   },
-  'field-dws-user-status->field-ads-report-status': {
+  'field-dws-account-scope->field-ads-balance': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'task-load-order->task-build-order-detail': {
+  'task-load-balance->task-build-deposit-detail': {
     taskId: SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
-  'task-build-order-detail->task-build-sales': {
+  'task-build-deposit-detail->task-build-deposit-topic': {
     taskId: SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
-  'task-build-order-detail->task-build-user': {
+  'task-build-deposit-detail->task-build-account-profile': {
     evidence: 'manual',
     confidence: 'manual',
   },
-  'task-build-sales->task-publish-report': {
+  'task-build-deposit-topic->task-publish-deposit-balance': {
     taskId: SCHEDULER_TASK_IDS.ads,
     confidence: 'inferred',
   },
-  'task-build-user->task-publish-report': {
+  'task-build-account-profile->task-publish-deposit-balance': {
     evidence: 'manual',
     confidence: 'manual',
   },
@@ -186,11 +189,26 @@ function edgeKey(edge: Pick<LineageEdge, 'source' | 'target'>): string {
   return `${edge.source}->${edge.target}`
 }
 
+const SCHEDULER_TASK_ID_PAIRS = [
+  [SCHEDULER_TASK_IDS.accountBalanceSnapshot, BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot],
+  [SCHEDULER_TASK_IDS.account, BANKING_SCHEDULER_TASK_IDS.account],
+  [SCHEDULER_TASK_IDS.customer, BANKING_SCHEDULER_TASK_IDS.customer],
+  [SCHEDULER_TASK_IDS.product, BANKING_SCHEDULER_TASK_IDS.product],
+  [SCHEDULER_TASK_IDS.branch, BANKING_SCHEDULER_TASK_IDS.branch],
+  [SCHEDULER_TASK_IDS.dwd, BANKING_SCHEDULER_TASK_IDS.dwd],
+  [SCHEDULER_TASK_IDS.dws, BANKING_SCHEDULER_TASK_IDS.dws],
+  [SCHEDULER_TASK_IDS.ads, BANKING_SCHEDULER_TASK_IDS.ads],
+] as const
+
 function getTask(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition {
-  const task = tasks.find((candidate) => candidate.taskId === taskId)
+  const pair = SCHEDULER_TASK_ID_PAIRS.find(([left, right]) => taskId === left || taskId === right)
+  const task = tasks.find(
+    (candidate) =>
+      candidate.taskId === taskId || (pair?.some((id) => id === candidate.taskId) ?? false),
+  )
   if (!task) {
     throw new Error(`血缘绑定找不到 Scheduler task: ${taskId}`)
   }
@@ -206,7 +224,7 @@ function createSqlEvidence(
   const step = getTransformationStep(stepId)
   const taskContext = schedulerTask
     ? `Scheduler task ${schedulerTask.taskId} 负责运行这一步`
-    : `SQL task contract ${transformation.taskContract.taskId} 负责运行这一步`
+    : `SQL 加工契约 ${transformation.taskContract.taskId} 负责运行这一步`
   const outputTable = schedulerTask?.contract.outputTable ?? transformation.taskContract.outputTable
 
   return {
@@ -224,15 +242,14 @@ function createTaskEvidence(
 
   return {
     source: 'task_dependency',
-    detail: `Scheduler ${relationText} 证据：${task.taskId}（${task.label}）依赖 ${dependencies}，输出 ${task.contract.outputTable}；任务 identity 与第 06 章一致。`,
+    detail: `Scheduler ${relationText} 证据：${task.taskId}（${task.label}）依赖 ${dependencies}，输出 ${task.contract.outputTable}；任务标识与运行记录一致。`,
   }
 }
 
 function createMetricEvidence(): LineageEvidence {
   return {
     source: 'metric_definition',
-    detail:
-      '指标定义证据：该对象被 order_status 指标口径引用；它说明消费关系，不自动证明业务因果。',
+    detail: '指标定义证据：该对象被存款余额指标口径引用；它说明消费关系，不自动证明业务因果。',
   }
 }
 
@@ -242,7 +259,7 @@ function createManualEvidence(edge: LineageEdge, nodes: readonly LineageNode[]):
 
   return {
     source: 'manual_metadata',
-    detail: `教学扩展关系：${source} → ${target} 未由第 06 章 Scheduler task contract 直接声明；保留它用于解释用户主题分支，变更前需要回到元数据和业务语义确认。`,
+    detail: `教学扩展关系：${source} → ${target} 的来源与责任尚未自动登记；保留它用于解释账户画像分支，变更前需要回到元数据和业务语义确认。`,
   }
 }
 
@@ -263,10 +280,10 @@ function bindNodes(
       }
     }
 
-    if (node.id === 'task-build-user') {
+    if (node.id === 'task-build-account-profile') {
       return {
         ...node,
-        role: `${node.role} · manual teaching branch（#12 未声明对应 task）`,
+        role: `${node.role} · 需人工核对来源与责任`,
       }
     }
 
@@ -301,7 +318,7 @@ function bindEdges(
       ...edge,
       evidence,
       confidence: binding?.confidence ?? edge.confidence ?? 'manual',
-      schedulerTaskId: binding?.taskId,
+      schedulerTaskId: schedulerTask?.taskId,
       transformationStepId: binding?.stepId,
     }
   })
@@ -309,30 +326,30 @@ function bindEdges(
 
 function createFieldSemanticChangeEvent(): LineageInvestigationEventDefinition {
   return {
-    id: 'investigate-order-status-change',
+    id: 'investigate-deposit-balance-semantic-change',
     entryPoint: 'field-semantic-change',
-    label: '字段语义变化',
-    summary: 'DWD.ORDER_DETAIL.order_status 的“已支付”口径发生变化。',
-    sourceEntityId: 'field-dwd-order-status',
+    label: '余额指标语义变化',
+    summary: 'DWD.deposit_balance 的“快照日余额”口径发生变化。',
+    sourceEntityId: 'field-dwd-balance',
     eventType: 'field_change',
-    affectedEntityId: 'metric-sales-status-rate',
+    affectedEntityId: 'metric-deposit-balance',
     evidence: {
       source: 'manual_metadata',
       detail:
-        '变更请求证据：order_status 的业务含义被重新定义；先沿 SQL 和 Scheduler 生产路径验证受影响指标。',
+        '变更请求证据：余额字段的业务含义被重新定义；先沿 SQL 和 Scheduler 生产路径验证受影响指标。',
     },
   }
 }
 
 function createSchemaChangeEvent(): LineageInvestigationEventDefinition {
   return {
-    id: 'investigate-order-status-schema-change',
+    id: 'investigate-deposit-balance-schema-change',
     entryPoint: 'schema-change',
     label: 'schema / field change',
-    summary: 'order_status 字段的类型或枚举契约准备变化，需要检查下游字段和报表。',
-    sourceEntityId: 'field-dwd-order-status',
+    summary: 'currency 或 balance 字段的类型或编码契约准备变化，需要检查下游分组和指标。',
+    sourceEntityId: 'field-dwd-balance',
     eventType: 'field_change',
-    affectedEntityId: 'field-ads-report-status',
+    affectedEntityId: 'field-ads-balance',
     evidence: {
       source: 'manual_metadata',
       detail:
@@ -344,12 +361,13 @@ function createSchemaChangeEvent(): LineageInvestigationEventDefinition {
 function createTaskFailureEvent(
   scheduler: SchedulerVisualization,
 ): LineageInvestigationEventDefinition {
-  const taskId = SCHEDULER_TASK_IDS.dwd
-  const failedTask = getTask(scheduler.tasks, taskId)
+  const failedTask = getTask(scheduler.tasks, SCHEDULER_TASK_IDS.dwd)
+  const taskId = failedTask.taskId
   const timeline = buildSchedulerTimeline(
     createInitialSchedulerRun(scheduler.tasks, {
       businessDate: scheduler.targetDate,
       scenario: 'dwd-blocked',
+      failureTaskId: taskId,
     }),
   )
   const failedState = timeline.find((frame) => frame.taskRuns[taskId]?.status === 'failed')
@@ -377,7 +395,7 @@ function createTaskFailureEvent(
     summary: `${failedTask.taskId} 重试耗尽，DWS / ADS 需要沿任务依赖检查。`,
     sourceEntityId: getLineageTaskNodeId(taskId),
     eventType: 'task_failure',
-    affectedEntityId: 'metric-report-status',
+    affectedEntityId: 'metric-deposit-report',
     evidence: {
       source: 'task_dependency',
       detail: `Scheduler failure 证据：run ${failedState.runId} 的 ${failedTask.taskId} 在 attempt ${failedTaskRun.attempt} 失败，状态 ${failedTaskRun.status}，输出 ${failedTaskRun.outputState}；${failedTaskRun.failureReason ?? '需要检查任务日志'}。`,
@@ -398,12 +416,21 @@ function validateBindingInput(input: LineageProductionBindingInput): void {
   }
 
   const adsTask = getTask(input.scheduler.tasks, SCHEDULER_TASK_IDS.ads)
-  if (
-    adsTask.contract.taskId !== input.transformation.taskContract.taskId ||
-    adsTask.contract.outputTable !== input.transformation.taskContract.outputTable
-  ) {
+  const transformationContract = input.transformation.taskContract
+  const schedulerContract = input.scheduler.taskContract
+  const reusesTransformationContract =
+    adsTask.contract.taskId === transformationContract.taskId &&
+    adsTask.contract.outputTable === transformationContract.outputTable
+  const sharesBusinessPartition =
+    schedulerContract.businessDate === transformationContract.businessDate &&
+    schedulerContract.partition.column === transformationContract.partition.column &&
+    schedulerContract.partition.value === transformationContract.partition.value
+  const isLayeredBankingContract =
+    sharesBusinessPartition && adsTask.contract.dependencies.includes(schedulerContract.outputTable)
+
+  if (!reusesTransformationContract && !isLayeredBankingContract) {
     throw new Error(
-      `Scheduler ADS task 没有复用 SQL task contract: ${adsTask.taskId} !== ${input.transformation.taskContract.taskId}`,
+      `Scheduler ADS task 没有复用兼容的 SQL task contract: ${adsTask.taskId} !== ${transformationContract.taskId}`,
     )
   }
 }

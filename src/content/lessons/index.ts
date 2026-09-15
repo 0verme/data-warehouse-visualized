@@ -30,6 +30,10 @@ import { schedulingReadinessContent } from './scheduling-readiness'
 import { schedulingRerunContent } from './scheduling-rerun'
 import { schedulingSlaContent } from './scheduling-sla'
 import { sqlAndTransformationContent } from './sql-and-transformation'
+import { sqlTransformationCleaningContent } from './sql-and-transformation-cleaning'
+import { sqlTransformationContractContent } from './sql-and-transformation-contract'
+import { sqlTransformationJoinContent } from './sql-and-transformation-join'
+import { sqlTransformationLayersContent } from './sql-and-transformation-layers'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { whyDataWarehouseContent } from './why-data-warehouse'
@@ -64,6 +68,10 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'scheduling-rerun': schedulingRerunContent,
   'scheduling-sla': schedulingSlaContent,
   'sql-and-transformation': sqlAndTransformationContent,
+  'sql-transformation-cleaning': sqlTransformationCleaningContent,
+  'sql-transformation-join': sqlTransformationJoinContent,
+  'sql-transformation-layers': sqlTransformationLayersContent,
+  'sql-transformation-contract': sqlTransformationContractContent,
   'performance-and-practice': performanceAndPracticeContent,
 }
 

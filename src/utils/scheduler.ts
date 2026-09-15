@@ -20,6 +20,24 @@ import type {
 import type { TransformationTaskContract } from '../features/sql-transformation/types'
 
 export const SCHEDULER_TASK_IDS = {
+  accountBalanceSnapshot: 'ingest.account-balance.daily.v1',
+  account: 'ingest.account.snapshot.v1',
+  customer: 'ingest.customer.snapshot.v1',
+  product: 'ingest.product.snapshot.v1',
+  branch: 'ingest.branch.snapshot.v1',
+  dwd: 'transform.deposit-balance.detail.v1',
+  dws: 'transform.deposit-balance.topic.v1',
+  ads: 'transform.deposit-balance.daily.v1',
+  /** 旧调度测试和外部示例使用的别名，值仍指向银行存款任务，不再代表电商表。 */
+  odsOrders: 'ingest.account-balance.daily.v1',
+  odsOrderItems: 'ingest.account.snapshot.v1',
+  odsUsers: 'ingest.customer.snapshot.v1',
+  odsPayments: 'ingest.product.snapshot.v1',
+  odsRefunds: 'ingest.branch.snapshot.v1',
+} as const
+
+/** 原电商调度调用使用过的 task ID；新任务 identity 仍以 SCHEDULER_TASK_IDS 为准。 */
+export const LEGACY_SCHEDULER_TASK_IDS = {
   odsOrders: 'ingest.orders.daily.v1',
   odsOrderItems: 'ingest.order-items.daily.v1',
   odsUsers: 'ingest.users.snapshot.v1',
@@ -30,8 +48,23 @@ export const SCHEDULER_TASK_IDS = {
   ads: 'transform.sales.daily.v1',
 } as const
 
-export const SCHEDULER_DEFAULT_SCHEDULED_AT = '2026-09-14 06:00'
-export const SCHEDULER_LATE_DATA_ARRIVAL_AT = '2026-09-14 06:20'
+export const LEGACY_TASK_ID_ALIASES: Readonly<Record<string, string>> = {
+  [LEGACY_SCHEDULER_TASK_IDS.odsOrders]: SCHEDULER_TASK_IDS.accountBalanceSnapshot,
+  [LEGACY_SCHEDULER_TASK_IDS.odsOrderItems]: SCHEDULER_TASK_IDS.account,
+  [LEGACY_SCHEDULER_TASK_IDS.odsUsers]: SCHEDULER_TASK_IDS.customer,
+  [LEGACY_SCHEDULER_TASK_IDS.odsPayments]: SCHEDULER_TASK_IDS.product,
+  [LEGACY_SCHEDULER_TASK_IDS.odsRefunds]: SCHEDULER_TASK_IDS.branch,
+  [LEGACY_SCHEDULER_TASK_IDS.dwd]: SCHEDULER_TASK_IDS.dwd,
+  [LEGACY_SCHEDULER_TASK_IDS.dws]: SCHEDULER_TASK_IDS.dws,
+  [LEGACY_SCHEDULER_TASK_IDS.ads]: SCHEDULER_TASK_IDS.ads,
+}
+
+export function getCanonicalSchedulerTaskId(taskId: string): string {
+  return LEGACY_TASK_ID_ALIASES[taskId] ?? taskId
+}
+
+export const SCHEDULER_DEFAULT_SCHEDULED_AT = '2026-10-01 06:00'
+export const SCHEDULER_LATE_DATA_ARRIVAL_AT = '2026-10-01 06:20'
 export const SCHEDULER_DEFAULT_MAX_CONCURRENT_TASKS = 2
 
 function isLateDataScenario(scenario: SchedulerScenario): boolean {
@@ -46,115 +79,122 @@ function createTaskContract(
   outputTable: string,
   dependencies: readonly string[],
   targetDate: string,
+  outputGrain: string,
 ): TransformationTaskContract {
   return {
     taskId,
     inputTables,
     outputTable,
-    partition: { column: 'dt', value: targetDate },
+    outputGrain,
+    businessDate: targetDate,
+    partition: { column: 'snapshot_date', value: targetDate },
     dependencies,
     isIdempotent: true,
     supportsPartialRerun: true,
-    rerunHint: `按业务数据日期重跑 dt = ${targetDate}。`,
+    repeatExecution: '同样的输入和业务日期再次执行，目标分区结果应保持一致，不重复累加余额。',
+    rerunHint: `按业务日期重算 snapshot_date = ${targetDate} 分区。`,
   }
 }
 
-/**
- * 把第 05 章的表契约接进一条可运行的 DAG；这里没有复制订单数据或 SQL 逻辑。
- */
+/** 将第 05 章的存款余额加工契约接入第 06 章的时间轴 DAG。 */
 export function createSchedulerTasks(
   taskContract: TransformationTaskContract,
 ): SchedulerTaskDefinition[] {
-  const targetDate = taskContract.partition.value
+  const targetDate = taskContract.businessDate
   const odsTables = [
-    'ods_order_event',
-    'ods_order_item',
-    'ods_payment_event',
-    'ods_refund_event',
-    'ods_user',
+    'ods_account_balance_snapshot',
+    'dim_account',
+    'dim_customer',
+    'dim_product',
+    'dim_branch',
   ] as const
 
   return [
     {
-      taskId: SCHEDULER_TASK_IDS.odsOrders,
-      label: '订单事件落 ODS',
+      taskId: SCHEDULER_TASK_IDS.accountBalanceSnapshot,
+      label: '账户余额快照落 ODS',
       layer: 'ods',
-      description: '接住第 05 章的订单原始事件，保留来源上下文。',
+      description: '接住业务日期的账户余额快照，迟到时按原业务日期回补。',
       dependsOn: [],
       contract: createTaskContract(
-        SCHEDULER_TASK_IDS.odsOrders,
-        ['order_events'],
-        'ods_order_event',
+        SCHEDULER_TASK_IDS.accountBalanceSnapshot,
+        ['account_balance_snapshot'],
+        'ods_account_balance_snapshot',
         [],
         targetDate,
+        '一行 = 一个账户 × 一个快照日（原始记录）',
       ),
       durationMinutes: 3,
       maxAttempts: 1,
       slaMinutes: 30,
     },
     {
-      taskId: SCHEDULER_TASK_IDS.odsOrderItems,
-      label: '订单明细落 ODS',
+      taskId: SCHEDULER_TASK_IDS.account,
+      label: '账户关系落 ODS',
       layer: 'ods',
-      description: '接住订单商品明细，后续 DWD 仍保留订单商品粒度。',
+      description: '提供账户到客户、产品和机构的关联键。',
       dependsOn: [],
       contract: createTaskContract(
-        SCHEDULER_TASK_IDS.odsOrderItems,
-        ['order_item_events'],
-        'ods_order_item',
+        SCHEDULER_TASK_IDS.account,
+        ['account'],
+        'dim_account',
         [],
         targetDate,
+        '一行 = 一个账户的关联键',
       ),
       durationMinutes: 2,
       maxAttempts: 1,
       slaMinutes: 30,
     },
     {
-      taskId: SCHEDULER_TASK_IDS.odsUsers,
-      label: '用户快照落 ODS',
+      taskId: SCHEDULER_TASK_IDS.customer,
+      label: '客户快照落 ODS',
       layer: 'ods',
-      description: '提供 LEFT JOIN 所需的用户维度快照。',
+      description: '提供客户口径等指标筛选需要的属性。',
       dependsOn: [],
       contract: createTaskContract(
-        SCHEDULER_TASK_IDS.odsUsers,
-        ['user_snapshot'],
-        'ods_user',
+        SCHEDULER_TASK_IDS.customer,
+        ['customer_snapshot'],
+        'dim_customer',
         [],
         targetDate,
+        '一行 = 一个客户的分析属性',
       ),
       durationMinutes: 1,
       maxAttempts: 1,
       slaMinutes: 30,
     },
     {
-      taskId: SCHEDULER_TASK_IDS.odsPayments,
-      label: '支付事件落 ODS',
+      taskId: SCHEDULER_TASK_IDS.product,
+      label: '产品快照落 ODS',
       layer: 'ods',
-      description: '支付事件准备好后，DWD 才能对齐 paid_at 和支付状态。',
+      description: '提供定期、活期等产品分类。',
       dependsOn: [],
       contract: createTaskContract(
-        SCHEDULER_TASK_IDS.odsPayments,
-        ['payment_events'],
-        'ods_payment_event',
+        SCHEDULER_TASK_IDS.product,
+        ['product_snapshot'],
+        'dim_product',
         [],
         targetDate,
+        '一行 = 一个产品定义',
       ),
       durationMinutes: 4,
       maxAttempts: 1,
       slaMinutes: 30,
     },
     {
-      taskId: SCHEDULER_TASK_IDS.odsRefunds,
-      label: '退款事件落 ODS',
+      taskId: SCHEDULER_TASK_IDS.branch,
+      label: '机构快照落 ODS',
       layer: 'ods',
-      description: '先保留退款事件，DWD 再按订单汇总并分摊。',
+      description: '提供分行范围和机构层级。',
       dependsOn: [],
       contract: createTaskContract(
-        SCHEDULER_TASK_IDS.odsRefunds,
-        ['refund_events'],
-        'ods_refund_event',
+        SCHEDULER_TASK_IDS.branch,
+        ['branch_snapshot'],
+        'dim_branch',
         [],
         targetDate,
+        '一行 = 一个机构节点',
       ),
       durationMinutes: 2,
       maxAttempts: 1,
@@ -162,22 +202,23 @@ export function createSchedulerTasks(
     },
     {
       taskId: SCHEDULER_TASK_IDS.dwd,
-      label: 'DWD 明细标准化',
+      label: 'DWD 账户日明细标准化',
       layer: 'dwd',
-      description: '复用第 05 章的去重、补维度和事件粒度对齐。',
+      description: '执行账户余额去重、缺失维度保留和币种编码标准化。',
       dependsOn: [
-        SCHEDULER_TASK_IDS.odsOrders,
-        SCHEDULER_TASK_IDS.odsOrderItems,
-        SCHEDULER_TASK_IDS.odsUsers,
-        SCHEDULER_TASK_IDS.odsPayments,
-        SCHEDULER_TASK_IDS.odsRefunds,
+        SCHEDULER_TASK_IDS.accountBalanceSnapshot,
+        SCHEDULER_TASK_IDS.account,
+        SCHEDULER_TASK_IDS.customer,
+        SCHEDULER_TASK_IDS.product,
+        SCHEDULER_TASK_IDS.branch,
       ],
       contract: createTaskContract(
         SCHEDULER_TASK_IDS.dwd,
         odsTables,
-        'dwd_order_item',
+        'dwd_deposit_balance_detail',
         odsTables,
         targetDate,
+        '一行 = 一个账户 × 一个快照日',
       ),
       durationMinutes: 8,
       maxAttempts: 2,
@@ -185,16 +226,17 @@ export function createSchedulerTasks(
     },
     {
       taskId: SCHEDULER_TASK_IDS.dws,
-      label: 'DWS 销售日汇总',
+      label: 'DWS 存款余额主题汇总',
       layer: 'dws',
-      description: '按 paid_date 复用 SQL 章节的日粒度销售主题。',
+      description: '按机构、客户口径、产品和币种聚合账户日余额。',
       dependsOn: [SCHEDULER_TASK_IDS.dwd],
       contract: createTaskContract(
         SCHEDULER_TASK_IDS.dws,
-        ['dwd_order_item'],
-        'dws_sales_daily',
-        ['dwd_order_item'],
+        ['dwd_deposit_balance_detail'],
+        'dws_deposit_balance_daily_staging',
+        ['dwd_deposit_balance_detail'],
         targetDate,
+        '一行 = 一个快照日 × 机构 × 客户口径 × 产品 × 币种',
       ),
       durationMinutes: 5,
       maxAttempts: 2,
@@ -202,9 +244,9 @@ export function createSchedulerTasks(
     },
     {
       taskId: SCHEDULER_TASK_IDS.ads,
-      label: 'ADS 发布昨天销售额',
+      label: 'ADS 发布存款余额指标',
       layer: 'ads',
-      description: '直接复用 PR #24 暴露的 sqlTransformationTaskContract。',
+      description: '按指标卡条件发布杭州分行小微定期 CNY 的存款余额结果。',
       dependsOn: [SCHEDULER_TASK_IDS.dws],
       contract: taskContract,
       durationMinutes: 2,
@@ -218,7 +260,8 @@ function getTaskOrThrow(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition {
-  const task = tasks.find((candidate) => candidate.taskId === taskId)
+  const canonicalTaskId = getCanonicalSchedulerTaskId(taskId)
+  const task = tasks.find((candidate) => candidate.taskId === canonicalTaskId)
   if (!task) {
     throw new Error(`未知的调度任务: ${taskId}`)
   }
@@ -230,7 +273,8 @@ export function getSchedulerTask(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition | undefined {
-  return tasks.find((task) => task.taskId === taskId)
+  const canonicalTaskId = getCanonicalSchedulerTaskId(taskId)
+  return tasks.find((task) => task.taskId === canonicalTaskId)
 }
 
 /** 使用 Kahn 算法返回稳定拓扑序；同层任务按定义顺序保持确定性。 */
@@ -288,8 +332,9 @@ export function getDownstreamTaskIds(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): string[] {
-  getTaskOrThrow(tasks, taskId)
-  const selected = new Set<string>([taskId])
+  const canonicalTaskId = getCanonicalSchedulerTaskId(taskId)
+  getTaskOrThrow(tasks, canonicalTaskId)
+  const selected = new Set<string>([canonicalTaskId])
   let changed = true
 
   while (changed) {
@@ -623,7 +668,7 @@ function createRunId(businessDate: string, trigger: SchedulerRunOptions['trigger
   const normalizedDate = businessDate.replace(/-/gu, '')
   const suffix =
     trigger === 'partition-rerun' ? 'partition' : trigger === 'full-rerun' ? 'full' : 'schedule'
-  return `run.sales.daily.${normalizedDate}.${suffix}.001`
+  return `run.deposit-balance.daily.${normalizedDate}.${suffix}.001`
 }
 
 export function createInitialSchedulerRun(
@@ -1142,17 +1187,20 @@ export function transitionSchedulerRun(
   state: SchedulerRunState,
   action: SchedulerAction,
 ): SchedulerRunState {
-  switch (action.type) {
+  const canonicalAction =
+    'taskId' in action ? { ...action, taskId: getCanonicalSchedulerTaskId(action.taskId) } : action
+
+  switch (canonicalAction.type) {
     case 'advance':
       return advanceSchedulerRun(state)
     case 'start-task':
-      return startTask(state, action.taskId)
+      return startTask(state, canonicalAction.taskId)
     case 'complete-task':
-      return completeTask(state, action.taskId)
+      return completeTask(state, canonicalAction.taskId)
     case 'fail-task':
-      return failTask(state, action.taskId, action.reason)
+      return failTask(state, canonicalAction.taskId, canonicalAction.reason)
     case 'recover-task':
-      return recoverTask(state, action.taskId)
+      return recoverTask(state, canonicalAction.taskId)
     case 'mark-late-data':
       return markLateData(state)
   }
@@ -1182,11 +1230,12 @@ export function createPartitionRerunPlan(
   targetTaskId?: string,
 ): SchedulerRerunPlan {
   const allTaskIds = getTopologicalTaskIds(tasks)
-  const resolvedTargetTaskId = targetTaskId ?? allTaskIds[allTaskIds.length - 1]
-  if (!resolvedTargetTaskId) {
+  const requestedTargetTaskId = targetTaskId ?? allTaskIds[allTaskIds.length - 1]
+  if (!requestedTargetTaskId) {
     throw new Error('至少需要一个任务才能生成重跑计划')
   }
 
+  const resolvedTargetTaskId = getCanonicalSchedulerTaskId(requestedTargetTaskId)
   const targetTask = getTaskOrThrow(tasks, resolvedTargetTaskId)
   const taskIds = mode === 'full' ? allTaskIds : getDownstreamTaskIds(tasks, resolvedTargetTaskId)
   const unsupportedTask = taskIds
@@ -1218,7 +1267,11 @@ export function createPartitionRerunPlan(
   }
 }
 
-function createOutputComparison(isIdempotent: boolean, rows: number): SchedulerOutputComparison {
+function createOutputComparison(
+  isIdempotent: boolean,
+  rows: number,
+  partitionColumn: string,
+): SchedulerOutputComparison {
   if (isIdempotent) {
     return {
       writeMode: 'overwrite-partition',
@@ -1228,7 +1281,7 @@ function createOutputComparison(isIdempotent: boolean, rows: number): SchedulerO
       finalRows: rows,
       duplicateRows: 0,
       outputState: 'available',
-      explanation: '覆盖同一目标分区；第二次运行得到同一份结果，不叠加重复行。',
+      explanation: `按 ${partitionColumn} 覆盖同一分区；第二次运行得到同一份结果，不叠加重复行。`,
     }
   }
 
@@ -1240,7 +1293,7 @@ function createOutputComparison(isIdempotent: boolean, rows: number): SchedulerO
     finalRows: rows * 2,
     duplicateRows: rows,
     outputState: 'duplicate',
-    explanation: '把同一分区再次 append；原结果没有被替换，输出多出一份重复结果。',
+    explanation: `把同一 ${partitionColumn} 分区再次 append；原结果没有被替换，输出多出一份重复结果。`,
   }
 }
 
@@ -1253,8 +1306,8 @@ export function compareRerunOutputs(
   return {
     taskId: taskContract.taskId,
     outputTable: taskContract.outputTable,
-    idempotent: createOutputComparison(true, safeRows),
-    nonIdempotent: createOutputComparison(false, safeRows),
+    idempotent: createOutputComparison(true, safeRows, taskContract.partition.column),
+    nonIdempotent: createOutputComparison(false, safeRows, taskContract.partition.column),
   }
 }
 

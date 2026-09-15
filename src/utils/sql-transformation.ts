@@ -1,4 +1,8 @@
+import { depositLateBalanceSnapshot, DEPOSIT_BALANCE_SCOPE } from '../data/deposit-balance'
 import type {
+  AccountBalanceSnapshot,
+  AccountMedium,
+  LegacyTransformationDataset,
   OrderEvent,
   OrderItemEvent,
   PaymentEvent,
@@ -6,9 +10,11 @@ import type {
   TransformationDataset,
   TransformationEvidence,
   TransformationGrain,
+  TransformationJoinAnalysis,
   TransformationLayerSnapshot,
   TransformationPrediction,
   TransformationRow,
+  TransformationRowChange,
   TransformationRowChangeKind,
   TransformationStepDefinition,
   TransformationStepId,
@@ -21,168 +27,150 @@ import type {
 
 export const TRANSFORMATION_STEPS: readonly TransformationStepDefinition[] = [
   {
-    id: 'deduplicate',
+    id: 'plan',
     number: '01',
-    label: '去重事件',
-    title: '重复事件要压平',
-    layer: 'ODS → ODS',
-    sql: `WITH ranked_orders AS (
+    label: '列出加工计划',
+    title: '指标卡要翻译成哪些输入？',
+    layer: '指标定义 → 加工计划',
+    sql: `SELECT
+  snapshot_date,
+  branch_name,
+  customer_scope,
+  product_type,
+  currency,
+  SUM(balance) AS deposit_balance
+FROM dwd_deposit_balance_detail
+WHERE snapshot_date = :business_date
+  AND branch_name = '杭州分行'
+  AND customer_scope = '小微'
+  AND product_type = '定期'
+  AND currency = 'CNY'
+GROUP BY snapshot_date, branch_name,
+  customer_scope, product_type, currency;`,
+    description: '先把指标卡里的时间、维度和度量对应到输入字段，再决定结果的一行代表哪组业务事实。',
+    expectedChange: 'unchanged',
+    expectedChangeLabel: '指标定义被翻译成计划，数据行数尚未变化',
+  },
+  {
+    id: 'clean-detail',
+    number: '02',
+    label: '形成可信明细',
+    title: '重复、缺关联和编码先在哪里处理？',
+    layer: 'ODS → DWD',
+    sql: `WITH ranked_snapshot AS (
   SELECT *,
     ROW_NUMBER() OVER (
-      PARTITION BY order_id
+      PARTITION BY account_id, snapshot_date
       ORDER BY updated_at DESC
     ) AS rn
-  FROM ods_order_event
+  FROM ods_account_balance_snapshot
 )
-SELECT * FROM ranked_orders WHERE rn = 1;`,
-    description: '按业务键保留最新订单事件；支付事件暂时保留，用来观察粒度问题。',
+SELECT
+  s.snapshot_date,
+  s.account_id,
+  a.customer_id,
+  c.customer_scope,
+  a.product_id,
+  p.product_type,
+  b.branch_name,
+  CASE WHEN s.currency = 'RMB' THEN 'CNY'
+       ELSE s.currency END AS currency,
+  s.balance
+FROM ranked_snapshot s
+LEFT JOIN dim_account a ON s.account_id = a.account_id
+LEFT JOIN dim_customer c ON a.customer_id = c.customer_id
+LEFT JOIN dim_product p ON a.product_id = p.product_id
+LEFT JOIN dim_branch b ON a.branch_id = b.branch_id
+WHERE s.rn = 1;`,
+    description: '按账户和快照日保留最新记录，用 LEFT JOIN 保留缺失关联，再把同义币种归一到 CNY。',
     expectedChange: 'decrease',
-    expectedChangeLabel: '行数减少，重复事件被合并',
+    expectedChangeLabel: '重复快照被合并，明细从 5 行回到 4 行',
   },
   {
-    id: 'join-users',
-    number: '02',
-    label: '补全用户',
-    title: '用 LEFT JOIN 补上用户属性',
-    layer: 'ODS → DWD',
-    sql: `SELECT
-  i.order_id,
-  i.item_id,
-  o.user_id,
-  u.user_name,
-  u.city,
-  i.item_amount
-FROM clean_orders o
-JOIN ods_order_item i ON o.order_id = i.order_id
-LEFT JOIN dim_user u ON o.user_id = u.user_id;`,
-    description: '用户维度只负责补充属性，不改变订单明细的粒度；找不到用户时保留 NULL。',
-    expectedChange: 'unchanged',
-    expectedChangeLabel: '行数和金额保持不变',
-  },
-  {
-    id: 'wrong-join',
+    id: 'join-fanout',
     number: '03',
-    label: '故意错一次',
-    title: '让多对多 JOIN 暴露出来',
-    layer: 'DWD · 错误分支',
+    label: '检查 Join 放大',
+    title: '一个账户有多个介质，会发生什么？',
+    layer: 'DWD · Join 对照',
     sql: `SELECT
-  i.order_id,
-  i.item_id,
-  i.item_amount,
-  p.amount AS payment_amount,
-  r.amount AS refund_amount
-FROM dwd_order_item i
-LEFT JOIN payment_event p ON i.order_id = p.order_id
-LEFT JOIN refund_event r ON i.order_id = r.order_id;`,
-    description:
-      '订单明细、支付事件、退款事件都不是订单粒度；直接按 order_id 连接会产生笛卡尔式放大。',
+  d.snapshot_date,
+  d.account_id,
+  d.balance,
+  m.medium_id,
+  m.medium_type
+FROM dwd_deposit_balance_detail AS d
+LEFT JOIN account_medium AS m
+  ON d.account_id = m.account_id;`,
+    description: 'AccountMedium 只是教学辅助表；直接连接会把账户日余额复制到每个账户介质。',
     expectedChange: 'increase',
-    expectedChangeLabel: '重复行增加，金额被放大',
+    expectedChangeLabel: 'A001 的 1 行被放大成 3 行，余额合计随之变大',
   },
   {
-    id: 'fix-join',
+    id: 'aggregate-layers',
     number: '04',
-    label: '修正 JOIN',
-    title: '事件回到目标粒度后再 JOIN',
-    layer: 'DWD · 正确分支',
-    sql: `WITH one_payment AS (
-  SELECT * FROM (
-    SELECT p.*,
-      ROW_NUMBER() OVER (
-        PARTITION BY transaction_key
-        ORDER BY updated_at DESC
-      ) AS rn
-    FROM payment_event p
-  ) t WHERE rn = 1
-), refund_by_order AS (
-  SELECT order_id, SUM(amount) AS refund_amount
-  FROM refund_event
-  GROUP BY order_id
-)
-SELECT ... FROM clean_orders o
-LEFT JOIN one_payment p ON o.order_id = p.order_id
-LEFT JOIN refund_by_order r ON o.order_id = r.order_id;`,
-    description: '支付去重、退款按订单汇总后再连接，输出重新对齐到所选目标粒度。',
-    expectedChange: 'decrease',
-    expectedChangeLabel: '重复行合并回目标粒度',
-  },
-  {
-    id: 'build-dws',
-    number: '05',
-    label: '形成 DWS',
-    title: '把明细汇总成销售主题',
+    label: '聚合到指标层',
+    title: '从账户明细到业务口径，一行变成什么？',
     layer: 'DWD → DWS',
     sql: `SELECT
-  paid_date,
-  COUNT(DISTINCT order_id) AS order_count,
-  SUM(gross_amount) AS gross_amount,
-  SUM(refund_amount) AS refund_amount,
-  SUM(net_amount) AS sales_amount
-FROM dwd_order_detail
-WHERE payment_status = 'PAID'
-  AND paid_date IS NOT NULL
-GROUP BY paid_date;`,
-    description: 'DWS 一行代表一个支付日；待支付订单和没有支付时间的 NULL 不进入已支付销售额。',
+  snapshot_date,
+  branch_name,
+  customer_scope,
+  product_type,
+  currency,
+  SUM(balance) AS balance
+FROM dwd_deposit_balance_detail
+GROUP BY snapshot_date, branch_name,
+  customer_scope, product_type, currency;`,
+    description: 'DWD 保留账户日明细；DWS 按指标需要的维度聚合，同一组账户余额合并为一行。',
     expectedChange: 'decrease',
-    expectedChangeLabel: '多行明细合并成日粒度',
+    expectedChangeLabel: '4 行账户明细合并为 3 行业务分组',
   },
   {
-    id: 'wrong-group-by',
-    number: '06',
-    label: '检查 GROUP BY',
-    title: '错误 GROUP BY 会留下错误粒度',
-    layer: 'DWS · 错误分支',
-    sql: `SELECT
-  paid_date,
-  item_id, -- 错误：日主题不应该保留明细键
-  SUM(net_amount) AS sales_amount
-FROM dwd_order_detail
-WHERE payment_status = 'PAID'
-GROUP BY paid_date, item_id;`,
-    description: '金额可能仍然能加起来，但输出不再是“一天一行”；下游会把它误当成日汇总。',
-    expectedChange: 'increase',
-    expectedChangeLabel: '相对日汇总行数增加',
-  },
-  {
-    id: 'build-ads',
-    number: '07',
-    label: '形成 ADS',
-    title: '为“昨天”筛出目标指标',
+    id: 'contract',
+    number: '05',
+    label: '交付加工边界',
+    title: '同一天再次执行，结果应该怎样？',
     layer: 'DWS → ADS',
-    sql: `SELECT
-  dt,
-  sales_amount,
-  order_count
-FROM dws_sales_daily
-WHERE dt >= :data_date
-  AND dt < DATEADD(day, 1, :data_date);`,
-    description: '用 [data_date, next_date) 的半开区间处理时间边界，ADS 只服务当前问题。',
+    sql: `INSERT OVERWRITE ads_deposit_balance_daily
+PARTITION (snapshot_date = :business_date)
+SELECT
+  snapshot_date,
+  branch_name,
+  customer_scope,
+  product_type,
+  currency,
+  balance
+FROM dws_deposit_balance_daily_staging
+WHERE snapshot_date = :business_date;`,
+    description:
+      '把输入、输出、业务日期和分区写进加工契约；同样输入再次执行时，不应把余额再加一遍。',
     expectedChange: 'decrease',
-    expectedChangeLabel: '筛出一个数据分区',
-  },
-  {
-    id: 'late-data',
-    number: '08',
-    label: '注入迟到数据',
-    title: '迟到一条记录，哪个分区要重跑？',
-    layer: 'ODS → ADS · 重跑提示',
-    sql: `-- O1005 在 2026-09-14 才到达，但业务时间属于 2026-09-13
-INSERT INTO ods_order_event (...) VALUES (...);
-
--- 需要按业务日期重跑，而不是只跑到数当天
--- WHERE dt = '2026-09-13';`,
-    description: '数据到达时间晚于业务发生时间；补数必须按业务日期重跑历史分区，而不是跑当天。',
-    expectedChange: 'unchanged',
-    expectedChangeLabel: '同一分区金额更新',
+    expectedChangeLabel: '从 3 个分组筛出指标卡对应的 1 行结果',
   },
 ]
 
 export const TRANSFORMATION_LAYER_ORDER = ['ods', 'dwd', 'dws', 'ads'] as const
 
+export const LEGACY_STEP_ALIASES: Partial<Record<TransformationStepId, TransformationStepId>> = {
+  deduplicate: 'clean-detail',
+  'join-users': 'clean-detail',
+  'wrong-join': 'join-fanout',
+  'fix-join': 'join-fanout',
+  'build-dws': 'aggregate-layers',
+  'wrong-group-by': 'aggregate-layers',
+  'build-ads': 'contract',
+  'late-data': 'contract',
+}
+
+export function getCanonicalStepId(stepId: TransformationStepId): TransformationStepId {
+  return LEGACY_STEP_ALIASES[stepId] ?? stepId
+}
+
 export function getTransformationStep(
   stepId: TransformationStepId,
 ): TransformationStepDefinition | undefined {
-  return TRANSFORMATION_STEPS.find((step) => step.id === stepId)
+  const canonicalStepId = getCanonicalStepId(stepId)
+  return TRANSFORMATION_STEPS.find((step) => step.id === canonicalStepId)
 }
 
 export function getDatePart(timestamp: string | null | undefined): string | null {
@@ -194,14 +182,17 @@ export function getDatePart(timestamp: string | null | undefined): string | null
   return /^\d{4}-\d{2}-\d{2}$/u.test(datePart) ? datePart : null
 }
 
-/**
- * 使用半开区间 [targetDate, nextDate) 的日期部分判断，避免把次日 00:00 算入昨天。
- */
+/** 使用业务日期的半开区间语义判断一条记录属于哪个快照日。 */
 export function isInDatePartition(
   timestamp: string | null | undefined,
   targetDate: string,
 ): boolean {
   return getDatePart(timestamp) === targetDate
+}
+
+export function normalizeCurrency(currency: string): string {
+  const normalized = currency.trim().toUpperCase()
+  return normalized === 'RMB' ? 'CNY' : normalized
 }
 
 function pickLatestByKey<T extends { updatedAt: string }>(
@@ -222,14 +213,23 @@ function pickLatestByKey<T extends { updatedAt: string }>(
   return [...latestByKey.values()]
 }
 
+export function deduplicateBalanceSnapshots(
+  snapshots: readonly AccountBalanceSnapshot[],
+): AccountBalanceSnapshot[] {
+  return pickLatestByKey(snapshots, (snapshot) => `${snapshot.snapshotDate}|${snapshot.accountId}`)
+}
+
+/** @deprecated Use deduplicateBalanceSnapshots in the banking teaching domain. */
 export function deduplicateOrderEvents(orders: readonly OrderEvent[]): OrderEvent[] {
   return pickLatestByKey(orders, (order) => order.orderId)
 }
 
+/** @deprecated Kept as a migration seam for former payment-event callers. */
 export function deduplicatePaymentEvents(payments: readonly PaymentEvent[]): PaymentEvent[] {
   return pickLatestByKey(payments, (payment) => payment.transactionKey)
 }
 
+/** @deprecated Refund events are not used by the banking balance lesson. */
 export function getRefundTotals(refunds: readonly RefundEvent[]): Map<string, number> {
   const totals = new Map<string, number>()
 
@@ -244,7 +244,51 @@ export function getRefundTotals(refunds: readonly RefundEvent[]): Map<string, nu
   return totals
 }
 
-function getOrderItemsByOrder(items: readonly OrderItemEvent[]): Map<string, OrderItemEvent[]> {
+export function getCanonicalBalanceSnapshots(
+  dataset: TransformationDataset,
+): AccountBalanceSnapshot[] {
+  return deduplicateBalanceSnapshots(dataset.accountBalanceSnapshots)
+}
+
+export interface TransformationDimensionGap {
+  accountId: string
+  missingDimensions: readonly ('customer' | 'product' | 'branch')[]
+}
+
+export function getMissingDimensionGaps(
+  dataset: TransformationDataset,
+): TransformationDimensionGap[] {
+  const accountsById = new Map(dataset.accounts.map((account) => [account.accountId, account]))
+  const customers = new Set(dataset.customers.map((customer) => customer.customerId))
+  const products = new Set(dataset.products.map((product) => product.productId))
+  const branches = new Set(dataset.branches.map((branch) => branch.branchId))
+  const gaps: TransformationDimensionGap[] = []
+
+  for (const snapshot of getCanonicalBalanceSnapshots(dataset)) {
+    const account = accountsById.get(snapshot.accountId)
+    const missingDimensions: Array<'customer' | 'product' | 'branch'> = []
+
+    if (!account || !customers.has(account.customerId)) {
+      missingDimensions.push('customer')
+    }
+    if (!account || !products.has(account.productId)) {
+      missingDimensions.push('product')
+    }
+    if (!account || !branches.has(account.branchId)) {
+      missingDimensions.push('branch')
+    }
+
+    if (missingDimensions.length > 0) {
+      gaps.push({ accountId: snapshot.accountId, missingDimensions })
+    }
+  }
+
+  return gaps
+}
+
+function getLegacyOrderItemsByOrder(
+  items: readonly OrderItemEvent[],
+): Map<string, OrderItemEvent[]> {
   const grouped = new Map<string, OrderItemEvent[]>()
 
   for (const item of items) {
@@ -256,42 +300,11 @@ function getOrderItemsByOrder(items: readonly OrderItemEvent[]): Map<string, Ord
   return grouped
 }
 
-function roundCurrency(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100
-}
-
-function allocateRefunds(
-  items: readonly OrderItemEvent[],
-  refundTotal: number,
-): Map<string, number> {
-  const allocations = new Map<string, number>()
-  const itemTotal = items.reduce((total, item) => total + item.itemAmount, 0)
-
-  if (refundTotal === 0 || itemTotal === 0 || items.length === 0) {
-    for (const item of items) {
-      allocations.set(item.itemId, 0)
-    }
-    return allocations
-  }
-
-  let allocated = 0
-  items.forEach((item, index) => {
-    const isLast = index === items.length - 1
-    const amount = isLast
-      ? roundCurrency(refundTotal - allocated)
-      : roundCurrency((refundTotal * item.itemAmount) / itemTotal)
-    allocations.set(item.itemId, amount)
-    allocated += amount
-  })
-
-  return allocations
-}
-
-function getUser(users: readonly UserRecord[], userId: string): UserRecord | undefined {
+function getLegacyUser(users: readonly UserRecord[], userId: string): UserRecord | undefined {
   return users.find((user) => user.userId === userId)
 }
 
-function getPaymentByOrder(payments: readonly PaymentEvent[]): Map<string, PaymentEvent> {
+function getLegacyPaymentsByOrder(payments: readonly PaymentEvent[]): Map<string, PaymentEvent> {
   const paymentsByOrder = new Map<string, PaymentEvent>()
 
   for (const payment of deduplicatePaymentEvents(payments)) {
@@ -304,26 +317,50 @@ function getPaymentByOrder(payments: readonly PaymentEvent[]): Map<string, Payme
   return paymentsByOrder
 }
 
-export function getCanonicalOrders(dataset: TransformationDataset): OrderEvent[] {
-  return deduplicateOrderEvents(dataset.orders)
+function allocateLegacyRefunds(
+  items: readonly OrderItemEvent[],
+  refundTotal: number,
+): Map<string, number> {
+  const allocations = new Map<string, number>()
+  const itemTotal = items.reduce((total, item) => total + item.itemAmount, 0)
+
+  if (refundTotal === 0 || itemTotal === 0 || items.length === 0) {
+    items.forEach((item) => allocations.set(item.itemId, 0))
+    return allocations
+  }
+
+  let allocated = 0
+  items.forEach((item, index) => {
+    const amount =
+      index === items.length - 1
+        ? roundCurrency(refundTotal - allocated)
+        : roundCurrency((refundTotal * item.itemAmount) / itemTotal)
+    allocations.set(item.itemId, amount)
+    allocated += amount
+  })
+
+  return allocations
 }
 
-export function getCanonicalPayments(dataset: TransformationDataset): PaymentEvent[] {
-  return deduplicatePaymentEvents(dataset.payments)
-}
+/** @deprecated Use buildDepositBalanceRows in the banking teaching domain. */
+export function buildOrderItemRows(
+  dataset: LegacyTransformationDataset | TransformationDataset,
+): TransformationRow[] {
+  if (!('orders' in dataset)) {
+    return buildDepositBalanceRows(dataset)
+  }
 
-export function buildOrderItemRows(dataset: TransformationDataset): TransformationRow[] {
   const canonicalOrders = getCanonicalOrders(dataset)
-  const itemsByOrder = getOrderItemsByOrder(dataset.orderItems)
-  const paymentsByOrder = getPaymentByOrder(dataset.payments)
+  const itemsByOrder = getLegacyOrderItemsByOrder(dataset.orderItems)
+  const paymentsByOrder = getLegacyPaymentsByOrder(dataset.payments)
   const refundTotals = getRefundTotals(dataset.refunds)
   const rows: TransformationRow[] = []
 
   for (const order of canonicalOrders) {
     const items = itemsByOrder.get(order.orderId) ?? []
     const payment = paymentsByOrder.get(order.orderId)
-    const user = getUser(dataset.users, order.userId)
-    const refundAllocation = allocateRefunds(items, refundTotals.get(order.orderId) ?? 0)
+    const user = getLegacyUser(dataset.users, order.userId)
+    const refundAllocation = allocateLegacyRefunds(items, refundTotals.get(order.orderId) ?? 0)
 
     for (const item of items) {
       const refundAmount = refundAllocation.get(item.itemId) ?? 0
@@ -348,16 +385,23 @@ export function buildOrderItemRows(dataset: TransformationDataset): Transformati
   return rows
 }
 
-export function buildOrderRows(dataset: TransformationDataset): TransformationRow[] {
+/** @deprecated Use banking snapshots; this adapter only keeps old callers type-safe. */
+export function buildOrderRows(
+  dataset: LegacyTransformationDataset | TransformationDataset,
+): TransformationRow[] {
+  if (!('orders' in dataset)) {
+    return buildDepositBalanceRows(dataset)
+  }
+
   const canonicalOrders = getCanonicalOrders(dataset)
-  const itemsByOrder = getOrderItemsByOrder(dataset.orderItems)
-  const paymentsByOrder = getPaymentByOrder(dataset.payments)
+  const itemsByOrder = getLegacyOrderItemsByOrder(dataset.orderItems)
+  const paymentsByOrder = getLegacyPaymentsByOrder(dataset.payments)
   const refundTotals = getRefundTotals(dataset.refunds)
 
   return canonicalOrders.map((order) => {
     const items = itemsByOrder.get(order.orderId) ?? []
     const payment = paymentsByOrder.get(order.orderId)
-    const user = getUser(dataset.users, order.userId)
+    const user = getLegacyUser(dataset.users, order.userId)
     const grossAmount = items.reduce((total, item) => total + item.itemAmount, 0)
     const refundAmount = refundTotals.get(order.orderId) ?? 0
 
@@ -377,51 +421,231 @@ export function buildOrderRows(dataset: TransformationDataset): TransformationRo
   })
 }
 
-function buildDailyRows(dataset: TransformationDataset): TransformationRow[] {
-  const grouped = new Map<
-    string,
-    { orderIds: Set<string>; grossAmount: number; refundAmount: number; netAmount: number }
-  >()
+export function getCanonicalOrders(dataset: LegacyTransformationDataset): OrderEvent[] {
+  return deduplicateOrderEvents(dataset.orders)
+}
 
-  for (const row of buildOrderRows(dataset)) {
-    const paidDate = row.paid_date
-    if (typeof paidDate !== 'string' || row.payment_status !== 'PAID') {
-      continue
-    }
+export function getCanonicalPayments(dataset: LegacyTransformationDataset): PaymentEvent[] {
+  return deduplicatePaymentEvents(dataset.payments)
+}
 
-    const current = grouped.get(paidDate) ?? {
-      orderIds: new Set<string>(),
-      grossAmount: 0,
-      refundAmount: 0,
-      netAmount: 0,
+export function buildDepositBalanceRows(dataset: TransformationDataset): TransformationRow[] {
+  const accountsById = new Map(dataset.accounts.map((account) => [account.accountId, account]))
+  const customersById = new Map(
+    dataset.customers.map((customer) => [customer.customerId, customer]),
+  )
+  const productsById = new Map(dataset.products.map((product) => [product.productId, product]))
+  const branchesById = new Map(dataset.branches.map((branch) => [branch.branchId, branch]))
+
+  return getCanonicalBalanceSnapshots(dataset).map((snapshot) => {
+    const account = accountsById.get(snapshot.accountId)
+    const customer = account ? customersById.get(account.customerId) : undefined
+    const product = account ? productsById.get(account.productId) : undefined
+    const branch = account ? branchesById.get(account.branchId) : undefined
+    const missingDimensions = [
+      !customer ? 'customer' : null,
+      !product ? 'product' : null,
+      !branch ? 'branch' : null,
+    ].filter((dimension): dimension is string => dimension !== null)
+
+    return {
+      snapshot_date: snapshot.snapshotDate,
+      account_id: snapshot.accountId,
+      customer_id: account?.customerId ?? null,
+      customer_scope: customer?.customerScope ?? null,
+      product_id: account?.productId ?? null,
+      product_type: product?.productType ?? null,
+      branch_id: account?.branchId ?? null,
+      branch_name: branch?.branchName ?? null,
+      source_currency: snapshot.currency,
+      currency: normalizeCurrency(snapshot.currency),
+      balance: snapshot.balance,
+      updated_at: snapshot.updatedAt,
+      ingested_at: snapshot.ingestedAt,
+      missing_dimensions: missingDimensions.length > 0 ? missingDimensions.join('、') : null,
     }
-    current.orderIds.add(String(row.order_id))
-    current.grossAmount += Number(row.gross_amount)
-    current.refundAmount += Number(row.refund_amount)
-    current.netAmount += Number(row.net_amount)
-    grouped.set(paidDate, current)
+  })
+}
+
+function getAccountMediaByAccount(
+  accountMedia: readonly AccountMedium[],
+): Map<string, AccountMedium[]> {
+  const mediaByAccount = new Map<string, AccountMedium[]>()
+
+  for (const medium of accountMedia) {
+    const media = mediaByAccount.get(medium.accountId) ?? []
+    media.push(medium)
+    mediaByAccount.set(medium.accountId, media)
   }
 
-  return [...grouped.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([paidDate, values]) => ({
-      paid_date: paidDate,
-      order_count: values.orderIds.size,
-      gross_amount: values.grossAmount,
-      refund_amount: values.refundAmount,
-      sales_amount: roundCurrency(values.netAmount),
+  return mediaByAccount
+}
+
+export function buildAccountMediumRows(dataset: TransformationDataset): TransformationRow[] {
+  return dataset.accountMedia.map((medium) => ({
+    medium_id: medium.mediumId,
+    account_id: medium.accountId,
+    medium_type: medium.mediumType,
+  }))
+}
+
+export function buildWrongMediumJoinRows(dataset: TransformationDataset): TransformationRow[] {
+  const dwdRows = buildDepositBalanceRows(dataset)
+  const mediaByAccount = getAccountMediaByAccount(dataset.accountMedia)
+  const rows: TransformationRow[] = []
+
+  for (const row of dwdRows) {
+    const media = mediaByAccount.get(String(row.account_id)) ?? []
+    const matches: Array<AccountMedium | null> = media.length > 0 ? media : [null]
+
+    for (const medium of matches) {
+      rows.push({
+        ...row,
+        medium_id: medium?.mediumId ?? null,
+        medium_type: medium?.mediumType ?? null,
+      })
+    }
+  }
+
+  return rows
+}
+
+function isTargetScope(row: TransformationRow, targetDate: string): boolean {
+  return (
+    row.snapshot_date === targetDate &&
+    row.branch_name === DEPOSIT_BALANCE_SCOPE.branchName &&
+    row.customer_scope === DEPOSIT_BALANCE_SCOPE.customerScope &&
+    row.product_type === DEPOSIT_BALANCE_SCOPE.productType &&
+    row.currency === DEPOSIT_BALANCE_SCOPE.currency
+  )
+}
+
+function sumBalance(rows: readonly TransformationRow[]): number {
+  return roundCurrency(
+    rows.reduce((total, row) => {
+      const balance = row.balance
+      return typeof balance === 'number' && Number.isFinite(balance) ? total + balance : total
+    }, 0),
+  )
+}
+
+export function getJoinFanoutAnalysis(dataset: TransformationDataset): TransformationJoinAnalysis {
+  const dwdRows = buildDepositBalanceRows(dataset)
+  const wrongRows = buildWrongMediumJoinRows(dataset)
+  const mediaByAccount = getAccountMediaByAccount(dataset.accountMedia)
+  const accountIds = [...new Set(dwdRows.map((row) => String(row.account_id)))]
+  const matches = accountIds.map((accountId) => {
+    const rightCount = mediaByAccount.get(accountId)?.length ?? 0
+    return {
+      key: accountId,
+      leftCount: 1,
+      rightCount,
+      outputCount: Math.max(rightCount, 1),
+    }
+  })
+
+  return {
+    leftTable: 'dwd_deposit_balance_detail',
+    rightTable: 'account_medium',
+    joinKey: 'account_id',
+    leftRows: dwdRows.length,
+    rightRows: dataset.accountMedia.length,
+    outputRows: wrongRows.length,
+    correctOutputRows: dwdRows.length,
+    correctOutputAmount: sumBalance(
+      dwdRows.filter((row) => isTargetScope(row, dataset.targetDate)),
+    ),
+    wrongTargetAmount: sumBalance(
+      wrongRows.filter((row) => isTargetScope(row, dataset.targetDate)),
+    ),
+    correctTargetAmount: sumBalance(
+      dwdRows.filter((row) => isTargetScope(row, dataset.targetDate)),
+    ),
+    matches,
+  }
+}
+
+function roundCurrency(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
+function getDwsRows(dataset: TransformationDataset): TransformationRow[] {
+  const grouped = new Map<
+    string,
+    {
+      snapshotDate: string
+      branchName: string | null
+      customerScope: string | null
+      productType: string | null
+      currency: string
+      balance: number
+    }
+  >()
+
+  for (const row of buildDepositBalanceRows(dataset)) {
+    const values = {
+      snapshotDate: String(row.snapshot_date),
+      branchName: typeof row.branch_name === 'string' ? row.branch_name : null,
+      customerScope: typeof row.customer_scope === 'string' ? row.customer_scope : null,
+      productType: typeof row.product_type === 'string' ? row.product_type : null,
+      currency: String(row.currency),
+    }
+    const key = [
+      values.snapshotDate,
+      values.branchName ?? 'NULL',
+      values.customerScope ?? 'NULL',
+      values.productType ?? 'NULL',
+      values.currency,
+    ].join('|')
+    const current = grouped.get(key) ?? { ...values, balance: 0 }
+    current.balance += typeof row.balance === 'number' ? row.balance : 0
+    grouped.set(key, current)
+  }
+
+  return [...grouped.values()]
+    .sort((left, right) => {
+      const leftKey = [
+        left.snapshotDate,
+        left.branchName ?? '',
+        left.customerScope ?? '',
+        left.productType ?? '',
+        left.currency,
+      ].join('|')
+      const rightKey = [
+        right.snapshotDate,
+        right.branchName ?? '',
+        right.customerScope ?? '',
+        right.productType ?? '',
+        right.currency,
+      ].join('|')
+      return leftKey.localeCompare(rightKey)
+    })
+    .map((group) => ({
+      snapshot_date: group.snapshotDate,
+      branch_name: group.branchName,
+      customer_scope: group.customerScope,
+      product_type: group.productType,
+      currency: group.currency,
+      balance: roundCurrency(group.balance),
     }))
 }
 
-function buildWrongGroupedRows(dataset: TransformationDataset): TransformationRow[] {
-  return buildOrderItemRows(dataset)
-    .filter((row) => row.payment_status === 'PAID' && typeof row.paid_date === 'string')
-    .map((row) => ({
-      paid_date: row.paid_date,
-      item_id: row.item_id,
-      order_count: 1,
-      sales_amount: row.net_amount,
-    }))
+function getAdsRows(dataset: TransformationDataset): TransformationRow[] {
+  const targetRows = getDwsRows(dataset).filter((row) => isTargetScope(row, dataset.targetDate))
+
+  return [
+    {
+      snapshot_date: dataset.targetDate,
+      branch_name: DEPOSIT_BALANCE_SCOPE.branchName,
+      customer_scope: DEPOSIT_BALANCE_SCOPE.customerScope,
+      product_type: DEPOSIT_BALANCE_SCOPE.productType,
+      currency: DEPOSIT_BALANCE_SCOPE.currency,
+      metric: 'deposit_balance',
+      metric_name: '存款余额',
+      balance: sumBalance(targetRows),
+      definition: '截至快照日 · 杭州分行 · 小微 · 定期 · CNY',
+    },
+  ]
 }
 
 function buildTable(
@@ -430,339 +654,257 @@ function buildTable(
   return table
 }
 
-export function getOdsSnapshot(dataset: TransformationDataset): TransformationLayerSnapshot {
-  return {
-    layer: 'ods',
-    label: 'ODS',
-    title: '原始事件落地后再处理',
-    description: '保留来源上下文，重复订单事件、重复支付事件和 NULL 都在这里可见。',
-    tables: [
-      buildTable({
-        id: 'ods-orders',
-        name: 'ods_order_event',
-        grain: '一行 = 一次订单事件',
-        columns: [
-          'event_id',
-          'order_id',
-          'user_id',
-          'order_time',
-          'status',
-          'order_amount',
-          'updated_at',
-        ],
-        rowKey: ['order_id'],
-        amountColumn: 'order_amount',
-        rows: dataset.orders.map((order) => ({
-          event_id: order.eventId,
-          order_id: order.orderId,
-          user_id: order.userId,
-          order_time: order.orderTime,
-          status: order.status,
-          order_amount: order.orderAmount,
-          updated_at: order.updatedAt,
-        })),
-      }),
-      buildTable({
-        id: 'ods-order-items',
-        name: 'ods_order_item',
-        grain: '一行 = 一个订单商品事件',
-        columns: ['item_id', 'order_id', 'product', 'quantity', 'unit_price', 'item_amount'],
-        rowKey: ['order_id', 'item_id'],
-        amountColumn: 'item_amount',
-        rows: dataset.orderItems.map((item) => ({
-          item_id: item.itemId,
-          order_id: item.orderId,
-          product: item.product,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-          item_amount: item.itemAmount,
-        })),
-      }),
-      buildTable({
-        id: 'ods-users',
-        name: 'ods_user',
-        grain: '一行 = 一个用户当前记录',
-        columns: ['user_id', 'user_name', 'city'],
-        rowKey: ['user_id'],
-        rows: dataset.users.map((user) => ({
-          user_id: user.userId,
-          user_name: user.userName,
-          city: user.city,
-        })),
-      }),
-      buildTable({
-        id: 'ods-payments',
-        name: 'ods_payment_event',
-        grain: '一行 = 一次支付事件',
-        columns: [
-          'payment_id',
-          'order_id',
-          'transaction_key',
-          'paid_at',
-          'status',
-          'amount',
-          'updated_at',
-        ],
-        rowKey: ['transaction_key'],
-        amountColumn: 'amount',
-        rows: dataset.payments.map((payment) => ({
-          payment_id: payment.paymentId,
-          order_id: payment.orderId,
-          transaction_key: payment.transactionKey,
-          paid_at: payment.paidAt,
-          status: payment.status,
-          amount: payment.amount,
-          updated_at: payment.updatedAt,
-        })),
-      }),
-      buildTable({
-        id: 'ods-refunds',
-        name: 'ods_refund_event',
-        grain: '一行 = 一次退款事件',
-        columns: ['refund_id', 'order_id', 'refunded_at', 'status', 'amount'],
-        rowKey: ['refund_id'],
-        amountColumn: 'amount',
-        rows: dataset.refunds.map((refund) => ({
-          refund_id: refund.refundId,
-          order_id: refund.orderId,
-          refunded_at: refund.refundedAt,
-          status: refund.status,
-          amount: refund.amount,
-        })),
-      }),
-    ],
-  }
-}
-
-function getCleanOrdersTable(dataset: TransformationDataset): TransformationTableSnapshot {
+function getMetricDefinitionTable(dataset: TransformationDataset): TransformationTableSnapshot {
   return buildTable({
-    id: 'clean-orders',
-    name: 'ods_order_clean',
-    grain: '一行 = 一个订单（按 order_id 去重）',
-    columns: ['order_id', 'user_id', 'order_time', 'status', 'order_amount', 'updated_at'],
-    rowKey: ['order_id'],
-    amountColumn: 'order_amount',
-    rows: getCanonicalOrders(dataset).map((order) => ({
-      order_id: order.orderId,
-      user_id: order.userId,
-      order_time: order.orderTime,
-      status: order.status,
-      order_amount: order.orderAmount,
-      updated_at: order.updatedAt,
-    })),
-  })
-}
-
-function getUserEnrichedTable(dataset: TransformationDataset): TransformationTableSnapshot {
-  const canonicalOrders = getCanonicalOrders(dataset)
-  const rows: TransformationRow[] = []
-
-  for (const item of dataset.orderItems) {
-    const order = canonicalOrders.find((candidate) => candidate.orderId === item.orderId)
-    if (!order) {
-      continue
-    }
-
-    const user = getUser(dataset.users, order.userId)
-    rows.push({
-      order_id: order.orderId,
-      item_id: item.itemId,
-      user_id: order.userId,
-      user_name: user?.userName ?? null,
-      user_city: user?.city ?? null,
-      order_time: order.orderTime,
-      item_amount: item.itemAmount,
-    })
-  }
-
-  return buildTable({
-    id: 'user-enriched',
-    name: 'dwd_order_item_user',
-    grain: '一行 = 一个订单商品（用户属性已补全）',
+    id: 'metric-definition-card',
+    name: 'metric_deposit_balance_definition',
+    grain: '一行 = 一张指标卡',
     columns: [
-      'order_id',
-      'item_id',
-      'user_id',
-      'user_name',
-      'user_city',
-      'order_time',
-      'item_amount',
+      'metric_name',
+      'snapshot_date',
+      'branch_name',
+      'customer_scope',
+      'product_type',
+      'currency',
+      'measure',
     ],
-    rowKey: ['order_id', 'item_id'],
-    amountColumn: 'item_amount',
-    rows,
-  })
-}
-
-function getWrongJoinTable(dataset: TransformationDataset): TransformationTableSnapshot {
-  const canonicalOrders = getCanonicalOrders(dataset)
-  const itemsByOrder = getOrderItemsByOrder(dataset.orderItems)
-  const rows: TransformationRow[] = []
-
-  for (const order of canonicalOrders) {
-    const items = itemsByOrder.get(order.orderId) ?? []
-    const payments = dataset.payments.filter(
-      (payment) => payment.orderId === order.orderId && payment.status === 'SUCCESS',
-    )
-    const refunds = dataset.refunds.filter(
-      (refund) => refund.orderId === order.orderId && refund.status === 'SUCCESS',
-    )
-    const paymentMatches: Array<PaymentEvent | null> = payments.length > 0 ? payments : [null]
-    const refundMatches: Array<RefundEvent | null> = refunds.length > 0 ? refunds : [null]
-
-    for (const item of items) {
-      for (const payment of paymentMatches) {
-        for (const refund of refundMatches) {
-          const refundAmount = refund?.amount ?? 0
-          rows.push({
-            order_id: order.orderId,
-            item_id: item.itemId,
-            payment_id: payment?.paymentId ?? null,
-            refund_id: refund?.refundId ?? null,
-            paid_at: payment?.paidAt ?? null,
-            paid_date: getDatePart(payment?.paidAt),
-            item_amount: item.itemAmount,
-            refund_amount: refundAmount,
-            net_amount: roundCurrency(item.itemAmount - refundAmount),
-          })
-        }
-      }
-    }
-  }
-
-  return buildTable({
-    id: 'wrong-many-to-many',
-    name: 'dwd_order_item_wrong_join',
-    grain: '一行 = 明细 × 支付事件 × 退款事件（错误）',
-    columns: [
-      'order_id',
-      'item_id',
-      'payment_id',
-      'refund_id',
-      'paid_at',
-      'paid_date',
-      'item_amount',
-      'refund_amount',
-      'net_amount',
-    ],
-    rowKey: ['order_id', 'item_id'],
-    amountColumn: 'net_amount',
-    rows,
-  })
-}
-
-function getDwdTable(
-  dataset: TransformationDataset,
-  grain: TransformationGrain,
-): TransformationTableSnapshot {
-  if (grain === 'order') {
-    return buildTable({
-      id: 'dwd-order',
-      name: 'dwd_order',
-      grain: '一行 = 一个订单（支付、退款已回到订单粒度）',
-      columns: [
-        'order_id',
-        'user_id',
-        'user_name',
-        'user_city',
-        'order_time',
-        'paid_at',
-        'paid_date',
-        'payment_status',
-        'gross_amount',
-        'refund_amount',
-        'net_amount',
-      ],
-      rowKey: ['order_id'],
-      amountColumn: 'net_amount',
-      rows: buildOrderRows(dataset),
-    })
-  }
-
-  if (grain === 'day') {
-    return buildTable({
-      id: 'dwd-sales-day',
-      name: 'dwd_sales_day_preview',
-      grain: '一行 = 一个支付日（过早聚合，明细不可回溯）',
-      columns: ['paid_date', 'order_count', 'gross_amount', 'refund_amount', 'sales_amount'],
-      rowKey: ['paid_date'],
-      amountColumn: 'sales_amount',
-      rows: buildDailyRows(dataset),
-    })
-  }
-
-  return buildTable({
-    id: 'dwd-order-item',
-    name: 'dwd_order_item',
-    grain: '一行 = 一个订单商品（退款按明细金额分摊）',
-    columns: [
-      'order_id',
-      'item_id',
-      'user_id',
-      'user_name',
-      'user_city',
-      'order_time',
-      'paid_at',
-      'paid_date',
-      'payment_status',
-      'item_amount',
-      'refund_amount',
-      'net_amount',
-    ],
-    rowKey: ['order_id', 'item_id'],
-    amountColumn: 'net_amount',
-    rows: buildOrderItemRows(dataset),
-  })
-}
-
-function getDwsTable(dataset: TransformationDataset): TransformationTableSnapshot {
-  return buildTable({
-    id: 'dws-sales-daily',
-    name: 'dws_sales_daily',
-    grain: '一行 = 一个支付日',
-    columns: ['paid_date', 'order_count', 'gross_amount', 'refund_amount', 'sales_amount'],
-    rowKey: ['paid_date'],
-    amountColumn: 'sales_amount',
-    rows: buildDailyRows(dataset),
-  })
-}
-
-function getAdsTable(dataset: TransformationDataset): TransformationTableSnapshot {
-  const dailyRows = buildDailyRows(dataset)
-  const targetRow = dailyRows.find((row) => row.paid_date === dataset.targetDate)
-
-  return buildTable({
-    id: 'ads-yesterday-sales',
-    name: 'ads_yesterday_sales',
-    grain: '一行 = 统计日的销售额指标',
-    columns: ['dt', 'metric', 'order_count', 'sales_amount', 'definition'],
-    rowKey: ['dt', 'metric'],
-    amountColumn: 'sales_amount',
+    rowKey: ['metric_name'],
     rows: [
       {
-        dt: dataset.targetDate,
-        metric: 'net_sales',
-        order_count: targetRow?.order_count ?? 0,
-        sales_amount: targetRow?.sales_amount ?? 0,
-        definition: '支付成功 · paid_at · [dt, next_dt) · 扣退款',
+        metric_name: '存款余额',
+        snapshot_date: dataset.targetDate,
+        branch_name: DEPOSIT_BALANCE_SCOPE.branchName,
+        customer_scope: DEPOSIT_BALANCE_SCOPE.customerScope,
+        product_type: DEPOSIT_BALANCE_SCOPE.productType,
+        currency: DEPOSIT_BALANCE_SCOPE.currency,
+        measure: 'balance',
       },
     ],
   })
 }
 
-function getWrongGroupTable(dataset: TransformationDataset): TransformationTableSnapshot {
+function getProcessingPlanTable(dataset: TransformationDataset): TransformationTableSnapshot {
   return buildTable({
-    id: 'wrong-group-by',
-    name: 'dws_sales_daily_wrong_group',
-    grain: '一行 = 一个支付日 × 一个商品（错误）',
-    columns: ['paid_date', 'item_id', 'order_count', 'sales_amount'],
-    rowKey: ['paid_date', 'item_id'],
-    amountColumn: 'sales_amount',
-    rows: buildWrongGroupedRows(dataset),
+    id: 'deposit-processing-plan',
+    name: 'deposit_balance_processing_plan',
+    grain: '一行 = 一个指标加工计划',
+    columns: ['metric_name', 'source_tables', 'target_grain', 'business_date', 'filters'],
+    rowKey: ['metric_name'],
+    rows: [
+      {
+        metric_name: '存款余额',
+        source_tables: 'AccountBalanceSnapshot · Account · Customer · Product · Branch',
+        target_grain: 'snapshot_date × branch × customer_scope × product_type × currency',
+        business_date: dataset.targetDate,
+        filters: '杭州分行 · 小微 · 定期 · CNY',
+      },
+    ],
   })
 }
 
-export function appendLateData(dataset: TransformationDataset): TransformationDataset {
+export function getOdsSnapshot(dataset: TransformationDataset): TransformationLayerSnapshot {
+  return {
+    layer: 'ods',
+    label: 'ODS',
+    title: '输入表保留原始差异',
+    description: '重复快照、RMB 编码和缺失维度关联都先留在输入快照里，便于逐条核对。',
+    tables: [
+      buildTable({
+        id: 'ods-account-balance-snapshots',
+        name: 'ods_account_balance_snapshot',
+        grain: '一行 = 一个账户 × 一个快照日（原始记录）',
+        columns: [
+          'snapshot_date',
+          'account_id',
+          'balance',
+          'currency',
+          'updated_at',
+          'ingested_at',
+        ],
+        rowKey: ['snapshot_date', 'account_id'],
+        amountColumn: 'balance',
+        rows: dataset.accountBalanceSnapshots.map((snapshot) => ({
+          snapshot_date: snapshot.snapshotDate,
+          account_id: snapshot.accountId,
+          balance: snapshot.balance,
+          currency: snapshot.currency,
+          updated_at: snapshot.updatedAt,
+          ingested_at: snapshot.ingestedAt,
+        })),
+      }),
+      buildTable({
+        id: 'ods-accounts',
+        name: 'dim_account',
+        grain: '一行 = 一个账户的关联键',
+        columns: ['account_id', 'customer_id', 'product_id', 'branch_id'],
+        rowKey: ['account_id'],
+        rows: dataset.accounts.map((account) => ({
+          account_id: account.accountId,
+          customer_id: account.customerId,
+          product_id: account.productId,
+          branch_id: account.branchId,
+        })),
+      }),
+      buildTable({
+        id: 'ods-customers',
+        name: 'dim_customer',
+        grain: '一行 = 一个客户的分析属性',
+        columns: ['customer_id', 'customer_name', 'customer_scope'],
+        rowKey: ['customer_id'],
+        rows: dataset.customers.map((customer) => ({
+          customer_id: customer.customerId,
+          customer_name: customer.customerName,
+          customer_scope: customer.customerScope,
+        })),
+      }),
+      buildTable({
+        id: 'ods-products',
+        name: 'dim_product',
+        grain: '一行 = 一个产品定义',
+        columns: ['product_id', 'product_name', 'product_type'],
+        rowKey: ['product_id'],
+        rows: dataset.products.map((product) => ({
+          product_id: product.productId,
+          product_name: product.productName,
+          product_type: product.productType,
+        })),
+      }),
+      buildTable({
+        id: 'ods-branches',
+        name: 'dim_branch',
+        grain: '一行 = 一个机构节点',
+        columns: ['branch_id', 'branch_name'],
+        rowKey: ['branch_id'],
+        rows: dataset.branches.map((branch) => ({
+          branch_id: branch.branchId,
+          branch_name: branch.branchName,
+        })),
+      }),
+      buildTable({
+        id: 'ods-account-media',
+        name: 'account_medium',
+        grain: '一行 = 一个账户 × 一个账户介质（教学辅助）',
+        columns: ['medium_id', 'account_id', 'medium_type'],
+        rowKey: ['medium_id'],
+        rows: buildAccountMediumRows(dataset),
+      }),
+    ],
+  }
+}
+
+function getDwdTable(dataset: TransformationDataset): TransformationTableSnapshot {
+  return buildTable({
+    id: 'dwd-deposit-balance-detail',
+    name: 'dwd_deposit_balance_detail',
+    grain: '一行 = 一个账户 × 一个快照日',
+    columns: [
+      'snapshot_date',
+      'account_id',
+      'customer_id',
+      'customer_scope',
+      'product_id',
+      'product_type',
+      'branch_id',
+      'branch_name',
+      'source_currency',
+      'currency',
+      'balance',
+      'missing_dimensions',
+    ],
+    rowKey: ['snapshot_date', 'account_id'],
+    amountColumn: 'balance',
+    rows: buildDepositBalanceRows(dataset),
+  })
+}
+
+function getWrongJoinTable(dataset: TransformationDataset): TransformationTableSnapshot {
+  return buildTable({
+    id: 'wrong-account-medium-join',
+    name: 'dwd_deposit_balance_wrong_join',
+    grain: '一行 = 一个账户 × 快照日 × 账户介质（错误）',
+    columns: [
+      'snapshot_date',
+      'account_id',
+      'branch_name',
+      'customer_scope',
+      'product_type',
+      'currency',
+      'medium_id',
+      'medium_type',
+      'balance',
+    ],
+    rowKey: ['snapshot_date', 'account_id', 'medium_id'],
+    amountColumn: 'balance',
+    rows: buildWrongMediumJoinRows(dataset),
+  })
+}
+
+function getDwsTable(dataset: TransformationDataset): TransformationTableSnapshot {
+  return buildTable({
+    id: 'dws-deposit-balance-daily',
+    name: 'dws_deposit_balance_daily',
+    grain: '一行 = 一个快照日 × 机构 × 客户口径 × 产品 × 币种',
+    columns: [
+      'snapshot_date',
+      'branch_name',
+      'customer_scope',
+      'product_type',
+      'currency',
+      'balance',
+    ],
+    rowKey: ['snapshot_date', 'branch_name', 'customer_scope', 'product_type', 'currency'],
+    amountColumn: 'balance',
+    rows: getDwsRows(dataset),
+  })
+}
+
+function getAdsTable(dataset: TransformationDataset): TransformationTableSnapshot {
+  return buildTable({
+    id: 'ads-deposit-balance-daily',
+    name: 'ads_deposit_balance_daily',
+    grain: '一行 = 一个快照日 × 一张存款余额指标卡',
+    columns: [
+      'snapshot_date',
+      'branch_name',
+      'customer_scope',
+      'product_type',
+      'currency',
+      'metric',
+      'metric_name',
+      'balance',
+      'definition',
+    ],
+    rowKey: ['snapshot_date', 'metric'],
+    amountColumn: 'balance',
+    rows: getAdsRows(dataset),
+  })
+}
+
+export function appendLateBalanceSnapshot(
+  dataset: TransformationDataset,
+  snapshot: AccountBalanceSnapshot = depositLateBalanceSnapshot,
+): TransformationDataset {
+  const exists = dataset.accountBalanceSnapshots.some(
+    (candidate) =>
+      candidate.snapshotDate === snapshot.snapshotDate &&
+      candidate.accountId === snapshot.accountId,
+  )
+
+  return exists
+    ? dataset
+    : { ...dataset, accountBalanceSnapshots: [...dataset.accountBalanceSnapshots, snapshot] }
+}
+
+/** @deprecated Use appendLateBalanceSnapshot for the banking teaching domain. */
+export function appendLateData(dataset: TransformationDataset): TransformationDataset
+export function appendLateData(dataset: LegacyTransformationDataset): LegacyTransformationDataset
+export function appendLateData(
+  dataset: LegacyTransformationDataset | TransformationDataset,
+): LegacyTransformationDataset | TransformationDataset {
+  if (!('orders' in dataset)) {
+    return appendLateBalanceSnapshot(dataset)
+  }
+
   if (dataset.orders.some((order) => order.orderId === dataset.lateOrder.order.orderId)) {
     return dataset
   }
@@ -777,41 +919,66 @@ export function appendLateData(dataset: TransformationDataset): TransformationDa
 
 export function getLayerSnapshots(
   dataset: TransformationDataset,
-  grain: TransformationGrain,
-  includeLateData = false,
+  includeLateData?: boolean,
+): TransformationLayerSnapshot[]
+export function getLayerSnapshots(
+  dataset: TransformationDataset,
+  legacyGrain: TransformationGrain,
+  includeLateData?: boolean,
+): TransformationLayerSnapshot[]
+export function getLayerSnapshots(
+  dataset: TransformationDataset,
+  includeLateDataOrLegacyGrain: boolean | TransformationGrain = false,
+  legacyIncludeLateData = false,
 ): TransformationLayerSnapshot[] {
-  const effectiveDataset = includeLateData ? appendLateData(dataset) : dataset
+  const includeLateData =
+    typeof includeLateDataOrLegacyGrain === 'boolean'
+      ? includeLateDataOrLegacyGrain
+      : legacyIncludeLateData
+  const effectiveDataset = includeLateData ? appendLateBalanceSnapshot(dataset) : dataset
 
   return [
     getOdsSnapshot(effectiveDataset),
     {
       layer: 'dwd',
       label: 'DWD',
-      title: '明细标准层',
-      description: '去重、补维度、聚合支付和退款，再把每一行对齐到目标粒度。',
-      tables: [getDwdTable(effectiveDataset, grain)],
+      title: '可信账户日明细',
+      description: '去掉重复快照，保留缺失维度的余额记录，并把币种编码标准化。',
+      tables: [getDwdTable(effectiveDataset)],
     },
     {
       layer: 'dws',
       label: 'DWS',
-      title: '销售主题汇总',
-      description: '按支付日期聚合；日期边界和 NULL 处理在这里会直接改变销售额。',
+      title: '存款余额主题汇总',
+      description: '按指标卡需要的机构、客户口径、产品和币种聚合账户余额。',
       tables: [getDwsTable(effectiveDataset)],
     },
     {
       layer: 'ads',
       label: 'ADS',
-      title: '昨天的销售额',
-      description: '面向昨天销售额的报表结果，避免每张报表重复实现明细逻辑。',
+      title: '存款余额指标结果',
+      description: '筛出杭州分行、小微、定期、CNY 这张指标卡对应的快照日结果。',
       tables: [getAdsTable(effectiveDataset)],
     },
   ]
 }
 
-function getRowDate(row: TransformationRow): string | null {
-  const dateFields = ['dt', 'paid_date', 'stat_date', 'order_time', 'paid_at', 'refunded_at']
+function getTable(
+  snapshots: readonly TransformationLayerSnapshot[],
+  id: string,
+): TransformationTableSnapshot {
+  const table = snapshots
+    .flatMap((snapshot) => snapshot.tables)
+    .find((candidate) => candidate.id === id)
+  if (!table) {
+    throw new Error(`找不到数据加工表快照: ${id}`)
+  }
 
-  for (const field of dateFields) {
+  return table
+}
+
+function getRowDate(row: TransformationRow): string | null {
+  for (const field of ['snapshot_date', 'dt', 'stat_date', 'updated_at', 'ingested_at']) {
     const value = row[field]
     if (typeof value === 'string') {
       const date = getDatePart(value)
@@ -850,17 +1017,7 @@ export function getTableMetrics(
 }
 
 function rowKey(row: TransformationRow, columns: readonly string[]): string {
-  return columns
-    .map((column) => {
-      const value =
-        column === 'paid_date' && !Object.prototype.hasOwnProperty.call(row, 'paid_date')
-          ? row.dt
-          : column === 'dt' && !Object.prototype.hasOwnProperty.call(row, 'dt')
-            ? row.paid_date
-            : row[column]
-      return `${column}=${String(value ?? 'NULL')}`
-    })
-    .join('|')
+  return columns.map((column) => `${column}=${String(row[column] ?? 'NULL')}`).join('|')
 }
 
 function rowSignature(row: TransformationRow): string {
@@ -874,7 +1031,7 @@ export function compareTableRows(
   before: TransformationTableSnapshot,
   after: TransformationTableSnapshot,
   comparisonColumns: readonly string[] = before.rowKey,
-): { key: string; kind: TransformationRowChangeKind; beforeCount: number; afterCount: number }[] {
+): TransformationRowChange[] {
   const beforeRows = new Map<string, TransformationRow[]>()
   const afterRows = new Map<string, TransformationRow[]>()
 
@@ -928,7 +1085,8 @@ function createStepResult(
   input: TransformationTableSnapshot,
   output: TransformationTableSnapshot,
   evidence: readonly TransformationEvidence[],
-  comparisonColumns: readonly string[] = input.rowKey,
+  comparisonColumns: readonly string[],
+  joinAnalysis?: TransformationJoinAnalysis,
 ): TransformationStepResult {
   const step = getTransformationStep(stepId)
   if (!step) {
@@ -954,156 +1112,164 @@ function createStepResult(
     inputMetrics,
     outputMetrics,
     actualChange,
+    ...(joinAnalysis ? { joinAnalysis } : {}),
   }
 }
 
 export function getTransformationStepResult(
   dataset: TransformationDataset,
-  grain: TransformationGrain,
   stepId: TransformationStepId,
+): TransformationStepResult
+export function getTransformationStepResult(
+  dataset: TransformationDataset,
+  legacyGrain: TransformationGrain,
+  stepId: TransformationStepId,
+): TransformationStepResult
+export function getTransformationStepResult(
+  dataset: TransformationDataset,
+  stepIdOrLegacyGrain: TransformationStepId | TransformationGrain,
+  legacyStepId?: TransformationStepId,
 ): TransformationStepResult {
-  const ods = getOdsSnapshot(dataset)
-  const cleanOrders = getCleanOrdersTable(dataset)
-  const userEnriched = getUserEnrichedTable(dataset)
-  const wrongJoin = getWrongJoinTable(dataset)
-  const dwd = getDwdTable(dataset, grain)
-  const dws = getDwsTable(dataset)
-  const ads = getAdsTable(dataset)
+  const stepId = legacyStepId ?? (stepIdOrLegacyGrain as TransformationStepId)
+  const canonicalStepId = getCanonicalStepId(stepId)
+  const effectiveDataset = stepId === 'late-data' ? appendLateBalanceSnapshot(dataset) : dataset
+  const odsSnapshots = [getOdsSnapshot(effectiveDataset)]
+  const snapshots = getLayerSnapshots(effectiveDataset)
+  const raw = getTable(odsSnapshots, 'ods-account-balance-snapshots')
+  const dwd = getTable(snapshots, 'dwd-deposit-balance-detail')
+  const wrongJoin = getTable(
+    [{ ...snapshots[1]!, tables: [getWrongJoinTable(effectiveDataset)] }],
+    'wrong-account-medium-join',
+  )
+  const dws = getTable(snapshots, 'dws-deposit-balance-daily')
+  const ads = getTable(snapshots, 'ads-deposit-balance-daily')
+  const definition = getMetricDefinitionTable(effectiveDataset)
+  const plan = getProcessingPlanTable(effectiveDataset)
 
-  switch (stepId) {
-    case 'deduplicate':
-      return createStepResult(dataset, stepId, ods.tables[0]!, cleanOrders, [
-        createEvidence(
-          'duplicate-event',
-          'O1002 的重复订单事件被合并',
-          'ods_order_event 中 order_id = O1002 有 2 行；按 updated_at 保留最新事件后，目标粒度回到一行订单。',
-          ['O1002'],
-        ),
-      ])
-    case 'join-users':
-      return createStepResult(dataset, stepId, ods.tables[1]!, userEnriched, [
-        createEvidence(
-          'null-preserved',
-          '找不到用户也不能悄悄丢行',
-          'O1003 的 user_id = U404 不在用户表；LEFT JOIN 保留订单明细，并把 user_name、user_city 留为 NULL。',
-          ['O1003', 'U404'],
-        ),
-      ])
-    case 'wrong-join':
+  switch (canonicalStepId) {
+    case 'plan':
       return createStepResult(
         dataset,
         stepId,
-        userEnriched,
-        wrongJoin,
+        definition,
+        plan,
         [
           createEvidence(
-            'many-to-many',
-            'O1002 被 JOIN 成 8 行',
-            'O1002 有 2 个订单明细、2 个支付事件和 2 条退款事件；按 order_id 直接 JOIN 得到 2 × 2 × 2 = 8 行，净金额被重复累计。',
-            ['O1002', '2 items × 2 payments × 2 refunds'],
+            'target-scope',
+            '指标卡的每个条件都有对应字段',
+            '统计日期、度量、机构、客户口径、产品和币种已经映射到加工计划；此时还没有读取余额明细。',
+            [
+              'snapshot_date',
+              'balance',
+              'branch_name',
+              'customer_scope',
+              'product_type',
+              'currency',
+            ],
           ),
         ],
-        ['order_id'],
+        ['metric_name'],
       )
-    case 'fix-join':
+    case 'clean-detail':
       return createStepResult(
         dataset,
         stepId,
-        wrongJoin,
+        raw,
         dwd,
         [
           createEvidence(
-            'grain-mismatch',
-            '事件表先回到订单粒度',
-            '支付事件按 transaction_key 去重、退款按 order_id 汇总，再与订单或订单明细连接；O1002 的 8 行回到目标粒度。',
-            ['O1002', grain],
+            'duplicate-snapshot',
+            'A001 的重复快照有保留依据',
+            '同一个 account_id + snapshot_date 出现两条记录；按 updated_at 保留 23:58:05 的最新余额 100000。',
+            ['A001', dataset.targetDate, 'updated_at DESC'],
+          ),
+          createEvidence(
+            'missing-dimension',
+            '缺失关联被保留下来',
+            'A003 找不到 Customer C404，A004 找不到 Product P404；LEFT JOIN 保留余额，缺失属性明确显示为 NULL。',
+            ['A003 / C404', 'A004 / P404', 'LEFT JOIN'],
+          ),
+          createEvidence(
+            'currency-normalized',
+            'RMB 与 CNY 进入同一标准编码',
+            'A002 的来源编码是 RMB，进入 DWD 后统一为 CNY；余额数值没有因此被换算或重复计算。',
+            ['A002', 'RMB → CNY'],
           ),
         ],
-        grain === 'order'
-          ? ['order_id']
-          : grain === 'day'
-            ? ['paid_date']
-            : ['order_id', 'item_id'],
+        ['snapshot_date', 'account_id'],
       )
-    case 'build-dws':
+    case 'join-fanout': {
+      const joinAnalysis = getJoinFanoutAnalysis(dataset)
       return createStepResult(
         dataset,
         stepId,
         dwd,
-        dws,
+        wrongJoin,
         [
+          createEvidence(
+            'one-to-many',
+            'A001 的一行被复制成三行',
+            'DWD 中 A001 × 快照日只有 1 行；AccountMedium 中同一 account_id 有 CARD、CARD、PASSBOOK 三行，直接 Join 后变成 3 行。',
+            ['A001', '1 × 3 = 3', '100000 → 300000'],
+          ),
           createEvidence(
             'grain-mismatch',
-            'DWS 明确变成一天一行',
-            'DWD 保留订单或订单商品；DWS 只按 paid_date 聚合，order_id、item_id 不再作为输出粒度。',
-            [dataset.targetDate],
-          ),
-          createEvidence(
-            'time-boundary',
-            'O1003 被放到次日',
-            'O1003 在 9 月 13 日下单，但 paid_at 是 2026-09-14 00:03；按支付日期统计时不会进入昨天。',
-            ['O1003', '2026-09-14'],
+            '存在 account_id 不代表必须 Join',
+            '账户介质不是存款余额指标的统计维度。若只是需要判断是否有介质，应先聚合或使用 EXISTS，不要把余额复制到介质粒度。',
+            ['DWD: 账户 × 日期', 'AccountMedium: 账户 × 介质'],
           ),
         ],
-        ['paid_date'],
-      )
-    case 'wrong-group-by':
-      return createStepResult(
-        dataset,
-        stepId,
-        dws,
-        getWrongGroupTable(dataset),
-        [
-          createEvidence(
-            'grain-mismatch',
-            'item_id 让日汇总重新裂开',
-            '正确 DWS 对目标日期只保留 1 行；GROUP BY paid_date, item_id 后，O1002 的两个商品各自占一行，金额虽能相加，粒度已经不是日。',
-            [dataset.targetDate, 'I1002-A', 'I1002-B'],
-          ),
-        ],
-        ['paid_date'],
-      )
-    case 'build-ads':
-      return createStepResult(
-        dataset,
-        stepId,
-        dws,
-        ads,
-        [
-          createEvidence(
-            'time-boundary',
-            '昨天使用半开时间区间',
-            '只取 [2026-09-13 00:00, 2026-09-14 00:00)；O1003 的次日支付和 O1004 的 NULL paid_at 都不会混入支付销售额。',
-            ['2026-09-13', 'O1003', 'O1004'],
-          ),
-        ],
-        ['paid_date'],
-      )
-    case 'late-data': {
-      const lateDataset = appendLateData(dataset)
-      return createStepResult(
-        dataset,
-        stepId,
-        ads,
-        getAdsTable(lateDataset),
-        [
-          createEvidence(
-            'late-partition',
-            'O1005 到达晚，但属于昨天分区',
-            'O1005 的 ingested_at 是 2026-09-14 02:00，业务 paid_at 属于 2026-09-13；因此需要重跑 dt = 2026-09-13，而不是只处理到达日期。',
-            ['O1005', dataset.targetDate],
-          ),
-        ],
-        ['paid_date'],
+        ['snapshot_date', 'account_id'],
+        joinAnalysis,
       )
     }
+    case 'aggregate-layers':
+      return createStepResult(
+        dataset,
+        stepId,
+        dwd,
+        dws,
+        [
+          createEvidence(
+            'grain-mismatch',
+            'DWS 一行代表一组指标维度',
+            'DWD 的 4 行账户日明细按 snapshot_date、branch_name、customer_scope、product_type、currency 聚合成 3 行。',
+            ['DWD 4 rows', 'DWS 3 rows', 'account_id 不再是输出粒度'],
+          ),
+          createEvidence(
+            'target-scope',
+            '目标口径的两笔余额合成 300000',
+            'A001 的 100000 与 A002 的 200000 都满足杭州分行、小微、定期、CNY，DWS 目标分组余额为 300000。',
+            ['杭州分行', '小微', '定期', 'CNY', '300000'],
+          ),
+        ],
+        ['snapshot_date', 'branch_name', 'customer_scope', 'product_type', 'currency'],
+      )
+    case 'contract':
+      return createStepResult(
+        dataset,
+        stepId,
+        dws,
+        ads,
+        [
+          createEvidence(
+            'target-scope',
+            'ADS 只发布指标卡对应的一行',
+            'DWS 保留 3 个业务分组；ADS 按同一业务日期和指标条件筛出杭州分行、小微、定期、CNY 的 300000。',
+            ['snapshot_date = 2026-09-30', 'deposit_balance', '300000'],
+          ),
+        ],
+        ['snapshot_date', 'branch_name', 'customer_scope', 'product_type', 'currency'],
+      )
+    default:
+      throw new Error(`未知的数据加工步骤: ${stepId}`)
   }
 }
 
 export function createInitialTransformationState(): TransformationWorkbenchState {
   return {
     targetGrain: null,
-    activeStepId: 'deduplicate',
+    activeStepId: 'plan',
     completedStepIds: [],
     predictions: {},
   }
@@ -1115,7 +1281,7 @@ export function selectTransformationGrain(
 ): TransformationWorkbenchState {
   return {
     targetGrain: grain,
-    activeStepId: 'deduplicate',
+    activeStepId: 'plan',
     completedStepIds: [],
     predictions: {},
   }
@@ -1180,5 +1346,6 @@ export function executeTransformationStep(
 }
 
 export function getTransformationStepIndex(stepId: TransformationStepId): number {
-  return TRANSFORMATION_STEPS.findIndex((step) => step.id === stepId)
+  const canonicalStepId = getCanonicalStepId(stepId)
+  return TRANSFORMATION_STEPS.findIndex((step) => step.id === canonicalStepId)
 }

@@ -17,7 +17,11 @@
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
 - `data-lineage.ts`：血缘关系与影响分析
 - `data-governance.ts`：第 09 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
-- `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
+- `sql-and-transformation.ts`：存款余额指标定义与加工计划
+- `sql-and-transformation-cleaning.ts`：账户日明细去重、缺失关联与币种标准化
+- `sql-and-transformation-join.ts`：账户介质一对多 Join 与余额放大
+- `sql-and-transformation-layers.ts`：DWD → DWS → ADS 分层聚合
+- `sql-and-transformation-contract.ts`：输入、输出、业务日期与加工契约
 - `metric-system.ts`：存款余额的统计集合与口径差异
 - `deposit-metric-definition.ts`：指标定义卡逐项补全
 - `deposit-metric-time.ts`：存款余额状态与期间存入事件的时间语义
@@ -27,7 +31,7 @@
 - `scheduling-failure.ts`：失败传播、Attempt 与 Retry
 - `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
 - `scheduling-sla.ts`：迟到数据传播与业务 SLA
-- `scheduling-system.ts`：兼容旧调度事实的导出入口
+- `scheduling-system.ts`：复用存款余额任务契约的时间轴 DAG Run 模拟，并保留旧调度事实导出入口
 - `data-quality.ts`：7-1 运行状态、质量状态与发布状态
 - `data-quality-rules.ts`：7-2 从 Grain 推出记录级质量规则
 - `data-quality-dataset.ts`：7-3 应到集合、Freshness 与跨层对账
