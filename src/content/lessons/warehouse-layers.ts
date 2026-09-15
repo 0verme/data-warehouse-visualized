@@ -2,7 +2,7 @@ import type { LessonContent } from '../types'
 
 export const warehouseLayersContent: LessonContent = {
   eyebrow: '第 02 课 · 沿着一条数据走',
-  subtitle: '分层的价值，不是把表格变多，而是把变化和复杂度放在合适的位置。',
+  subtitle: '为什么不直接用一张大宽表？看业务规则一变，分层如何避免几十张报表跟着全改。',
   quickSummary:
     '一条订单明细从接入到报表，会经历保存原貌、清洗统一、公共加工和应用组织这几个不同阶段。',
   concept: {
@@ -14,7 +14,7 @@ export const warehouseLayersContent: LessonContent = {
     {
       title: '每一层都回答一个问题',
       paragraphs: [
-        'ODS 先把来源数据接住，尽量保留原始上下文；DWD 处理脏数据、字段命名和明细粒度；DWS 将常用的主题逻辑加工成可复用结果；ADS 再为具体报表或应用组织数据。',
+        'ODS 负责原样接住来源数据，保留原始上下文；DWD 负责清洗脏数据、统一字段标准并明确明细粒度；DWS 围绕主题沉淀可复用的统计结果；ADS 则直接面向具体的报表或产品应用。',
       ],
       bullets: [
         '数据从哪里来？——ODS',

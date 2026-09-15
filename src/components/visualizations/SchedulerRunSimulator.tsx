@@ -321,7 +321,7 @@ function SimulationToolbar({
   return (
     <section className="scheduler-toolbar" aria-labelledby="scheduler-toolbar-title">
       <div className="scheduler-toolbar__heading">
-        <span className="scheduler-toolbar__label">SCHEDULER LAB · DETERMINISTIC RUN</span>
+        <span className="scheduler-toolbar__label">SCHEDULER LAB · 运行时间线</span>
         <h3 id="scheduler-toolbar-title">时间轴：{state.clock}</h3>
         <p aria-live="polite">
           {getRunStatusLabel(state.status)} · {scenario.detail} · 当前分区 {state.partition.column}{' '}
@@ -333,7 +333,7 @@ function SimulationToolbar({
           <span>故障场景</span>
           <select
             value={state.scenario}
-            aria-label="选择确定性调度场景"
+            aria-label="选择调度运行场景"
             onChange={(event) => onScenarioChange(event.target.value as SchedulerScenario)}
           >
             {SCENARIO_OPTIONS.map((option) => (
@@ -398,7 +398,7 @@ function TaskDetail({
     <section className="scheduler-task-detail" aria-labelledby="scheduler-task-detail-title">
       <div className="scheduler-panel-heading">
         <div>
-          <span className="eyebrow eyebrow--small">RUN CONTRACT</span>
+          <span className="eyebrow eyebrow--small">运行记录</span>
           <h3 id="scheduler-task-detail-title">{task.label}</h3>
         </div>
         <span className={`scheduler-state-badge is-${taskRun.status}`}>
@@ -408,19 +408,19 @@ function TaskDetail({
       <p className="scheduler-task-detail__description">{task.description}</p>
       <dl className="scheduler-run-facts">
         <div>
-          <dt>task identity</dt>
+          <dt>任务标识</dt>
           <dd>
             <code>{task.taskId}</code>
           </dd>
         </div>
         <div>
-          <dt>run identity</dt>
+          <dt>运行实例</dt>
           <dd>
             <code>{state.runId}</code>
           </dd>
         </div>
         <div>
-          <dt>business date / partition</dt>
+          <dt>业务日期 / 分区</dt>
           <dd>
             <code>
               {taskRun.partition.column} = {taskRun.partition.value}
@@ -428,33 +428,33 @@ function TaskDetail({
           </dd>
         </div>
         <div>
-          <dt>attempt</dt>
+          <dt>重试次数</dt>
           <dd>
             <strong>{taskRun.attempt || '—'}</strong>
             {taskRun.attempts.length > 0 && <small> · {taskRun.attempts.length} 条记录</small>}
           </dd>
         </div>
         <div>
-          <dt>dependency state</dt>
+          <dt>依赖状态</dt>
           <dd>{DEPENDENCY_LABELS[taskRun.dependencyState]}</dd>
         </div>
         <div>
-          <dt>SLA state</dt>
+          <dt>SLA 状态</dt>
           <dd className={`is-${taskRun.slaState}`}>{SLA_LABELS[taskRun.slaState]}</dd>
         </div>
         <div>
-          <dt>start / end / runtime</dt>
+          <dt>起止时间 / 耗时</dt>
           <dd>
             {formatTime(taskRun.startedAt)} → {formatTime(taskRun.endedAt)} ·{' '}
             {formatRuntime(taskRun.runtimeMinutes)}
           </dd>
         </div>
         <div>
-          <dt>delay from schedule</dt>
+          <dt>相对计划的延迟</dt>
           <dd>{taskRun.delayMinutes} min</dd>
         </div>
         <div>
-          <dt>output state</dt>
+          <dt>输出状态</dt>
           <dd className={`is-${taskRun.outputState}`}>
             {getOutputStateLabel(taskRun.outputState)}
           </dd>
@@ -476,7 +476,7 @@ function TaskDetail({
       )}
       <div className="scheduler-contract-grid">
         <div>
-          <span>inputTables</span>
+          <span>输入表</span>
           <p>
             {task.contract.inputTables.map((table) => (
               <code key={table}>{table}</code>
@@ -484,13 +484,13 @@ function TaskDetail({
           </p>
         </div>
         <div>
-          <span>outputTable</span>
+          <span>输出表</span>
           <p>
             <code>{task.contract.outputTable}</code>
           </p>
         </div>
         <div>
-          <span>table dependencies</span>
+          <span>输入表依赖</span>
           <p>
             {task.contract.dependencies.map((dependency) => (
               <code key={dependency}>{dependency}</code>
@@ -498,7 +498,7 @@ function TaskDetail({
           </p>
         </div>
         <div>
-          <span>DAG task dependencies</span>
+          <span>任务依赖</span>
           <p>
             {task.dependsOn.length > 0
               ? task.dependsOn.map((dependency) => <code key={dependency}>{dependency}</code>)
@@ -506,14 +506,14 @@ function TaskDetail({
           </p>
         </div>
         <div>
-          <span>isIdempotent / supportsPartialRerun</span>
+          <span>幂等写入 / 局部补数</span>
           <p>
-            <b>{task.contract.isIdempotent ? 'true' : 'false'}</b> /{' '}
-            <b>{task.contract.supportsPartialRerun ? 'true' : 'false'}</b>
+            <b>{task.contract.isIdempotent ? '是' : '否'}</b> /{' '}
+            <b>{task.contract.supportsPartialRerun ? '支持' : '不支持'}</b>
           </p>
         </div>
         <div>
-          <span>rerunHint</span>
+          <span>补数提示</span>
           <p>{task.contract.rerunHint}</p>
         </div>
       </div>
@@ -647,8 +647,8 @@ function RerunPlanner({
     <section className="scheduler-rerun" aria-labelledby="scheduler-rerun-title">
       <div className="scheduler-panel-heading">
         <div>
-          <span className="eyebrow eyebrow--small">PARTITION RERUN</span>
-          <h3 id="scheduler-rerun-title">补数范围由契约决定</h3>
+          <span className="eyebrow eyebrow--small">分区补数</span>
+          <h3 id="scheduler-rerun-title">补数范围要与业务分区一致</h3>
         </div>
         <p>
           当前选择：{state.partition.column} = {state.businessDate}
@@ -730,14 +730,14 @@ function RerunPlanner({
       <div className="scheduler-output-comparison">
         <div className="scheduler-subheading">
           <div>
-            <span className="eyebrow eyebrow--small">OUTPUT WRITE SEMANTICS</span>
+            <span className="eyebrow eyebrow--small">输出写入方式</span>
             <h4>幂等 vs 非幂等：第二次运行留下什么？</h4>
           </div>
           <p>同一个 {comparison.outputTable} 分区，其他数据和 SQL 不变。</p>
         </div>
         <div className="scheduler-output-comparison__grid">
           <OutputComparisonCard
-            title="当前契约 · 幂等"
+            title="分区覆盖 · 幂等"
             comparison={comparison.idempotent}
             rows={outputRows}
           />
@@ -781,7 +781,7 @@ function OutputComparisonCard({
           <dd>{comparison.finalRows} 行</dd>
         </div>
         <div>
-          <dt>duplicate</dt>
+          <dt>重复行</dt>
           <dd>{comparison.duplicateRows} 行</dd>
         </div>
       </dl>
@@ -795,10 +795,10 @@ function OutputPreview({ visualization }: { visualization: SchedulerVisualizatio
     <section className="scheduler-output-preview" aria-labelledby="scheduler-output-preview-title">
       <div className="scheduler-panel-heading">
         <div>
-          <span className="eyebrow eyebrow--small">HANDOFF FROM #05</span>
+          <span className="eyebrow eyebrow--small">业务分区与迟到数据</span>
           <h3 id="scheduler-output-preview-title">同一个业务分区，迟到数据会改变结果</h3>
         </div>
-        <p>这里只消费 SQL 章节的确定性快照，不复制订单数据。</p>
+        <p>订单明细加工完成后，迟到到达的数据必须通过补数重新计算该业务分区。</p>
       </div>
       <div className="scheduler-output-preview__metric">
         <div>
@@ -816,8 +816,8 @@ function OutputPreview({ visualization }: { visualization: SchedulerVisualizatio
         </div>
       </div>
       <p className="scheduler-output-preview__note">
-        <code>{visualization.taskContract.taskId}</code> 的{' '}
-        <code>{visualization.taskContract.rerunHint}</code>
+        任务 <code>{visualization.taskContract.taskId}</code>：
+        {visualization.taskContract.rerunHint}
       </p>
     </section>
   )
@@ -1026,9 +1026,7 @@ export function SchedulerRunSimulator({ visualization }: SchedulerRunSimulatorPr
       <OutputPreview visualization={visualization} />
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        这是本地确定性模拟：不连接
-        Airflow、DolphinScheduler、数据库或消息队列；故障场景只为解释状态传播，不是通用 Fault
-        Injection Framework。
+        每个场景都沿同一条任务依赖和时间线推进；切换场景，比较迟到、失败、重试与补数如何改变最终输出。
       </p>
     </div>
   )

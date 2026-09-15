@@ -497,7 +497,7 @@ function VersionExperiment({
       <div className="scd__subheading">
         <div>
           <span className="eyebrow">VERSION LAB · 版本策略</span>
-          <h3 id="scd-experiment-title">先让属性变化发生，再决定是否保留历史</h3>
+          <h3 id="scd-experiment-title">属性变化后，历史怎么保留？</h3>
         </div>
         <p>{stageLabels[state.stage]}</p>
       </div>

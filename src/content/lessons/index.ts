@@ -34,26 +34,28 @@ const lessonContentBySlug: Record<string, LessonContent> = {
 export function getLessonContent(lesson: Lesson): LessonContent {
   return (
     lessonContentBySlug[lesson.slug] ?? {
-      eyebrow: `第 ${getChapterDisplayNumber(lesson.chapter)} 章 · 课程骨架`,
-      subtitle: '这节课正在准备中，先把它放进完整的学习路线。',
+      eyebrow: `第 ${getChapterDisplayNumber(lesson.chapter)} 章 · 数据仓库实战`,
+      subtitle: '把业务问题、数据粒度、指标口径和任务依赖串成一条可维护的仓库建设路线。',
       quickSummary: lesson.summary,
       concept: {
         term: lesson.title.replace(/[？：]/g, ''),
-        definition: '后续将用图解、实验和工程案例，把这个主题拆成可以观察的学习步骤。',
+        definition: '一套可维护的数据仓库，需要同时处理业务口径、数据质量、任务运行和变更影响。',
       },
       sections: [
         {
-          title: '这节课会学什么？',
-          paragraphs: [lesson.summary],
+          title: '搭建数据仓库前，问题要写清楚',
+          paragraphs: [
+            '把业务过程、数据粒度和指标口径写清楚，再安排加工、质量检查和调度责任。这样搭建出来的仓库，才有依据判断结果是否可信。',
+          ],
           bullets: [
-            '先建立概念的整体地图',
-            '再用一个可操作的实验观察变化',
-            '最后连接到真实工程中的取舍',
+            '明确要服务的业务问题和使用者。',
+            '为事实表、指标和分区写出粒度与时间语义。',
+            '把质量、运行、权限和变更通知纳入交付清单。',
           ],
         },
       ],
-      engineeringTip: 'MVP 先保留课程入口与学习进度；该课的交互实验将在后续阶段补充。',
-      pitfalls: ['当前页面是课程骨架，不代表该主题已经完整实现。'],
+      engineeringTip: '仓库建设需要同时记录业务口径、数据责任、质量校验、调度边界和变更影响。',
+      pitfalls: ['不要在没有明确业务问题和验收口径前堆叠技术组件。'],
     }
   )
 }

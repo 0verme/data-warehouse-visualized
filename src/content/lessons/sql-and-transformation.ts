@@ -226,10 +226,10 @@ export const sqlTransformationVisualization: SqlTransformationVisualization = {
 export const sqlAndTransformationContent: LessonContent = {
   eyebrow: '第 05 课 · SQL 工作台',
   opening: {
-    eyebrow: '先制造一个冲突',
+    eyebrow: '这段 SQL 看起来没毛病，为什么算出来的金额翻了一倍？',
     title: '昨天的销售额到底是多少？',
     intro:
-      '同一批订单，错误查询给出一个看起来很完整的数字。先猜，再让每一步表快照告诉你它为什么错。',
+      '同一批订单，一段看似写得挑不出毛病的 SQL，却算出了翻倍的错误金额。对比每一步的表快照，找出它错在哪里。',
     cards: [
       { label: '错误 JOIN', value: '1,180 元', detail: '支付与退款事件被重复组合' },
       { label: '修正后', value: '370 元', detail: '支付日期 · 扣除退款' },
@@ -237,9 +237,9 @@ export const sqlAndTransformationContent: LessonContent = {
     ],
     question: '问题不在 SUM 写错，而在 SUM 之前，数据已经被加工成了错误的粒度。',
   },
-  subtitle: 'SQL 不是背语法，而是用来控制一次可观察的数据加工实验。',
+  subtitle: '一段 SQL 结果翻倍时，沿着表快照检查脏数据、重复事件和多对多关联。',
   quickSummary:
-    '先选定“一行代表什么”，再逐步去重、补维度、暴露错误 JOIN、修正聚合顺序，最后把 ODS 变成 DWD、DWS 和 ADS。',
+    '选定目标粒度，逐步排查重复事件、补齐维度关联、纠正错误 JOIN 与聚合顺序，完整走完 ODS → ADS 的加工链路。',
   concept: {
     term: '目标粒度',
     definition:
@@ -248,9 +248,9 @@ export const sqlAndTransformationContent: LessonContent = {
   sections: [
     {
       kind: 'narrative',
-      title: '先写清楚一行是什么，再写 SQL',
+      title: '输出表的一行代表什么？',
       paragraphs: [
-        '本实验围绕 2026-09-13 的支付销售额展开。订单明细保留商品事实，支付事件和退款事件则先回到订单粒度；如果跳过这一步，最终数字可能“有小数、有明细、有 SQL”，却仍然不可信。',
+        '本实验围绕 2026-09-13 的支付销售额展开。订单明细保留商品事实，支付事件和退款事件回到订单粒度后再参与关联；如果跳过这一步，最终数字可能“有小数、有明细、有 SQL”，却仍然不可信。',
       ],
       bullets: [
         '重复订单事件：同一个 order_id 在 ODS 出现两次，必须确定保留规则。',
@@ -263,31 +263,31 @@ export const sqlAndTransformationContent: LessonContent = {
       eyebrow: 'SQL WORKBENCH · 表快照差异实验',
       title: '让每一行的变化成为证据',
       description:
-        '先选择目标粒度，再选择一个预测：行数和金额会增加、减少还是保持不变。执行后对照输入/输出表，定位重复、合并、NULL、聚合和迟到分区。',
+        '确定目标粒度后，选择一个预测：行数和金额会增加、减少还是保持不变。执行后对照输入/输出表，定位重复、合并、NULL、聚合和迟到分区。',
       visualization: sqlTransformationVisualization,
     },
     {
       kind: 'narrative',
-      title: 'DWD、DWS、ADS 不是三张更大的表',
+      title: '不同层级解决不同的复用与提速问题',
       paragraphs: [
         'DWD 把字段和明细粒度整理清楚，DWS 把可复用的销售主题汇总到支付日，ADS 才为“昨天的销售额”这个应用问题挑出一个分区。每层都应该能说清楚一行代表什么，以及哪些信息在这一层被有意聚合。',
-        '完成实验后，迟到的 O1005 会让 9 月 13 日从 370 元变成 420 元。这个变化不是让本章实现调度器，而是把需要按业务日期重跑的输入交给下一章。',
+        '完成实验后，迟到的 O1005 会让 9 月 13 日从 370 元变成 420 元。这种迟到数据要求数据工程必须支持按原始业务日期进行重跑，而不是简单追加到今天的报表里。',
       ],
     },
     {
       kind: 'takeaway',
-      title: '把 SQL 加工交给下一章之前，先留下六件事',
+      title: '一项数据任务必须说清的六个要素',
       text: '任务必须能被另一个人复述：输入是什么、输出是什么、按哪个分区运行、依赖谁、重复运行是否安全、迟到数据要重跑哪里。',
       bullets: [
-        '粒度先于 JOIN：先决定一行代表订单、订单商品还是支付日。',
-        '事件先聚合：支付去重、退款按订单汇总后，才连接到事实。',
+        'JOIN 之前确认粒度：明确一行代表订单、订单商品还是支付日。',
+        '支付去重、退款按订单汇总后，再连接到事实。',
         '日期用半开区间；NULL 保留并显式处理，不让默认值伪造销售额。',
       ],
     },
     {
       kind: 'engineering-note',
-      title: '给第 06 章的稳定输出',
-      text: '本实验暴露 taskId、inputTables、outputTable、partition、dependencies、isIdempotent、supportsPartialRerun 和 rerunHint。它是一个简单任务描述，不是调度器或 DAG SDK。',
+      title: '数据任务交付必须说清的六个工程要素',
+      text: '写完一段 SQL 只是加工逻辑的第一步。在交给调度系统排期前，必须明确六件事：输入表、产出表、分区键、上游依赖、是否支持幂等重跑、以及数据迟到时重跑哪个业务分区。这些边界如果不写清楚，线上调度一旦失败，值班运维根本不敢随便重跑。',
     },
     {
       kind: 'pitfall',

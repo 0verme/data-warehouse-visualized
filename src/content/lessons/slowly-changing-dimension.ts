@@ -1,10 +1,10 @@
 import type { LessonContent } from '../types'
 
 export const slowlyChangingDimensionContent: LessonContent = {
-  eyebrow: '第 05 课 · 维度历史实验',
+  eyebrow: '第 05 课 · 维度历史与 SCD Type 2',
   subtitle: '会员等级会变化，但历史订单不应该被今天的状态重新改写。',
   quickSummary:
-    '通过 U1001 的一次会员升级，先观察直接 UPDATE 如何让历史分析失真，再用 SCD Type 2 保存普通会员和黄金会员两个有效版本。',
+    'U1001 从普通会员升级为黄金会员后，订单 A 和订单 B 应该各自命中哪个版本？用 Type 1 与 SCD Type 2 对照，保存普通会员和黄金会员两个有效版本。',
   concept: {
     term: 'SCD Type 2',
     definition:
@@ -13,7 +13,7 @@ export const slowlyChangingDimensionContent: LessonContent = {
   sections: [
     {
       kind: 'narrative',
-      title: '先问一个历史问题',
+      title: '用户升了 VIP，半年前的订单算什么等级？',
       paragraphs: [
         'U1001 在 2026-03-01 从普通会员升级为黄金会员。现在查询 2026-02-10 的订单 A，应该显示今天的黄金会员，还是下单当时的普通会员？',
         '如果直接 UPDATE dim_user，表里只剩黄金会员，历史答案就消失了。这节课用一条时间线，让你亲手把时间拨回升级前。',
@@ -24,7 +24,7 @@ export const slowlyChangingDimensionContent: LessonContent = {
       eyebrow: '时间旅行实验 · 用订单时间命中版本',
       title: '把时间拨回去，看看当时的会员状态',
       description:
-        '先执行一次会员升级，再用时间点按钮或滑块查看订单 A、升级节点和订单 B。切换 Type 1 / Type 2，比较同一个时间点为什么会得到不同答案。',
+        '执行一次会员升级，用时间点按钮或滑块查看订单 A、升级节点和订单 B。切换 Type 1 / Type 2，比较同一个时间点为什么会得到不同答案。',
       visualization: {
         kind: 'scd',
         initialVersion: {
@@ -48,7 +48,7 @@ export const slowlyChangingDimensionContent: LessonContent = {
     },
     {
       kind: 'compare',
-      title: 'Type 1 / Type 2：先决定要不要历史',
+      title: '直接覆盖还是保留历史：取决于业务怎么查',
       intro: '没有绝对更好的类型，关键是业务问题是否需要“当时的属性”。',
       columns: [
         {
@@ -83,13 +83,13 @@ JOIN dim_user d
     },
     {
       kind: 'engineering-note',
-      title: '版本不是越多越好',
-      text: 'SCD Type 2 会增加行数、ETL 复杂度和 Join 成本。只为真正需要历史语义的属性建立版本，并把有效区间边界、重复版本和晚到数据处理规则写进模型约定。',
+      title: '只为关键属性保留历史版本',
+      text: 'SCD Type 2 会导致维度表行数膨胀、ETL 逻辑复杂以及关联成本上升。生产中通常只对直接影响财务结算、核心指标分类的关键属性（如会员等级、归属部门）做版本化，其他次要属性（如手机号、收货地址）直接覆盖即可。',
     },
     {
       kind: 'takeaway',
       title: '把历史语义写进数据模型',
-      text: 'Type 2 的关键不是多一行数据，而是让事实发生的时间可以决定它应该看到哪一个维度版本。',
+      text: 'SCD Type 2 的本质，是让历史订单关联用户维度时，能够准确匹配到下单那一刻生效的状态版本。',
       bullets: [
         '关闭旧版本，再插入新版本。',
         '使用 [effective_from, effective_to) 半开区间。',

@@ -170,7 +170,7 @@ function CapabilityMatrix({ architecture }: { architecture: LakehouseArchitectur
       <div className="lakehouse-lab__subheading">
         <div>
           <span className="eyebrow eyebrow--small">能力矩阵</span>
-          <h3 id="lakehouse-capabilities-title">能力不是开关，而是工程承诺</h3>
+          <h3 id="lakehouse-capabilities-title">架构能力最终落到工程承诺</h3>
         </div>
         <p>“部分”意味着需要额外流程、工具或团队约定。</p>
       </div>
@@ -309,7 +309,7 @@ function ArchitectureDecision({
       <div className="lakehouse-lab__subheading">
         <div>
           <span className="eyebrow eyebrow--small">Architecture Decision Record</span>
-          <h3 id="lakehouse-decision-title">先看证据，再选择要承担的边界</h3>
+          <h3 id="lakehouse-decision-title">依据证据选择要承担的边界</h3>
         </div>
         <p aria-live="polite">
           当前问题：{getWorkloadLabel(workload)} · {constraints.length} 项约束

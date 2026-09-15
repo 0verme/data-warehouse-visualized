@@ -437,11 +437,11 @@ const lineageProductionGraph = bindLineageProductionChain({
 })
 
 export const dataLineageContent: LessonContent = {
-  eyebrow: '第 10 课 · 追踪一条数据生产链路',
+  eyebrow: '第 08 课 · 追踪一条数据生产链路',
   subtitle:
-    '从真实 Quality Event 或 order_status 字段变更出发，定位生产任务、下游表和指标的影响范围。',
+    '改一个上游字段，下游会有多少张报表受牵连？沿着血缘图找出直接下游、传递影响和最终影响范围。',
   quickSummary:
-    '数据血缘把表、字段、任务和指标放进同一张可解释的依赖图；质量异常可以直接进入调查，先预测影响，再沿证据路径验证变更。',
+    '数据血缘把表、字段、任务和指标放进同一张依赖图；质量异常进入调查后，沿证据路径确认上游来源和下游影响。',
   concept: {
     term: '数据血缘',
     definition:
@@ -449,10 +449,10 @@ export const dataLineageContent: LessonContent = {
   },
   sections: [
     {
-      title: '先把依赖关系画出来',
+      title: '数据从哪里来，最后被谁使用？',
       paragraphs: [
-        '在最小订单链路里，ODS.ORDER 是来源，DWD.ORDER_DETAIL 统一订单明细；它又被销售主题和用户主题复用，最终共同支撑报表。表级视图保留了原来的学习入口。',
-        '第 07 课的真实 Quality Event（缺少 I1002-2 的完整性失败）现在可以从调查选择器直接进入这条链路：质量规则、目标字段、分区和 Scheduler run 不会在适配时丢失。',
+        '在订单链路里，ODS.ORDER 是来源，DWD.ORDER_DETAIL 统一订单明细；它又被销售主题和用户主题复用，最终共同支撑报表。表级视图先把生产方向讲清楚。',
+        '质量异常（缺少 I1002-2 的完整性失败）可以从调查入口直接进入这条链路：质量规则、目标字段、分区和运行实例会一起显示。',
         '同一条链路还可以换成字段、任务或指标视角：字段回答“哪一列被加工”，任务回答“谁负责生产”，指标回答“哪个口径在消费”。',
       ],
       bullets: [
@@ -460,13 +460,13 @@ export const dataLineageContent: LessonContent = {
         '字段级：追踪 order_status 的语义变化',
         '任务级：定位依赖顺序与验证入口',
         '指标级：确认下游口径是否需要复核',
-        'Scheduler contract 当前只声明销售主题任务；用户主题分支保留但明确标记为 manual metadata，不冒充第二套 DAG。',
+        '任务视角只展示已登记的销售主题任务；用户主题的依赖还需要人工确认，不能把它当成完整 DAG。',
       ],
     },
     {
-      title: '变更前先问影响范围',
+      title: '改一个上游字段，下游会牵连多少报表？',
       paragraphs: [
-        '选择真实 Quality Event、字段语义变化、schema / field change 或 task failure 事件后，先观察直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终爆炸半径适合安排验证与通知范围。',
+        '从质量异常、字段语义变化、schema / field change 或 task failure 进入调查，查看直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终影响范围适合安排验证与通知。',
       ],
       bullets: [
         '上游：帮助定位来源和排查问题',
@@ -501,7 +501,7 @@ FROM lineage_edges
 WHERE source_entity = 'DWD.ORDER_DETAIL.order_status';`,
   },
   engineeringTip:
-    '本课消费第 05 章的 SQL task contract、第 06 章的 Scheduler task identity / dependsOn，并通过薄 adapter 直接消费第 07 章真实 QualityEvent；Lineage 不复制 QualityRule、QualityEvidence、QualityInvestigationContext 或质量结果模型。',
+    '数据血缘是线上变更和故障排查的“导航地图”：沿字段、任务和指标的依赖关系，确定需要验证和通知的范围。',
   pitfalls: [
     '上游和下游是相对当前节点而言的；换一个选中对象，统计结果也会变化。',
     '直接下游不等于最终影响，传递链路中的表、任务和指标都需要分别验证。',
