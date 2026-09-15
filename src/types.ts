@@ -805,9 +805,9 @@ export interface GovernanceQualityEvidenceItem {
   evidenceId: QualityEvidence['evidenceId']
   kind: QualityEvidence['kind']
   detail: QualityEvidence['detail']
-  observedValue: QualityEvidence['observedValue']
-  expectedValue: QualityEvidence['expectedValue']
-  expectedLabel: QualityEvidence['expectedLabel']
+  observedValue: QualityEvidence['observed']
+  expectedValue: QualityEvidence['expected']
+  expectedLabel: string
   samples: GovernanceQualitySample[]
 }
 

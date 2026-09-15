@@ -116,19 +116,37 @@ describe('课程数据与导航', () => {
     expect(getAdjacentLessons(lessons, 'scheduling-sla').next?.slug).toBe('data-quality')
   })
 
-  it('第七章已注册数据质量事件调查台', () => {
-    const lesson = getLessonBySlug('data-quality')!
-    const content = getLessonContent(lesson)
+  it('第七章稳定注册为 7-1 到 7-5，并保留 data-quality slug', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '07')
 
-    expect(lesson).toMatchObject({ chapter: '07', demo: 'data-quality' })
-    expect(content.eyebrow).toBe('第 07 课 · 质量事件调查台')
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
+      'data-quality',
+      'data-quality-rules',
+      'data-quality-dataset',
+      'data-quality-evidence',
+      'data-quality-release',
+    ])
+    expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
+      '7-1',
+      '7-2',
+      '7-3',
+      '7-4',
+      '7-5',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.title)).toEqual([
+      '任务成功了，数据就可信了吗？',
+      '一张表到底应该检查什么？',
+      '每一行都正常，为什么结果还是可能错？',
+      '质量失败以后，我们到底应该看什么？',
+      '发现问题以后，这份数据还能发布吗？',
+    ])
+    expect(getLessonBySlug('data-quality')?.demo).toBe('data-quality')
     expect(
-      content.sections.some(
+      getLessonContent(getLessonBySlug('data-quality-release')!).sections.some(
         (section) =>
           section.kind === 'visualization' && section.visualization.kind === 'data-quality',
       ),
     ).toBe(true)
-    expect(content.visualization).toBeUndefined()
   })
 
   it('返回当前课程的上一节和下一节', () => {

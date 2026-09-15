@@ -9,12 +9,22 @@ import type {
 } from '../data-quality/types'
 
 function projectSamples(evidence: QualityEvidence): GovernanceQualityEvidenceItem['samples'] {
-  return evidence.samples.map((sample) => ({
-    sampleId: sample.sampleId,
-    rowKey: sample.rowKey,
-    values: sample.values,
-    reason: sample.reason,
-  }))
+  if (!evidence.sample) {
+    return []
+  }
+
+  return [
+    {
+      sampleId: evidence.sample.sampleId,
+      rowKey: evidence.sample.rowKey,
+      values: evidence.sample.values,
+      reason: evidence.sample.reason,
+    },
+  ]
+}
+
+function formatEvidenceValue(value: QualityEvidence['expected']): string {
+  return value === null ? 'NULL' : String(value)
 }
 
 function projectEvidenceItems(
@@ -24,18 +34,21 @@ function projectEvidenceItems(
     evidenceId: item.evidenceId,
     kind: item.kind,
     detail: item.detail,
-    observedValue: item.observedValue,
-    expectedValue: item.expectedValue,
-    expectedLabel: item.expectedLabel,
+    observedValue: item.observed,
+    expectedValue: item.expected,
+    expectedLabel: formatEvidenceValue(item.expected),
     samples: projectSamples(item),
   }))
 }
 
 function countFailedSamples(evidence: readonly QualityEvidence[]): number {
-  return evidence.reduce((count, item) => count + item.samples.length, 0)
+  return evidence.reduce((count, item) => count + (item.sample ? 1 : 0), 0)
 }
 
-function getExpectedLabel(evidence: readonly QualityEvidence[], fallback: string): string {
+function getExpectedLabel(
+  evidence: readonly GovernanceQualityEvidenceItem[],
+  fallback: string,
+): string {
   return evidence.find((item) => item.expectedLabel)?.expectedLabel ?? fallback
 }
 
@@ -123,14 +136,26 @@ function createProjection({
   }
 }
 
-/** Project one real #13 QualityEvent without copying the quality domain model. */
+/**
+ * Project one real QualityEvent without copying the quality domain model.
+ * Release is passed separately because the event itself only owns observed facts.
+ */
 export function qualityEventToGovernanceEvidence(
   event: QualityEvent,
   ruleName?: string,
+  releaseDecision: Pick<
+    QualityReleaseDecision,
+    'action' | 'status' | 'isBlocked' | 'affectedOutputs'
+  > = {
+    action: 'block',
+    status: event.status === 'fail' ? 'blocked' : 'released',
+    isBlocked: event.status === 'fail',
+    affectedOutputs: [],
+  },
 ): GovernanceQualityEvidence {
   return createProjection({
     status: event.status,
-    severity: event.severity,
+    ...(event.severity ? { severity: event.severity } : {}),
     eventId: event.eventId,
     ruleId: event.ruleId,
     ruleName,
@@ -142,12 +167,7 @@ export function qualityEventToGovernanceEvidence(
     schedulerTaskId: event.schedulerContext.taskId,
     schedulerRunId: event.schedulerContext.runId,
     taskStatus: event.schedulerContext.taskStatus,
-    releaseDecision: {
-      action: event.remediation.action,
-      status: event.releaseImpact.downstreamRelease,
-      isBlocked: event.releaseImpact.isBlocked,
-      affectedOutputs: event.releaseImpact.affectedOutputs,
-    },
+    releaseDecision,
   })
 }
 
@@ -190,7 +210,7 @@ export function qualityEvaluationToGovernanceEvidence(
 
   const event = evaluation.events.find((candidate) => candidate.ruleId === rule.ruleId)
   if (event) {
-    return qualityEventToGovernanceEvidence(event, rule.name)
+    return qualityEventToGovernanceEvidence(event, rule.name, evaluation.releaseDecision)
   }
 
   return qualityCheckToGovernanceEvidence(check, rule, evaluation.releaseDecision)

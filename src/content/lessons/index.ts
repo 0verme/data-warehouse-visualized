@@ -8,6 +8,10 @@ import {
   governanceFieldAccessContent,
   governanceLifecycleContent,
 } from './data-governance'
+import { dataQualityDatasetContent } from './data-quality-dataset'
+import { dataQualityEvidenceContent } from './data-quality-evidence'
+import { dataQualityReleaseContent } from './data-quality-release'
+import { dataQualityRulesContent } from './data-quality-rules'
 import { dataQualityContent } from './data-quality'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
@@ -37,6 +41,10 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'data-governance-lifecycle': governanceLifecycleContent,
   'data-governance-change-responsibility': governanceChangeResponsibilityContent,
   'data-quality': dataQualityContent,
+  'data-quality-rules': dataQualityRulesContent,
+  'data-quality-dataset': dataQualityDatasetContent,
+  'data-quality-evidence': dataQualityEvidenceContent,
+  'data-quality-release': dataQualityReleaseContent,
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,

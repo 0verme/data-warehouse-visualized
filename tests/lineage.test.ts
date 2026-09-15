@@ -4,6 +4,7 @@ import { qualityEventToLineageInvestigation } from '../src/features/lineage/qual
 import { dataLineageContent } from '../src/content/lessons/data-lineage'
 import { dataQualityVisualization } from '../src/content/lessons/data-quality'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../src/utils/data-quality'
+import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
 import {
   analyzeLineageInvestigation,
@@ -137,23 +138,23 @@ describe('数据血缘分析', () => {
 
     const qualityInvestigation = events.find((event) => event.entryPoint === 'quality-event')
     expect(qualityInvestigation?.qualityEvent).toMatchObject({
-      ruleId: QUALITY_RULE_IDS.completeness,
+      ruleId: QUALITY_RULE_IDS.branchReference,
       target: {
-        table: 'dwd_order_item',
-        field: 'item_id',
-        partition: { column: 'dt', value: dataQualityVisualization.targetDate },
+        table: 'dwd_deposit_account_balance',
+        field: 'branch_id',
+        partition: { column: 'business_date', value: dataQualityVisualization.targetDate },
       },
-      schedulerContext: { taskId: SCHEDULER_TASK_IDS.dwd },
+      schedulerContext: { taskId: BANKING_SCHEDULER_TASK_IDS.dwd },
     })
   })
 
   it('把真实 QualityEvent 确定性适配为 Lineage investigation 且不丢上下文', () => {
     const evaluation = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'missing-order-item',
+      injection: 'missing-branch-reference',
       action: 'block',
     })
     const qualityEvent = evaluation.events.find(
-      (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
+      (event) => event.ruleId === QUALITY_RULE_IDS.branchReference,
     )
 
     if (!qualityEvent) {
@@ -171,10 +172,10 @@ describe('数据血缘分析', () => {
       affectedEntityId: 'metric-report-status',
       evidence: { source: 'quality_event' },
       context: {
-        taskId: SCHEDULER_TASK_IDS.dwd,
+        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
         runId: qualityEvent.schedulerContext.runId,
         businessDate: dataQualityVisualization.targetDate,
-        partition: qualityEvent.schedulerContext.partition,
+        partition: qualityEvent.target.partition,
         status: qualityEvent.schedulerContext.taskStatus,
       },
       rootCauseCandidate: {
@@ -183,12 +184,10 @@ describe('数据血缘分析', () => {
       },
       qualityEvent,
     })
-    expect(first.qualityEvent?.ruleId).toBe(QUALITY_RULE_IDS.completeness)
+    expect(first.qualityEvent?.ruleId).toBe(QUALITY_RULE_IDS.branchReference)
     expect(first.qualityEvent?.target).toEqual(qualityEvent.target)
-    expect(first.qualityEvent?.investigationContext.downstreamImpacts).toContain(
-      'ads_yesterday_sales',
-    )
-    expect(first.qualityEvent?.evidence[0]?.samples[0]?.rowKey).toBe('O1002 / I1002-2 / 200')
+    expect(first.qualityEvent).not.toHaveProperty('investigationContext')
+    expect(first.qualityEvent?.evidence[0]?.sample?.rowKey).toBe('A003 / 2026-09-30')
   })
 
   it('从 Quality Event 找到可能根因并区分直接、传递和最终指标影响', () => {

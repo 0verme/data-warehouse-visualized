@@ -28,3 +28,8 @@
 - `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
 - `scheduling-sla.ts`：迟到数据传播与业务 SLA
 - `scheduling-system.ts`：兼容旧调度事实的导出入口
+- `data-quality.ts`：7-1 运行状态、质量状态与发布状态
+- `data-quality-rules.ts`：7-2 从 Grain 推出记录级质量规则
+- `data-quality-dataset.ts`：7-3 应到集合、Freshness 与跨层对账
+- `data-quality-evidence.ts`：7-4 Quality Event 与行级/聚合证据
+- `data-quality-release.ts`：7-5 银行关键数据 BLOCK 与埋点 quarantine 对照

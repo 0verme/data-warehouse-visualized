@@ -1,3 +1,4 @@
+import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { SCHEDULER_TASK_IDS } from '../../utils/scheduler'
 
 /** Stable mapping from the production Scheduler identity to the existing graph node. */
@@ -6,13 +7,30 @@ export const LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
   [SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
   [SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
   [SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
+  [BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.account]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.customer]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.product]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.branch]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
+  [BANKING_SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
+  [BANKING_SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
 }
 
-/** Quality targets use the same table names as the SQL and Scheduler lesson chain. */
+/**
+ * Quality targets use the current teaching lineage graph through a small compatibility map.
+ * The graph still contains the earlier production-chain example; this map keeps #08 intact while
+ * allowing #07 to use the canonical Banking Teaching Domain table names.
+ */
 export const LINEAGE_TABLE_NODE_IDS: Readonly<Record<string, string>> = {
   dwd_order_item: 'dwd-order-detail',
   dws_sales_daily: 'dws-sales',
   ads_yesterday_sales: 'ads-report',
+  account_balance_snapshot: 'dwd-order-detail',
+  dwd_deposit_account_balance: 'dwd-order-detail',
+  dws_deposit_balance_daily: 'dws-sales',
+  ads_deposit_balance_metric: 'ads-report',
+  ods_behavior_event: 'ads-report',
 }
 
 export function getLineageTaskNodeId(taskId: string): string {

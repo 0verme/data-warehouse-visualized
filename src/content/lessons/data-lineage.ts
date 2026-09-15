@@ -1,6 +1,5 @@
 import type { LessonContent } from '../types'
 import type { LineageEdge, LineageEvidence, LineageNode } from '../../types'
-import type { QualityEvent } from '../../features/data-quality/types'
 import { qualityEventAdapter } from '../../features/lineage/quality-adapter'
 import { bindLineageProductionChain } from '../../features/lineage/production'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
@@ -419,16 +418,12 @@ const lineageEdges: LineageEdge[] = [
 ]
 
 const qualityEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'missing-order-item',
+  injection: 'missing-branch-reference',
   action: 'block',
 })
-let qualityEvent: QualityEvent | undefined
-for (const event of qualityEvaluation.events) {
-  if (event.ruleId === QUALITY_RULE_IDS.completeness) {
-    qualityEvent = event
-    break
-  }
-}
+const qualityEvent = qualityEvaluation.events.find(
+  (event) => event.ruleId === QUALITY_RULE_IDS.branchReference,
+)
 if (!qualityEvent) {
   throw new Error('第 08 课需要第 07 课的完整性 Quality Event 作为调查入口')
 }
