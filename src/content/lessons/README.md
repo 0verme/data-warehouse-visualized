@@ -18,4 +18,8 @@
 - `data-lineage.ts`：血缘关系与影响分析
 - `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
 - `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
-- `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟
+- `scheduling-business-date.ts`：业务日期、到达时间和目标分区时间轴
+- `scheduling-readiness.ts`：三种启动条件与 DAG 放行
+- `scheduling-failure.ts`：失败传播、Attempt 与 Retry
+- `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
+- `scheduling-sla.ts`：迟到数据传播与业务 SLA

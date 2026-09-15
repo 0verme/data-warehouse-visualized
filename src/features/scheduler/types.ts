@@ -8,7 +8,15 @@ export type SchedulerDependencyState = 'waiting' | 'ready' | 'satisfied' | 'bloc
 export type SchedulerSlaState = 'not-started' | 'on-time' | 'at-risk' | 'breached'
 export type SchedulerOutputState = 'not-produced' | 'available' | 'stale' | 'duplicate'
 
-export type SchedulerScenario = 'happy-path' | 'upstream-late' | 'dwd-retry' | 'dwd-blocked'
+export type SchedulerScenario =
+  | 'happy-path'
+  | 'upstream-late'
+  | 'upstream-signal'
+  | 'ftp-detection'
+  | 'timed-extract'
+  | 'dwd-retry'
+  | 'dwd-blocked'
+export type SchedulerLessonFocus = 'business-date' | 'readiness' | 'failure' | 'rerun' | 'sla'
 export type SchedulerRunTrigger = 'schedule' | 'partition-rerun' | 'full-rerun'
 export type SchedulerRerunMode = 'partial' | 'full'
 export type SchedulerRunStatus = 'queued' | 'running' | 'success' | 'failed'
@@ -100,6 +108,9 @@ export interface SchedulerRunState {
   scheduledAt: string
   maxConcurrentTasks: number
   lateDataAvailableAt: string | null
+  lateDataDetectedAt: string | null
+  lateDataTaskId: string | null
+  failureTaskId: string
   isLateDataAvailable: boolean
   recoveredTaskIds: readonly string[]
   tasks: readonly SchedulerTaskDefinition[]
@@ -114,6 +125,10 @@ export interface SchedulerRunOptions {
   runId?: string
   scheduledAt?: string
   maxConcurrentTasks?: number
+  lateDataAvailableAt?: string
+  lateDataDetectedAt?: string
+  lateDataTaskId?: string
+  failureTaskId?: string
   rerunPlan?: SchedulerRerunPlan
 }
 
@@ -161,6 +176,14 @@ export interface SchedulerOutputPreview {
   afterLateAmount: number
 }
 
+export interface SchedulerTaskReferences {
+  dwd: string
+  dws: string
+  ads: string
+  lateInput: string
+  failure: string
+}
+
 export interface SchedulerVisualization {
   kind: 'scheduler'
   targetDate: string
@@ -168,5 +191,10 @@ export interface SchedulerVisualization {
   taskContract: TransformationTaskContract
   outputPreview: SchedulerOutputPreview
   lateDataArrivalAt: string
+  lateDataDetectionAt?: string
   lateBusinessDate: string
+  scheduledAt?: string
+  deliverySlaAt?: string
+  lessonFocus?: SchedulerLessonFocus
+  taskReferences?: SchedulerTaskReferences
 }
