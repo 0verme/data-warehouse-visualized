@@ -22,4 +22,9 @@
 - `deposit-metric-definition.ts`：指标定义卡逐项补全
 - `deposit-metric-time.ts`：存款余额状态与期间存入事件的时间语义
 - `deposit-metric-derivations.ts`：客户、产品、币种、机构和日期口径组合
-- `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟
+- `scheduling-business-date.ts`：业务日期、到达时间和目标分区时间轴
+- `scheduling-readiness.ts`：三种启动条件与 DAG 放行
+- `scheduling-failure.ts`：失败传播、Attempt 与 Retry
+- `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
+- `scheduling-sla.ts`：迟到数据传播与业务 SLA
+- `scheduling-system.ts`：兼容旧调度事实的导出入口

@@ -14,7 +14,11 @@ import { depositMetricDerivationsContent } from './deposit-metric-derivations'
 import { depositMetricTimeContent } from './deposit-metric-time'
 import { performanceAndPracticeContent } from './performance-and-practice'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
-import { schedulingSystemContent } from './scheduling-system'
+import { schedulingBusinessDateContent } from './scheduling-business-date'
+import { schedulingFailureContent } from './scheduling-failure'
+import { schedulingReadinessContent } from './scheduling-readiness'
+import { schedulingRerunContent } from './scheduling-rerun'
+import { schedulingSlaContent } from './scheduling-sla'
 import { sqlAndTransformationContent } from './sql-and-transformation'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
@@ -36,7 +40,11 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,
-  'scheduling-system': schedulingSystemContent,
+  'scheduling-system': schedulingBusinessDateContent,
+  'scheduling-readiness': schedulingReadinessContent,
+  'scheduling-failure': schedulingFailureContent,
+  'scheduling-rerun': schedulingRerunContent,
+  'scheduling-sla': schedulingSlaContent,
   'sql-and-transformation': sqlAndTransformationContent,
   'performance-and-practice': performanceAndPracticeContent,
 }

@@ -1,11 +1,11 @@
 import type { DataQualityVisualization } from '../../features/data-quality/types'
 import type { LessonContent } from '../types'
 import { createDataQualityVisualization, createQualitySchedulerRun } from '../../utils/data-quality'
-import { schedulerVisualization } from './scheduling-system'
+import { legacySchedulerVisualization } from './legacy-scheduling-system'
 
 const qualitySchedulerRun = createQualitySchedulerRun(
-  schedulerVisualization.tasks,
-  schedulerVisualization.targetDate,
+  legacySchedulerVisualization.tasks,
+  legacySchedulerVisualization.targetDate,
 )
 
 export const dataQualityVisualization: DataQualityVisualization =
