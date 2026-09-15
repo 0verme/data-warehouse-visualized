@@ -24,6 +24,7 @@ import {
   LAKEHOUSE_WORKLOAD_OPTIONS,
   timeTravelTo,
 } from '../../utils/lakehouse'
+import { ModelingPerspectiveSwitcher } from './ModelingPerspectiveSwitcher'
 
 interface LakehouseArchitectureLabProps {
   visualization: LakehouseVisualization
@@ -663,6 +664,7 @@ export function LakehouseArchitectureLab({ visualization }: LakehouseArchitectur
         onArchitectureChange={setArchitecture}
       />
       <SnapshotExperiment visualization={visualization} />
+      <ModelingPerspectiveSwitcher />
     </div>
   )
 }
