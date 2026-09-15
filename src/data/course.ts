@@ -8,6 +8,11 @@ export type LessonDemo =
   | 'layers'
   | 'lineage'
   | 'modeling-intro'
+  | 'loan-business-process'
+  | 'loan-grain'
+  | 'banking-star-schema'
+  | 'banking-fact-types'
+  | 'banking-customer-history'
   | 'star-schema'
   | 'scd'
   | 'metric-definition'
@@ -99,8 +104,17 @@ export const lessonDefinitions = [
     chapter: '03',
     order: 100,
     difficulty: 'beginner',
+    estimatedMinutes: 10,
+    demo: 'loan-business-process',
+  },
+  {
+    id: 'lesson-grain',
+    slug: 'grain',
+    chapter: '03',
+    order: 200,
+    difficulty: 'beginner',
     estimatedMinutes: 12,
-    demo: 'modeling-intro',
+    demo: 'loan-grain',
   },
   {
     id: 'lesson-04',
@@ -151,19 +165,28 @@ export const lessonDefinitions = [
     id: 'lesson-star-schema-grain',
     slug: 'star-schema-and-grain',
     chapter: '03',
-    order: 200,
+    order: 300,
     difficulty: 'beginner',
     estimatedMinutes: 14,
-    demo: 'star-schema',
+    demo: 'banking-star-schema',
+  },
+  {
+    id: 'lesson-fact-table-types',
+    slug: 'fact-table-types',
+    chapter: '03',
+    order: 400,
+    difficulty: 'beginner',
+    estimatedMinutes: 14,
+    demo: 'banking-fact-types',
   },
   {
     id: 'lesson-scd-type-2',
     slug: 'slowly-changing-dimension',
     chapter: '03',
-    order: 300,
+    order: 500,
     difficulty: 'beginner',
-    estimatedMinutes: 12,
-    demo: 'scd',
+    estimatedMinutes: 14,
+    demo: 'banking-customer-history',
   },
   {
     id: 'lesson-09',
@@ -236,9 +259,14 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['分层', '数据流', '加工'],
     },
     'lesson-03': {
-      title: '数据建模：一张表应该长什么样？',
-      summary: '从业务过程、粒度和维度出发，建立可复用的建模思维。',
-      tags: ['建模', '粒度'],
+      title: '业务过程：到底要记录哪件事？',
+      summary: '从贷款合同、借据和还款链路出发，先确定分析要记录的业务过程。',
+      tags: ['业务过程', '贷款建模'],
+    },
+    'lesson-grain': {
+      title: 'Grain：一行究竟代表什么？',
+      summary: '用一份贷款合同下的借据与还款记录，切换三种 Grain，避免 Join 放大金额。',
+      tags: ['Grain', '粒度', 'Join'],
     },
     'lesson-04': {
       title: '指标体系：同一个数字为什么不一样？',
@@ -267,15 +295,19 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['血缘', '影响分析'],
     },
     'lesson-star-schema-grain': {
-      title: '星型模型与粒度',
-      summary: '从订单大宽表拆出事实和维度，亲手切换粒度，并看见粒度错误如何让金额重复计算。',
-      tags: ['星型模型', '事实表', '粒度'],
+      title: '事实、维度与星型模型',
+      summary: '从一笔账户交易推导事实与维度，再切换客户、机构、产品和日期等观察角度。',
+      tags: ['事实表', '维度表', '星型模型'],
+    },
+    'lesson-fact-table-types': {
+      title: '事实表不只有一种',
+      summary: '用账户交易、日终余额和 LoanNote 生命周期，对照三种事实表的时间语义。',
+      tags: ['事实表类型', '快照', '时间语义'],
     },
     'lesson-scd-type-2': {
-      title: '维度为什么要保存历史？SCD Type 2',
-      summary:
-        '通过一次会员升级，观察直接 UPDATE 如何覆盖历史，并用有效时间区间保留“当时”的维度状态。',
-      tags: ['维度历史', 'SCD Type 2', '时间区间'],
+      title: '维度为什么要保存历史？——拉链表',
+      summary: '用客户等级和机构变更，比较覆盖更新与拉链表如何影响历史 LoanNote 的分析结果。',
+      tags: ['维度历史', '拉链表', '代理键'],
     },
     'lesson-09': {
       title: '数据治理：当数据平台开始失控',

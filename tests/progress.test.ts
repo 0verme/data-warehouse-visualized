@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { lessons } from '../src/data/course'
 import {
   createInitialProgress,
   getProgressPercent,
@@ -57,6 +58,22 @@ describe('学习进度', () => {
       completedLessonIds: ['lesson-01'],
       currentLessonId: 'lesson-01',
     })
+  })
+
+  it('新增第三章课程后仍保留旧课程的完成记录', () => {
+    const legacyProgress = {
+      completedLessonIds: ['lesson-01', 'lesson-03', 'lesson-scd-type-2'],
+      currentLessonId: 'lesson-03',
+    }
+
+    expect(
+      normalizeProgress(
+        legacyProgress,
+        lessons.map((lesson) => lesson.id),
+        'lesson-01',
+        true,
+      ),
+    ).toEqual(legacyProgress)
   })
 
   it('更新当前课程而不丢失完成记录', () => {

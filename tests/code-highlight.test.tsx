@@ -13,12 +13,9 @@ import { HERO_METRIC_SQL, HERO_METRIC_SQL_EXAMPLE } from '../src/data/code-examp
 import { TRANSFORMATION_STEPS } from '../src/utils/sql-transformation'
 
 const warehouseLayersLesson = lessons.find((lesson) => lesson.slug === 'warehouse-layers')
-const slowlyChangingDimensionLesson = lessons.find(
-  (lesson) => lesson.slug === 'slowly-changing-dimension',
-)
 
-if (!warehouseLayersLesson || !slowlyChangingDimensionLesson) {
-  throw new Error('Expected code example lessons are missing')
+if (!warehouseLayersLesson) {
+  throw new Error('Expected code example lesson is missing')
 }
 
 let codeHighlights: Awaited<ReturnType<typeof buildLessonCodeHighlightMap>>
@@ -87,19 +84,20 @@ describe('build-time code highlighting', () => {
     expect(highlightedCode).toContain('dwd_order')
   })
 
-  it('escapes SQL special characters while preserving string, number, and comment tokens', () => {
-    const allHighlightedCode = Object.values(codeHighlights).join('\n')
-    const content = getLessonContent(slowlyChangingDimensionLesson)
-    const sql = content.sections.find((section) => section.kind === 'sql')
+  it('escapes SQL special characters while preserving string, number, and comment tokens', async () => {
+    const code = `SELECT
+  'PAID' AS status,
+  1 AS version -- keep the historical value
+FROM dim_customer
+WHERE customer_id < 'C002'`
+    const highlights = await buildCodeHighlightMap([{ language: 'sql', code }])
+    const highlightedCode = highlights[getCodeHighlightKey('sql', code)]
 
-    expect(sql).toBeDefined()
-    expect(allHighlightedCode).toMatch(/<span style="color:[^"]+">--/)
-    expect(allHighlightedCode).toMatch(/<span style="color:[^"]+">PAID<\/span>/)
-    expect(allHighlightedCode).toMatch(/<span style="color:[^"]+">\s*1<\/span>/)
-    expect(codeHighlights[getCodeHighlightKey(sql!.language, sql!.code)]).toContain('&#x3C;')
-    expect(codeHighlights[getCodeHighlightKey(sql!.language, sql!.code)]).not.toContain(
-      ' order_time < d.effective_to',
-    )
+    expect(highlightedCode).toMatch(/<span style="color:[^"]+">[^<]*--/)
+    expect(highlightedCode).toContain('>PAID</span>')
+    expect(highlightedCode).toMatch(/<span style="color:[^"]+">\s*1<\/span>/)
+    expect(highlightedCode).toContain('&#x3C;')
+    expect(highlightedCode).not.toContain("customer_id < 'C002'")
   })
 
   it('keeps the pre/code fallback when highlighting is missing', () => {

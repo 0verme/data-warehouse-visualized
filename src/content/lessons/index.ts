@@ -5,6 +5,8 @@ import { dataGovernanceContent } from './data-governance'
 import { dataQualityContent } from './data-quality'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
+import { factTableTypesContent } from './fact-table-types'
+import { grainContent } from './grain'
 import { lakehouseContent } from './lakehouse'
 import { metricSystemContent } from './metric-system'
 import { performanceAndPracticeContent } from './performance-and-practice'
@@ -22,6 +24,8 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,
   'data-modeling': dataModelingContent,
+  'fact-table-types': factTableTypesContent,
+  grain: grainContent,
   'metric-system': metricSystemContent,
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,

@@ -19,10 +19,12 @@ describe('课程数据与导航', () => {
     const ordered = sortLessons(reversedLessons)
 
     expect(ordered.map((lesson) => lesson.slug)).toEqual(lessons.map((lesson) => lesson.slug))
-    expect(ordered.slice(2, 5).map((lesson) => `${lesson.chapter}:${lesson.order}`)).toEqual([
+    expect(ordered.slice(2, 7).map((lesson) => `${lesson.chapter}:${lesson.order}`)).toEqual([
       '03:100',
       '03:200',
       '03:300',
+      '03:400',
+      '03:500',
     ])
   })
 
@@ -32,9 +34,11 @@ describe('课程数据与导航', () => {
     expect(getLessonDisplayNumber(getLessonBySlug('why-data-warehouse')!, lessons)).toBe('1-1')
     expect(getLessonDisplayNumber(getLessonBySlug('warehouse-layers')!, lessons)).toBe('2-1')
     expect(getLessonDisplayNumber(getLessonBySlug('data-modeling')!, lessons)).toBe('3-1')
-    expect(getLessonDisplayNumber(getLessonBySlug('star-schema-and-grain')!, lessons)).toBe('3-2')
+    expect(getLessonDisplayNumber(getLessonBySlug('grain')!, lessons)).toBe('3-2')
+    expect(getLessonDisplayNumber(getLessonBySlug('star-schema-and-grain')!, lessons)).toBe('3-3')
+    expect(getLessonDisplayNumber(getLessonBySlug('fact-table-types')!, lessons)).toBe('3-4')
     expect(getLessonDisplayNumber(getLessonBySlug('slowly-changing-dimension')!, lessons)).toBe(
-      '3-3',
+      '3-5',
     )
   })
 
@@ -97,33 +101,55 @@ describe('课程数据与导航', () => {
     expect(adjacent.next?.slug).toBe('data-modeling')
   })
 
-  it('第三章按建模导入、星型模型、SCD2 连成连续课程', () => {
-    expect(lessons.slice(2, 5).map((lesson) => lesson.slug)).toEqual([
+  it('第三章按业务过程、Grain、星型模型、事实表类型、拉链表连成五节课程', () => {
+    expect(lessons.slice(2, 7).map((lesson) => lesson.slug)).toEqual([
       'data-modeling',
+      'grain',
       'star-schema-and-grain',
+      'fact-table-types',
       'slowly-changing-dimension',
     ])
-    expect(getLessonBySlug('data-modeling')?.demo).toBe('modeling-intro')
-    expect(getLessonBySlug('slowly-changing-dimension')?.demo).toBe('scd')
+    expect(lessons.slice(2, 7).map((lesson) => lesson.title)).toEqual([
+      '业务过程：到底要记录哪件事？',
+      'Grain：一行究竟代表什么？',
+      '事实、维度与星型模型',
+      '事实表不只有一种',
+      '维度为什么要保存历史？——拉链表',
+    ])
+    expect(getLessonBySlug('data-modeling')?.demo).toBe('loan-business-process')
+    expect(getLessonBySlug('grain')?.demo).toBe('loan-grain')
+    expect(getLessonBySlug('star-schema-and-grain')?.demo).toBe('banking-star-schema')
+    expect(getLessonBySlug('fact-table-types')?.demo).toBe('banking-fact-types')
+    expect(getLessonBySlug('slowly-changing-dimension')?.demo).toBe('banking-customer-history')
 
     expect(getAdjacentLessons(lessons, 'data-modeling')).toEqual({
       previous: expect.objectContaining({ slug: 'warehouse-layers' }),
+      next: expect.objectContaining({ slug: 'grain' }),
+    })
+    expect(getAdjacentLessons(lessons, 'grain')).toEqual({
+      previous: expect.objectContaining({ slug: 'data-modeling' }),
       next: expect.objectContaining({ slug: 'star-schema-and-grain' }),
     })
     expect(getAdjacentLessons(lessons, 'star-schema-and-grain')).toEqual({
-      previous: expect.objectContaining({ slug: 'data-modeling' }),
+      previous: expect.objectContaining({ slug: 'grain' }),
+      next: expect.objectContaining({ slug: 'fact-table-types' }),
+    })
+    expect(getAdjacentLessons(lessons, 'fact-table-types')).toEqual({
+      previous: expect.objectContaining({ slug: 'star-schema-and-grain' }),
       next: expect.objectContaining({ slug: 'slowly-changing-dimension' }),
     })
     expect(getAdjacentLessons(lessons, 'slowly-changing-dimension')).toEqual({
-      previous: expect.objectContaining({ slug: 'star-schema-and-grain' }),
+      previous: expect.objectContaining({ slug: 'fact-table-types' }),
       next: expect.objectContaining({ slug: 'metric-system' }),
     })
   })
 
-  it('ClientRouter 按 URL 逐节推进建模课程链路', () => {
+  it('ClientRouter 按 URL 逐节推进五节建模课程链路', () => {
     const expectedSlugs = [
       'data-modeling',
+      'grain',
       'star-schema-and-grain',
+      'fact-table-types',
       'slowly-changing-dimension',
       'metric-system',
     ]
@@ -149,11 +175,11 @@ describe('课程数据与导航', () => {
     const current = getLessonFromPath('/dw/learn/slowly-changing-dimension/', lessons)
 
     expect(current?.slug).toBe('slowly-changing-dimension')
-    expect(getAdjacentLessons(lessons, current!.slug).previous?.slug).toBe('star-schema-and-grain')
+    expect(getAdjacentLessons(lessons, current!.slug).previous?.slug).toBe('fact-table-types')
     expect(
       getAdjacentLessons(lessons, getAdjacentLessons(lessons, current!.slug).previous!.slug)
         .previous?.slug,
-    ).toBe('data-modeling')
+    ).toBe('star-schema-and-grain')
     expect(isLearnIndexPath('/dw/learn/')).toBe(true)
   })
 
@@ -169,17 +195,18 @@ describe('课程数据与导航', () => {
     expect(expandedChapterId).toBeNull()
   })
 
-  it('数据建模导入课不再使用课程骨架', () => {
+  it('3-1 只从贷款业务过程开始，不提前使用后续模型概念', () => {
     const lesson = getLessonBySlug('data-modeling')
 
     expect(lesson).toBeDefined()
     const content = getLessonContent(lesson!)
 
-    expect(content.concept.term).toBe('Grain（粒度）')
+    expect(content.concept.term).toBe('Business Process（业务过程）')
     expect(
       content.sections.some(
         (section) =>
-          section.kind === 'visualization' && section.visualization.kind === 'modeling-intro',
+          section.kind === 'visualization' &&
+          section.visualization.kind === 'loan-business-process',
       ),
     ).toBe(true)
     expect(content.visualization).toBeUndefined()
@@ -187,7 +214,24 @@ describe('课程数据与导航', () => {
     expect(content.pitfalls).toBeUndefined()
   })
 
-  it('星型模型与 SCD 课程使用不同的语义 sections', () => {
+  it('五节课程使用各自的银行教学可视化', () => {
+    const visualizationKinds = lessons.slice(2, 7).map((lesson) => {
+      const visualization = getLessonContent(lesson).sections.find(
+        (section) => section.kind === 'visualization',
+      )
+      return visualization?.kind === 'visualization' ? visualization.visualization.kind : undefined
+    })
+
+    expect(visualizationKinds).toEqual([
+      'loan-business-process',
+      'loan-grain',
+      'banking-star-schema',
+      'banking-fact-types',
+      'banking-customer-history',
+    ])
+  })
+
+  it('星型模型和拉链表课程保留不同的语义 sections', () => {
     const starSchema = getLessonContent(getLessonBySlug('star-schema-and-grain')!)
     const scd = getLessonContent(getLessonBySlug('slowly-changing-dimension')!)
 
@@ -202,9 +246,9 @@ describe('课程数据与导航', () => {
       'narrative',
       'visualization',
       'compare',
-      'sql',
-      'engineering-note',
+      'narrative',
       'takeaway',
+      'engineering-note',
       'pitfall',
     ])
     expect(starSchema.visualization).toBeUndefined()

@@ -84,6 +84,14 @@ export interface StarSchemaTableData {
   rows: StarSchemaRow[]
 }
 
+export type TeachingTableCell = string | number
+export type TeachingTableRow = Record<string, TeachingTableCell>
+
+export interface TeachingTableData {
+  columns: string[]
+  rows: TeachingTableRow[]
+}
+
 export interface StarSchemaField {
   name: string
   label: string
@@ -176,6 +184,205 @@ export interface ModelingIntroVisualization {
   steps: ModelingIntroStep[]
   fieldGroups: ModelingFieldGroup[]
   outputTables: ModelingOutputTable[]
+}
+
+export type LoanProcessStepId = 'contract' | 'disbursement' | 'repayment' | 'settlement'
+
+export interface LoanProcessStep {
+  id: LoanProcessStepId
+  title: string
+  objectName: string
+  event: string
+  businessProcess: string
+  analysisObject: string
+  recordCount: number
+  detail: string
+}
+
+export type LoanProcessMeasureId =
+  'contract-amount' | 'disbursed-principal' | 'new-note-principal' | 'current-balance'
+
+export interface LoanProcessMeasure {
+  id: LoanProcessMeasureId
+  label: string
+  field: string
+  displayValue: string
+  description: string
+}
+
+export interface LoanBusinessProcessVisualization {
+  kind: 'loan-business-process'
+  customerLabel: string
+  contractLabel: string
+  steps: LoanProcessStep[]
+  measures: LoanProcessMeasure[]
+  defaultStepId: LoanProcessStepId
+}
+
+export type LoanGrainId = 'contract' | 'loan-note' | 'repayment'
+
+export interface LoanGrainOption {
+  id: LoanGrainId
+  label: string
+  statement: string
+  identity: string
+  primaryKey: string
+  rowMeaning: string
+  columns: string[]
+  rows: TeachingTableRow[]
+  amountField: string
+  amountLabel: string
+  amountValue: string
+  canAnswer: string[]
+  cannotAnswer: string[]
+}
+
+export interface LoanGrainErrorDemo {
+  wrongColumns: string[]
+  wrongRows: TeachingTableRow[]
+  fixedColumns: string[]
+  fixedRows: TeachingTableRow[]
+  actualContractAmount: number
+  wrongMeasure: string
+  fixedMeasure: string
+  wrongSql: string
+  fixedSql: string
+}
+
+export interface LoanGrainVisualization {
+  kind: 'loan-grain'
+  contractId: string
+  contractAmount: number
+  options: LoanGrainOption[]
+  errorDemo: LoanGrainErrorDemo
+}
+
+export type BankingSchemaFieldGroupRole = 'event' | 'angle' | 'measure'
+
+export interface BankingSchemaFieldGroup {
+  id: string
+  label: string
+  role: BankingSchemaFieldGroupRole
+  tone: StarSchemaTone
+  fields: string[]
+  explanation: string
+}
+
+export interface BankingSchemaTable {
+  id: string
+  name: string
+  type: StarSchemaTableType
+  rowMeaning: string
+  key: {
+    label: string
+    value: string
+  }
+  fields: StarSchemaField[]
+  responsibility: string
+}
+
+export interface BankingSchemaObservation {
+  id: string
+  label: string
+  dimensionId: string
+  question: string
+  answer: string
+  detail: string
+}
+
+export interface BankingSnowflakeComparison {
+  starLabel: string
+  starDetail: string
+  snowflakeLabel: string
+  snowflakeDetail: string
+  decision: string
+}
+
+export interface BankingStarSchemaVisualization {
+  kind: 'banking-star-schema'
+  rawTable: TeachingTableData
+  fieldGroups: BankingSchemaFieldGroup[]
+  tables: BankingSchemaTable[]
+  observations: BankingSchemaObservation[]
+  snowflake: BankingSnowflakeComparison
+}
+
+export type BankingFactTypeId = 'transaction' | 'periodic-snapshot' | 'accumulating-snapshot'
+
+export interface BankingFactTypeDefinition {
+  id: BankingFactTypeId
+  label: string
+  englishName: string
+  rowMeaning: string
+  trigger: string
+  timeSemantics: string
+  canAnswer: string
+  cannotAnswer: string
+  columns: string[]
+  rows: TeachingTableRow[]
+}
+
+export interface LoanNoteLifecycleMilestone {
+  id: string
+  label: string
+  field: string
+  date: string
+  status: string
+  description: string
+}
+
+export interface LoanNoteLifecycleDefinition {
+  noteId: string
+  milestones: LoanNoteLifecycleMilestone[]
+}
+
+export interface BankingFactTypesVisualization {
+  kind: 'banking-fact-types'
+  factTypes: BankingFactTypeDefinition[]
+  loanNoteLifecycle: LoanNoteLifecycleDefinition
+}
+
+export interface BankingCustomerVersion {
+  customerSk: number
+  customerId: string
+  level: string
+  branch: string
+  effectiveFrom: string
+  effectiveTo: string
+  isCurrent: boolean
+}
+
+export type BankingCustomerAttributeUpdate = Partial<
+  Pick<BankingCustomerVersion, 'level' | 'branch'>
+>
+
+export interface BankingCustomerHistoryChange extends BankingCustomerAttributeUpdate {
+  customerSk: number
+  effectiveFrom: string
+}
+
+export interface BankingCustomerLoanNote {
+  noteId: string
+  customerId: string
+  disbursedDate: string
+  disbursedPrincipal: number
+}
+
+export type BankingCustomerTimelinePointKind = 'start' | 'loan-note' | 'change' | 'now'
+
+export interface BankingCustomerTimelinePoint {
+  date: string
+  label: string
+  detail: string
+  kind: BankingCustomerTimelinePointKind
+}
+
+export interface BankingCustomerHistoryVisualization {
+  kind: 'banking-customer-history'
+  initialVersion: BankingCustomerVersion
+  change: BankingCustomerHistoryChange
+  loanNote: BankingCustomerLoanNote
+  timeline: BankingCustomerTimelinePoint[]
 }
 
 export interface ScdDimensionVersion {

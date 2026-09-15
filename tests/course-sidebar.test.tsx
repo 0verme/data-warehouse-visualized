@@ -48,6 +48,6 @@ describe('课程 Sidebar Accordion', () => {
     expect(markup).toContain('class="course-lesson is-active"')
     expect(markup).toContain('data-progress-lesson-link="lesson-star-schema-grain"')
     expect(markup).toContain('aria-current="page"')
-    expect(markup).toContain('>0/3</span>')
+    expect(markup).toContain('>0/5</span>')
   })
 })

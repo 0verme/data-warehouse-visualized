@@ -10,9 +10,11 @@
 
 - `why-data-warehouse.ts`：业务系统与分析负载
 - `warehouse-layers.ts`：ODS / DWD / DWS / ADS 数据流
-- `data-modeling.ts`：原始订单数据、粒度声明与四步建模思路
-- `star-schema-and-grain.ts`：星型模型、事实表、维度表与粒度错误模拟
-- `slowly-changing-dimension.ts`：Type 1 / Type 2 对比与维度历史时间轴实验
+- `data-modeling.ts`：贷款业务过程选择与 LoanContract / LoanNote / Repayment 最小链路
+- `grain.ts`：合同、借据、还款三种 Grain 与 Join 放大错误
+- `star-schema-and-grain.ts`：账户交易字段归位、事实/维度与星型模型
+- `fact-table-types.ts`：Transaction Fact、Periodic Snapshot Fact、Accumulating Snapshot Fact 对照
+- `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
 - `data-lineage.ts`：血缘关系与影响分析
 - `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
 - `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
