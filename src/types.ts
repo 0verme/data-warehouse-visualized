@@ -22,7 +22,11 @@ export interface PipelineStage {
 export type LineageEntityType = 'table' | 'field' | 'task' | 'metric'
 export type LineageRelationType = 'transform' | 'depends_on' | 'derives' | 'consumes'
 export type LineageEvidenceSource =
-  'sql_transformation' | 'task_dependency' | 'manual_metadata' | 'metric_definition'
+  | 'sql_transformation'
+  | 'task_dependency'
+  | 'manual_metadata'
+  | 'metric_definition'
+  | 'quality_event'
 export type LineageConfidence = 'confirmed' | 'inferred' | 'manual'
 export type LineageEventType =
   'field_change' | 'quality_alert' | 'task_failure' | 'sql_transformation'

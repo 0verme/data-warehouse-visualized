@@ -7,6 +7,10 @@ import type {
   LineageNode,
   LineageRelationType,
 } from '../types'
+import type {
+  LineageInvestigationEventDefinition,
+  LineageRootCauseCandidate,
+} from '../features/lineage/types'
 
 export const LINEAGE_ENTITY_TYPES: LineageEntityType[] = ['table', 'field', 'task', 'metric']
 
@@ -56,6 +60,7 @@ export interface LineageInvestigationResult {
   impact: ImpactAnalysis
   blastRadius: BlastRadius
   path: LineagePath | null
+  rootCauseCandidate: LineageRootCauseCandidate | null
 }
 
 export function getLineageEntityType(node: LineageNode): LineageEntityType {
@@ -327,7 +332,7 @@ export function getLineagePath(
 export function analyzeLineageInvestigation(
   nodes: readonly LineageNode[],
   edges: readonly LineageEdge[],
-  event: LineageInvestigationEvent,
+  event: LineageInvestigationEvent | LineageInvestigationEventDefinition,
 ): LineageInvestigationResult {
   const impactSummary = getLineageImpactSummary(nodes, edges, event.sourceEntityId, {
     includeCrossEntity: true,
@@ -342,6 +347,8 @@ export function analyzeLineageInvestigation(
     },
     blastRadius: impactSummary.finalBlastRadius,
     path: getLineagePath(nodes, edges, event.sourceEntityId, event.affectedEntityId),
+    rootCauseCandidate:
+      ('rootCauseCandidate' in event ? event.rootCauseCandidate : undefined) ?? null,
   }
 }
 

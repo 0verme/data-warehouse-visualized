@@ -1,6 +1,9 @@
 import type { LessonContent } from '../types'
 import type { LineageEdge, LineageEvidence, LineageNode } from '../../types'
+import { qualityEventAdapter } from '../../features/lineage/quality-adapter'
 import { bindLineageProductionChain } from '../../features/lineage/production'
+import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
+import { dataQualityVisualization } from './data-quality'
 import { schedulerVisualization } from './scheduling-system'
 import { sqlTransformationVisualization } from './sql-and-transformation'
 
@@ -414,6 +417,18 @@ const lineageEdges: LineageEdge[] = [
   },
 ]
 
+const qualityEvaluation = evaluateDataQuality(dataQualityVisualization, {
+  injection: 'missing-order-item',
+  action: 'block',
+})
+const qualityEvent = qualityEvaluation.events.find(
+  (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
+)
+if (!qualityEvent) {
+  throw new Error('第 08 课需要第 07 课的完整性 Quality Event 作为调查入口')
+}
+
+const qualityLineageInvestigation = qualityEventAdapter.toInvestigationEvent(qualityEvent)
 const lineageProductionGraph = bindLineageProductionChain({
   baseNodes: lineageNodes,
   baseEdges: lineageEdges,
@@ -423,9 +438,10 @@ const lineageProductionGraph = bindLineageProductionChain({
 
 export const dataLineageContent: LessonContent = {
   eyebrow: '第 10 课 · 追踪一条数据生产链路',
-  subtitle: '从 order_status 字段变更出发，定位生产任务、下游表和指标的影响范围。',
+  subtitle:
+    '从真实 Quality Event 或 order_status 字段变更出发，定位生产任务、下游表和指标的影响范围。',
   quickSummary:
-    '数据血缘把表、字段、任务和指标放进同一张可解释的依赖图，帮助我们先预测影响，再沿证据路径验证变更。',
+    '数据血缘把表、字段、任务和指标放进同一张可解释的依赖图；质量异常可以直接进入调查，先预测影响，再沿证据路径验证变更。',
   concept: {
     term: '数据血缘',
     definition:
@@ -436,6 +452,7 @@ export const dataLineageContent: LessonContent = {
       title: '先把依赖关系画出来',
       paragraphs: [
         '在最小订单链路里，ODS.ORDER 是来源，DWD.ORDER_DETAIL 统一订单明细；它又被销售主题和用户主题复用，最终共同支撑报表。表级视图保留了原来的学习入口。',
+        '第 07 课的真实 Quality Event（缺少 I1002-2 的完整性失败）现在可以从调查选择器直接进入这条链路：质量规则、目标字段、分区和 Scheduler run 不会在适配时丢失。',
         '同一条链路还可以换成字段、任务或指标视角：字段回答“哪一列被加工”，任务回答“谁负责生产”，指标回答“哪个口径在消费”。',
       ],
       bullets: [
@@ -449,7 +466,7 @@ export const dataLineageContent: LessonContent = {
     {
       title: '变更前先问影响范围',
       paragraphs: [
-        '选择字段语义变化、schema / field change 或 task failure 事件后，先观察直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终爆炸半径适合安排验证与通知范围。',
+        '选择真实 Quality Event、字段语义变化、schema / field change 或 task failure 事件后，先观察直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终爆炸半径适合安排验证与通知范围。',
       ],
       bullets: [
         '上游：帮助定位来源和排查问题',
@@ -461,7 +478,7 @@ export const dataLineageContent: LessonContent = {
     {
       title: '每条箭头都要能解释',
       paragraphs: [
-        '点击调查路径中的边，可以看到它来自 SQL transformation、task dependency、metric definition 或 manual metadata，以及 confirmed / inferred / manual 的教学置信度。证据越弱，越应该回到任务配置和字段语义进行确认。',
+        '点击调查路径中的边，可以看到它来自 Quality Event、SQL transformation、task dependency、metric definition 或 manual metadata，以及 confirmed / inferred / manual 的教学置信度。证据越弱，越应该回到质量样本、任务配置和字段语义进行确认。',
       ],
     },
   ],
@@ -470,7 +487,10 @@ export const dataLineageContent: LessonContent = {
     nodes: lineageProductionGraph.nodes,
     edges: lineageProductionGraph.edges,
     investigationEvent: lineageProductionGraph.investigationEvents[0],
-    investigationEvents: lineageProductionGraph.investigationEvents,
+    investigationEvents: [
+      ...lineageProductionGraph.investigationEvents,
+      qualityLineageInvestigation,
+    ],
   },
   code: {
     label: '一个需要血缘的问题',
@@ -481,7 +501,7 @@ FROM lineage_edges
 WHERE source_entity = 'DWD.ORDER_DETAIL.order_status';`,
   },
   engineeringTip:
-    '本课已经消费第 05 章的 SQL task contract 和第 06 章的 Scheduler task identity / dependsOn，并把它们作为边的证据。第 07 章 Quality Event 仍通过薄 adapter 接入，当前不复制 QualityRule、QualityEvidence 或质量结果模型。',
+    '本课消费第 05 章的 SQL task contract、第 06 章的 Scheduler task identity / dependsOn，并通过薄 adapter 直接消费第 07 章真实 QualityEvent；Lineage 不复制 QualityRule、QualityEvidence、QualityInvestigationContext 或质量结果模型。',
   pitfalls: [
     '上游和下游是相对当前节点而言的；换一个选中对象，统计结果也会变化。',
     '直接下游不等于最终影响，传递链路中的表、任务和指标都需要分别验证。',
