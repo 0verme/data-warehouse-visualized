@@ -75,6 +75,21 @@ describe('课程数据与导航', () => {
     expect(content.visualization).toBeUndefined()
   })
 
+  it('第七章已注册数据质量事件调查台', () => {
+    const lesson = getLessonBySlug('data-quality')!
+    const content = getLessonContent(lesson)
+
+    expect(lesson).toMatchObject({ chapter: '07', demo: 'data-quality' })
+    expect(content.eyebrow).toBe('第 07 课 · 质量事件调查台')
+    expect(
+      content.sections.some(
+        (section) =>
+          section.kind === 'visualization' && section.visualization.kind === 'data-quality',
+      ),
+    ).toBe(true)
+    expect(content.visualization).toBeUndefined()
+  })
+
   it('返回当前课程的上一节和下一节', () => {
     const adjacent = getAdjacentLessons(lessons, 'warehouse-layers')
 

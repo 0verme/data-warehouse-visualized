@@ -16,6 +16,7 @@ import type { LineageInvestigationEventDefinition } from '../features/lineage/ty
 import type { SchedulerVisualization } from '../features/scheduler/types'
 import type { SqlTransformationVisualization } from '../features/sql-transformation/types'
 import type { PerformanceVisualization } from '../features/performance/types'
+import type { DataQualityVisualization } from '../features/data-quality/types'
 
 export interface LessonOpening {
   eyebrow: string
@@ -128,6 +129,7 @@ export type LessonVisualization =
   | GovernanceVisualization
   | PerformanceVisualization
   | SchedulerVisualization
+  | DataQualityVisualization
 
 export interface LessonContent {
   eyebrow: string

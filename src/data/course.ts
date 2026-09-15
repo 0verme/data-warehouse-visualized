@@ -16,6 +16,7 @@ export type LessonDemo =
   | 'governance'
   | 'performance-lab'
   | 'scheduler'
+  | 'data-quality'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -135,7 +136,7 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
-    demo: 'coming-soon',
+    demo: 'data-quality',
   },
   {
     id: 'lesson-08',
@@ -256,8 +257,8 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-07': {
       title: '数据质量：怎样知道数据可信？',
-      summary: '认识完整性、唯一性、及时性和一致性等质量检查维度。',
-      tags: ['质量', '校验'],
+      summary: '从成功的任务出发，用失败样本、阈值和发布决定验证数据是否可信。',
+      tags: ['质量', '校验', '证据', '发布闸门'],
     },
     'lesson-08': {
       title: '什么是数据血缘？',
