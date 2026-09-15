@@ -78,15 +78,15 @@ const dwdColumns: readonly OrderColumn[] = [
 const heroSteps: readonly HeroStep[] = [
   { id: '01', name: 'Source', table: 'orders', detail: '业务库' },
   { id: '02', name: 'ODS', table: 'ods_order', detail: '原样落表' },
-  { id: '03', name: 'DWD', table: 'dwd_order', detail: '过滤与清洗' },
-  { id: '04', name: 'Metric', table: 'GMV', detail: '聚合结果' },
+  { id: '03', name: 'DWD', table: 'dwd_order', detail: 'SQL 过滤' },
+  { id: '04', name: 'Metric', table: 'GMV', detail: 'SQL 聚合' },
 ]
 
 const phaseMessages = {
-  0: '先看业务库里的 3 行订单；点击播放，让它们开始移动。',
+  0: '先看业务库里的 3 行订单；点击播放，观察它们如何被加工。',
   1: 'ODS 原样接住订单，不改变来源字段。',
   2: "DWD 应用 WHERE status = 'PAID'，REFUND 被过滤。",
-  3: '2 valid rows → SUM(amount) → GMV ¥598。',
+  3: '2 valid rows → SQL SUM(amount) → GMV ¥598。',
 } satisfies Record<FlowPhase, string>
 
 function getStageStatus(index: number, phase: FlowPhase): StageStatus {
@@ -492,7 +492,7 @@ export function HeroDataFlow({ codeHighlights }: HeroDataFlowProps) {
     >
       <div className="hero-demo__toolbar">
         <div>
-          <span className="hero-demo__toolbar-label">一行数据如何变成一个指标</span>
+          <span className="hero-demo__toolbar-label">一条订单的加工实验</span>
           <p aria-live="polite">{phaseMessages[phase]}</p>
         </div>
         <div className="hero-demo__actions">

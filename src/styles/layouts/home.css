@@ -194,8 +194,8 @@
   font-style: normal;
 }
 
-.home-hero__mobile-break {
-  display: none;
+.home-hero__title-break {
+  display: block;
 }
 
 .home-hero__lead {
@@ -1321,10 +1321,6 @@
     width: 100%;
     overflow-wrap: anywhere;
     font-size: clamp(37px, 10vw, 52px);
-  }
-
-  .home-hero__mobile-break {
-    display: block;
   }
 
   .home-hero__lead {

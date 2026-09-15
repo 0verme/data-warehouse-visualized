@@ -14,8 +14,8 @@ const baseUrl = import.meta.env.BASE_URL
 ---
 
 <BaseLayout
-  title="数据仓库图解｜从一张表开始，看懂数据仓库"
-  description="面向中文学习者的交互式数据仓库可视化教材。看一行数据如何流过仓库，最后变成一个指标。"
+  title="数据仓库图解｜交互实验理解数据工程链路"
+  description="面向中文学习者的交互式数据仓库与数据工程教材。通过建模、SQL 加工、调度、质量与血缘实验，看懂一条数据如何变成可信指标。"
 >
   <div class="site-shell home-page">
     <header class="site-header">
@@ -47,32 +47,35 @@ const baseUrl = import.meta.env.BASE_URL
         <div class="home-hero__copy">
           <div class="home-hero__kicker">
             <span class="home-hero__chapter">00 / INTRO</span>
-            <span>第 0 节 · 数据从哪里开始</span>
+            <span>交互式数据工程教材</span>
           </div>
           <h1 id="hero-title">
-            从一张表开始，
-            <br class="home-hero__mobile-break" />
-            <em>看懂</em>数据仓库。
+            从 SQL 开始，
+            <br class="home-hero__title-break" />
+            <em>看懂</em>数据链路。
           </h1>
-          <p class="home-hero__lead">看一行数据如何流过仓库，最后变成一个指标。</p>
+          <p class="home-hero__lead">
+            SQL
+            是加工工具，不是终点。通过交互实验，看懂一条数据如何经过建模、加工与调度，最后变成可信指标。
+          </p>
           <div class="home-hero__actions">
             <a class="button button--primary" href={`${baseUrl}learn/`}>
-              进入课程 <span aria-hidden="true">→</span>
+              进入交互课程 <span aria-hidden="true">→</span>
             </a>
             <a class="home-text-link" href="#data-lesson">
-              继续看这行数据 <span aria-hidden="true">↓</span>
+              先看数据如何流动 <span aria-hidden="true">↓</span>
             </a>
           </div>
           <div class="home-hero__context">
-            <span>一条订单的旅程</span>
-            <code>source → transform → metric</code>
+            <span>一条数据的加工链路</span>
+            <code>source → ODS → DWD → metric</code>
           </div>
         </div>
 
         <div class="home-hero__demo" aria-labelledby="hero-demo-title">
           <div class="home-hero__demo-heading">
-            <span class="home-section-kicker">INTERACTIVE DATA FLOW</span>
-            <h2 id="hero-demo-title">一行数据如何变成一个指标</h2>
+            <span class="home-section-kicker">INTERACTIVE DATA FLOW · EXPERIMENT</span>
+            <h2 id="hero-demo-title">一行数据如何经过加工，变成一个指标</h2>
           </div>
           <HeroDataFlow client:load codeHighlights={codeHighlights} />
         </div>
@@ -82,7 +85,7 @@ const baseUrl = import.meta.env.BASE_URL
         <div class="home-section-heading">
           <span class="home-section-kicker">01 / FOLLOW THE ROW</span>
           <h2 id="data-lesson-title">一行数据发生了什么？</h2>
-          <p>同一笔订单经过不同层，每一层都只负责一件清楚的事。</p>
+          <p>跟着一笔订单，看业务数据如何逐层加工成可使用的指标。</p>
         </div>
         <ol class="home-data-lesson__list">
           <li class="home-data-lesson__row">
@@ -168,7 +171,7 @@ const baseUrl = import.meta.env.BASE_URL
         <div class="home-course-map__intro">
           <span class="home-section-kicker">03 / COURSE MAP</span>
           <h2 id="course-map-title">沿着数据继续走。</h2>
-          <p>从全局视角开始，逐步进入分层、建模、指标与工程实践。</p>
+          <p>从数据仓库基础开始，走过建模、SQL 加工、调度、质量、血缘、治理与湖仓。</p>
           <div class="home-course-map__meta" aria-label="课程概览">
             <span>
               <code>{lessons.length}</code> 节路线
