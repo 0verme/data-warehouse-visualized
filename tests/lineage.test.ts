@@ -1,266 +1,270 @@
 import { describe, expect, it } from 'vitest'
-import type { LineageProductionNode } from '../src/features/lineage/types'
+import { depositBalanceQualityEvent } from '../src/content/lessons/data-quality'
+import { legacyLineageVisualization } from '../src/content/lessons/legacy-lineage-data'
+import {
+  BANKING_LINEAGE_NODE_IDS,
+  BANKING_LINEAGE_TASK_NODE_IDS,
+  bankingEvidenceRecords,
+  bankingFieldDependencies,
+  bankingLineageEdges,
+  bankingLineageNodes,
+  bankingRootCauseCandidates,
+  bankingTaskDependencyExample,
+} from '../src/features/lineage/banking'
 import { qualityEventToLineageInvestigation } from '../src/features/lineage/quality-adapter'
-import { dataLineageContent } from '../src/content/lessons/data-lineage'
-import { dataQualityVisualization } from '../src/content/lessons/data-quality'
-import { QUALITY_RULE_IDS, evaluateDataQuality } from '../src/utils/data-quality'
+import { getLineageTaskNodeId, getLineageTableNodeId } from '../src/features/lineage/mapping'
+import { LEGACY_SCHEDULER_TASK_IDS, SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
 import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
+import { QUALITY_RULE_IDS } from '../src/utils/data-quality'
+import { dataLineageContent } from '../src/content/lessons/data-lineage'
 import {
   analyzeLineageInvestigation,
   getBlastRadius,
-  getDownstreamNodes,
-  getImpactAnalysis,
-  getLineageEdgeConfidence,
+  getDirectDownstreamNodes,
+  getDirectUpstreamNodes,
+  getInvestigationDecision,
   getLineageEdgeEvidence,
+  getLineageEdgeEvidenceSource,
+  getLineageEdgeVerificationStatus,
   getLineageImpactSummary,
   getLineagePath,
   getLineageView,
+  getDownstreamNodes,
   getUpstreamNodes,
 } from '../src/utils/lineage'
 
-const visualization = dataLineageContent.visualization
-
-if (!visualization || visualization.kind !== 'lineage') {
-  throw new Error('血缘测试需要 lineage visualization 数据')
+const { nodes, edges } = {
+  nodes: bankingLineageNodes,
+  edges: bankingLineageEdges,
 }
 
-const { nodes, edges } = visualization
+function getVisualizationModes() {
+  return dataLineageContent.sections.flatMap((section) =>
+    section.kind === 'visualization' && section.visualization.kind === 'lineage'
+      ? [section.visualization]
+      : [],
+  )
+}
 
-describe('数据血缘分析', () => {
-  it('保留表级示例的上游、直接下游和最终影响', () => {
-    expect(getUpstreamNodes(nodes, edges, 'dwd-deposit-balance')).toEqual(['ods-account-balance'])
-    expect(getDownstreamNodes(nodes, edges, 'dwd-deposit-balance')).toEqual([
-      'dws-deposit-balance',
-      'dws-account-profile',
-      'ads-deposit-balance',
+describe('第 08 课数据血缘', () => {
+  it('拆分为 8-1 到 8-5，并统一使用银行存款余额链路', () => {
+    expect(dataLineageContent.sections.map((section) => section.kind)).toEqual([
+      'visualization',
+      'visualization',
+      'visualization',
+      'visualization',
+      'visualization',
     ])
-    expect(getImpactAnalysis(nodes, edges, 'dwd-deposit-balance')).toEqual({
-      upstream: ['ods-account-balance'],
-      directDownstream: ['dws-deposit-balance', 'dws-account-profile'],
-      finalImpact: ['dws-deposit-balance', 'dws-account-profile', 'ads-deposit-balance'],
+    expect(getVisualizationModes().map((visualization) => visualization.teaching?.mode)).toEqual([
+      'overview',
+      'field-dependencies',
+      'investigation',
+      'impact',
+      'evidence',
+    ])
+    expect(dataLineageContent.visualization).toMatchObject({
+      kind: 'lineage',
+      teaching: { mode: 'overview' },
+    })
+    expect(nodes.map((node) => node.label)).toEqual(
+      expect.arrayContaining([
+        'AccountBalanceSnapshot',
+        'dwd_account_balance_detail',
+        'dws_deposit_balance_daily',
+        'ads_deposit_balance',
+        '存款余额指标',
+      ]),
+    )
+  })
+
+  it('保留表级链路的直接、传递上游和最终影响', () => {
+    expect(getUpstreamNodes(nodes, edges, BANKING_LINEAGE_NODE_IDS.dwd)).toEqual([
+      BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
+      BANKING_LINEAGE_NODE_IDS.account,
+      BANKING_LINEAGE_NODE_IDS.customer,
+      BANKING_LINEAGE_NODE_IDS.product,
+      BANKING_LINEAGE_NODE_IDS.branch,
+    ])
+    expect(getDirectDownstreamNodes(edges, BANKING_LINEAGE_NODE_IDS.dwd)).toEqual([
+      BANKING_LINEAGE_NODE_IDS.dws,
+    ])
+    expect(
+      getDownstreamNodes(nodes, edges, BANKING_LINEAGE_NODE_IDS.dwd, { includeCrossEntity: true }),
+    ).toEqual([
+      BANKING_LINEAGE_NODE_IDS.dws,
+      BANKING_LINEAGE_NODE_IDS.ads,
+      BANKING_LINEAGE_NODE_IDS.metric,
+    ])
+    expect(
+      getLineageImpactSummary(nodes, edges, BANKING_LINEAGE_NODE_IDS.dwd, {
+        includeCrossEntity: true,
+      }),
+    ).toMatchObject({
+      upstream: expect.arrayContaining([BANKING_LINEAGE_NODE_IDS.branch]),
+      directDownstream: [BANKING_LINEAGE_NODE_IDS.dws],
+      transitiveDownstream: [
+        BANKING_LINEAGE_NODE_IDS.dws,
+        BANKING_LINEAGE_NODE_IDS.ads,
+        BANKING_LINEAGE_NODE_IDS.metric,
+      ],
     })
   })
 
-  it('按实体类型切换视图时只保留对应节点和边', () => {
-    const fieldView = getLineageView(nodes, edges, 'field')
-    const taskView = getLineageView(nodes, edges, 'task')
-
-    expect(fieldView.nodes).toHaveLength(5)
-    expect(fieldView.edges).toHaveLength(5)
-    expect(fieldView.nodes.every((node) => node.entityType === 'field')).toBe(true)
-    expect(
-      fieldView.edges.every((edge) => fieldView.nodes.some((node) => node.id === edge.source)),
-    ).toBe(true)
-    expect(taskView.nodes).toHaveLength(5)
-    expect(taskView.edges).toHaveLength(5)
-  })
-
-  it('区分字段视图的直接下游与传递下游', () => {
-    const fieldView = getLineageView(nodes, edges, 'field')
-    const analysis = getImpactAnalysis(fieldView.nodes, fieldView.edges, 'field-dwd-balance')
-
-    expect(analysis.directDownstream).toEqual(['field-dws-balance', 'field-dws-account-scope'])
-    expect(analysis.finalImpact).toEqual([
-      'field-dws-balance',
-      'field-dws-account-scope',
-      'field-ads-balance',
-    ])
-  })
-
-  it('计算跨实体的最终爆炸半径', () => {
-    const blastRadius = getBlastRadius(nodes, edges, 'field-dwd-balance', {
+  it('能够切换旧 LineageGraph 的表级视图，并保留跨实体爆炸半径算法', () => {
+    const tableView = getLineageView(nodes, edges, 'table')
+    const blastRadius = getBlastRadius(nodes, edges, BANKING_LINEAGE_NODE_IDS.dwd, {
       includeCrossEntity: true,
     })
 
-    expect(blastRadius.total).toBeGreaterThan(blastRadius.byType.field)
-    expect(blastRadius.byType.task).toBeGreaterThan(0)
-    expect(blastRadius.byType.table).toBeGreaterThan(0)
-    expect(blastRadius.byType.metric).toBeGreaterThan(0)
-  })
-
-  it('保留边的关系、证据和置信度', () => {
-    const sqlEdge = edges.find(
-      (edge) => edge.source === 'ods-account-balance' && edge.target === 'dwd-deposit-balance',
-    )
-
-    expect(sqlEdge).toBeDefined()
-    expect(getLineageEdgeEvidence(sqlEdge!).source).toBe('sql_transformation')
-    expect(getLineageEdgeConfidence(sqlEdge!)).toBe('confirmed')
-  })
-
-  it('把 SQL transformation 和 Scheduler task contract 绑定到同一条生产链', () => {
-    const dwdTask = nodes.find((node) => node.id === 'task-build-deposit-detail')
-    const sqlEdge = edges.find(
-      (edge) =>
-        edge.source === 'task-build-deposit-detail' && edge.target === 'dwd-deposit-balance',
-    )
-    const taskEdge = edges.find(
-      (edge) => edge.source === 'dwd-deposit-balance' && edge.target === 'task-build-deposit-topic',
-    )
-    const manualEdge = edges.find(
-      (edge) =>
-        edge.source === 'task-build-account-profile' && edge.target === 'dws-account-profile',
-    )
-
-    expect(dwdTask?.role).toContain(BANKING_SCHEDULER_TASK_IDS.dwd)
-    expect((dwdTask as LineageProductionNode | undefined)?.schedulerTaskId).toBe(
-      BANKING_SCHEDULER_TASK_IDS.dwd,
-    )
-    expect(getLineageEdgeEvidence(sqlEdge!).detail).toContain('SQL transformation')
-    expect(getLineageEdgeEvidence(sqlEdge!).detail).toContain(BANKING_SCHEDULER_TASK_IDS.dwd)
-    expect(getLineageEdgeEvidence(taskEdge!).detail).toContain(BANKING_SCHEDULER_TASK_IDS.dws)
-    expect(getLineageEdgeEvidence(manualEdge!).source).toBe('manual_metadata')
-    expect(edges.every((edge) => edge.evidence && edge.confidence)).toBe(true)
-  })
-
-  it('提供字段语义变化、schema change 和 task failure 三个真实调查入口', () => {
-    const events = visualization.investigationEvents ?? []
-
-    expect(events.map((event) => event.entryPoint)).toEqual([
-      'field-semantic-change',
-      'schema-change',
-      'task-failure',
-      'quality-event',
+    expect(tableView.nodes).toHaveLength(8)
+    expect(tableView.edges).toHaveLength(7)
+    expect(tableView.nodes.every((node) => node.entityType === 'table')).toBe(true)
+    expect(blastRadius.nodeIds).toEqual([
+      BANKING_LINEAGE_NODE_IDS.dws,
+      BANKING_LINEAGE_NODE_IDS.ads,
+      BANKING_LINEAGE_NODE_IDS.metric,
     ])
-
-    const taskFailure = events.find((event) => event.entryPoint === 'task-failure')
-    expect(taskFailure).toMatchObject({
-      sourceEntityId: 'task-build-deposit-detail',
-      eventType: 'task_failure',
-      evidence: { source: 'task_dependency' },
-      context: {
-        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
-        status: 'failed',
-        outputState: 'not-produced',
-      },
-    })
-    expect(taskFailure?.context?.runId).toBe('run.deposit-balance.daily.20260930.schedule.001')
-    expect(taskFailure?.context?.attempt).toBe(2)
-
-    const qualityInvestigation = events.find((event) => event.entryPoint === 'quality-event')
-    expect(qualityInvestigation?.qualityEvent).toMatchObject({
-      ruleId: QUALITY_RULE_IDS.branchReference,
-      target: {
-        table: 'dwd_deposit_account_balance',
-        field: 'branch_id',
-        partition: { column: 'business_date', value: dataQualityVisualization.targetDate },
-      },
-      schedulerContext: { taskId: BANKING_SCHEDULER_TASK_IDS.dwd },
-    })
+    expect(blastRadius.byType.metric).toBe(1)
   })
 
-  it('把真实 QualityEvent 确定性适配为 Lineage investigation 且不丢上下文', () => {
-    const evaluation = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'missing-branch-reference',
-      action: 'block',
+  it('表达字段级 SUM、rename、FILTER 和 JOIN 依赖', () => {
+    expect(bankingFieldDependencies.map((dependency) => dependency.operation)).toEqual([
+      'SUM',
+      'rename',
+      'FILTER',
+      'JOIN',
+    ])
+    expect(bankingFieldDependencies[0]).toMatchObject({
+      sourceFields: ['dwd_account_balance_detail.balance'],
+      targetFields: ['dws_deposit_balance_daily.deposit_balance'],
+      evidenceSource: 'sql_transformation',
+      verificationStatus: 'confirmed',
     })
-    const qualityEvent = evaluation.events.find(
-      (event) => event.ruleId === QUALITY_RULE_IDS.branchReference,
+    expect(bankingFieldDependencies[3]?.detail).toContain('Branch.branch_id')
+  })
+
+  it('把任务依赖和数据依赖放在同一课程但保持边界清楚', () => {
+    expect(bankingTaskDependencyExample).toMatchObject({
+      upstreamTaskId: BANKING_LINEAGE_TASK_NODE_IDS.dwd,
+      downstreamTaskId: BANKING_LINEAGE_TASK_NODE_IDS.dws,
+      evidenceSource: 'task_dependency',
+      verificationStatus: 'confirmed',
+    })
+    expect(getLineageTaskNodeId(BANKING_SCHEDULER_TASK_IDS.dws)).toBe(
+      BANKING_LINEAGE_TASK_NODE_IDS.dws,
     )
+    expect(getLineageTableNodeId('dws_deposit_balance_daily')).toBe(BANKING_LINEAGE_NODE_IDS.dws)
+  })
 
-    if (!qualityEvent) {
-      throw new Error('测试需要第 07 课的完整性 QualityEvent')
-    }
+  it('把第 07 章 QualityEvent 适配为近到远调查入口', () => {
+    expect(depositBalanceQualityEvent).toMatchObject({
+      ruleId: QUALITY_RULE_IDS.reconciliation,
+      status: 'fail',
+      severity: 'critical',
+      target: {
+        table: 'dws_deposit_balance_daily',
+        field: 'balance',
+        partition: { column: 'business_date', value: '2026-09-30' },
+      },
+      schedulerContext: {
+        taskId: BANKING_SCHEDULER_TASK_IDS.dws,
+        outputTable: 'dws_deposit_balance_daily',
+        schedulerOutputTable: 'dws_deposit_balance_daily',
+      },
+    })
 
-    const first = qualityEventToLineageInvestigation(qualityEvent)
-    const second = qualityEventToLineageInvestigation(qualityEvent)
+    const first = qualityEventToLineageInvestigation(depositBalanceQualityEvent)
+    const second = qualityEventToLineageInvestigation(depositBalanceQualityEvent)
 
     expect(second).toEqual(first)
     expect(first).toMatchObject({
       entryPoint: 'quality-event',
       eventType: 'quality_alert',
-      sourceEntityId: 'dwd-deposit-balance',
-      affectedEntityId: 'metric-deposit-report',
+      sourceEntityId: BANKING_LINEAGE_NODE_IDS.dws,
+      affectedEntityId: BANKING_LINEAGE_NODE_IDS.metric,
       evidence: { source: 'quality_event' },
       context: {
-        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
-        runId: qualityEvent.schedulerContext.runId,
-        businessDate: dataQualityVisualization.targetDate,
-        partition: qualityEvent.target.partition,
-        status: qualityEvent.schedulerContext.taskStatus,
+        taskId: BANKING_SCHEDULER_TASK_IDS.dws,
+        runId: depositBalanceQualityEvent.schedulerContext.runId,
+        businessDate: '2026-09-30',
+        status: 'success',
       },
-      rootCauseCandidate: {
-        entityId: 'task-build-deposit-detail',
-        confidence: 'inferred',
-      },
-      qualityEvent,
+      qualityEvent: depositBalanceQualityEvent,
     })
-    expect(first.qualityEvent?.ruleId).toBe(QUALITY_RULE_IDS.branchReference)
-    expect(first.qualityEvent?.target).toEqual(qualityEvent.target)
-    expect(first.qualityEvent).not.toHaveProperty('investigationContext')
-    expect(first.qualityEvent?.evidence[0]?.sample?.rowKey).toBe('A003 / 2026-09-30')
+    expect(first.rootCauseCandidates).toHaveLength(3)
+    expect(first.rootCauseCandidate).toMatchObject({
+      entityId: BANKING_LINEAGE_NODE_IDS.dwd,
+      kind: 'value-source',
+      verificationStatus: 'pending',
+    })
+    expect(first.summary).toContain('直接上游')
   })
 
-  it('从 Quality Event 找到可能根因并区分直接、传递和最终指标影响', () => {
-    const event = visualization.investigationEvents?.find(
-      (candidate) => candidate.entryPoint === 'quality-event',
-    )
-    if (!event) {
-      throw new Error('血缘测试需要 Quality Event 调查入口')
-    }
-
-    const result = analyzeLineageInvestigation(nodes, edges, event)
-
-    expect(result.rootCauseCandidate).toMatchObject({
-      entityId: 'task-build-deposit-detail',
-      confidence: 'inferred',
-    })
-    expect(result.impact.upstream).toContain('task-build-deposit-detail')
-    expect(result.impact.directDownstream).toEqual([
-      'dws-deposit-balance',
-      'dws-account-profile',
-      'task-build-deposit-topic',
-      'task-build-account-profile',
+  it('候选根因来自真实关系，但保持待验证状态', () => {
+    expect(bankingRootCauseCandidates.map((candidate) => candidate.evidenceSource)).toEqual([
+      'sql_transformation',
+      'sql_transformation',
+      'sql_transformation',
     ])
-    expect(result.impact.directDownstream).not.toContain('metric-deposit-report')
-    expect(result.impact.finalImpact).toContain('metric-deposit-report')
-    expect(result.blastRadius.nodeIds).toContain('ads-deposit-balance')
-    expect(result.blastRadius.byType.metric).toBe(3)
-    expect(result.path?.nodeIds[0]).toBe('dwd-deposit-balance')
-    expect(result.path?.nodeIds.at(-1)).toBe('metric-deposit-report')
-  })
-
-  it('生成字段变更到目标指标的调查路径', () => {
-    const event = visualization.investigationEvent
-    if (!event) {
-      throw new Error('血缘测试需要字段变更调查事件')
-    }
-
-    const path = getLineagePath(nodes, edges, event.sourceEntityId, event.affectedEntityId)
-    const result = analyzeLineageInvestigation(nodes, edges, event)
-
-    expect(path).not.toBeNull()
-    expect(path?.nodeIds[0]).toBe(event.sourceEntityId)
-    expect(path?.nodeIds[path.nodeIds.length - 1]).toBe(event.affectedEntityId)
-    expect(path?.nodeIds.some((nodeId) => nodeId.startsWith('task-'))).toBe(true)
-    expect(result.impact.directDownstream).toContain('task-build-deposit-detail')
-    expect(result.blastRadius.nodeIds).toContain(event.affectedEntityId)
-    expect(result.path?.edges.every((edge) => edge.evidence && edge.confidence)).toBe(true)
-  })
-
-  it('task failure 调查区分直接下游、传递下游与最终 blast radius', () => {
-    const event = visualization.investigationEvents?.find(
-      (candidate) => candidate.entryPoint === 'task-failure',
-    )
-    if (!event) {
-      throw new Error('血缘测试需要 task failure 调查事件')
-    }
-
-    const result = analyzeLineageInvestigation(nodes, edges, event)
-    const summary = getLineageImpactSummary(nodes, edges, event.sourceEntityId, {
-      includeCrossEntity: true,
+    expect(
+      bankingRootCauseCandidates.every((candidate) => candidate.verificationStatus === 'pending'),
+    ).toBe(true)
+    expect(bankingRootCauseCandidates[1]?.rationale).toContain('不是已经证明的根因')
+    expect(bankingEvidenceRecords.at(-1)).toMatchObject({
+      evidenceSource: 'manual_metadata',
+      verificationStatus: 'pending',
     })
+  })
 
-    expect(summary.transitiveDownstream).toEqual(result.impact.finalImpact)
-    expect(summary.finalBlastRadius).toEqual(result.blastRadius)
-    expect(result.impact.directDownstream).toEqual([
-      'dwd-deposit-balance',
-      'task-build-deposit-topic',
-      'task-build-account-profile',
+  it('调查结果区分直接下游、传递影响和最终指标消费者', () => {
+    const event = qualityEventToLineageInvestigation(depositBalanceQualityEvent)
+    const result = analyzeLineageInvestigation(nodes, edges, event)
+
+    expect(result.impact.directDownstream).toEqual([BANKING_LINEAGE_NODE_IDS.ads])
+    expect(result.impact.finalImpact).toEqual([
+      BANKING_LINEAGE_NODE_IDS.ads,
+      BANKING_LINEAGE_NODE_IDS.metric,
     ])
-    expect(result.impact.finalImpact).toContain('metric-deposit-report')
-    expect(result.blastRadius.byType.metric).toBeGreaterThan(0)
-    expect(result.path?.nodeIds[0]).toBe(event.sourceEntityId)
-    expect(result.path?.nodeIds.at(-1)).toBe(event.affectedEntityId)
+    expect(result.blastRadius.byType.metric).toBe(1)
+    expect(result.path?.nodeIds).toEqual([
+      BANKING_LINEAGE_NODE_IDS.dws,
+      BANKING_LINEAGE_NODE_IDS.ads,
+      BANKING_LINEAGE_NODE_IDS.metric,
+    ])
+    expect(result.rootCauseCandidates).toHaveLength(3)
+  })
+
+  it('保留旧电商血缘、任务和表名兼容别名', () => {
+    expect(legacyLineageVisualization.nodes.map((node) => node.label)).toContain('DWD.ORDER_DETAIL')
+    expect(getLineageTaskNodeId(LEGACY_SCHEDULER_TASK_IDS.dwd)).toBe('task-build-order-detail')
+    expect(getLineageTableNodeId('dwd_order_item')).toBe('dwd-order-detail')
+    expect(getLineageTaskNodeId(SCHEDULER_TASK_IDS.dwd)).toBe(BANKING_LINEAGE_TASK_NODE_IDS.dwd)
+  })
+
+  it('提供近到远调查分支，并让每条边带证据来源和确认状态', () => {
+    expect(getInvestigationDecision('normal')).toBe('inspect-current-transform')
+    expect(getInvestigationDecision('abnormal')).toBe('expand-upstream')
+    expect(getDirectUpstreamNodes(edges, BANKING_LINEAGE_NODE_IDS.dws)).toEqual([
+      BANKING_LINEAGE_NODE_IDS.dwd,
+    ])
+    expect(
+      edges.every(
+        (edge) =>
+          getLineageEdgeEvidence(edge).source === 'sql_transformation' ||
+          edge.target === BANKING_LINEAGE_NODE_IDS.metric,
+      ),
+    ).toBe(true)
+    expect(edges.every((edge) => getLineageEdgeEvidenceSource(edge) === edge.evidenceSource)).toBe(
+      true,
+    )
+    expect(edges.every((edge) => getLineageEdgeVerificationStatus(edge) === 'confirmed')).toBe(true)
+    expect(
+      getLineagePath(
+        nodes,
+        edges,
+        BANKING_LINEAGE_NODE_IDS.dws,
+        BANKING_LINEAGE_NODE_IDS.metric,
+      )?.edges.every((edge) => edge.evidence && edge.verificationStatus),
+    ).toBe(true)
   })
 })

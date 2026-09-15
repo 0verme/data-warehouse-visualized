@@ -3,9 +3,11 @@ import type {
   LineageEdge,
   LineageEntityType,
   LineageEvidence,
+  LineageEvidenceSource,
   LineageInvestigationEvent,
   LineageNode,
   LineageRelationType,
+  LineageVerificationStatus,
 } from '../types'
 import type {
   LineageInvestigationEventDefinition,
@@ -44,6 +46,15 @@ export interface LineageTraversalOptions {
   entityType?: LineageEntityType
 }
 
+export type LineageInvestigationDecision = 'inspect-current-transform' | 'expand-upstream'
+
+/** Decide whether the next check stays on the current hop or moves farther upstream. */
+export function getInvestigationDecision(
+  directUpstreamStatus: 'normal' | 'abnormal',
+): LineageInvestigationDecision {
+  return directUpstreamStatus === 'normal' ? 'inspect-current-transform' : 'expand-upstream'
+}
+
 export interface BlastRadius {
   nodeIds: string[]
   total: number
@@ -61,6 +72,7 @@ export interface LineageInvestigationResult {
   blastRadius: BlastRadius
   path: LineagePath | null
   rootCauseCandidate: LineageRootCauseCandidate | null
+  rootCauseCandidates: LineageRootCauseCandidate[]
 }
 
 export function getLineageEntityType(node: LineageNode): LineageEntityType {
@@ -183,6 +195,29 @@ export function getDownstreamNodes(
 ): string[] {
   const scopedGraph = getScopedGraph(nodes, edges, nodeId, options)
   return walkGraph(nodeId, buildAdjacency(scopedGraph.edges))
+}
+
+/** Return only the first upstream layer for a node. */
+export function getDirectUpstreamNodes(edges: readonly LineageEdge[], nodeId: string): string[] {
+  const sources = new Set<string>()
+
+  for (const edge of edges) {
+    if (edge.target === nodeId) {
+      sources.add(edge.source)
+    }
+  }
+
+  return [...sources]
+}
+
+/** Explicit name for all upstream layers; kept separate from the direct helper for teaching. */
+export function getTransitiveUpstreamNodes(
+  nodes: readonly LineageNode[],
+  edges: readonly LineageEdge[],
+  nodeId: string,
+  options?: LineageTraversalOptions,
+): string[] {
+  return getUpstreamNodes(nodes, edges, nodeId, options)
 }
 
 export function getTransitiveDownstreamNodes(
@@ -338,6 +373,13 @@ export function analyzeLineageInvestigation(
     includeCrossEntity: true,
   })
 
+  const rootCauseCandidates =
+    'rootCauseCandidates' in event ? [...(event.rootCauseCandidates ?? [])] : []
+  const legacyCandidate = 'rootCauseCandidate' in event ? event.rootCauseCandidate : undefined
+  if (rootCauseCandidates.length === 0 && legacyCandidate) {
+    rootCauseCandidates.push(legacyCandidate)
+  }
+
   return {
     event,
     impact: {
@@ -347,8 +389,8 @@ export function analyzeLineageInvestigation(
     },
     blastRadius: impactSummary.finalBlastRadius,
     path: getLineagePath(nodes, edges, event.sourceEntityId, event.affectedEntityId),
-    rootCauseCandidate:
-      ('rootCauseCandidate' in event ? event.rootCauseCandidate : undefined) ?? null,
+    rootCauseCandidate: rootCauseCandidates[0] ?? null,
+    rootCauseCandidates,
   }
 }
 
@@ -364,6 +406,21 @@ export function getLineageEdgeEvidence(edge: LineageEdge): LineageEvidence {
   return edge.evidence ?? DEFAULT_LINEAGE_EVIDENCE
 }
 
+/** Return the relationship's provenance source, independent of whether it is verified. */
+export function getLineageEdgeEvidenceSource(edge: LineageEdge): LineageEvidenceSource {
+  return edge.evidenceSource ?? edge.evidence?.source ?? DEFAULT_LINEAGE_EVIDENCE.source
+}
+
+/** Map legacy inferred/manual values to the new two-state verification model. */
+export function getLineageEdgeVerificationStatus(edge: LineageEdge): LineageVerificationStatus {
+  if (edge.verificationStatus) {
+    return edge.verificationStatus
+  }
+
+  return edge.confidence === 'confirmed' ? 'confirmed' : 'pending'
+}
+
+/** @deprecated Use getLineageEdgeVerificationStatus. */
 export function getLineageEdgeConfidence(edge: LineageEdge): LineageConfidence {
   return edge.confidence ?? 'manual'
 }

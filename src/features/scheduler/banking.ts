@@ -174,7 +174,7 @@ export function createBankingSchedulerTasks(
     contract: createTaskContract(
       BANKING_SCHEDULER_TASK_IDS.dwd,
       sourceTableNames,
-      'dwd_deposit_account_balance',
+      'dwd_account_balance_detail',
       sourceTableNames,
     ),
     durationMinutes: 8,
@@ -203,7 +203,7 @@ export function createBankingSchedulerTasks(
     contract: createTaskContract(
       BANKING_SCHEDULER_TASK_IDS.ads,
       [taskContract.outputTable],
-      'ads_deposit_balance_result',
+      'ads_deposit_balance',
       [taskContract.outputTable],
     ),
     durationMinutes: 2,

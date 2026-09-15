@@ -1,5 +1,6 @@
 import type { LessonContent } from '../types'
 import type { DataQualityVisualization } from '../../features/data-quality/types'
+import { depositBalanceQualityEvent } from '../../features/data-quality/banking'
 import {
   QUALITY_BUSINESS_DATE,
   createDataQualityVisualization,
@@ -7,6 +8,8 @@ import {
   createQualityTeachingModel,
 } from '../../utils/data-quality'
 import { schedulerVisualization } from './scheduling-system'
+
+export { depositBalanceQualityEvent }
 
 export const qualitySchedulerRun = createQualitySchedulerRun(
   schedulerVisualization.tasks,
