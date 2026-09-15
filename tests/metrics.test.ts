@@ -1,120 +1,135 @@
 import { describe, expect, it } from 'vitest'
-import { metricSystemContent } from '../src/content/lessons/metric-system'
+import { getLessonContent } from '../src/content/lessons'
+import { depositMetricDefinitionStages } from '../src/content/lessons/deposit-metric-definition'
+import { depositMetricDerivationVisualization } from '../src/content/lessons/deposit-metric-derivations'
+import { depositMetricTimeVisualization } from '../src/content/lessons/deposit-metric-time'
+import {
+  depositBalanceScopeVisualization,
+  metricSystemContent,
+} from '../src/content/lessons/metric-system'
 import { getLessonBySlug } from '../src/data/course'
-import type { MetricConfig } from '../src/types'
-import { calculateMetric, getIncludedOrders, getOrderContribution } from '../src/utils/metrics'
+import type {
+  BankingMetricBalanceFilter,
+  BankingMetricDefinitionVisualization,
+  BankingMetricScopeVisualization,
+  BankingMetricTimeVisualization,
+} from '../src/types'
+import {
+  calculateBankingMetric,
+  calculateBankingMetricTime,
+  getBankingMetricDefinition,
+} from '../src/utils/banking-metrics'
 
-const visualization = metricSystemContent.visualization
-
-if (!visualization || visualization.kind !== 'metric-definition') {
-  throw new Error('指标测试需要 metric-definition visualization 数据')
-}
-
-const baseConfig: MetricConfig = {
-  statusRule: 'paid',
-  refundRule: 'gross',
-  timeField: 'orderTime',
-  grainMode: 'correct',
-}
-
-describe('指标口径实验', () => {
-  it('课程元数据和订单数据已注册', () => {
+describe('第 04 章银行指标课程', () => {
+  it('保留旧 metric-system slug，并注册四节银行指标课程', () => {
     expect(getLessonBySlug('metric-system')).toMatchObject({
-      title: '指标体系：同一个数字为什么不一样？',
+      id: 'lesson-04',
+      title: '同一个“存款余额”，为什么会有不同答案？',
       chapter: '04',
       order: 100,
-      demo: 'metric-definition',
+      demo: 'banking-metric-scope',
     })
-    expect(visualization.targetDate).toBe('2026-09-13')
-    expect(visualization.orders.map((order) => order.id)).toEqual(['O001', 'O002', 'O003', 'O004'])
-  })
-
-  it('paid 模式排除待支付订单', () => {
-    const included = getIncludedOrders(visualization.orders, visualization.targetDate, baseConfig)
-
-    expect(included.map((order) => order.id)).toEqual(['O001', 'O002', 'O003'])
-    expect(
-      calculateMetric(visualization, baseConfig).evaluations.find(
-        (evaluation) => evaluation.order.id === 'O004',
-      ),
-    ).toMatchObject({ included: false, exclusionReason: 'not-paid', contribution: null })
-  })
-
-  it('统计所有订单模式会把 O004 加入下单日总额', () => {
-    const result = calculateMetric(visualization, { ...baseConfig, statusRule: 'all' })
-
-    expect(result.total).toBe(440)
-    expect(result.evaluations.find((evaluation) => evaluation.order.id === 'O004')).toMatchObject({
-      included: true,
-      contribution: 60,
+    expect(getLessonBySlug('deposit-metric-definition')).toMatchObject({
+      title: '一个指标到底由什么组成？',
+      chapter: '04',
+      order: 200,
+      demo: 'banking-metric-definition',
     })
+    expect(getLessonBySlug('deposit-metric-time')).toMatchObject({
+      title: '“截至某天”和“一段时间”有什么区别？',
+      chapter: '04',
+      order: 300,
+      demo: 'banking-metric-time',
+    })
+    expect(getLessonBySlug('deposit-metric-derivations')).toMatchObject({
+      title: '一个“存款余额”为什么能派生出这么多指标？',
+      chapter: '04',
+      order: 400,
+      demo: 'banking-metric-derivations',
+    })
+
+    expect(metricSystemContent.opening?.title).toBe('截至 2026-09-30，全行存款余额是多少？')
+    expect(depositBalanceScopeVisualization.scenarios.map((scenario) => scenario.label)).toEqual([
+      'A',
+      'B',
+      'C',
+    ])
   })
 
-  it('退款口径在 O002 上区分 gross 和 net', () => {
-    const order = visualization.orders.find((item) => item.id === 'O002')
-
-    expect(order).toBeDefined()
-    expect(getOrderContribution(order!, { ...baseConfig, refundRule: 'gross' })).toBe(200)
-    expect(getOrderContribution(order!, { ...baseConfig, refundRule: 'net' })).toBe(160)
-  })
-
-  it('O003 的归属日期随时间字段变化', () => {
-    const byOrderTime = getIncludedOrders(
-      visualization.orders,
-      visualization.targetDate,
-      baseConfig,
+  it('三个口径结果确定性地得到 1028 亿、1011 亿和 987 亿', () => {
+    const visualization: BankingMetricScopeVisualization = depositBalanceScopeVisualization
+    const totals = visualization.scenarios.map(
+      (scenario) => calculateBankingMetric(visualization.snapshots, scenario.filter).total,
     )
-    const byPayTime = getIncludedOrders(visualization.orders, visualization.targetDate, {
-      ...baseConfig,
-      timeField: 'payTime',
-    })
 
-    expect(byOrderTime.map((order) => order.id)).toContain('O003')
-    expect(byPayTime.map((order) => order.id)).not.toContain('O003')
-    expect(
-      calculateMetric(visualization, { ...baseConfig, timeField: 'payTime' }).evaluations.find(
-        (evaluation) => evaluation.order.id === 'O003',
-      ),
-    ).toMatchObject({ included: false, exclusionReason: 'date-mismatch' })
+    expect(totals).toEqual([102_800_000_000, 101_100_000_000, 98_700_000_000])
   })
 
-  it('支付时间 + 支付成功 + 扣除退款得到 260 元', () => {
-    const result = calculateMetric(visualization, {
-      statusRule: 'paid',
-      refundRule: 'net',
-      timeField: 'payTime',
-      grainMode: 'correct',
-    })
+  it('定义卡最终写清小微口径、定期、机构、币种、单位和 Grain', () => {
+    const visualization: BankingMetricDefinitionVisualization = {
+      kind: 'banking-metric-definition',
+      stages: depositMetricDefinitionStages,
+    }
+    const finalDefinition = visualization.stages.at(-1)?.definition
 
-    expect(result.total).toBe(260)
-    expect(
-      result.evaluations
-        .filter((evaluation) => evaluation.included)
-        .map((evaluation) => evaluation.order.id),
-    ).toEqual(['O001', 'O002'])
+    expect(finalDefinition).toMatchObject({
+      name: '杭州分行小微口径人民币定期存款余额',
+      statisticTime: '2026-09-30',
+      subject: 'Account（账户）',
+      measure: 'balance（余额）',
+      customerScope: '小微口径',
+      productScope: '定期',
+      branch: '杭州分行',
+      currency: 'CNY（人民币）',
+      unit: '元',
+      grain: 'Account × snapshot_date（一行代表一个账户在统计日的余额状态）',
+    })
+    expect(finalDefinition?.requiredFilters).toContain('account_status = ACTIVE')
   })
 
-  it('明细粒度直接 SUM 会重复 O001，回到订单粒度则保持 100 元', () => {
-    const order = visualization.orders.find((item) => item.id === 'O001')
+  it('区分时点余额和期间累计存入金额', () => {
+    const visualization: BankingMetricTimeVisualization = depositMetricTimeVisualization
+    const asOf = calculateBankingMetricTime(visualization, 'as-of')
+    const period = calculateBankingMetricTime(visualization, 'period')
 
-    expect(order).toBeDefined()
-    expect(
-      getOrderContribution(
-        order!,
-        { ...baseConfig, grainMode: 'duplicated' },
-        visualization.detailRows,
-      ),
-    ).toBe(200)
-    expect(
-      getOrderContribution(
-        order!,
-        { ...baseConfig, grainMode: 'correct' },
-        visualization.detailRows,
-      ),
-    ).toBe(100)
-    expect(calculateMetric(visualization, { ...baseConfig, grainMode: 'duplicated' }).total).toBe(
-      480,
-    )
-    expect(calculateMetric(visualization, baseConfig).total).toBe(380)
+    expect(asOf.total).toBe(1200)
+    expect(asOf.rows.map((row) => row.accountId)).toEqual(['A101', 'A102'])
+    expect(asOf.factType).toContain('Periodic Snapshot')
+
+    expect(period.total).toBe(680)
+    expect(period.rows.map((row) => ('transactionId' in row ? row.transactionId : ''))).toEqual([
+      'T001',
+      'T003',
+      'T004',
+    ])
+    expect(period.factType).toContain('Transaction Fact')
+  })
+
+  it('口径组合器能派生杭州分行小微定期余额，并只保留匹配快照', () => {
+    const filter: BankingMetricBalanceFilter = {
+      snapshotDate: '2026-09-30',
+      customerScope: 'small-business',
+      productScope: 'term',
+      branch: 'hangzhou',
+      currency: 'CNY',
+    }
+    const result = calculateBankingMetric(depositMetricDerivationVisualization.snapshots, filter)
+    const definition = getBankingMetricDefinition(filter)
+
+    expect(result.total).toBe(42_700_000_000)
+    expect(result.rows.map((row) => row.accountId)).toEqual(['A005'])
+    expect(definition.name).toBe('杭州分行小微口径人民币定期存款余额')
+  })
+
+  it('第 04 章不引入日均存款或额外银行经营规则', () => {
+    const chapterContent = JSON.stringify([
+      metricSystemContent,
+      getLessonContent(getLessonBySlug('deposit-metric-definition')!),
+      getLessonContent(getLessonBySlug('deposit-metric-time')!),
+      getLessonContent(getLessonBySlug('deposit-metric-derivations')!),
+    ])
+
+    expect(chapterContent).not.toContain('日均')
+    expect(chapterContent).not.toContain('监管规则')
   })
 })

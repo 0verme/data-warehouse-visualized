@@ -9,6 +9,9 @@ import { factTableTypesContent } from './fact-table-types'
 import { grainContent } from './grain'
 import { lakehouseContent } from './lakehouse'
 import { metricSystemContent } from './metric-system'
+import { depositMetricDefinitionContent } from './deposit-metric-definition'
+import { depositMetricDerivationsContent } from './deposit-metric-derivations'
+import { depositMetricTimeContent } from './deposit-metric-time'
 import { performanceAndPracticeContent } from './performance-and-practice'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { schedulingSystemContent } from './scheduling-system'
@@ -27,6 +30,9 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'fact-table-types': factTableTypesContent,
   grain: grainContent,
   'metric-system': metricSystemContent,
+  'deposit-metric-definition': depositMetricDefinitionContent,
+  'deposit-metric-time': depositMetricTimeContent,
+  'deposit-metric-derivations': depositMetricDerivationsContent,
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,

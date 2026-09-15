@@ -18,4 +18,8 @@
 - `data-lineage.ts`：血缘关系与影响分析
 - `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
 - `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
+- `metric-system.ts`：存款余额的统计集合与口径差异
+- `deposit-metric-definition.ts`：指标定义卡逐项补全
+- `deposit-metric-time.ts`：存款余额状态与期间存入事件的时间语义
+- `deposit-metric-derivations.ts`：客户、产品、币种、机构和日期口径组合
 - `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟
