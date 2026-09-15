@@ -1,6 +1,7 @@
 import type {
   GovernanceAsset,
   GovernanceCatalogFilters,
+  GovernanceDecisionRecord,
   GovernanceDefinitionCompleteness,
   GovernanceField,
   GovernanceFreshnessStatus,
@@ -9,7 +10,9 @@ import type {
   GovernanceLifecycleEvent,
   GovernanceLifecycleResult,
   GovernanceLineageImpact,
+  GovernanceQualityEvidence,
   GovernanceNotificationTarget,
+  GovernanceRiskLevel,
   GovernancePolicyDecision,
   GovernancePolicyDecisionResult,
   GovernancePolicyFactor,
@@ -18,10 +21,16 @@ import type {
   GovernanceRecommendationResult,
   GovernanceRole,
   GovernanceSensitivity,
+  LineageConfidence,
   LineageEdge,
   LineageNode,
 } from '../types'
-import { getImpactAnalysis, getLineageEntityType } from './lineage'
+import {
+  getImpactAnalysis,
+  getLineageEdgeConfidence,
+  getLineageEdgeEvidence,
+  getLineageEntityType,
+} from './lineage'
 
 export const GOVERNANCE_ROLE_OPTIONS = [
   { value: 'analyst', label: '分析师', detail: '经营分析与指标复核' },
@@ -127,8 +136,71 @@ export function filterGovernanceAssets(
   })
 }
 
+export interface GovernanceRecommendationOptions {
+  lineageImpact?: GovernanceLineageImpact
+}
+
+function getQualityRecommendationFactor(asset: GovernanceAsset): GovernanceRecommendationFactor {
+  const qualityEvidence = asset.qualityEvidence
+  if (!qualityEvidence) {
+    return {
+      label: 'quality evidence',
+      tone: 'caution',
+      detail: '第 07 章当前没有覆盖这项资产；质量状态未知，不能把未知显示为通过。',
+    }
+  }
+
+  const qualityStatusLabel =
+    qualityEvidence.status === 'pass'
+      ? 'pass · 通过'
+      : qualityEvidence.status === 'warn'
+        ? 'warn · 告警'
+        : 'fail · 失败'
+  const qualityTone =
+    qualityEvidence.status === 'fail' || qualityEvidence.releaseDecision.isBlocked
+      ? 'blocking'
+      : qualityEvidence.status === 'warn' || qualityEvidence.releaseDecision.status !== 'released'
+        ? 'caution'
+        : 'positive'
+  const target = `${qualityEvidence.target.table}.${qualityEvidence.target.field ?? 'table-level'}`
+  const partition = `${qualityEvidence.target.partition.column} = ${qualityEvidence.target.partition.value}`
+  const ruleLabel = qualityEvidence.ruleName
+    ? `${qualityEvidence.ruleName} (${qualityEvidence.ruleId})`
+    : qualityEvidence.ruleId
+  const evidenceDetail = qualityEvidence.evidence[0]?.detail ?? '未提供可展开的质量证据。'
+
+  return {
+    label: 'quality evidence',
+    tone: qualityTone,
+    detail: `${qualityStatusLabel} · ${ruleLabel} · ${target} · ${partition}；${evidenceDetail}；Release Decision: ${qualityEvidence.releaseDecision.action} / ${qualityEvidence.releaseDecision.status}。`,
+  }
+}
+
+function getQualityLineageFactor(
+  asset: GovernanceAsset,
+  lineageImpact: GovernanceLineageImpact | undefined,
+): GovernanceRecommendationFactor | undefined {
+  const qualityEvidence = asset.qualityEvidence
+  if (
+    !qualityEvidence ||
+    !lineageImpact ||
+    (qualityEvidence.status === 'pass' && !qualityEvidence.releaseDecision.isBlocked) ||
+    lineageImpact.consumers.length === 0
+  ) {
+    return undefined
+  }
+
+  const isCritical = qualityEvidence.status === 'fail' || qualityEvidence.releaseDecision.isBlocked
+  return {
+    label: 'quality × lineage exposure',
+    tone: isCritical ? 'blocking' : 'caution',
+    detail: `质量 ${qualityEvidence.status} 已沿真实 Lineage 暴露给 ${lineageImpact.consumers.length} 个表 / 指标消费者（直接 ${lineageImpact.directImpacts.length}，传递 ${lineageImpact.transitiveImpacts.length}）；${lineageImpact.riskReason}`,
+  }
+}
+
 export function getGovernanceRecommendation(
   asset: GovernanceAsset,
+  options: GovernanceRecommendationOptions = {},
 ): GovernanceRecommendationResult {
   const factors: GovernanceRecommendationFactor[] = []
 
@@ -194,14 +266,25 @@ export function getGovernanceRecommendation(
   })
 
   const freshnessStatus: GovernanceFreshnessStatus = asset.freshnessMetadata?.status ?? 'unknown'
-  const freshnessTone = freshnessStatus === 'current' ? 'positive' : 'caution'
+  const freshnessIsSevere =
+    freshnessStatus === 'delayed' && (asset.freshnessMetadata?.observedDelayMinutes ?? 0) >= 120
+  const freshnessTone =
+    freshnessStatus === 'current' ? 'positive' : freshnessIsSevere ? 'blocking' : 'caution'
   factors.push({
     label: 'freshness metadata',
     tone: freshnessTone,
     detail: asset.freshnessMetadata
-      ? `最近更新 ${asset.freshnessMetadata.lastUpdatedAt}，预期${asset.freshnessMetadata.expectedRefresh}，当前标记为 ${freshnessStatus}。`
+      ? freshnessIsSevere
+        ? `最近更新 ${asset.freshnessMetadata.lastUpdatedAt}，已延迟 ${asset.freshnessMetadata.observedDelayMinutes ?? '未知'} 分钟；严重 freshness 风险会阻止默认复用。`
+        : `最近更新 ${asset.freshnessMetadata.lastUpdatedAt}，预期${asset.freshnessMetadata.expectedRefresh}，当前标记为 ${freshnessStatus}。`
       : '没有 freshness metadata，无法判断数据是否足够新。',
   })
+
+  factors.push(getQualityRecommendationFactor(asset))
+  const qualityLineageFactor = getQualityLineageFactor(asset, options.lineageImpact)
+  if (qualityLineageFactor) {
+    factors.push(qualityLineageFactor)
+  }
 
   const blockingFactors = factors.filter((factor) => factor.tone === 'blocking')
   const cautionFactors = factors.filter((factor) => factor.tone === 'caution')
@@ -289,17 +372,20 @@ function getPolicyFactors(
 }
 
 function getDecisionRisk(asset: GovernanceAsset, decision: GovernancePolicyDecision): string {
-  const qualityRisk = asset.qualityEvidence?.note ?? '质量证据尚未接入，不能把未知显示为通过。'
+  const qualityRisk = asset.qualityEvidence
+    ? `Quality ${asset.qualityEvidence.status} · rule ${asset.qualityEvidence.ruleId} · Release Decision ${asset.qualityEvidence.releaseDecision.action} / ${asset.qualityEvidence.releaseDecision.status}`
+    : '第 07 章没有覆盖这项资产；质量状态未知，不能把未知显示为通过。'
+  const separatedQualityRisk = `质量风险单独记录，不改变字段访问策略：${qualityRisk}`
 
   switch (decision) {
     case 'allow':
-      return `仍需遵守最小字段范围；${qualityRisk}`
+      return `仍需遵守最小字段范围；${separatedQualityRisk}`
     case 'masked':
-      return `脱敏结果仍可能保留关联性；${qualityRisk}`
+      return `脱敏结果仍可能保留关联性；${separatedQualityRisk}`
     case 'approval-required':
-      return `等待 Owner / Steward 确认用途和接收范围；${qualityRisk}`
+      return `等待 Owner / Steward 确认用途和接收范围；${separatedQualityRisk}`
     case 'deny':
-      return `如确有业务需要，应改用聚合或脱敏资产并重新评审；${qualityRisk}`
+      return `如确有业务需要，应改用聚合或脱敏资产并重新评审；${separatedQualityRisk}`
   }
 }
 
@@ -411,7 +497,7 @@ export function evaluateGovernancePolicy({
           tone: 'blocking',
         },
       ],
-      remainingRisk: '字段定义缺失；质量证据尚未接入。',
+      remainingRisk: '字段定义缺失；第 07 章没有覆盖这项资产，质量状态未知。',
     }
   }
 
@@ -443,15 +529,45 @@ function getNode(nodes: readonly LineageNode[], nodeId: string): LineageNode | u
   return nodes.find((node) => node.id === nodeId)
 }
 
-function toImpactObject(node: LineageNode | undefined): GovernanceImpactObject | undefined {
-  return node
-    ? {
-        id: node.id,
-        label: node.label,
-        entityType: getLineageEntityType(node),
-        role: node.role,
-      }
-    : undefined
+const LINEAGE_CONFIDENCE_RANK: Record<LineageConfidence, number> = {
+  manual: 0,
+  inferred: 1,
+  confirmed: 2,
+}
+
+function toImpactObject(
+  node: LineageNode | undefined,
+  edges: readonly LineageEdge[] = [],
+): GovernanceImpactObject | undefined {
+  if (!node) {
+    return undefined
+  }
+
+  const supportingEdges = edges.filter((edge) => edge.source === node.id || edge.target === node.id)
+  const evidence = [
+    ...new Map(
+      supportingEdges.map((edge) => {
+        const item = getLineageEdgeEvidence(edge)
+        return [`${item.source}:${item.detail}`, item]
+      }),
+    ).values(),
+  ]
+  const confidence = supportingEdges.reduce<LineageConfidence | undefined>((lowest, edge) => {
+    const current = getLineageEdgeConfidence(edge)
+    if (!lowest || LINEAGE_CONFIDENCE_RANK[current] < LINEAGE_CONFIDENCE_RANK[lowest]) {
+      return current
+    }
+    return lowest
+  }, undefined)
+
+  return {
+    id: node.id,
+    label: node.label,
+    entityType: getLineageEntityType(node),
+    role: node.role,
+    ...(evidence.length > 0 ? { evidence } : {}),
+    ...(confidence ? { confidence } : {}),
+  }
 }
 
 function findAssetForLineageNode(
@@ -469,6 +585,7 @@ function getNotificationTarget(
   node: LineageNode,
   assets: readonly GovernanceAsset[],
   directIds: ReadonlySet<string>,
+  riskLevel: GovernanceRiskLevel,
 ): GovernanceNotificationTarget {
   const linkedAsset = findAssetForLineageNode(assets, node)
   const recipient = linkedAsset?.owner
@@ -483,24 +600,75 @@ function getNotificationTarget(
   const isDirect = directIds.has(node.id)
   const entityTypeLabel = GOVERNANCE_ENTITY_TYPE_LABELS[getLineageEntityType(node)]
 
+  const priority =
+    riskLevel === 'critical' && isDirect
+      ? 'urgent'
+      : isDirect
+        ? 'first'
+        : linkedAsset
+          ? 'next'
+          : 'review'
+
   return {
     id: node.id,
     label: node.label,
     recipient,
     reason: isDirect
-      ? `直接下游${linkedAsset ? `，先通知 ${linkedAsset.businessName} 的责任人` : ''}。`
+      ? `${riskLevel === 'critical' ? '质量阻断下的直接下游，立即通知' : '直接下游，先通知'}${linkedAsset ? ` ${linkedAsset.businessName} 的责任人` : ''}。`
       : `传递影响中的${entityTypeLabel}，在直接下游确认后通知。`,
-    priority: isDirect ? 'first' : linkedAsset ? 'next' : 'review',
+    priority,
+  }
+}
+
+function getGovernanceRisk(
+  qualityEvidence: GovernanceQualityEvidence | undefined,
+  consumers: readonly GovernanceImpactObject[],
+): { level: GovernanceRiskLevel; reason: string } {
+  if (!qualityEvidence) {
+    return {
+      level: 'standard',
+      reason: '当前只按 Lineage 依赖排列对象，尚未叠加质量事件风险。',
+    }
+  }
+
+  const isBlocked = qualityEvidence.status === 'fail' || qualityEvidence.releaseDecision.isBlocked
+  if (isBlocked && consumers.length > 0) {
+    return {
+      level: 'critical',
+      reason: `Quality ${qualityEvidence.status} / ${qualityEvidence.releaseDecision.status} 已暴露给真实消费者；必须先停止复用并按通知顺序处理。`,
+    }
+  }
+
+  if (isBlocked) {
+    return {
+      level: 'elevated',
+      reason: `Quality ${qualityEvidence.status} 仍未解除；当前没有识别到表或指标消费者，但仍需处理失败证据。`,
+    }
+  }
+
+  if (qualityEvidence.status === 'warn' && consumers.length > 0) {
+    return {
+      level: 'elevated',
+      reason: `Quality warn 已传递给真实消费者；继续使用前需要保留告警和证据。`,
+    }
+  }
+
+  return {
+    level: 'standard',
+    reason: `Quality ${qualityEvidence.status} 当前未触发需要升级的消费者暴露。`,
   }
 }
 
 function emptyGovernanceImpact(): GovernanceLineageImpact {
   return {
+    upstreamImpacts: [],
     directImpacts: [],
     transitiveImpacts: [],
     consumers: [],
     notificationTargets: [],
     suggestedOrder: [],
+    riskLevel: 'standard',
+    riskReason: '没有可计算的 Lineage source。',
   }
 }
 
@@ -509,13 +677,16 @@ export function getGovernanceLineageImpact(
   nodes: readonly LineageNode[],
   edges: readonly LineageEdge[],
   event: Pick<GovernanceLifecycleEvent, 'sourceEntityId'>,
-  options: { includeCrossEntity?: boolean } = { includeCrossEntity: true },
+  options: {
+    includeCrossEntity?: boolean
+    qualityEvidence?: GovernanceQualityEvidence
+  } = { includeCrossEntity: true },
 ): GovernanceLineageImpact {
   if (!event.sourceEntityId) {
     return emptyGovernanceImpact()
   }
 
-  const source = toImpactObject(getNode(nodes, event.sourceEntityId))
+  const source = toImpactObject(getNode(nodes, event.sourceEntityId), edges)
   const includeCrossEntity = options.includeCrossEntity ?? true
   const analysis = getImpactAnalysis(
     nodes,
@@ -525,28 +696,35 @@ export function getGovernanceLineageImpact(
   )
   const directIds = new Set(analysis.directDownstream)
   const finalIds = analysis.finalImpact
+  const upstreamImpacts = [...new Set(analysis.upstream)]
+    .map((nodeId) => toImpactObject(getNode(nodes, nodeId), edges))
+    .filter((node): node is GovernanceImpactObject => Boolean(node))
   const directImpacts = [...new Set(analysis.directDownstream)]
-    .map((nodeId) => toImpactObject(getNode(nodes, nodeId)))
+    .map((nodeId) => toImpactObject(getNode(nodes, nodeId), edges))
     .filter((node): node is GovernanceImpactObject => Boolean(node))
   const transitiveImpacts = [...new Set(finalIds)]
     .filter((nodeId) => !directIds.has(nodeId))
-    .map((nodeId) => toImpactObject(getNode(nodes, nodeId)))
+    .map((nodeId) => toImpactObject(getNode(nodes, nodeId), edges))
     .filter((node): node is GovernanceImpactObject => Boolean(node))
   const suggestedOrder = [...directImpacts, ...transitiveImpacts]
   const consumers = suggestedOrder.filter(
     (node) => node.entityType === 'table' || node.entityType === 'metric',
   )
+  const risk = getGovernanceRisk(options.qualityEvidence, consumers)
   const notificationTargets = suggestedOrder.map((node) =>
-    getNotificationTarget(getNode(nodes, node.id)!, assets, directIds),
+    getNotificationTarget(getNode(nodes, node.id)!, assets, directIds, risk.level),
   )
 
   return {
     ...(source ? { source } : {}),
+    upstreamImpacts,
     directImpacts,
     transitiveImpacts,
     consumers,
     notificationTargets,
     suggestedOrder,
+    riskLevel: risk.level,
+    riskReason: risk.reason,
   }
 }
 
@@ -555,13 +733,17 @@ export function getAssetLineageImpact(
   assets: readonly GovernanceAsset[],
   nodes: readonly LineageNode[],
   edges: readonly LineageEdge[],
+  options: {
+    includeCrossEntity?: boolean
+    qualityEvidence?: GovernanceQualityEvidence
+  } = { includeCrossEntity: false },
 ): GovernanceLineageImpact {
   return getGovernanceLineageImpact(
     assets,
     nodes,
     edges,
     { sourceEntityId: asset.lineageEvidence.nodeId },
-    { includeCrossEntity: false },
+    options,
   )
 }
 
@@ -674,6 +856,47 @@ function uniqueStrings(values: readonly string[]): string[] {
   return [...new Set(values.filter(Boolean))]
 }
 
+function getQualityEvidenceUsed(asset: GovernanceAsset): string[] {
+  const evidence = asset.qualityEvidence
+  if (!evidence) {
+    return ['Quality evidence：第 07 章没有覆盖这项资产；质量状态未知，未将未知视为通过。']
+  }
+
+  const target = `${evidence.target.table}.${evidence.target.field ?? 'table-level'}`
+  const partition = `${evidence.target.partition.column} = ${evidence.target.partition.value}`
+  return [
+    `chapter-07 Quality ${evidence.status} · rule ${evidence.ruleName ?? evidence.ruleId} (${evidence.ruleId})`,
+    `target：${target} · ${partition} · observed ${evidence.observedValue} / expected ${evidence.expectedLabel}`,
+    `failed sample count：${evidence.failedSampleCount}`,
+    ...evidence.evidence.map((item) => `evidence ${item.evidenceId}：${item.detail}`),
+    `Release Decision：${evidence.releaseDecision.action} / ${evidence.releaseDecision.status}；${evidence.remainingRisk}`,
+  ]
+}
+
+function getLineageEvidenceUsed(impact?: GovernanceLineageImpact): string[] {
+  if (!impact) {
+    return ['Lineage evidence：本次记录没有选择影响分析结果。']
+  }
+
+  const objects = [...impact.upstreamImpacts, ...impact.directImpacts, ...impact.transitiveImpacts]
+  const edgeEvidence = uniqueStrings(
+    objects.flatMap((object) =>
+      (object.evidence ?? []).map(
+        (evidence) => `${object.label} · ${evidence.source}：${evidence.detail}`,
+      ),
+    ),
+  )
+
+  return [
+    `Lineage risk：${impact.riskLevel} · ${impact.riskReason}`,
+    `direct ${impact.directImpacts.length} · transitive ${impact.transitiveImpacts.length} · consumers ${impact.consumers.length}`,
+    ...objects
+      .filter((object) => object.confidence)
+      .map((object) => `${object.label} · confidence ${object.confidence}`),
+    ...edgeEvidence,
+  ]
+}
+
 export function createGovernanceDecisionRecord({
   asset,
   field,
@@ -688,15 +911,16 @@ export function createGovernanceDecisionRecord({
   policyDecision: GovernancePolicyDecisionResult
   impact?: GovernanceLineageImpact
   event?: GovernanceLifecycleEvent
-}): import('../types').GovernanceDecisionRecord {
+}): GovernanceDecisionRecord {
   const riskReasons = recommendation.factors
     .filter((factor) => factor.tone !== 'positive')
     .map((factor) => factor.detail)
-  const qualityRisk = asset.qualityEvidence?.note ?? '质量证据尚未接入，不能把未知显示为通过。'
+  const qualityEvidenceUsed = getQualityEvidenceUsed(asset)
+  const lineageEvidenceUsed = getLineageEvidenceUsed(impact)
 
   return {
     id: `governance-decision-${asset.id}-${field.name}-${policyDecision.role}-${policyDecision.purpose}`,
-    recordedAt: 'Phase 1 教学记录',
+    recordedAt: '2026-09-14 10:00 · local deterministic simulation',
     selectedAssetId: asset.id,
     selectedAssetName: asset.businessName,
     fieldName: field.name,
@@ -704,14 +928,19 @@ export function createGovernanceDecisionRecord({
     purpose: policyDecision.purpose,
     recommendation: recommendation.status,
     accessDecision: policyDecision.decision,
-    decisionReason: policyDecision.reason,
+    decisionReason: `${policyDecision.reason} 推荐依据：${recommendation.reasons.join('；')}`,
+    lifecycle: asset.lifecycle,
+    ...(asset.owner ? { owner: asset.owner } : {}),
+    sensitivity: asset.sensitivity,
+    qualityEvidenceUsed,
+    lineageEvidenceUsed,
     ...(event ? { impactEventId: event.id } : {}),
     directImpact: impact?.directImpacts.map((node) => node.label) ?? [],
     transitiveImpact: impact?.transitiveImpacts.map((node) => node.label) ?? [],
     consumers: impact?.consumers.map((node) => node.label) ?? [],
     notifications:
       impact?.notificationTargets.map((target) => `${target.recipient} ← ${target.label}`) ?? [],
-    remainingRisks: uniqueStrings([policyDecision.remainingRisk, ...riskReasons, qualityRisk]),
+    remainingRisks: uniqueStrings([policyDecision.remainingRisk, ...riskReasons]),
   }
 }
 

@@ -5,14 +5,16 @@ import type {
   GovernanceCatalogFilters,
   GovernanceDecisionRecord,
   GovernanceField,
+  GovernanceImpactObject,
   GovernanceLifecycleEvent,
+  GovernanceLineageImpact,
   GovernancePolicyDecisionResult,
+  GovernanceQualityEvidence,
   GovernancePurpose,
   GovernanceRecommendationResult,
   GovernanceRole,
   GovernanceSensitivity,
   GovernanceVisualization,
-  LineageEntityType,
 } from '../../types'
 import {
   applyGovernanceEvent,
@@ -66,9 +68,16 @@ const EVENT_TYPE_LABELS = {
 } as const
 
 const PRIORITY_LABELS = {
+  urgent: '立即通知',
   first: '先通知',
   next: '随后通知',
   review: '待人工确认',
+} as const
+
+const QUALITY_STATUS_LABELS = {
+  pass: 'pass · 通过',
+  warn: 'warn · 告警',
+  fail: 'fail · 失败',
 } as const
 
 function RecommendationPill({ result }: { result: GovernanceRecommendationResult }) {
@@ -141,6 +150,10 @@ function AssetCard({
                 ? 'delayed'
                 : 'unknown'}
           </strong>
+        </span>
+        <span>
+          <span className="governance-asset-card__fact-label">Quality</span>
+          <strong>{asset.qualityEvidence?.status ?? 'unknown'}</strong>
         </span>
       </span>
     </button>
@@ -371,18 +384,125 @@ function MetricEvidence({ asset }: { asset: GovernanceAsset }) {
   )
 }
 
+function formatQualitySampleValues(
+  values: GovernanceQualityEvidence['evidence'][number]['samples'][number]['values'],
+): string {
+  return Object.entries(values)
+    .map(([key, value]) => `${key}=${value ?? 'null'}`)
+    .join(' · ')
+}
+
+function QualityEvidencePanel({ evidence }: { evidence?: GovernanceQualityEvidence }) {
+  if (!evidence) {
+    return (
+      <div className="governance-quality-evidence governance-quality-evidence--unknown">
+        <div>
+          <span className="governance-overline">Quality evidence · 第 07 章</span>
+          <strong>unknown · 当前没有覆盖这项资产</strong>
+        </div>
+        <p>没有可关联的 Quality Check；质量未知，不把未知显示为 pass。</p>
+      </div>
+    )
+  }
+
+  const target = `${evidence.target.table}.${evidence.target.field ?? 'table-level'}`
+  const partition = `${evidence.target.partition.column} = ${evidence.target.partition.value}`
+
+  return (
+    <div className={`governance-quality-evidence governance-quality-evidence--${evidence.status}`}>
+      <div className="governance-quality-evidence__header">
+        <div>
+          <span className="governance-overline">Quality evidence · 第 07 章</span>
+          <strong>
+            {QUALITY_STATUS_LABELS[evidence.status]} · {evidence.severity ?? 'severity 未提供'}
+          </strong>
+          <p>
+            {evidence.ruleName ?? evidence.ruleId} · {evidence.ruleId}
+            {evidence.eventId ? ` · ${evidence.eventId}` : ' · Quality Check projection'}
+          </p>
+        </div>
+        <span className="governance-quality-release">
+          Release Decision: {evidence.releaseDecision.action} / {evidence.releaseDecision.status}
+        </span>
+      </div>
+
+      <dl className="governance-quality-evidence__facts">
+        <div>
+          <dt>target</dt>
+          <dd>{target}</dd>
+        </div>
+        <div>
+          <dt>partition</dt>
+          <dd>{partition}</dd>
+        </div>
+        <div>
+          <dt>observed / expected</dt>
+          <dd>
+            {evidence.observedValue} / {evidence.expectedLabel}
+          </dd>
+        </div>
+        <div>
+          <dt>failed sample count</dt>
+          <dd>{evidence.failedSampleCount}</dd>
+        </div>
+        <div>
+          <dt>last checked</dt>
+          <dd>{evidence.lastCheckedAt}</dd>
+        </div>
+        <div>
+          <dt>Scheduler context</dt>
+          <dd>
+            {evidence.schedulerTaskId} · {evidence.schedulerRunId} · {evidence.taskStatus}
+          </dd>
+        </div>
+        <div>
+          <dt>affected outputs</dt>
+          <dd>{evidence.releaseDecision.affectedOutputs.join('、') || '无'}</dd>
+        </div>
+      </dl>
+
+      <div className="governance-quality-evidence__items">
+        <h4>Evidence detail</h4>
+        {evidence.evidence.map((item) => (
+          <article key={item.evidenceId}>
+            <strong>
+              {item.kind} · {item.evidenceId}
+            </strong>
+            <p>{item.detail}</p>
+            <span>
+              observed {item.observedValue} · expected {item.expectedLabel} · samples{' '}
+              {item.samples.length}
+            </span>
+            {item.samples.length > 0 && (
+              <ul>
+                {item.samples.map((sample) => (
+                  <li key={sample.sampleId}>
+                    <code>{sample.rowKey}</code>
+                    <span>{sample.reason}</span>
+                    <small>{formatQualitySampleValues(sample.values)}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+
+      <div className="governance-quality-evidence__risk">
+        <span>remaining risk</span>
+        <p>{evidence.remainingRisk}</p>
+      </div>
+    </div>
+  )
+}
+
 function ImpactObjectList({
   title,
   objects,
   emptyText,
 }: {
   title: string
-  objects: readonly {
-    id: string
-    label: string
-    role: string
-    entityType: LineageEntityType
-  }[]
+  objects: readonly GovernanceImpactObject[]
   emptyText: string
 }) {
   return (
@@ -395,7 +515,13 @@ function ImpactObjectList({
               <strong>{object.label}</strong>
               <span>
                 {GOVERNANCE_ENTITY_TYPE_LABELS[object.entityType]} · {object.role}
+                {object.confidence ? ` · confidence ${object.confidence}` : ''}
               </span>
+              {object.evidence?.[0] && (
+                <small>
+                  evidence · {object.evidence[0].source}: {object.evidence[0].detail}
+                </small>
+              )}
             </li>
           ))}
         </ul>
@@ -411,14 +537,15 @@ function AssetInspector({
   selectedFieldName,
   onSelectField,
   assetImpact,
+  governanceImpact,
 }: {
   asset: GovernanceAsset
   selectedFieldName: string
   onSelectField: (fieldName: string) => void
-  assetImpact: ReturnType<typeof getAssetLineageImpact>
+  assetImpact: GovernanceLineageImpact
+  governanceImpact: GovernanceLineageImpact
 }) {
-  const recommendation = getGovernanceRecommendation(asset)
-  const qualityNote = asset.qualityEvidence?.note ?? '质量证据尚未接入；等待第 07 章真实质量事件。'
+  const recommendation = getGovernanceRecommendation(asset, { lineageImpact: governanceImpact })
 
   return (
     <div className="governance-inspector">
@@ -496,7 +623,17 @@ function AssetInspector({
           <strong>{asset.lineageEvidence.status}</strong>
           <span>{asset.lineageEvidence.note}</span>
         </div>
+        <div className="governance-lineage-risk">
+          <span>Quality × Lineage risk</span>
+          <strong>{governanceImpact.riskLevel}</strong>
+          <p>{governanceImpact.riskReason}</p>
+        </div>
         <div className="governance-impact-grid">
+          <ImpactObjectList
+            title="上游"
+            objects={assetImpact.upstreamImpacts}
+            emptyText="没有可用的上游血缘证据。"
+          />
           <ImpactObjectList
             title="直接下游"
             objects={assetImpact.directImpacts}
@@ -515,12 +652,15 @@ function AssetInspector({
         </div>
       </section>
 
-      <section className="governance-quality-evidence" aria-label="质量证据状态">
-        <div>
-          <span className="governance-overline">Quality integration seam</span>
-          <strong>pending integration · 质量证据尚未接入</strong>
+      <section className="governance-inspector__section" aria-labelledby="governance-quality-title">
+        <div className="governance-section-heading">
+          <div>
+            <span className="governance-overline">Quality evidence</span>
+            <h4 id="governance-quality-title">质量证据会改变是否推荐使用</h4>
+          </div>
+          <p>只消费第 07 章的 Quality Contract projection，不在治理层重算规则。</p>
         </div>
-        <p>{qualityNote}</p>
+        <QualityEvidencePanel evidence={asset.qualityEvidence} />
       </section>
 
       <div className="governance-inspector__footer">
@@ -731,7 +871,17 @@ function ChangeImpactPanel({
         </div>
       </div>
 
+      <div className="governance-lineage-risk governance-lineage-risk--change">
+        <span>Lineage risk</span>
+        <strong>{impact?.riskLevel ?? 'standard'}</strong>
+        <p>{impact?.riskReason ?? '没有可计算的影响范围。'}</p>
+      </div>
       <div className="governance-impact-grid governance-impact-grid--change">
+        <ImpactObjectList
+          title="上游证据"
+          objects={impact?.upstreamImpacts ?? []}
+          emptyText="该事件没有可用的上游血缘对象。"
+        />
         <ImpactObjectList
           title="直接受影响对象"
           objects={impact?.directImpacts ?? []}
@@ -831,12 +981,56 @@ function DecisionRecordPanel({
               </dd>
             </div>
             <div>
+              <dt>生命周期</dt>
+              <dd>{record.lifecycle}</dd>
+            </div>
+            <div>
+              <dt>Owner</dt>
+              <dd>{record.owner ?? '缺失'}</dd>
+            </div>
+            <div>
+              <dt>敏感等级</dt>
+              <dd>{record.sensitivity}</dd>
+            </div>
+            <div>
               <dt>影响事件</dt>
               <dd>{record.impactEventId ?? '未选择'}</dd>
             </div>
           </dl>
           <p className="governance-record__reason">{record.decisionReason}</p>
           <div className="governance-record__lists">
+            <div>
+              <h4>Quality evidence used</h4>
+              <ul>
+                {record.qualityEvidenceUsed.map((evidence) => (
+                  <li key={evidence}>{evidence}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4>Lineage evidence used</h4>
+              <ul>
+                {record.lineageEvidenceUsed.map((evidence) => (
+                  <li key={evidence}>{evidence}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4>Direct impact</h4>
+              <ul>
+                {record.directImpact.map((impact) => (
+                  <li key={impact}>{impact}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4>Transitive impact</h4>
+              <ul>
+                {record.transitiveImpact.map((impact) => (
+                  <li key={impact}>{impact}</li>
+                ))}
+              </ul>
+            </div>
             <div>
               <h4>Consumers</h4>
               <ul>
@@ -895,7 +1089,6 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
     catalogAssets[0]
   const selectedField = selectedAsset?.fields.find((field) => field.name === selectedFieldName)
   const activeField = selectedField ?? selectedAsset?.fields[0]
-  const recommendation = selectedAsset ? getGovernanceRecommendation(selectedAsset) : undefined
   const assetImpact = selectedAsset
     ? getAssetLineageImpact(
         selectedAsset,
@@ -903,13 +1096,22 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
         visualization.lineageNodes,
         visualization.lineageEdges,
       )
-    : {
-        directImpacts: [],
-        transitiveImpacts: [],
-        consumers: [],
-        notificationTargets: [],
-        suggestedOrder: [],
-      }
+    : undefined
+  const governanceImpact = selectedAsset
+    ? getAssetLineageImpact(
+        selectedAsset,
+        catalogAssets,
+        visualization.lineageNodes,
+        visualization.lineageEdges,
+        {
+          includeCrossEntity: true,
+          qualityEvidence: selectedAsset.qualityEvidence,
+        },
+      )
+    : undefined
+  const recommendation = selectedAsset
+    ? getGovernanceRecommendation(selectedAsset, { lineageImpact: governanceImpact })
+    : undefined
   const selectedEvent = visualization.events.find((event) => event.id === selectedEventId)
   const eventImpact = selectedEvent
     ? getGovernanceLineageImpact(
@@ -919,6 +1121,8 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
         selectedEvent,
       )
     : undefined
+  const decisionImpact =
+    selectedEvent?.assetId === selectedAsset?.id ? eventImpact : governanceImpact
   const policyDecision =
     selectedAsset && activeField
       ? evaluateGovernancePolicy({
@@ -984,8 +1188,8 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
         field: activeField,
         recommendation,
         policyDecision,
-        impact: eventImpact,
-        event: selectedEvent,
+        impact: decisionImpact,
+        event: selectedEvent?.assetId === selectedAsset.id ? selectedEvent : undefined,
       }),
     )
   }
@@ -1047,12 +1251,13 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
               <p className="governance-empty-text">没有匹配资产；换一个业务关键词或清除筛选。</p>
             )}
           </div>
-          {selectedAsset ? (
+          {selectedAsset && assetImpact && governanceImpact ? (
             <AssetInspector
               asset={selectedAsset}
               selectedFieldName={activeField?.name ?? ''}
               onSelectField={setSelectedFieldName}
               assetImpact={assetImpact}
+              governanceImpact={governanceImpact}
             />
           ) : (
             <p className="governance-empty-text">请选择一项资产查看证据。</p>
@@ -1115,8 +1320,8 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
 
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        教学边界：本工作台是 local + deterministic simulation；质量结果尚未接入，不把 unavailable /
-        pending integration 显示成 pass。
+        教学边界：本工作台是 local + deterministic simulation；质量只消费第 07
+        章证据投影，未覆盖的资产保持 unknown，不把未知显示成 pass。
       </p>
     </div>
   )

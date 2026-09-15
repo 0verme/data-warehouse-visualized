@@ -1,3 +1,11 @@
+import type {
+  QualityCheckResult,
+  QualityEvent,
+  QualityEvidence,
+  QualityReleaseDecision,
+  QualitySample,
+} from './features/data-quality/types'
+
 export interface SourceSystem {
   id: string
   name: string
@@ -420,13 +428,50 @@ export interface GovernanceLineageEvidence {
 }
 
 /**
- * Phase 1 deliberately keeps the quality boundary as an optional reference.
- * It is not a quality result and must not be rendered as pass/fail.
+ * A small governance projection of the chapter 07 Quality Contract.
+ * Governance owns the summary; the quality domain still owns the full event/check model.
  */
-export interface GovernanceQualityEvidenceReference {
+export interface GovernanceQualitySample {
+  sampleId: QualitySample['sampleId']
+  rowKey: QualitySample['rowKey']
+  values: QualitySample['values']
+  reason: QualitySample['reason']
+}
+
+export interface GovernanceQualityEvidenceItem {
+  evidenceId: QualityEvidence['evidenceId']
+  kind: QualityEvidence['kind']
+  detail: QualityEvidence['detail']
+  observedValue: QualityEvidence['observedValue']
+  expectedValue: QualityEvidence['expectedValue']
+  expectedLabel: QualityEvidence['expectedLabel']
+  samples: GovernanceQualitySample[]
+}
+
+export interface GovernanceQualityEvidence {
   source: 'chapter-07'
-  status: 'pending-integration'
-  note: string
+  status: QualityCheckResult['status']
+  severity?: QualityEvent['severity']
+  eventId?: QualityEvent['eventId']
+  ruleId: QualityEvent['ruleId']
+  ruleName?: string
+  target: QualityEvent['target']
+  observedValue: number
+  expectedValue: number
+  expectedLabel: string
+  evidence: GovernanceQualityEvidenceItem[]
+  failedSampleCount: number
+  lastCheckedAt: string
+  schedulerTaskId: QualityEvent['schedulerContext']['taskId']
+  schedulerRunId: QualityEvent['schedulerContext']['runId']
+  taskStatus: QualityEvent['schedulerContext']['taskStatus']
+  releaseDecision: {
+    action: QualityReleaseDecision['action']
+    status: QualityReleaseDecision['status']
+    isBlocked: QualityReleaseDecision['isBlocked']
+    affectedOutputs: readonly string[]
+  }
+  remainingRisk: string
 }
 
 export interface GovernanceAsset {
@@ -446,7 +491,7 @@ export interface GovernanceAsset {
   definitionCompleteness: GovernanceDefinitionCompleteness
   metricDefinition?: GovernanceMetricReference
   lineageEvidence: GovernanceLineageEvidence
-  qualityEvidence?: GovernanceQualityEvidenceReference
+  qualityEvidence?: GovernanceQualityEvidence
 }
 
 export type GovernanceRole = 'analyst' | 'marketing' | 'external-collaborator'
@@ -516,23 +561,31 @@ export interface GovernanceImpactObject {
   label: string
   entityType: LineageEntityType
   role: string
+  evidence?: LineageEvidence[]
+  confidence?: LineageConfidence
 }
+
+export type GovernanceNotificationPriority = 'urgent' | 'first' | 'next' | 'review'
+export type GovernanceRiskLevel = 'standard' | 'elevated' | 'critical'
 
 export interface GovernanceNotificationTarget {
   id: string
   label: string
   recipient: string
   reason: string
-  priority: 'first' | 'next' | 'review'
+  priority: GovernanceNotificationPriority
 }
 
 export interface GovernanceLineageImpact {
   source?: GovernanceImpactObject
+  upstreamImpacts: GovernanceImpactObject[]
   directImpacts: GovernanceImpactObject[]
   transitiveImpacts: GovernanceImpactObject[]
   consumers: GovernanceImpactObject[]
   notificationTargets: GovernanceNotificationTarget[]
   suggestedOrder: GovernanceImpactObject[]
+  riskLevel: GovernanceRiskLevel
+  riskReason: string
 }
 
 export interface GovernanceDecisionRecord {
@@ -546,6 +599,11 @@ export interface GovernanceDecisionRecord {
   recommendation: GovernanceRecommendation
   accessDecision: GovernancePolicyDecision
   decisionReason: string
+  lifecycle: GovernanceLifecycle
+  owner?: string
+  sensitivity: GovernanceSensitivity
+  qualityEvidenceUsed: string[]
+  lineageEvidenceUsed: string[]
   impactEventId?: string
   directImpact: string[]
   transitiveImpact: string[]
