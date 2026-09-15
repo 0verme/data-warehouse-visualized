@@ -1,13 +1,15 @@
 import type { QualityEvent } from '../data-quality/types'
 import type { LineageEvidence } from '../../types'
 import { getLineageTableNodeId, getLineageTaskNodeId } from './mapping'
+import { BANKING_LINEAGE_NODE_IDS, bankingRootCauseCandidates } from './banking'
 import type {
   LineageExternalEventAdapter,
   LineageInvestigationContext,
   LineageInvestigationEventDefinition,
+  LineageRootCauseCandidate,
 } from './types'
 
-const QUALITY_FINAL_IMPACT_NODE_ID = 'metric-report-status'
+const LEGACY_QUALITY_FINAL_IMPACT_NODE_ID = 'metric-report-status'
 
 function formatQualityTarget(event: QualityEvent): string {
   const field = event.target.field ?? 'table-level'
@@ -23,10 +25,10 @@ function createQualityEventEvidence(event: QualityEvent): LineageEvidence {
   }
 }
 
-function createRootCauseCandidate(
+function createTaskRootCauseCandidate(
   event: QualityEvent,
   targetLabel: string,
-): NonNullable<LineageInvestigationEventDefinition['rootCauseCandidate']> {
+): LineageRootCauseCandidate {
   const entityId = getLineageTaskNodeId(event.investigationContext.schedulerTaskId)
   const upstreamHints = event.investigationContext.upstreamHints.join(' ')
   const evidence: LineageEvidence = {
@@ -36,14 +38,34 @@ function createRootCauseCandidate(
 
   return {
     entityId,
+    kind: 'task-output',
     confidence: 'inferred',
     evidence,
+    evidenceSource: evidence.source,
+    verificationStatus: 'pending',
     rationale: `${targetLabel} 的质量检查失败，${event.investigationContext.schedulerTaskId} 是对应输出的生产任务，因此列为可能根因候选；${upstreamHints || '仍需检查 QualityEvidence 指向的上游数据'}仍需结合上游数据和业务规则确认。`,
   }
 }
 
+function createRootCauseCandidates(
+  event: QualityEvent,
+  targetLabel: string,
+): LineageRootCauseCandidate[] {
+  if (event.target.table === 'dws_deposit_balance_daily') {
+    return bankingRootCauseCandidates.map((candidate) => ({ ...candidate }))
+  }
+
+  return [createTaskRootCauseCandidate(event, targetLabel)]
+}
+
+function getFinalImpactNodeId(event: QualityEvent): string {
+  return event.target.table === 'dws_deposit_balance_daily'
+    ? BANKING_LINEAGE_NODE_IDS.metric
+    : LEGACY_QUALITY_FINAL_IMPACT_NODE_ID
+}
+
 /**
- * 将第 07 章拥有的真实 QualityEvent 投影成既有 Lineage investigation event。
+ * 将第 07 章拥有的真实 QualityEvent 投影成 Lineage investigation event。
  * adapter 不重定义质量规则、状态、严重级别或 Scheduler context。
  */
 export function qualityEventToLineageInvestigation(
@@ -57,19 +79,21 @@ export function qualityEventToLineageInvestigation(
     partition: event.investigationContext.target.partition,
     status: event.schedulerContext.taskStatus,
   }
+  const candidates = createRootCauseCandidates(event, formatQualityTarget(event))
 
   return {
     id: `investigate-${event.eventId}`,
     entryPoint: 'quality-event',
     label: `Quality Event · ${event.ruleId}`,
-    summary: `规则 ${event.ruleId} 在 ${formatQualityTarget(event)} 的 ${event.target.partition.column} = ${event.target.partition.value} 分区失败；从产出表开始复核 Scheduler task、上游证据和下游影响。血缘路径只表示依赖，不自动证明业务因果。`,
+    summary: `规则 ${event.ruleId} 在 ${formatQualityTarget(event)} 的 ${event.target.partition.column} = ${event.target.partition.value} 分区失败；从产出表开始复核直接上游，先判断异常是否已经存在，再决定是否继续向上。血缘路径只表示依赖，不自动证明业务因果。`,
     sourceEntityId,
     eventType: 'quality_alert',
-    affectedEntityId: QUALITY_FINAL_IMPACT_NODE_ID,
+    affectedEntityId: getFinalImpactNodeId(event),
     evidence: createQualityEventEvidence(event),
     context,
     qualityEvent: event,
-    rootCauseCandidate: createRootCauseCandidate(event, formatQualityTarget(event)),
+    rootCauseCandidates: candidates,
+    rootCauseCandidate: candidates[0],
   }
 }
 

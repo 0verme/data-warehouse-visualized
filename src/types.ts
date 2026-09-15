@@ -35,11 +35,17 @@ export type LineageEvidenceSource =
   | 'manual_metadata'
   | 'metric_definition'
   | 'quality_event'
+
+/** A relationship can be confirmed by its evidence or remain pending verification. */
+export type LineageVerificationStatus = 'confirmed' | 'pending'
+
+/** @deprecated Use LineageVerificationStatus; retained for legacy consumers only. */
 export type LineageConfidence = 'confirmed' | 'inferred' | 'manual'
 export type LineageEventType =
   'field_change' | 'quality_alert' | 'task_failure' | 'sql_transformation'
 
 export interface LineageEvidence {
+  /** The provenance of the relationship, not its verification state. */
   source: LineageEvidenceSource
   detail: string
 }
@@ -60,6 +66,10 @@ export interface LineageEdge {
   target: string
   relation?: LineageRelationType
   evidence?: LineageEvidence
+  /** Explicit provenance fields keep evidence source separate from verification state. */
+  evidenceSource?: LineageEvidenceSource
+  verificationStatus?: LineageVerificationStatus
+  /** @deprecated Legacy graph data may still provide the old three-value field. */
   confidence?: LineageConfidence
 }
 

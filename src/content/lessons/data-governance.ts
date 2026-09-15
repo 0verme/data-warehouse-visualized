@@ -13,11 +13,11 @@ import {
 } from '../../features/governance/quality-adapter'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
 import { getMetricDefinition } from '../../utils/metrics'
-import { dataLineageContent } from './data-lineage'
+import { legacyLineageVisualization } from './legacy-lineage-data'
 import { dataQualityVisualization } from './data-quality'
 import type { LessonContent } from '../types'
 
-const lineageVisualization = dataLineageContent.visualization
+const lineageVisualization = legacyLineageVisualization
 
 if (!lineageVisualization || lineageVisualization.kind !== 'lineage') {
   throw new Error('数据治理课程缺少血缘可视化数据')

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { LineageInvestigationEventDefinition } from '../../features/lineage/types'
+import type {
+  LineageInvestigationEventDefinition,
+  LineageTeachingConfig,
+} from '../../features/lineage/types'
+import { LineageTeachingLab } from './LineageTeachingLab'
 import '../../styles/lessons/lineage.css'
 import type {
   LineageEdge,
@@ -7,15 +11,17 @@ import type {
   LineageEventType,
   LineageInvestigationEvent,
   LineageNode,
+  LineageVerificationStatus,
 } from '../../types'
 import {
   analyzeLineageInvestigation,
   getBlastRadius,
   getDownstreamNodes,
   getImpactAnalysis,
-  getLineageEdgeConfidence,
   getLineageEdgeEvidence,
+  getLineageEdgeEvidenceSource,
   getLineageEdgeId,
+  getLineageEdgeVerificationStatus,
   getLineageEdgeRelation,
   getLineageEntityType,
   getLineageView,
@@ -27,6 +33,7 @@ interface LineageGraphProps {
   edges: LineageEdge[]
   investigationEvent?: LineageInvestigationEvent
   investigationEvents?: readonly LineageInvestigationEventDefinition[]
+  teaching?: LineageTeachingConfig
 }
 
 type ImpactMode = 'direct' | 'transitive'
@@ -58,6 +65,11 @@ const CONFIDENCE_LABELS = {
   inferred: 'inferred · 推断',
   manual: 'manual · 人工补充',
 } as const
+
+const VERIFICATION_STATUS_LABELS: Record<LineageVerificationStatus, string> = {
+  confirmed: '已确认',
+  pending: '待确认',
+}
 
 const EVENT_LABELS: Record<LineageEventType, string> = {
   field_change: '字段含义变化',
@@ -109,7 +121,7 @@ function getLegacyInvestigationEvent(
   }
 }
 
-export function LineageGraph({
+function LegacyLineageGraph({
   nodes,
   edges,
   investigationEvent,
@@ -526,7 +538,7 @@ export function LineageGraph({
                 <p>{rootCauseCandidate.rationale}</p>
                 <small>
                   {EVIDENCE_LABELS[rootCauseCandidate.evidence.source]} ·{' '}
-                  {CONFIDENCE_LABELS[rootCauseCandidate.confidence]} ·{' '}
+                  {CONFIDENCE_LABELS[rootCauseCandidate.confidence ?? 'inferred']} ·{' '}
                   {rootCauseCandidate.evidence.detail}
                 </small>
               </div>
@@ -794,7 +806,6 @@ export function LineageGraph({
             evidenceEdges.map((edge) => {
               const source = getNode(nodes, edge.source)
               const target = getNode(nodes, edge.target)
-              const evidence = getLineageEdgeEvidence(edge)
               const edgeId = getLineageEdgeId(edge)
               return (
                 <button
@@ -808,8 +819,8 @@ export function LineageGraph({
                   </strong>
                   <small>
                     {RELATION_LABELS[getLineageEdgeRelation(edge)]} ·{' '}
-                    {EVIDENCE_LABELS[evidence.source]} ·{' '}
-                    {CONFIDENCE_LABELS[getLineageEdgeConfidence(edge)]}
+                    {EVIDENCE_LABELS[getLineageEdgeEvidenceSource(edge)]} ·{' '}
+                    {VERIFICATION_STATUS_LABELS[getLineageEdgeVerificationStatus(edge)]}
                   </small>
                 </button>
               )
@@ -829,8 +840,9 @@ export function LineageGraph({
             </div>
             <p>{getLineageEdgeEvidence(selectedEdge).detail}</p>
             <small>
-              关系：{RELATION_LABELS[getLineageEdgeRelation(selectedEdge)]} · 置信度：
-              {CONFIDENCE_LABELS[getLineageEdgeConfidence(selectedEdge)]}
+              关系：{RELATION_LABELS[getLineageEdgeRelation(selectedEdge)]} · 证据来源：
+              {EVIDENCE_LABELS[getLineageEdgeEvidenceSource(selectedEdge)]} · 确认状态：
+              {VERIFICATION_STATUS_LABELS[getLineageEdgeVerificationStatus(selectedEdge)]}
             </small>
             <button
               className="button button--quiet button--small"
@@ -863,8 +875,8 @@ export function LineageGraph({
                   {edge && evidence && (
                     <small>
                       {RELATION_LABELS[getLineageEdgeRelation(edge)]} ·{' '}
-                      {EVIDENCE_LABELS[evidence.source]} ·{' '}
-                      {CONFIDENCE_LABELS[getLineageEdgeConfidence(edge)]}
+                      {EVIDENCE_LABELS[getLineageEdgeEvidenceSource(edge)]} ·{' '}
+                      {VERIFICATION_STATUS_LABELS[getLineageEdgeVerificationStatus(edge)]}
                     </small>
                   )}
                 </li>
@@ -880,4 +892,12 @@ export function LineageGraph({
       </p>
     </div>
   )
+}
+
+export function LineageGraph(props: LineageGraphProps) {
+  if (props.teaching) {
+    return <LineageTeachingLab nodes={props.nodes} edges={props.edges} teaching={props.teaching} />
+  }
+
+  return <LegacyLineageGraph {...props} />
 }

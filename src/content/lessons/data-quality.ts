@@ -2,6 +2,9 @@ import type { DataQualityVisualization } from '../../features/data-quality/types
 import type { LessonContent } from '../types'
 import { createDataQualityVisualization, createQualitySchedulerRun } from '../../utils/data-quality'
 import { legacySchedulerVisualization } from './legacy-scheduling-system'
+import { depositBalanceQualityEvent } from '../../features/data-quality/banking'
+
+export { depositBalanceQualityEvent }
 
 const qualitySchedulerRun = createQualitySchedulerRun(
   legacySchedulerVisualization.tasks,

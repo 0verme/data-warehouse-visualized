@@ -21,7 +21,10 @@ import type {
   SourceSystem,
   StarSchemaVisualization,
 } from '../types'
-import type { LineageInvestigationEventDefinition } from '../features/lineage/types'
+import type {
+  LineageInvestigationEventDefinition,
+  LineageTeachingConfig,
+} from '../features/lineage/types'
 import type { SchedulerVisualization } from '../features/scheduler/types'
 import type { SqlTransformationVisualization } from '../features/sql-transformation/types'
 import type { PerformanceVisualization } from '../features/performance/types'
@@ -128,6 +131,8 @@ export type LessonVisualization =
       edges: LineageEdge[]
       investigationEvent?: LineageInvestigationEvent
       investigationEvents?: LineageInvestigationEventDefinition[]
+      /** Lesson-focused wrappers share the same graph data and traversal kernel. */
+      teaching?: LineageTeachingConfig
     }
   | ModelingIntroVisualization
   | LoanBusinessProcessVisualization

@@ -114,6 +114,7 @@ function VisualizationBody({
           edges={visualization.edges}
           investigationEvent={visualization.investigationEvent}
           investigationEvents={visualization.investigationEvents}
+          teaching={visualization.teaching}
         />
       )
     case 'modeling-intro':
@@ -265,6 +266,10 @@ function getHighlightedCode(
   return codeHighlights?.[getCodeHighlightKey(language, code)]
 }
 
+type LegacyBlocksProps = Omit<LessonSectionRendererProps, 'sections'> & {
+  showLegacyVisualization?: boolean
+}
+
 function LegacyBlocks({
   lesson,
   legacyVisualization,
@@ -274,14 +279,15 @@ function LegacyBlocks({
   engineeringTip,
   pitfalls,
   locale = DEFAULT_LOCALE,
-}: Omit<LessonSectionRendererProps, 'sections'>) {
+  showLegacyVisualization = true,
+}: LegacyBlocksProps) {
   const visualizationCopy = legacyVisualization
     ? getLegacyVisualizationCopy(legacyVisualization)
     : undefined
 
   return (
     <>
-      {legacyVisualization && visualizationCopy && (
+      {showLegacyVisualization && legacyVisualization && visualizationCopy && (
         <VisualizationBlock
           lessonId={lesson.id}
           visualization={legacyVisualization}
@@ -433,6 +439,7 @@ export function LessonSectionRenderer({
         locale={locale}
         engineeringTip={engineeringTip}
         pitfalls={pitfalls}
+        showLegacyVisualization={!sections.some((section) => section.kind === 'visualization')}
       />
     </section>
   )

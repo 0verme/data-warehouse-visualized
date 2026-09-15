@@ -1,515 +1,184 @@
-import type { LessonContent } from '../types'
-import type { LineageEdge, LineageEvidence, LineageNode } from '../../types'
-import type { QualityEvent } from '../../features/data-quality/types'
+import type { LessonContent, LessonVisualizationSection } from '../types'
+import {
+  BANKING_LINEAGE_NODE_IDS,
+  bankingEvidenceRecords,
+  bankingFieldDependencies,
+  bankingLineageEdges,
+  bankingLineageNodes,
+  bankingRootCauseCandidates,
+  bankingTableNodeIds,
+  bankingTaskDependencyExample,
+} from '../../features/lineage/banking'
 import { qualityEventAdapter } from '../../features/lineage/quality-adapter'
-import { bindLineageProductionChain } from '../../features/lineage/production'
-import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
-import { dataQualityVisualization } from './data-quality'
-import { legacySchedulerVisualization } from './legacy-scheduling-system'
-import { sqlTransformationVisualization } from './sql-and-transformation'
+import type { LineageTeachingConfig } from '../../features/lineage/types'
+import { depositBalanceQualityEvent } from './data-quality'
 
-const sqlTransformation: LineageEvidence = {
-  source: 'sql_transformation',
-  detail: 'SQL 转换：SELECT / CASE 重新映射 order_status 后写入下游对象。',
-}
+const qualityLineageInvestigation = qualityEventAdapter.toInvestigationEvent(
+  depositBalanceQualityEvent,
+)
 
-const taskDependency: LineageEvidence = {
-  source: 'task_dependency',
-  detail: '任务依赖：下游任务等待上游任务成功后才消费结果。',
-}
+const tableNodeIds = bankingTableNodeIds
 
-const metricDefinition: LineageEvidence = {
-  source: 'metric_definition',
-  detail: '指标定义：指标口径引用该对象中的 order_status 语义。',
-}
-
-const lineageNodes: LineageNode[] = [
-  {
-    id: 'ods-order',
-    label: 'ODS.ORDER',
-    layer: 'ODS',
-    role: '原始订单来源',
-    x: 90,
-    y: 90,
-    entityType: 'table',
-  },
-  {
-    id: 'dwd-order-detail',
-    label: 'DWD.ORDER_DETAIL',
-    layer: 'DWD',
-    role: '统一订单明细',
-    x: 380,
-    y: 90,
-    entityType: 'table',
-  },
-  {
-    id: 'dws-sales',
-    label: 'DWS.SALES',
-    layer: 'DWS',
-    role: '销售主题汇总',
-    x: 205,
-    y: 245,
-    entityType: 'table',
-  },
-  {
-    id: 'dws-user',
-    label: 'DWS.USER',
-    layer: 'DWS',
-    role: '用户主题汇总',
-    x: 555,
-    y: 245,
-    entityType: 'table',
-  },
-  {
-    id: 'ads-report',
-    label: 'ADS.REPORT',
-    layer: 'ADS',
-    role: '经营分析报表',
-    x: 380,
-    y: 385,
-    entityType: 'table',
-  },
-  {
-    id: 'field-ods-order-status',
-    label: 'ODS.ORDER.order_status',
-    layer: 'ODS',
-    role: '原始状态字段',
-    x: 90,
-    y: 90,
-    entityType: 'field',
-  },
-  {
-    id: 'field-dwd-order-status',
-    label: 'DWD.ORDER_DETAIL.order_status',
-    layer: 'DWD',
-    role: '统一后的状态字段',
-    x: 380,
-    y: 90,
-    entityType: 'field',
-  },
-  {
-    id: 'field-dws-sales-status',
-    label: 'DWS.SALES.status_group',
-    layer: 'DWS',
-    role: '销售状态分组',
-    x: 205,
-    y: 245,
-    entityType: 'field',
-  },
-  {
-    id: 'field-dws-user-status',
-    label: 'DWS.USER.status_group',
-    layer: 'DWS',
-    role: '用户状态分组',
-    x: 555,
-    y: 245,
-    entityType: 'field',
-  },
-  {
-    id: 'field-ads-report-status',
-    label: 'ADS.REPORT.status_summary',
-    layer: 'ADS',
-    role: '报表状态摘要',
-    x: 380,
-    y: 385,
-    entityType: 'field',
-  },
-  {
-    id: 'task-load-order',
-    label: 'task.load_order',
-    layer: 'TASK',
-    role: '载入订单数据',
-    x: 90,
-    y: 90,
-    entityType: 'task',
-  },
-  {
-    id: 'task-build-order-detail',
-    label: 'task.build_order_detail',
-    layer: 'TASK',
-    role: '生成统一明细',
-    x: 380,
-    y: 90,
-    entityType: 'task',
-  },
-  {
-    id: 'task-build-sales',
-    label: 'task.build_sales',
-    layer: 'TASK',
-    role: '生成销售主题',
-    x: 205,
-    y: 245,
-    entityType: 'task',
-  },
-  {
-    id: 'task-build-user',
-    label: 'task.build_user',
-    layer: 'TASK',
-    role: '生成用户主题',
-    x: 555,
-    y: 245,
-    entityType: 'task',
-  },
-  {
-    id: 'task-publish-report',
-    label: 'task.publish_report',
-    layer: 'TASK',
-    role: '发布经营报表',
-    x: 380,
-    y: 385,
-    entityType: 'task',
-  },
-  {
-    id: 'metric-sales-status-rate',
-    label: 'metric.sales_status_rate',
-    layer: 'METRIC',
-    role: '销售状态转化率',
-    x: 205,
-    y: 245,
-    entityType: 'metric',
-  },
-  {
-    id: 'metric-user-status-rate',
-    label: 'metric.user_status_rate',
-    layer: 'METRIC',
-    role: '用户状态留存率',
-    x: 555,
-    y: 245,
-    entityType: 'metric',
-  },
-  {
-    id: 'metric-report-status',
-    label: 'metric.report_status_summary',
-    layer: 'METRIC',
-    role: '报表状态摘要指标',
-    x: 380,
-    y: 385,
-    entityType: 'metric',
-  },
-]
-
-const lineageEdges: LineageEdge[] = [
-  // Existing table-level graph. Keep this order to preserve the original BFS timeline.
-  {
-    source: 'ods-order',
-    target: 'dwd-order-detail',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'dwd-order-detail',
-    target: 'dws-sales',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'dwd-order-detail',
-    target: 'dws-user',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'inferred',
-  },
-  {
-    source: 'dws-sales',
-    target: 'ads-report',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'inferred',
-  },
-  {
-    source: 'dws-user',
-    target: 'ads-report',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'inferred',
-  },
-  // Cross-entity path used by the field-change investigation.
-  {
-    source: 'field-dwd-order-status',
-    target: 'task-build-order-detail',
-    relation: 'consumes',
-    evidence: taskDependency,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-order-detail',
-    target: 'dwd-order-detail',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'dwd-order-detail',
-    target: 'task-build-sales',
-    relation: 'consumes',
-    evidence: taskDependency,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'dwd-order-detail',
-    target: 'task-build-user',
-    relation: 'consumes',
-    evidence: taskDependency,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-sales',
-    target: 'dws-sales',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-user',
-    target: 'dws-user',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'dws-sales',
-    target: 'metric-sales-status-rate',
-    relation: 'consumes',
-    evidence: metricDefinition,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'dws-user',
-    target: 'metric-user-status-rate',
-    relation: 'consumes',
-    evidence: metricDefinition,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-sales',
-    target: 'field-dws-sales-status',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-user',
-    target: 'field-dws-user-status',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'field-dws-sales-status',
-    target: 'task-publish-report',
-    relation: 'consumes',
-    evidence: taskDependency,
-    confidence: 'inferred',
-  },
-  {
-    source: 'field-dws-user-status',
-    target: 'task-publish-report',
-    relation: 'consumes',
-    evidence: taskDependency,
-    confidence: 'inferred',
-  },
-  {
-    source: 'task-publish-report',
-    target: 'ads-report',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-publish-report',
-    target: 'field-ads-report-status',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'field-ads-report-status',
-    target: 'metric-report-status',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'metric-sales-status-rate',
-    target: 'metric-report-status',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'inferred',
-  },
-  {
-    source: 'metric-user-status-rate',
-    target: 'metric-report-status',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'inferred',
-  },
-  // Same-entity paths make each view independently explorable.
-  {
-    source: 'field-ods-order-status',
-    target: 'field-dwd-order-status',
-    relation: 'transform',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'field-dwd-order-status',
-    target: 'field-dws-sales-status',
-    relation: 'derives',
-    evidence: sqlTransformation,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'field-dwd-order-status',
-    target: 'field-dws-user-status',
-    relation: 'derives',
-    evidence: sqlTransformation,
-    confidence: 'inferred',
-  },
-  {
-    source: 'field-dws-sales-status',
-    target: 'field-ads-report-status',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'inferred',
-  },
-  {
-    source: 'field-dws-user-status',
-    target: 'field-ads-report-status',
-    relation: 'derives',
-    evidence: metricDefinition,
-    confidence: 'inferred',
-  },
-  {
-    source: 'task-load-order',
-    target: 'task-build-order-detail',
-    relation: 'depends_on',
-    evidence: taskDependency,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-order-detail',
-    target: 'task-build-sales',
-    relation: 'depends_on',
-    evidence: taskDependency,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-order-detail',
-    target: 'task-build-user',
-    relation: 'depends_on',
-    evidence: taskDependency,
-    confidence: 'confirmed',
-  },
-  {
-    source: 'task-build-sales',
-    target: 'task-publish-report',
-    relation: 'depends_on',
-    evidence: taskDependency,
-    confidence: 'inferred',
-  },
-  {
-    source: 'task-build-user',
-    target: 'task-publish-report',
-    relation: 'depends_on',
-    evidence: taskDependency,
-    confidence: 'inferred',
-  },
-]
-
-const qualityEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'missing-order-item',
-  action: 'block',
-})
-let qualityEvent: QualityEvent | undefined
-for (const event of qualityEvaluation.events) {
-  if (event.ruleId === QUALITY_RULE_IDS.completeness) {
-    qualityEvent = event
-    break
+function createLineageVisualization(teaching: LineageTeachingConfig) {
+  return {
+    kind: 'lineage' as const,
+    nodes: bankingLineageNodes,
+    edges: bankingLineageEdges,
+    investigationEvent: qualityLineageInvestigation,
+    investigationEvents: [qualityLineageInvestigation],
+    teaching,
   }
 }
-if (!qualityEvent) {
-  throw new Error('第 08 课需要第 07 课的完整性 Quality Event 作为调查入口')
+
+const overviewNodeIds = [
+  BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
+  BANKING_LINEAGE_NODE_IDS.dwd,
+  BANKING_LINEAGE_NODE_IDS.dws,
+  BANKING_LINEAGE_NODE_IDS.ads,
+  BANKING_LINEAGE_NODE_IDS.metric,
+]
+
+const overviewTeaching: LineageTeachingConfig = {
+  mode: 'overview',
+  tableNodeIds: overviewNodeIds,
+  overviewNodeIds,
+  initialNodeId: BANKING_LINEAGE_NODE_IDS.dwd,
+  taskDependency: bankingTaskDependencyExample,
 }
 
-const qualityLineageInvestigation = qualityEventAdapter.toInvestigationEvent(qualityEvent)
-const lineageProductionGraph = bindLineageProductionChain({
-  baseNodes: lineageNodes,
-  baseEdges: lineageEdges,
-  transformation: sqlTransformationVisualization,
-  scheduler: legacySchedulerVisualization,
-})
+const fieldTeaching: LineageTeachingConfig = {
+  mode: 'field-dependencies',
+  tableNodeIds,
+  fieldDependencies: bankingFieldDependencies,
+}
+
+const investigationConfig = {
+  anomalyNodeId: BANKING_LINEAGE_NODE_IDS.dws,
+  directUpstreamNodeIds: [BANKING_LINEAGE_NODE_IDS.dwd],
+  upstreamExpansionNodeIds: [
+    BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
+    BANKING_LINEAGE_NODE_IDS.account,
+    BANKING_LINEAGE_NODE_IDS.branch,
+    BANKING_LINEAGE_NODE_IDS.product,
+  ],
+  transformationChecks: [
+    'SUM 的输入集合和 GROUP BY 维度',
+    'balance → deposit_balance 字段别名',
+    'Branch.branch_id JOIN 是否丢行',
+    'Product.product_type FILTER 是否变化',
+    'snapshot_date 与执行参数是否一致',
+  ],
+  qualityEvent: depositBalanceQualityEvent,
+  candidates: bankingRootCauseCandidates,
+  evidenceRecordIds: bankingEvidenceRecords.map((record) => record.id),
+} satisfies NonNullable<LineageTeachingConfig['investigation']>
+
+const investigationTeaching: LineageTeachingConfig = {
+  mode: 'investigation',
+  tableNodeIds,
+  initialNodeId: BANKING_LINEAGE_NODE_IDS.dws,
+  investigation: investigationConfig,
+}
+
+const impactTeaching: LineageTeachingConfig = {
+  mode: 'impact',
+  tableNodeIds,
+  impact: {
+    sourceNodeId: BANKING_LINEAGE_NODE_IDS.dwd,
+    choiceNodeIds: [
+      BANKING_LINEAGE_NODE_IDS.dws,
+      BANKING_LINEAGE_NODE_IDS.ads,
+      BANKING_LINEAGE_NODE_IDS.metric,
+      BANKING_LINEAGE_NODE_IDS.branch,
+      BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
+    ],
+    expectedDirectNodeIds: [BANKING_LINEAGE_NODE_IDS.dws],
+    expectedTransitiveNodeIds: [
+      BANKING_LINEAGE_NODE_IDS.dws,
+      BANKING_LINEAGE_NODE_IDS.ads,
+      BANKING_LINEAGE_NODE_IDS.metric,
+    ],
+    finalMetricNodeId: BANKING_LINEAGE_NODE_IDS.metric,
+    affectedMetricLabel: '存款余额指标',
+  },
+}
+
+const evidenceTeaching: LineageTeachingConfig = {
+  mode: 'evidence',
+  tableNodeIds,
+  evidenceRecords: bankingEvidenceRecords,
+}
+
+const lineageSections: LessonVisualizationSection[] = [
+  {
+    kind: 'visualization',
+    eyebrow: '8-1 · 表级血缘',
+    title: '这份数据到底从哪里来？',
+    description:
+      '先读一条统一的银行存款余额链路：AccountBalanceSnapshot 等输入经过 dwd_account_balance_detail，汇总到 dws_deposit_balance_daily，再发布到 ads_deposit_balance，最后被存款余额指标消费。点击对象，比较直接上游、传递上游和下游影响。',
+    visualization: createLineageVisualization(overviewTeaching),
+  },
+  {
+    kind: 'visualization',
+    eyebrow: '8-2 · 字段级血缘',
+    title: '只知道上游表，为什么还不够？',
+    description:
+      '沿 dwd_account_balance_detail → dws_deposit_balance_daily 下钻。余额值、字段重命名、产品过滤和机构 JOIN 都可能影响结果，但它们在链路中的作用不同；选择一个关系，沿字段路径查看证据。',
+    visualization: createLineageVisualization(fieldTeaching),
+  },
+  {
+    kind: 'visualization',
+    eyebrow: '8-3 · 质量事件调查',
+    title: '质量告警以后，哪些上游值得先查？',
+    description: `第 07 章留下的质量事件在 ${depositBalanceQualityEvent.target.table}.${depositBalanceQualityEvent.target.field} 上发现 delta = ${depositBalanceQualityEvent.observedValue}，因此 Release BLOCKED。先检查 DWD 这个直接上游：如果 DWD 正常，停在当前转换；如果 DWD 已异常，再向 AccountBalanceSnapshot、Account、Branch、Product 展开。`,
+    visualization: createLineageVisualization(investigationTeaching),
+  },
+  {
+    kind: 'visualization',
+    eyebrow: '8-4 · 变更影响范围',
+    title: '如果这里出问题，会影响哪些下游？',
+    description:
+      '先预测直接下游，再逐层展开 Blast Radius。dws_deposit_balance_daily 是第一轮验证对象，ads_deposit_balance 和存款余额指标是传递影响；最终数字的消费者也属于变更评审范围。',
+    visualization: createLineageVisualization(impactTeaching),
+  },
+  {
+    kind: 'visualization',
+    eyebrow: '8-5 · 证据与边界',
+    title: '图上的这条箭头，凭什么相信？',
+    description:
+      '回看 SQL、任务配置、指标定义和人工登记四类关系证据。来源回答“证据从哪里来”，确认状态回答“现在能不能相信”；pending 的关系可以帮助调查，但不能替代独立验证。',
+    visualization: createLineageVisualization(evidenceTeaching),
+  },
+]
 
 export const dataLineageContent: LessonContent = {
-  eyebrow: '第 08 课 · 追踪一条数据生产链路',
-  subtitle:
-    '改一个上游字段，下游会有多少张报表受牵连？沿着血缘图找出直接下游、传递影响和最终影响范围。',
+  eyebrow: '第 08 课 · 数据血缘',
+  subtitle: '沿统一的银行存款余额链路，定位质量异常、评估变更影响，并为每条关系找到可核对的证据。',
   quickSummary:
-    '数据血缘把表、字段、任务和指标放进同一张依赖图；质量异常进入调查后，沿证据路径确认上游来源和下游影响。',
+    '数据血缘描述数据对象之间的来源、加工和消费关系。它能安排调查顺序和变更影响范围，但血缘关系本身不等于业务根因证明。',
   concept: {
     term: '数据血缘',
     definition:
-      '描述数据对象之间来源、加工和消费关系的依赖信息。它提供排错和变更评审的共享上下文，但不等于业务因果。',
+      '描述数据对象之间来源、加工和消费关系的依赖信息。表级关系帮助定位链路，字段级关系帮助解释转换，证据状态帮助区分已确认和待验证的关系。',
   },
-  sections: [
-    {
-      title: '数据从哪里来，最后被谁使用？',
-      paragraphs: [
-        '在订单链路里，ODS.ORDER 是来源，DWD.ORDER_DETAIL 统一订单明细；它又被销售主题和用户主题复用，最终共同支撑报表。表级视图先把生产方向讲清楚。',
-        '质量异常（缺少 I1002-2 的完整性失败）可以从调查入口直接进入这条链路：质量规则、目标字段、分区和运行实例会一起显示。',
-        '同一条链路还可以换成字段、任务或指标视角：字段回答“哪一列被加工”，任务回答“谁负责生产”，指标回答“哪个口径在消费”。',
-      ],
-      bullets: [
-        '表级：理解数据资产之间的生产方向',
-        '字段级：追踪 order_status 的语义变化',
-        '任务级：定位依赖顺序与验证入口',
-        '指标级：确认下游口径是否需要复核',
-        '任务视角只展示已登记的销售主题任务；用户主题的依赖还需要人工确认，不能把它当成完整 DAG。',
-      ],
-    },
-    {
-      title: '改一个上游字段，下游会牵连多少报表？',
-      paragraphs: [
-        '从质量异常、字段语义变化、schema / field change 或 task failure 进入调查，查看直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终影响范围适合安排验证与通知。',
-      ],
-      bullets: [
-        '上游：帮助定位来源和排查问题',
-        '直接下游：帮助安排修改与验证顺序',
-        '传递下游：展示依赖链上逐层传播的对象',
-        '最终影响：按 table / field / task / metric 汇总爆炸半径',
-      ],
-    },
-    {
-      title: '每条箭头都要能解释',
-      paragraphs: [
-        '点击调查路径中的边，可以看到它来自 Quality Event、SQL transformation、task dependency、metric definition 或 manual metadata，以及 confirmed / inferred / manual 的教学置信度。证据越弱，越应该回到质量样本、任务配置和字段语义进行确认。',
-      ],
-    },
-  ],
-  visualization: {
-    kind: 'lineage',
-    nodes: lineageProductionGraph.nodes,
-    edges: lineageProductionGraph.edges,
-    investigationEvent: lineageProductionGraph.investigationEvents[0],
-    investigationEvents: [
-      ...lineageProductionGraph.investigationEvents,
-      qualityLineageInvestigation,
-    ],
-  },
+  sections: lineageSections,
+  visualization: createLineageVisualization(overviewTeaching),
   code: {
     label: '一个需要血缘的问题',
     language: 'sql',
-    code: `-- order_status 的含义发生变化，先找直接下游和最终影响
-SELECT target_entity, relation, evidence_source
-FROM lineage_edges
-WHERE source_entity = 'DWD.ORDER_DETAIL.order_status';`,
+    code: `-- 修改余额字段前，先确认直接下游和最终指标消费者
+SELECT source_field, target_field, operation, evidence_source, verification_status
+FROM lineage_field_dependencies
+WHERE source_field = 'dwd_account_balance_detail.balance';`,
   },
   engineeringTip:
-    '数据血缘是线上变更和故障排查的“导航地图”：沿字段、任务和指标的依赖关系，确定需要验证和通知的范围。',
+    '生产排错时，先把 Quality Event 的业务日期、目标分区、任务运行实例和发布决定固定下来，再沿近到远的血缘路径安排检查。',
   pitfalls: [
-    '上游和下游是相对当前节点而言的；换一个选中对象，统计结果也会变化。',
-    '直接下游不等于最终影响，传递链路中的表、任务和指标都需要分别验证。',
-    '图上的依赖不等于业务因果关系，仍需要结合任务、字段语义和业务规则判断。',
+    '直接上游和传递上游是相对当前对象而言的；换一个对象，调查范围也会改变。',
+    'Task dependency 说明任务先后，data lineage 说明数据来源；两者不能互相替代。',
+    'Root-cause candidate 只是基于血缘关系的复核优先级，仍需要数据 Diff、执行参数、SQL 版本、任务日志或业务变更记录证明。',
+    '关系的 evidence source 与 verification status 是两个字段；人工登记的关系必须保留待确认状态。',
   ],
 }
+
+export { qualityLineageInvestigation }
