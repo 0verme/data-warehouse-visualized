@@ -4,12 +4,17 @@ import type {
   GovernanceField,
   GovernanceLifecycleEvent,
   GovernanceMetricReference,
-  GovernanceQualityEvidenceReference,
   GovernanceVisualization,
   LineageEvidence,
 } from '../../types'
-import { dataLineageContent } from './data-lineage'
+import {
+  qualityEventToGovernanceEvidence,
+  qualityEvaluationToGovernanceEvidence,
+} from '../../features/governance/quality-adapter'
+import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
 import { getMetricDefinition } from '../../utils/metrics'
+import { dataLineageContent } from './data-lineage'
+import { dataQualityVisualization } from './data-quality'
 import type { LessonContent } from '../types'
 
 const lineageVisualization = dataLineageContent.visualization
@@ -18,11 +23,33 @@ if (!lineageVisualization || lineageVisualization.kind !== 'lineage') {
   throw new Error('数据治理课程需要复用第 08 章的 lineage visualization')
 }
 
-const pendingQualityEvidence: GovernanceQualityEvidenceReference = {
-  source: 'chapter-07',
-  status: 'pending-integration',
-  note: '质量证据尚未接入；等待第 07 章真实质量事件，本阶段不把未知显示为通过。',
+const qualityIncidentEvaluation = evaluateDataQuality(dataQualityVisualization, {
+  injection: 'missing-order-item',
+  action: 'block',
+})
+const qualityIncident = qualityIncidentEvaluation.events.find(
+  (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
+)
+if (!qualityIncident) {
+  throw new Error('数据治理课程需要第 07 章真实的完整性 QualityEvent')
 }
+
+const qualityBaselineEvaluation = evaluateDataQuality(dataQualityVisualization, {
+  injection: 'none',
+  action: 'block',
+})
+const dwsSalesQualityRule = dataQualityVisualization.rules.find(
+  (rule) => rule.ruleId === QUALITY_RULE_IDS.reconciliation,
+)
+if (!dwsSalesQualityRule) {
+  throw new Error('数据治理课程需要第 07 章真实的对账 QualityRule')
+}
+
+const dwdQualityEvidence = qualityEventToGovernanceEvidence(qualityIncident, 'DWD 明细完整性')
+const dwsSalesQualityEvidence = qualityEvaluationToGovernanceEvidence(
+  qualityBaselineEvaluation,
+  dwsSalesQualityRule,
+)
 
 const currentFreshness = {
   lastUpdatedAt: '2026-09-14 10:00',
@@ -289,7 +316,6 @@ const governanceAssets: GovernanceAsset[] = [
       nodeId: 'ods-order',
       note: '已连接第 08 章 ODS.ORDER 节点，可沿现有血缘追踪到统一明细。',
     },
-    qualityEvidence: pendingQualityEvidence,
   },
   {
     id: 'dwd-order-detail',
@@ -312,7 +338,7 @@ const governanceAssets: GovernanceAsset[] = [
       nodeId: 'dwd-order-detail',
       note: '复用第 08 章 DWD.ORDER_DETAIL 节点；下游关系来自同一 LineageGraph。',
     },
-    qualityEvidence: pendingQualityEvidence,
+    qualityEvidence: dwdQualityEvidence,
   },
   {
     id: 'dws-sales',
@@ -335,7 +361,7 @@ const governanceAssets: GovernanceAsset[] = [
       nodeId: 'dws-sales',
       note: '复用第 08 章 DWS.SALES 节点，可追踪到报表和销售状态指标。',
     },
-    qualityEvidence: pendingQualityEvidence,
+    qualityEvidence: dwsSalesQualityEvidence,
   },
   {
     id: 'ads-report',
@@ -358,7 +384,6 @@ const governanceAssets: GovernanceAsset[] = [
       nodeId: 'ads-report',
       note: '复用第 08 章 ADS.REPORT 节点；报表关系和指标关系不另建图。',
     },
-    qualityEvidence: pendingQualityEvidence,
   },
   {
     id: 'dws-user',
@@ -379,7 +404,6 @@ const governanceAssets: GovernanceAsset[] = [
       nodeId: 'dws-user',
       note: '复用第 08 章 DWS.USER 节点；用户主题的下游影响仍可被追踪。',
     },
-    qualityEvidence: pendingQualityEvidence,
   },
   {
     id: 'ads-sales-report-v1',
@@ -416,7 +440,6 @@ const governanceAssets: GovernanceAsset[] = [
       status: 'unavailable',
       note: '当前第 08 章血缘目录没有旧版视图的可确认节点，只保留人工迁移说明。',
     },
-    qualityEvidence: pendingQualityEvidence,
   },
 ]
 
@@ -540,7 +563,7 @@ export const dataGovernanceContent: LessonContent = {
       title: '变更治理要沿现有血缘找影响',
       paragraphs: [
         'order_status 的语义变化和 ADS.REPORT 的下线事件，会通过第 08 章已有的节点、边和遍历函数找到直接下游、传递影响、消费者和通知顺序。本章没有重新画一张 downstream graph。',
-        '质量结果是另一个边界：现在只显示“质量证据尚未接入”，不会生成 fake quality pass、failed rules 或 score。等第 07 章真实契约完成后，再由 Phase 2 接入。',
+        '质量结果已经沿第 07 章 Quality Contract 投影到目录：DWD.ORDER_DETAIL 展示真实的缺明细 Quality Event、目标字段、分区、失败样本和 block 决定；DWS.SALES 同时保留一次基线 pass 作为对照。治理只读取这些证据，不重新计算质量规则。',
       ],
     },
     {
@@ -555,8 +578,8 @@ export const dataGovernanceContent: LessonContent = {
     },
     {
       kind: 'engineering-note',
-      title: 'Phase 1 的质量边界',
-      text: '本课程保留了可选的 qualityEvidence reference，但第 07 章尚未提供真实 Data Quality Contract。当前 UI 明确显示 pending integration，不把未知状态显示为 pass；未来可在不改动目录、策略和血缘接口的前提下接入 quality event、rule result、severity、failed samples、freshness status、affected partition / field 与 release decision。',
+      title: 'Phase 2 的质量边界',
+      text: '治理通过薄 adapter 直接消费第 07 章的 QualityEvent、QualityCheckResult 和 QualityReleaseDecision，并只保留状态、规则、目标分区、证据样本、release decision 与剩余风险等摘要。没有被质量规则覆盖的资产仍显示 unknown，不能把未知状态当成 pass。',
     },
     {
       kind: 'pitfall',
