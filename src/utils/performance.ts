@@ -122,7 +122,7 @@ function stage(
   return { stage: stageId, label, relativeWork: round(relativeWork) }
 }
 
-/** Deterministic simulation; values are relative estimates, never engine benchmarks. */
+/** Relative model values for comparing performance trade-offs. */
 export function simulatePerformance(
   overrides: Partial<PerformanceConfig>,
   architectureState: LakehouseArchitectureState,

@@ -201,13 +201,13 @@ function GrainDetail({
     <section className="metric-lab__grain" aria-labelledby="metric-grain-title">
       <div className="metric-lab__section-heading">
         <div>
-          <span className="eyebrow eyebrow--small">连接第 3 章 · Grain</span>
+          <span className="eyebrow eyebrow--small">粒度与指标</span>
           <h3 id="metric-grain-title">同一个订单在明细表里出现了两行</h3>
         </div>
         <p>
           {isDuplicated
             ? '错误模式：订单金额被带到每个商品行。'
-            : '正确模式：先回到订单粒度再计算。'}
+            : '正确模式：回到订单粒度后再计算。'}
         </p>
       </div>
       <div className={`metric-lab__grain-callout${isDuplicated ? ' is-warning' : ''}`}>

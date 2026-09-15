@@ -20,7 +20,7 @@ import type { LessonContent } from '../types'
 const lineageVisualization = dataLineageContent.visualization
 
 if (!lineageVisualization || lineageVisualization.kind !== 'lineage') {
-  throw new Error('数据治理课程需要复用第 08 章的 lineage visualization')
+  throw new Error('数据治理课程缺少血缘可视化数据')
 }
 
 const qualityIncidentEvaluation = evaluateDataQuality(dataQualityVisualization, {
@@ -31,7 +31,7 @@ const qualityIncident = qualityIncidentEvaluation.events.find(
   (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
 )
 if (!qualityIncident) {
-  throw new Error('数据治理课程需要第 07 章真实的完整性 QualityEvent')
+  throw new Error('数据治理课程缺少完整性质量事件')
 }
 
 const qualityBaselineEvaluation = evaluateDataQuality(dataQualityVisualization, {
@@ -42,7 +42,7 @@ const dwsSalesQualityRule = dataQualityVisualization.rules.find(
   (rule) => rule.ruleId === QUALITY_RULE_IDS.reconciliation,
 )
 if (!dwsSalesQualityRule) {
-  throw new Error('数据治理课程需要第 07 章真实的对账 QualityRule')
+  throw new Error('数据治理课程缺少对账质量规则')
 }
 
 const dwdQualityEvidence = qualityEventToGovernanceEvidence(qualityIncident, 'DWD 明细完整性')
@@ -76,7 +76,7 @@ const payGmvReference: GovernanceMetricReference = {
   name: '支付 GMV',
   definition: payGmvDefinition,
   sourceLessonSlug: 'metric-system',
-  note: '复用第 04 章的指标定义；治理目录只引用口径，不重新计算订单。',
+  note: '引用支付 GMV 定义；治理目录只引用口径，不重新计算订单。',
 }
 
 const dwdDefinition: GovernanceBusinessDefinition = {
@@ -196,7 +196,7 @@ const salesFields: GovernanceField[] = [
     name: 'pay_gmv',
     label: '支付 GMV',
     type: 'decimal',
-    description: '复用第 04 章支付 GMV 口径的聚合结果。',
+    description: '引用支付 GMV 口径的聚合结果。',
     sensitivity: 'internal',
   },
   {
@@ -314,7 +314,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'ods-order',
-      note: '已连接第 08 章 ODS.ORDER 节点，可沿现有血缘追踪到统一明细。',
+      note: '已连接 ODS.ORDER 节点，可沿血缘追踪到统一明细。',
     },
   },
   {
@@ -336,7 +336,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'dwd-order-detail',
-      note: '复用第 08 章 DWD.ORDER_DETAIL 节点；下游关系来自同一 LineageGraph。',
+      note: '已连接 DWD.ORDER_DETAIL 节点；下游关系来自同一条血缘。',
     },
     qualityEvidence: dwdQualityEvidence,
   },
@@ -359,7 +359,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'dws-sales',
-      note: '复用第 08 章 DWS.SALES 节点，可追踪到报表和销售状态指标。',
+      note: '已连接 DWS.SALES 节点，可追踪到报表和销售状态指标。',
     },
     qualityEvidence: dwsSalesQualityEvidence,
   },
@@ -382,7 +382,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'ads-report',
-      note: '复用第 08 章 ADS.REPORT 节点；报表关系和指标关系不另建图。',
+      note: '已连接 ADS.REPORT 节点，可同时查看报表关系和指标关系。',
     },
   },
   {
@@ -402,7 +402,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'dws-user',
-      note: '复用第 08 章 DWS.USER 节点；用户主题的下游影响仍可被追踪。',
+      note: '已连接 DWS.USER 节点，用户主题的下游影响仍可被追踪。',
     },
   },
   {
@@ -438,14 +438,14 @@ const governanceAssets: GovernanceAsset[] = [
     metricDefinition: payGmvReference,
     lineageEvidence: {
       status: 'unavailable',
-      note: '当前第 08 章血缘目录没有旧版视图的可确认节点，只保留人工迁移说明。',
+      note: '当前血缘目录没有旧版视图的可确认节点，只保留人工迁移说明。',
     },
   },
 ]
 
 const governanceEventEvidence: LineageEvidence = {
   source: 'manual_metadata',
-  detail: '治理事件是本章确定性教学数据；影响范围仍通过第 08 章的 LineageGraph 计算。',
+  detail: '该治理事件的影响对象，沿已登记的血缘关系计算。',
 }
 
 const governanceEvents: GovernanceLifecycleEvent[] = [
@@ -510,19 +510,19 @@ export const governanceVisualization: GovernanceVisualization = {
 
 export const dataGovernanceContent: LessonContent = {
   eyebrow: '第 09 课 · 数据资产如何被安全复用',
-  subtitle: '从“我需要用户销售数据”开始，走过发现、证据、访问、变更和责任分配。',
+  subtitle: '面对一条“我要用户销售数据”的申请，沿着资产定义、字段敏感等级和责任人做出使用决定。',
   quickSummary:
-    '数据治理不是给表补一页文档，而是让资产发现、字段访问和变更通知都能回到可解释证据。',
+    '数据治理要回答三件事：资产是什么、字段能否使用、发生变更后要通知谁；每个决定都要留下证据。',
   opening: {
-    eyebrow: '先接住一个真实需求',
-    title: '“我需要用户销售数据。”',
+    eyebrow: '新员工入职：“我该查哪张表？找谁要权限？”',
+    title: '用户销售数据应该从哪张表取？',
     intro: '新同事已经知道业务词，却不知道该选哪张表、哪些字段能看，以及资产变更后要通知谁。',
     cards: [
       { label: '需求', value: '用户销售数据', detail: '业务词，不是技术表名' },
       { label: '风险', value: '同名 ≠ 同义', detail: '定义、Owner、生命周期都可能不同' },
       { label: '目标', value: '可复盘决定', detail: '留下依据、影响和剩余风险' },
     ],
-    question: '请先搜索“销售”，再比较候选资产：名字最像的那张，不一定是最应该推荐的来源。',
+    question: '搜索“销售”后，比较候选资产：名字最像的那张，不一定最适合当前分析。',
   },
   concept: {
     term: '可执行的数据治理',
@@ -532,7 +532,7 @@ export const dataGovernanceContent: LessonContent = {
   sections: [
     {
       kind: 'narrative',
-      title: '先按业务词找资产，不要从技术名猜含义',
+      title: '业务词找到候选表，技术名不能代替定义',
       paragraphs: [
         '目录里故意放入多个“销售”候选：DWS.SALES 适合经营分析，ADS.REPORT 更接近报表消费，旧版 V1 已经 deprecated，而 DWS.USER 虽然名字相关，却缺 Owner 且粒度含糊。搜索结果要让这些治理差异直接可见。',
       ],
@@ -545,9 +545,9 @@ export const dataGovernanceContent: LessonContent = {
     {
       kind: 'visualization',
       eyebrow: 'Governance Decision Workbench',
-      title: '从找到一张表，到留下可复盘的治理记录',
+      title: '找到表后，留下可复盘的治理记录',
       description:
-        '在同一个本地确定性工作台里搜索目录、打开证据、切换角色和用途、运行生命周期事件，再根据已有血缘证据安排通知。',
+        '在目录中搜索资产，打开定义、质量和血缘证据，切换角色与用途，再处理生命周期事件并安排通知。',
       visualization: governanceVisualization,
     },
     {
@@ -555,15 +555,15 @@ export const dataGovernanceContent: LessonContent = {
       title: '字段能找到，不等于字段应该直接可见',
       paragraphs: [
         '同一个 user_email，分析师做经营分析时可以得到脱敏结果；营销人员做用户触达时需要审批；外部协作者在外部共享场景则被拒绝。策略输出必须告诉学习者依据，而不是只说“无权限”。',
-        '本实验只模拟教学策略，不连接登录系统、数据库权限或审批后端。allow、masked、approval-required、deny 是为了观察最小权限的思路。',
+        'allow、masked、approval-required、deny 分别对应直接使用、脱敏后使用、审批后使用和拒绝；申请时要把业务用途写清楚。',
       ],
     },
     {
       kind: 'narrative',
       title: '变更治理要沿现有血缘找影响',
       paragraphs: [
-        'order_status 的语义变化和 ADS.REPORT 的下线事件，会通过第 08 章已有的节点、边和遍历函数找到直接下游、传递影响、消费者和通知顺序。本章没有重新画一张 downstream graph。',
-        '质量结果已经沿第 07 章 Quality Contract 投影到目录：DWD.ORDER_DETAIL 展示真实的缺明细 Quality Event、目标字段、分区、失败样本和 block 决定；DWS.SALES 同时保留一次基线 pass 作为对照。治理只读取这些证据，不重新计算质量规则。',
+        'order_status 的语义变化和 ADS.REPORT 的下线事件，沿节点和边找到直接下游、传递影响、消费者和通知顺序。报表下线时，责任人可以据此安排迁移和通知。',
+        '质量检查结果也要进入资产判断：DWD.ORDER_DETAIL 展示缺明细事件、目标字段、分区、失败样本和阻断决定；DWS.SALES 保留一次通过结果作为对照。资产目录根据这些证据提示风险，不把缺少检查的资产当作通过。',
       ],
     },
     {
@@ -573,18 +573,18 @@ export const dataGovernanceContent: LessonContent = {
       bullets: [
         '推荐判断要能解释：定义、Owner、生命周期、敏感等级、血缘和 freshness metadata 分别贡献了什么。',
         '访问判断要落到字段、角色和用途，不能把岗位名称当成万能权限。',
-        '变更通知要来自生产链路里的血缘证据，而不是治理页面自己维护第二张图。',
+        '变更通知要沿生产链路的血缘证据生成，并由责任人确认接收范围。',
       ],
     },
     {
       kind: 'engineering-note',
-      title: 'Phase 2 的质量边界',
-      text: '治理通过薄 adapter 直接消费第 07 章的 QualityEvent、QualityCheckResult 和 QualityReleaseDecision，并只保留状态、规则、目标分区、证据样本、release decision 与剩余风险等摘要。没有被质量规则覆盖的资产仍显示 unknown，不能把未知状态当成 pass。',
+      title: '质量证据如何参与治理决定',
+      text: '质量状态、检查规则、目标分区、失败样本、发布决定和剩余风险都会影响资产推荐。未被质量规则覆盖的资产仍显示 unknown，不能把未知状态当成 pass。',
     },
     {
       kind: 'pitfall',
       title: '不要把治理做成评分卡或 IAM 仿制品',
-      text: '本实验的 recommended、usable-with-caution、not-recommended 是可解释的原因集合，不是神秘分数；policy simulation 也只是本地确定性教学策略，不代表企业权限系统。',
+      text: 'recommended、usable-with-caution、not-recommended 是根据定义、责任、敏感等级、血缘和质量证据给出的解释性结论，不能代替组织正式的权限审批。',
     },
   ],
 }

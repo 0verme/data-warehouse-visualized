@@ -2,11 +2,11 @@ import type { LessonContent } from '../types'
 
 export const metricSystemContent: LessonContent = {
   eyebrow: '第 06 课 · 指标口径实验',
-  subtitle: '不要先背公式：先改变口径，看见哪些订单被纳入，以及结果数字为什么跟着变化。',
+  subtitle: '三个团队都说自己的 GMV 对：把订单状态、退款和时间字段逐项对上，金额差异就有了原因。',
   opening: {
-    eyebrow: '先制造一个冲突',
+    eyebrow: '三个部门算出了三个不同的销售额',
     title: '昨天 GMV 到底是多少？',
-    intro: '同一批订单，三个团队给出了三个答案。先别急着判断谁错了。',
+    intro: '同一批订单，三个团队给出了三个答案。把各自的时间、状态和退款规则列出来，差异就能对上。',
     cards: [
       { label: '运营', value: '380 元', detail: '按下单时间 · 不扣退款' },
       { label: '财务', value: '260 元', detail: '按支付时间 · 扣除退款' },
@@ -19,11 +19,11 @@ export const metricSystemContent: LessonContent = {
   concept: {
     term: '一个名字，不足以定义一个指标',
     definition:
-      'GMV 并不存在跨所有公司的唯一标准定义。组织需要做的不是寻找“宇宙唯一正确答案”，而是明确当前使用哪一种定义，并让报表、SQL 和讨论保持一致。',
+      'GMV 没有跨所有公司的唯一标准定义。组织需要明确当前采用哪一种定义，并让报表、SQL 和讨论保持一致。',
   },
   sections: [
     {
-      title: '先看一小批订单，而不是先背“指标公式”',
+      title: '四笔订单，为什么会算出不同 GMV？',
       paragraphs: [
         '本实验固定统计日期为 2026-09-13。O001、O002 是当天支付的订单；O003 在当天深夜下单，却在次日零点后支付；O004 仍然待支付。它们刚好把状态、退款和跨日时间的边界放在同一张小表里。',
       ],
@@ -34,7 +34,7 @@ export const metricSystemContent: LessonContent = {
       ],
     },
     {
-      title: '用四个开关改变“什么算进去”',
+      title: '切换过滤规则，观察订单如何进出统计集',
       paragraphs: [
         '实验中的状态、退款、时间和粒度四组控制项，分别对应一条指标定义里的业务规则。不要只盯着顶部数字，观察订单表里的“当前贡献”和排除原因，数字就是这样被算出来的。',
       ],
@@ -46,7 +46,7 @@ export const metricSystemContent: LessonContent = {
       ],
     },
     {
-      title: '把第 3 章的粒度带进指标计算',
+      title: '明细粒度不匹配，SUM 求和就会重复计算',
       paragraphs: [
         '订单明细里可能有 O001 的商品 A 和商品 B 两行。如果每一行都重复保存 100 元的 order_amount，再直接 SUM，就会得到 200 元。指标不仅要定义算什么，还必须知道数据处于什么粒度。',
       ],

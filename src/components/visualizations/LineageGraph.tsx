@@ -46,11 +46,11 @@ const RELATION_LABELS = {
 } as const
 
 const EVIDENCE_LABELS = {
-  sql_transformation: 'SQL transformation',
-  task_dependency: 'task dependency',
-  manual_metadata: 'manual metadata',
-  metric_definition: 'metric definition',
-  quality_event: 'Quality Event · 第 07 章',
+  sql_transformation: 'SQL 加工',
+  task_dependency: '任务依赖',
+  manual_metadata: '人工登记',
+  metric_definition: '指标定义',
+  quality_event: 'Quality Event · 质量异常',
 } as const
 
 const CONFIDENCE_LABELS = {
@@ -63,7 +63,7 @@ const EVENT_LABELS: Record<LineageEventType, string> = {
   field_change: '字段含义变化',
   quality_alert: '质量告警',
   task_failure: '任务失败',
-  sql_transformation: 'SQL transformation',
+  sql_transformation: 'SQL 加工',
 }
 
 const EVENT_ENTRY_POINT_LABELS: Record<LineageInvestigationEventDefinition['entryPoint'], string> =
@@ -71,7 +71,7 @@ const EVENT_ENTRY_POINT_LABELS: Record<LineageInvestigationEventDefinition['entr
     'field-semantic-change': '字段语义变化',
     'schema-change': 'schema / field change',
     'task-failure': 'task failure',
-    'quality-event': 'quality event · 第 07 章质量异常',
+    'quality-event': '质量异常事件',
   }
 
 function getNode(nodes: readonly LineageNode[], nodeId: string): LineageNode | undefined {
@@ -418,7 +418,7 @@ export function LineageGraph({
               {activeInvestigationEvent.label}：从 {investigationSource?.label ?? '事件对象'} 开始
             </h3>
             <p>
-              {activeInvestigationEvent.summary} 先预测影响范围，再执行路径回放，验证它是否会触及{' '}
+              {activeInvestigationEvent.summary} 预测影响范围后，执行路径回放，确认它是否会触及{' '}
               {investigationTarget?.label ?? '下游对象'}。
             </p>
             <small>
@@ -429,12 +429,12 @@ export function LineageGraph({
               <div className="lineage-investigation__context" aria-label="事件运行上下文">
                 {activeInvestigationEvent.context.taskId && (
                   <span>
-                    task <code>{activeInvestigationEvent.context.taskId}</code>
+                    任务 <code>{activeInvestigationEvent.context.taskId}</code>
                   </span>
                 )}
                 {activeInvestigationEvent.context.runId && (
                   <span>
-                    run <code>{activeInvestigationEvent.context.runId}</code>
+                    运行实例 <code>{activeInvestigationEvent.context.runId}</code>
                   </span>
                 )}
                 {activeInvestigationEvent.context.partition && (
@@ -447,19 +447,19 @@ export function LineageGraph({
                   </span>
                 )}
                 {activeInvestigationEvent.context.attempt !== undefined && (
-                  <span>attempt {activeInvestigationEvent.context.attempt}</span>
+                  <span>重试次数 {activeInvestigationEvent.context.attempt}</span>
                 )}
               </div>
             )}
             {activeInvestigationEvent.qualityEvent && (
               <div className="lineage-investigation__quality" aria-label="质量事件详情">
                 <div className="lineage-investigation__quality-heading">
-                  <span>Quality Event · 第 07 章真实领域事件</span>
+                  <span>Quality Event · 质量异常</span>
                   <code>{activeInvestigationEvent.qualityEvent.eventId}</code>
                 </div>
                 <div className="lineage-investigation__quality-facts">
                   <span>
-                    rule <code>{activeInvestigationEvent.qualityEvent.ruleId}</code>
+                    规则 <code>{activeInvestigationEvent.qualityEvent.ruleId}</code>
                   </span>
                   <span>
                     target{' '}
@@ -476,11 +476,11 @@ export function LineageGraph({
                     </code>
                   </span>
                   <span>
-                    status <code>{activeInvestigationEvent.qualityEvent.status}</code> · severity{' '}
+                    状态 <code>{activeInvestigationEvent.qualityEvent.status}</code> · 严重级别{' '}
                     <code>{activeInvestigationEvent.qualityEvent.severity}</code>
                   </span>
                   <span>
-                    observed{' '}
+                    实际值{' '}
                     <code>
                       {activeInvestigationEvent.qualityEvent.observedValue} /{' '}
                       {activeInvestigationEvent.qualityEvent.threshold.value}{' '}
@@ -488,7 +488,7 @@ export function LineageGraph({
                     </code>
                   </span>
                   <span>
-                    release{' '}
+                    发布决定{' '}
                     <code>
                       {activeInvestigationEvent.qualityEvent.releaseImpact.downstreamRelease}
                     </code>
@@ -498,20 +498,20 @@ export function LineageGraph({
                   {activeInvestigationEvent.qualityEvent.evidence.map((evidence) => (
                     <li key={evidence.evidenceId}>
                       <code>{evidence.evidenceId}</code> · {evidence.detail} ·{' '}
-                      {evidence.samples.length} samples
+                      {evidence.samples.length} 条样本
                     </li>
                   ))}
                 </ul>
                 <div className="lineage-investigation__quality-context">
-                  <span>QualityInvestigationContext</span>
+                  <span>调查摘要</span>
                   <p>
-                    upstream hint：
+                    上游线索：
                     {activeInvestigationEvent.qualityEvent.investigationContext.upstreamHints.join(
                       ' ',
                     )}
                   </p>
                   <p>
-                    downstream impact：
+                    下游影响：
                     {activeInvestigationEvent.qualityEvent.investigationContext.downstreamImpacts.join(
                       '、',
                     )}
@@ -847,7 +847,7 @@ export function LineageGraph({
         <section className="lineage-path" aria-labelledby="lineage-path-title">
           <div className="lineage-evidence__heading">
             <div>
-              <span className="eyebrow eyebrow--small">Path replay</span>
+              <span className="eyebrow eyebrow--small">路径回放</span>
               <h3 id="lineage-path-title">{activeInvestigationEvent?.label ?? '调查路径'}</h3>
             </div>
             <p>{activeInvestigationEvent?.summary ?? '从事件起点逐边核对上游、下游和证据。'}</p>
@@ -876,8 +876,7 @@ export function LineageGraph({
 
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        这是教学模拟：图中的 Quality Event 来自第 07 章确定性质量 fixture，SQL / Scheduler
-        证据来自第 05、06 章契约；本图不替代真实质量、调度或元数据系统。
+        沿路径逐条核对质量异常、SQL 加工、任务依赖和指标定义，确认影响范围与后续验证对象。
       </p>
     </div>
   )

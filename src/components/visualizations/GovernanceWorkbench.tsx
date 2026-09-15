@@ -352,7 +352,7 @@ function MetricEvidence({ asset }: { asset: GovernanceAsset }) {
   return (
     <div className="governance-metric-evidence">
       <div>
-        <span className="governance-overline">Metric definition · 第 04 章</span>
+        <span className="governance-overline">Metric definition · 指标口径</span>
         <strong>{asset.metricDefinition.name}</strong>
         <p>{asset.metricDefinition.note}</p>
       </div>
@@ -397,7 +397,7 @@ function QualityEvidencePanel({ evidence }: { evidence?: GovernanceQualityEviden
     return (
       <div className="governance-quality-evidence governance-quality-evidence--unknown">
         <div>
-          <span className="governance-overline">Quality evidence · 第 07 章</span>
+          <span className="governance-overline">Quality evidence · 质量检查</span>
           <strong>unknown · 当前没有覆盖这项资产</strong>
         </div>
         <p>没有可关联的 Quality Check；质量未知，不把未知显示为 pass。</p>
@@ -412,13 +412,13 @@ function QualityEvidencePanel({ evidence }: { evidence?: GovernanceQualityEviden
     <div className={`governance-quality-evidence governance-quality-evidence--${evidence.status}`}>
       <div className="governance-quality-evidence__header">
         <div>
-          <span className="governance-overline">Quality evidence · 第 07 章</span>
+          <span className="governance-overline">Quality evidence · 质量检查</span>
           <strong>
             {QUALITY_STATUS_LABELS[evidence.status]} · {evidence.severity ?? 'severity 未提供'}
           </strong>
           <p>
             {evidence.ruleName ?? evidence.ruleId} · {evidence.ruleId}
-            {evidence.eventId ? ` · ${evidence.eventId}` : ' · Quality Check projection'}
+            {evidence.eventId ? ` · ${evidence.eventId}` : ' · 质量检查结果'}
           </p>
         </div>
         <span className="governance-quality-release">
@@ -606,7 +606,7 @@ function AssetInspector({
             <span className="governance-overline">Metric evidence</span>
             <h4 id="governance-metric-title">指标关联</h4>
           </div>
-          <p>目录引用第 04 章口径，不在这里复制一套指标计算。</p>
+          <p>目录引用指标定义，资产选择时不重复计算销售额。</p>
         </div>
         <MetricEvidence asset={asset} />
       </section>
@@ -658,7 +658,7 @@ function AssetInspector({
             <span className="governance-overline">Quality evidence</span>
             <h4 id="governance-quality-title">质量证据会改变是否推荐使用</h4>
           </div>
-          <p>只消费第 07 章的 Quality Contract projection，不在治理层重算规则。</p>
+          <p>质量结果来自检查记录，治理根据证据做资产判断。</p>
         </div>
         <QualityEvidencePanel evidence={asset.qualityEvidence} />
       </section>
@@ -706,10 +706,10 @@ function PolicySimulation({
     <section className="governance-policy" aria-labelledby="governance-policy-title">
       <div className="governance-section-heading">
         <div>
-          <span className="governance-overline">Policy simulation</span>
+          <span className="governance-overline">权限策略试算</span>
           <h3 id="governance-policy-title">同一个字段，换角色和用途再判断一次</h3>
         </div>
-        <p>这是本地确定性教学策略，不是真实 IAM / RBAC 或审批系统。</p>
+        <p>同一个字段的使用方式，会随角色和业务用途改变。</p>
       </div>
       <div className="governance-policy__controls">
         <label>
@@ -826,7 +826,7 @@ function ChangeImpactPanel({
           <span className="governance-overline">Lifecycle & impact</span>
           <h3 id="governance-change-title">处理变更，再决定通知范围</h3>
         </div>
-        <p>事件模型属于本章教学场景；影响对象来自第 08 章的已有血缘遍历。</p>
+        <p>事件会沿已登记的血缘关系展开，帮助确定需要迁移和通知的对象。</p>
       </div>
       <div className="governance-event-tabs" role="list" aria-label="治理事件">
         <span className="governance-event-tabs__hint">选择事件：</span>
@@ -905,7 +905,7 @@ function ChangeImpactPanel({
             <span className="governance-overline">Notification plan</span>
             <h4>建议处理顺序</h4>
           </div>
-          <p>先处理直接依赖，再通知传递影响；Owner 缺失的对象会明确标注待确认。</p>
+          <p>通知范围按直接依赖和传递影响逐层展开；Owner 缺失的对象会明确标注待确认。</p>
         </div>
         {impact && impact.notificationTargets.length > 0 ? (
           <ol>
@@ -1215,7 +1215,7 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
           </span>
           <p aria-live="polite">
             {filteredAssets.length} / {catalogAssets.length}{' '}
-            个资产匹配当前搜索；先发现，再核验证据。
+            个资产匹配当前搜索；按匹配结果核验证据。
           </p>
         </div>
         <button
@@ -1282,9 +1282,9 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
         <div className="governance-section-heading">
           <div>
             <span className="governance-overline">02 · Change governance</span>
-            <h3 id="governance-event-picker-title">从确定性事件开始做影响消费</h3>
+            <h3 id="governance-event-picker-title">一个变更事件，如何查影响范围？</h3>
           </div>
-          <p>事件来自本章；Lineage Impact 只消费第 08 章已有节点和边。</p>
+          <p>选择事件后，沿节点和边查看直接下游、传递影响与通知对象。</p>
         </div>
         <div className="governance-event-picker__options" role="list" aria-label="治理事件选择">
           {visualization.events.map((event) => (
@@ -1320,8 +1320,7 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
 
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        教学边界：本工作台是 local + deterministic simulation；质量只消费第 07
-        章证据投影，未覆盖的资产保持 unknown，不把未知显示成 pass。
+        每个决定都回到资产定义、质量证据、访问用途和血缘影响；未覆盖的质量状态保持 unknown。
       </p>
     </div>
   )

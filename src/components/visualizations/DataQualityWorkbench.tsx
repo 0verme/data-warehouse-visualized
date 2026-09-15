@@ -193,12 +193,12 @@ function InjectionControls({
     <section className="data-quality-injections" aria-labelledby="data-quality-injections-title">
       <div className="data-quality-section-heading">
         <div>
-          <span className="data-quality-overline">01 · Fault injection</span>
-          <h3 id="data-quality-injections-title">先注入一个现实问题</h3>
+          <span className="data-quality-overline">01 · 异常场景</span>
+          <h3 id="data-quality-injections-title">从一条异常记录开始</h3>
         </div>
-        <p>每个选项都只改变本地确定性 fixture；Scheduler 事实仍来自第 06 章。</p>
+        <p>选择一个异常场景，观察同一批运行记录如何暴露质量问题。</p>
       </div>
-      <div className="data-quality-injection-grid" role="list" aria-label="质量故障注入器">
+      <div className="data-quality-injection-grid" role="list" aria-label="质量异常场景">
         {visualization.injections.map((option) => (
           <button
             className={`data-quality-injection${option.id === injection ? ' is-selected' : ''}`}
@@ -244,7 +244,7 @@ function ThresholdControls({
     <section className="data-quality-threshold" aria-labelledby="data-quality-threshold-title">
       <div className="data-quality-section-heading">
         <div>
-          <span className="data-quality-overline">02 · Threshold</span>
+          <span className="data-quality-overline">02 · 阈值</span>
           <h3 id="data-quality-threshold-title">阈值是规则的一部分，不是装饰</h3>
         </div>
         <p>放宽阈值会改变判定状态，但不会删除失败样本或隐藏事件。</p>
@@ -293,41 +293,41 @@ function SchedulerHandoff({
     <section className="data-quality-scheduler" aria-labelledby="data-quality-scheduler-title">
       <div className="data-quality-section-heading">
         <div>
-          <span className="data-quality-overline">Scheduler handoff · #06</span>
-          <h3 id="data-quality-scheduler-title">先确认任务成功，再打开质量闸门</h3>
+          <span className="data-quality-overline">运行状态与质量检查</span>
+          <h3 id="data-quality-scheduler-title">任务成功后，还要核对数据质量</h3>
         </div>
-        <p>当前检查跟随选中规则的产出任务；这里不复制 Scheduler 的状态机。</p>
+        <p>当前检查对应选中规则的产出任务，运行状态与质量结果放在同一条记录里。</p>
       </div>
       <div className="data-quality-scheduler__headline" aria-live="polite">
         <div>
-          <span>task status</span>
+          <span>任务状态</span>
           <strong>
             <SchedulerStatus status={context.taskStatus} />
           </strong>
         </div>
         <div>
-          <span>quality gate</span>
+          <span>质量闸门</span>
           <strong>
             <QualityStatus status={getGateStatus(evaluation.checks)} />
           </strong>
         </div>
-        <p>success 只说明代码结束；质量检查还要回答数据是否可信。</p>
+        <p>success 只说明代码执行结束；质量检查还要回答数据是否可信。</p>
       </div>
       <dl className="data-quality-facts">
         <div>
-          <dt>task identity</dt>
+          <dt>任务标识</dt>
           <dd>
             <code>{context.taskId}</code>
           </dd>
         </div>
         <div>
-          <dt>run identity</dt>
+          <dt>运行实例</dt>
           <dd>
             <code>{context.runId}</code>
           </dd>
         </div>
         <div>
-          <dt>business date / partition</dt>
+          <dt>业务日期 / 分区</dt>
           <dd>
             <code>
               {context.partition.column} = {context.partition.value}
@@ -335,19 +335,19 @@ function SchedulerHandoff({
           </dd>
         </div>
         <div>
-          <dt>output table</dt>
+          <dt>输出表</dt>
           <dd>
             <code>{context.outputTable}</code>
           </dd>
         </div>
         <div>
-          <dt>run status</dt>
+          <dt>运行状态</dt>
           <dd>
             <SchedulerStatus status={context.runStatus} />
           </dd>
         </div>
         <div>
-          <dt>start → end</dt>
+          <dt>起止时间</dt>
           <dd>
             {context.startedAt ?? '—'} → {context.endedAt ?? '—'}
           </dd>
@@ -382,7 +382,7 @@ function EvidenceList({
           {item.samples.length > 0 ? (
             <div className="data-quality-samples">
               <div className="data-quality-samples__heading">
-                <strong>失败样本 / evidence</strong>
+                <strong>失败样本</strong>
                 <span>{item.samples.length} 条展示</span>
               </div>
               {item.samples.map((sample) => (
@@ -794,8 +794,7 @@ export function DataQualityWorkbench({ visualization }: DataQualityWorkbenchProp
       <ReleaseDecisionPanel decision={evaluation.releaseDecision} onActionChange={setAction} />
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        本实验消费第 05 章的确定性加工快照和第 06 章的 Scheduler domain；不接入 Great
-        Expectations、Soda、数据库、告警渠道或通用 Fault Injection Framework。
+        每条质量结果都回到具体表、字段、分区和失败样本；沿着证据链判断报表是否可以发布。
       </p>
     </div>
   )

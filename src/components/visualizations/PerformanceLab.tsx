@@ -197,8 +197,8 @@ export function PerformanceLab({ visualization }: PerformanceLabProps) {
   return (
     <div className="performance-lab">
       <div className="performance-lab__notice" role="note">
-        <strong>先说清楚口径：</strong>下方所有数字都是 deterministic simulation / relative
-        estimate， 用于观察方向，不是任何真实引擎 benchmark。
+        <strong>比较时固定同一口径：</strong>
+        下方数字用于同一任务不同条件的相对比较，关注扫描量、长尾和写入代价。
       </div>
 
       <section
@@ -207,8 +207,8 @@ export function PerformanceLab({ visualization }: PerformanceLabProps) {
       >
         <div className="performance-lab__section-heading">
           <div>
-            <span className="eyebrow eyebrow--small">连接第 10 章 · Architecture state</span>
-            <h3 id="performance-architecture-title">同一个销售任务，先确认运行边界</h3>
+            <span className="eyebrow eyebrow--small">架构与运行边界</span>
+            <h3 id="performance-architecture-title">同一个销售任务，运行边界不同会怎样？</h3>
           </div>
           <label>
             Workload
@@ -224,11 +224,7 @@ export function PerformanceLab({ visualization }: PerformanceLabProps) {
             </select>
           </label>
         </div>
-        <div
-          className="performance-lab__architecture-tabs"
-          role="group"
-          aria-label="选择第 10 章架构"
-        >
+        <div className="performance-lab__architecture-tabs" role="group" aria-label="选择运行架构">
           {architectureOptions.map((option) => (
             <button
               type="button"

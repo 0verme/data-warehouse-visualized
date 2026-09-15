@@ -194,7 +194,7 @@ function TablePlaceholder({ tableName }: { tableName: string }) {
         ?
       </span>
       <strong>执行后查看 {tableName}</strong>
-      <p>先预测行数和金额的变化，再按下执行。</p>
+      <p>预测行数和金额的变化后，按下执行。</p>
     </div>
   )
 }
@@ -361,7 +361,7 @@ function StepCode({
     <section className="sql-workbench__sql" aria-labelledby="sql-fragment-title">
       <div className="sql-workbench__sql-heading">
         <div>
-          <span className="eyebrow eyebrow--small">SQL CONTROL</span>
+          <span className="eyebrow eyebrow--small">SQL 加工步骤</span>
           <h3 id="sql-fragment-title">{step.title}</h3>
         </div>
         <span>{step.layer}</span>
@@ -372,7 +372,7 @@ function StepCode({
         code={step.sql}
         highlightedCode={highlightedCode}
       />
-      <small>这是本地确定性实验片段，不会连接数据库或执行任意 SQL。</small>
+      <small>对照各阶段 SQL 逻辑与表快照，观察清洗、关联与聚合的变化过程。</small>
     </section>
   )
 }
@@ -682,63 +682,57 @@ function TaskContract({ visualization }: { visualization: SqlTransformationVisua
     <section className="sql-workbench__contract" aria-labelledby="sql-contract-title">
       <div className="sql-workbench__contract-heading">
         <div>
-          <span className="eyebrow">HANDOFF TO #12</span>
-          <h3 id="sql-contract-title">给调度系统的稳定任务描述</h3>
+          <span className="eyebrow">任务设计要素</span>
+          <h3 id="sql-contract-title">数据任务的六个关键要素</h3>
         </div>
-        <p>这里只定义调度器未来要消费的输入，不在本章实现调度。</p>
+        <p>每次加工都要写清输入、输出、业务分区、上游依赖、重跑方式和迟到数据处理。</p>
       </div>
-      <dl>
-        <div>
-          <dt>task id</dt>
-          <dd>
-            <code>{taskContract.taskId}</code>
-          </dd>
+
+      <div className="sql-workbench__contract-grid">
+        <div className="sql-workbench__contract-item">
+          <span>任务名称</span>
+          <code>{taskContract.taskId}</code>
         </div>
-        <div>
-          <dt>输入表</dt>
-          <dd>
+        <div className="sql-workbench__contract-item">
+          <span>输入表</span>
+          <div>
             {taskContract.inputTables.map((table) => (
               <code key={table}>{table}</code>
             ))}
-          </dd>
+          </div>
         </div>
-        <div>
-          <dt>输出表</dt>
-          <dd>
-            <code>{taskContract.outputTable}</code>
-          </dd>
+        <div className="sql-workbench__contract-item">
+          <span>输出表</span>
+          <code>{taskContract.outputTable}</code>
         </div>
-        <div>
-          <dt>数据分区</dt>
-          <dd>
-            <code>
-              {taskContract.partition.column} = {taskContract.partition.value}
-            </code>
-          </dd>
+        <div className="sql-workbench__contract-item">
+          <span>业务分区</span>
+          <strong>
+            {taskContract.partition.column} = {taskContract.partition.value}
+          </strong>
         </div>
-        <div>
-          <dt>依赖</dt>
-          <dd>
+        <div className="sql-workbench__contract-item">
+          <span>上游依赖</span>
+          <div>
             {taskContract.dependencies.map((dependency) => (
-              <code key={dependency}>{dependency}</code>
+              <span key={dependency}>{dependency}</span>
             ))}
-          </dd>
+          </div>
         </div>
-        <div>
-          <dt>幂等 / 局部重跑</dt>
-          <dd>
-            <span className="sql-workbench__boolean">
-              {taskContract.isIdempotent ? '是' : '否'}
-            </span>
-            <span className="sql-workbench__boolean">
-              {taskContract.supportsPartialRerun ? '支持' : '不支持'}
-            </span>
-          </dd>
+        <div className="sql-workbench__contract-item">
+          <span>重跑方式</span>
+          <div>
+            <span>幂等覆盖：</span>
+            <strong>{taskContract.isIdempotent ? '是' : '否'}</strong>
+            <span> · 部分重跑：</span>
+            <strong>{taskContract.supportsPartialRerun ? '支持' : '不支持'}</strong>
+          </div>
         </div>
-      </dl>
-      <p className="sql-workbench__rerun-hint">
+      </div>
+
+      <div className="sql-workbench__contract-callout">
         <strong>迟到数据提示：</strong> {taskContract.rerunHint}
-      </p>
+      </div>
     </section>
   )
 }
@@ -796,7 +790,7 @@ export function SqlTransformationWorkbench({
     <div className="sql-transformation-workbench">
       <div className="sql-workbench__toolbar">
         <div>
-          <span className="sql-workbench__toolbar-label">SQL 工作台 · 本地确定性实验</span>
+          <span className="sql-workbench__toolbar-label">SQL 数据加工工作台</span>
           <p aria-live="polite">
             {state.targetGrain
               ? `目标粒度：${selectedGrainOption?.statement ?? '—'} · 已完成 ${completedCount}/${TRANSFORMATION_STEPS.length} 步`

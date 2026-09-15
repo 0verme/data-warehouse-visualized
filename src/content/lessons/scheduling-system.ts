@@ -46,9 +46,9 @@ export const schedulingSystemContent: LessonContent = {
   eyebrow: '第 06 课 · 时间轴驱动 DAG Run',
   opening: {
     eyebrow: '早上 8 点，报表为什么还没到？',
-    title: '先看时间，再看绿色勾',
+    title: '报表晚到时，时间线上的绿色勾说明什么？',
     intro:
-      '第 05 章已经把订单加工成 DWD、DWS 和 ADS。现在把同一条链路放进日批：上游迟到、任务失败和重跑会怎样沿着依赖传播？',
+      '当订单明细逐步加工成 DWD、DWS 和 ADS 后，把整条链路放入每日定时批处理中：如果上游数据迟到或某个任务失败，故障会如何沿着依赖链向下扩散？',
     cards: [
       { label: '日批触发', value: '06:00', detail: '按业务日期启动一轮 DAG Run' },
       { label: '上游迟到', value: '06:20', detail: '支付批次到达前，DWD 不能越过依赖' },
@@ -58,11 +58,11 @@ export const schedulingSystemContent: LessonContent = {
         detail: 'O1005 属于 09-13，迟到后必须重跑业务分区',
       },
     ],
-    question: '调度不是把 SQL 定时点一下，而是在管理数据依赖、业务日期和每一次状态变化。',
+    question: '早上 8 点报表还没到，先查哪一个任务、哪个业务分区、哪一次重试？',
   },
-  subtitle: '沿着时间轴推进一轮日批，观察依赖如何放行、失败如何阻断，以及重跑为何必须声明边界。',
+  subtitle: '早上 8 点报表没出，沿着任务状态、业务分区和重试记录找出卡在哪里。',
   quickSummary:
-    '复用第 05 章的 sqlTransformationTaskContract，把 ODS → DWD → DWS → ADS 变成可操作的 DAG Run：时间推进，状态传播，事件留证。',
+    '把 ODS → DWD → DWS → ADS 编排成一轮日批，沿时间线追踪依赖放行、状态传播和异常排查。',
   concept: {
     term: 'DAG Run',
     definition:
@@ -71,21 +71,21 @@ export const schedulingSystemContent: LessonContent = {
   sections: [
     {
       kind: 'narrative',
-      title: '这不是一条新数据链，而是给第 05 章加上时间',
+      title: '将离线加工链路接入时间与依赖调度',
       paragraphs: [
-        '订单事件、订单明细、用户、支付和退款仍然来自第 05 章。五个 ODS 落地任务汇合到 DWD，DWD 再生成 dws_sales_daily，最后由原来的 transform.sales.daily.v1 发布 ads_yesterday_sales。调度层只编排它们，不复制订单，也不重新实现 SQL。',
+        '五个 ODS 接入任务汇合到 DWD，DWD 清洗后汇总为 dws_sales_daily，最后由发布任务生成 ads_yesterday_sales。调度系统负责编排这些任务的执行时序，确保每个节点只有在所有上游就绪时才开始运行。',
       ],
       bullets: [
-        'DAG 依赖的是任务 identity；task contract 里的 dependencies 仍然表达输入表。两者不能混成一个字段。',
-        '同一套任务可以运行不同 business date，但 run identity、partition 和事件日志必须把日期写清楚。',
+        '任务依赖（Task Dependency）决定运行先后顺序；表依赖（Table Dependency）表达数据的输入输出来源。两者不能混为一谈。',
+        '同一套调度逻辑每天处理不同的业务日期，因此运行日志中必须明确区分执行实例 ID、分区键与业务日期。',
       ],
     },
     {
       kind: 'visualization',
       eyebrow: 'SCHEDULER LAB · 时间轴驱动 DAG Run',
-      title: '让时间、依赖和状态传播成为主角',
+      title: '观察任务状态如何沿依赖链流转',
       description:
-        '切换确定性场景，再用播放、单步或跳到故障时刻推进时钟。看节点如何从 queued 变成 running，为什么迟到和失败会让下游等待或 skipped。',
+        '选择不同调度场景，逐步推进执行时钟。观察任务节点如何从排队（queued）进入运行（running），以及上游迟到或报错时下游如何自动等待或跳过（skipped）。',
       visualization: schedulerVisualization,
     },
     {
@@ -109,7 +109,7 @@ export const schedulingSystemContent: LessonContent = {
           points: [
             '从 ODS 重新读取同一个 business date。',
             '适合上游迟到数据已经到达的场景。',
-            '依赖 task contract 的幂等写入，避免重复结果。',
+            '依赖任务本身的幂等写入机制（如分区覆盖），避免重复输出导致数据翻倍。',
           ],
         },
       ],
@@ -134,8 +134,8 @@ export const schedulingSystemContent: LessonContent = {
     },
     {
       kind: 'engineering-note',
-      title: '给后续质量检查留下稳定接口',
-      text: '本章对外表达 task identity、run identity、business date / partition、attempt、task status、dependency state、start/end/runtime、SLA state 和 output state。它们是运行事实，不提前实现第 07 章的质量规则。',
+      title: '调度日志是排查“报表为什么晚了”的唯一依据',
+      text: '在生产故障复盘时，不能只凭记忆或只看最终状态。调度系统留下的任务标识、运行实例、业务分区、重试次数（attempt）、上下游依赖就绪时刻、实际运行耗时以及 SLA 达成状态，是定位数据延迟与责任边界的客观依据。',
     },
     {
       kind: 'pitfall',

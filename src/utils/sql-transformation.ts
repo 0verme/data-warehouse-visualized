@@ -24,7 +24,7 @@ export const TRANSFORMATION_STEPS: readonly TransformationStepDefinition[] = [
     id: 'deduplicate',
     number: '01',
     label: '去重事件',
-    title: '先把重复事件压平',
+    title: '重复事件要压平',
     layer: 'ODS → ODS',
     sql: `WITH ranked_orders AS (
   SELECT *,
@@ -35,7 +35,7 @@ export const TRANSFORMATION_STEPS: readonly TransformationStepDefinition[] = [
   FROM ods_order_event
 )
 SELECT * FROM ranked_orders WHERE rn = 1;`,
-    description: '先按业务键保留最新订单事件；支付事件暂时保留，下一步用它制造粒度问题。',
+    description: '按业务键保留最新订单事件；支付事件暂时保留，用来观察粒度问题。',
     expectedChange: 'decrease',
     expectedChangeLabel: '行数减少，重复事件被合并',
   },
@@ -83,7 +83,7 @@ LEFT JOIN refund_event r ON i.order_id = r.order_id;`,
     id: 'fix-join',
     number: '04',
     label: '修正 JOIN',
-    title: '先聚合事件，再连接目标粒度',
+    title: '事件回到目标粒度后再 JOIN',
     layer: 'DWD · 正确分支',
     sql: `WITH one_payment AS (
   SELECT * FROM (
@@ -102,7 +102,7 @@ LEFT JOIN refund_event r ON i.order_id = r.order_id;`,
 SELECT ... FROM clean_orders o
 LEFT JOIN one_payment p ON o.order_id = p.order_id
 LEFT JOIN refund_by_order r ON o.order_id = r.order_id;`,
-    description: '支付去重、退款按订单汇总后再连接；输出重新对齐到学习者选择的目标粒度。',
+    description: '支付去重、退款按订单汇总后再连接，输出重新对齐到所选目标粒度。',
     expectedChange: 'decrease',
     expectedChangeLabel: '重复行合并回目标粒度',
   },
@@ -147,7 +147,7 @@ GROUP BY paid_date, item_id;`,
     id: 'build-ads',
     number: '07',
     label: '形成 ADS',
-    title: '给“昨天”一个稳定指标结果',
+    title: '为“昨天”筛出目标指标',
     layer: 'DWS → ADS',
     sql: `SELECT
   dt,
@@ -171,7 +171,7 @@ INSERT INTO ods_order_event (...) VALUES (...);
 
 -- 需要按业务日期重跑，而不是只跑到数当天
 -- WHERE dt = '2026-09-13';`,
-    description: '到达日期和业务日期不同；本实验只标记需要重跑的分区，不实现调度器。',
+    description: '数据到达时间晚于业务发生时间；补数必须按业务日期重跑历史分区，而不是跑当天。',
     expectedChange: 'unchanged',
     expectedChangeLabel: '同一分区金额更新',
   },
@@ -434,9 +434,8 @@ export function getOdsSnapshot(dataset: TransformationDataset): TransformationLa
   return {
     layer: 'ods',
     label: 'ODS',
-    title: '原始事件先落地',
-    description:
-      '不急着修正数据，先保留来源上下文；重复订单事件、重复支付事件和 NULL 都在这里可见。',
+    title: '原始事件落地后再处理',
+    description: '保留来源上下文，重复订单事件、重复支付事件和 NULL 都在这里可见。',
     tables: [
       buildTable({
         id: 'ods-orders',
@@ -789,7 +788,7 @@ export function getLayerSnapshots(
       layer: 'dwd',
       label: 'DWD',
       title: '明细标准层',
-      description: '去重、补维度、先聚合支付和退款，再把每一行对齐到目标粒度。',
+      description: '去重、补维度、聚合支付和退款，再把每一行对齐到目标粒度。',
       tables: [getDwdTable(effectiveDataset, grain)],
     },
     {
@@ -803,7 +802,7 @@ export function getLayerSnapshots(
       layer: 'ads',
       label: 'ADS',
       title: '昨天的销售额',
-      description: '面向当前问题的稳定输出，不把所有明细逻辑再次散落到报表里。',
+      description: '面向昨天销售额的报表结果，避免每张报表重复实现明细逻辑。',
       tables: [getAdsTable(effectiveDataset)],
     },
   ]
