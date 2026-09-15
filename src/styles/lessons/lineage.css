@@ -271,6 +271,7 @@
   }
 
   .lineage-investigation__summary {
+    min-width: 0;
     padding-top: 10px;
     padding-left: 0;
     border-top: 1px solid #c8e2dd;
@@ -488,9 +489,26 @@
 }
 
 .lineage-investigation__summary {
-  min-width: 145px;
+  min-width: 215px;
   padding-left: 15px;
   border-left: 1px solid #c8e2dd;
+}
+
+.lineage-investigation__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(70px, 1fr));
+  gap: 8px;
+}
+
+.lineage-investigation__summary-grid div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lineage-investigation__summary-grid strong {
+  font-size: 18px;
 }
 
 .lineage-investigation__summary strong {
@@ -509,6 +527,74 @@
 
 .lineage-investigation__summary p {
   line-height: 1.55;
+}
+
+.lineage-investigation__context {
+  display: flex;
+  gap: 6px 10px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  color: var(--ink-muted);
+  font-size: 9px;
+}
+
+.lineage-investigation__context span {
+  display: inline-flex;
+  gap: 3px;
+  align-items: baseline;
+}
+
+.lineage-investigation__context code {
+  color: var(--teal);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+}
+
+.lineage-investigation__event-picker {
+  margin-top: 12px;
+}
+
+.lineage-investigation__event-picker > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.lineage-investigation__event {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 8px;
+  border: 1px solid #c8e2dd;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 55%);
+  cursor: pointer;
+  text-align: left;
+}
+
+.lineage-investigation__event:hover,
+.lineage-investigation__event.is-selected {
+  border-color: var(--teal);
+  background: var(--surface);
+}
+
+.lineage-investigation__event strong,
+.lineage-investigation__event small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lineage-investigation__event strong {
+  color: var(--ink);
+  font-size: 10px;
+}
+
+.lineage-investigation__event small {
+  color: var(--teal);
+  font-size: 9px;
 }
 
 .lineage-edge {
@@ -728,6 +814,7 @@
   }
 
   .lineage-investigation__summary {
+    min-width: 0;
     padding-top: 10px;
     padding-left: 0;
     border-top: 1px solid #c8e2dd;
@@ -798,6 +885,10 @@
 }
 
 @container visualization (max-width: 480px) {
+  .lineage-investigation__event-picker > div {
+    grid-template-columns: 1fr;
+  }
+
   .lineage-node {
     width: 108px;
     min-height: 61px;

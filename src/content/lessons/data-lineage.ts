@@ -1,5 +1,8 @@
 import type { LessonContent } from '../types'
 import type { LineageEdge, LineageEvidence, LineageNode } from '../../types'
+import { bindLineageProductionChain } from '../../features/lineage/production'
+import { schedulerVisualization } from './scheduling-system'
+import { sqlTransformationVisualization } from './sql-and-transformation'
 
 const sqlTransformation: LineageEvidence = {
   source: 'sql_transformation',
@@ -14,11 +17,6 @@ const taskDependency: LineageEvidence = {
 const metricDefinition: LineageEvidence = {
   source: 'metric_definition',
   detail: '指标定义：指标口径引用该对象中的 order_status 语义。',
-}
-
-const manualMetadata: LineageEvidence = {
-  source: 'manual_metadata',
-  detail: '人工元数据：教学示例补充了尚未接入采集器的关系。',
 }
 
 const lineageNodes: LineageNode[] = [
@@ -416,6 +414,13 @@ const lineageEdges: LineageEdge[] = [
   },
 ]
 
+const lineageProductionGraph = bindLineageProductionChain({
+  baseNodes: lineageNodes,
+  baseEdges: lineageEdges,
+  transformation: sqlTransformationVisualization,
+  scheduler: schedulerVisualization,
+})
+
 export const dataLineageContent: LessonContent = {
   eyebrow: '第 10 课 · 追踪一条数据生产链路',
   subtitle: '从 order_status 字段变更出发，定位生产任务、下游表和指标的影响范围。',
@@ -438,12 +443,13 @@ export const dataLineageContent: LessonContent = {
         '字段级：追踪 order_status 的语义变化',
         '任务级：定位依赖顺序与验证入口',
         '指标级：确认下游口径是否需要复核',
+        'Scheduler contract 当前只声明销售主题任务；用户主题分支保留但明确标记为 manual metadata，不冒充第二套 DAG。',
       ],
     },
     {
       title: '变更前先问影响范围',
       paragraphs: [
-        '选择 order_status 后，先观察直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终爆炸半径适合安排验证与通知范围。',
+        '选择字段语义变化、schema / field change 或 task failure 事件后，先观察直接下游，再运行影响分析，让传播路径逐步点亮。直接下游适合安排修改顺序，传递下游和最终爆炸半径适合安排验证与通知范围。',
       ],
       bullets: [
         '上游：帮助定位来源和排查问题',
@@ -461,15 +467,10 @@ export const dataLineageContent: LessonContent = {
   ],
   visualization: {
     kind: 'lineage',
-    nodes: lineageNodes,
-    edges: lineageEdges,
-    investigationEvent: {
-      id: 'investigate-order-status-change',
-      sourceEntityId: 'field-dwd-order-status',
-      eventType: 'field_change',
-      affectedEntityId: 'metric-sales-status-rate',
-      evidence: manualMetadata,
-    },
+    nodes: lineageProductionGraph.nodes,
+    edges: lineageProductionGraph.edges,
+    investigationEvent: lineageProductionGraph.investigationEvents[0],
+    investigationEvents: lineageProductionGraph.investigationEvents,
   },
   code: {
     label: '一个需要血缘的问题',
@@ -480,7 +481,7 @@ FROM lineage_edges
 WHERE source_entity = 'DWD.ORDER_DETAIL.order_status';`,
   },
   engineeringTip:
-    '真实血缘通常来自 SQL 解析、任务配置、指标定义或人工补充。本课只提供静态教学数据与调查事件适配点，不假设第 12 章调度或第 13 章数据质量已经提供最终契约。',
+    '本课已经消费第 05 章的 SQL task contract 和第 06 章的 Scheduler task identity / dependsOn，并把它们作为边的证据。第 07 章 Quality Event 仍通过薄 adapter 接入，当前不复制 QualityRule、QualityEvidence 或质量结果模型。',
   pitfalls: [
     '上游和下游是相对当前节点而言的；换一个选中对象，统计结果也会变化。',
     '直接下游不等于最终影响，传递链路中的表、任务和指标都需要分别验证。',

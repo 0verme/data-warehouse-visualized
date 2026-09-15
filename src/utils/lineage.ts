@@ -26,6 +26,14 @@ export interface ImpactAnalysis {
   finalImpact: string[]
 }
 
+/** Explicit names for the four scopes used by an investigation. */
+export interface LineageImpactSummary {
+  upstream: string[]
+  directDownstream: string[]
+  transitiveDownstream: string[]
+  finalBlastRadius: BlastRadius
+}
+
 export interface LineageTraversalOptions {
   /** Legacy traversal stays within the selected entity type unless this is enabled. */
   includeCrossEntity?: boolean
@@ -246,6 +254,22 @@ export function getBlastRadius(
   }
 }
 
+export function getLineageImpactSummary(
+  nodes: readonly LineageNode[],
+  edges: readonly LineageEdge[],
+  nodeId: string,
+  options?: LineageTraversalOptions,
+): LineageImpactSummary {
+  const impact = getImpactAnalysis(nodes, edges, nodeId, options)
+
+  return {
+    upstream: impact.upstream,
+    directDownstream: impact.directDownstream,
+    transitiveDownstream: impact.finalImpact,
+    finalBlastRadius: getBlastRadius(nodes, edges, nodeId, options),
+  }
+}
+
 export function getLineagePath(
   nodes: readonly LineageNode[],
   edges: readonly LineageEdge[],
@@ -305,14 +329,18 @@ export function analyzeLineageInvestigation(
   edges: readonly LineageEdge[],
   event: LineageInvestigationEvent,
 ): LineageInvestigationResult {
+  const impactSummary = getLineageImpactSummary(nodes, edges, event.sourceEntityId, {
+    includeCrossEntity: true,
+  })
+
   return {
     event,
-    impact: getImpactAnalysis(nodes, edges, event.sourceEntityId, {
-      includeCrossEntity: true,
-    }),
-    blastRadius: getBlastRadius(nodes, edges, event.sourceEntityId, {
-      includeCrossEntity: true,
-    }),
+    impact: {
+      upstream: impactSummary.upstream,
+      directDownstream: impactSummary.directDownstream,
+      finalImpact: impactSummary.transitiveDownstream,
+    },
+    blastRadius: impactSummary.finalBlastRadius,
     path: getLineagePath(nodes, edges, event.sourceEntityId, event.affectedEntityId),
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { LineageInvestigationEventDefinition } from '../../features/lineage/types'
 import '../../styles/lessons/lineage.css'
 import type {
   LineageEdge,
@@ -25,6 +26,7 @@ interface LineageGraphProps {
   nodes: LineageNode[]
   edges: LineageEdge[]
   investigationEvent?: LineageInvestigationEvent
+  investigationEvents?: readonly LineageInvestigationEventDefinition[]
 }
 
 type ImpactMode = 'direct' | 'transitive'
@@ -63,6 +65,14 @@ const EVENT_LABELS: Record<LineageEventType, string> = {
   sql_transformation: 'SQL transformation',
 }
 
+const EVENT_ENTRY_POINT_LABELS: Record<LineageInvestigationEventDefinition['entryPoint'], string> =
+  {
+    'field-semantic-change': '字段语义变化',
+    'schema-change': 'schema / field change',
+    'task-failure': 'task failure',
+    'quality-event': 'quality event · 待 #13 接入',
+  }
+
 function getNode(nodes: readonly LineageNode[], nodeId: string): LineageNode | undefined {
   return nodes.find((node) => node.id === nodeId)
 }
@@ -82,7 +92,28 @@ function getNodeTypeLabel(node: LineageNode | undefined): string {
   return node ? ENTITY_TYPE_LABELS[getLineageEntityType(node)] : '对象'
 }
 
-export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphProps) {
+function getLegacyInvestigationEvent(
+  event: LineageInvestigationEvent,
+): LineageInvestigationEventDefinition {
+  return {
+    ...event,
+    entryPoint:
+      event.eventType === 'task_failure'
+        ? 'task-failure'
+        : event.eventType === 'quality_alert'
+          ? 'quality-event'
+          : 'field-semantic-change',
+    label: EVENT_LABELS[event.eventType],
+    summary: '从当前事件起点沿依赖图检查上游、下游和最终影响。',
+  }
+}
+
+export function LineageGraph({
+  nodes,
+  edges,
+  investigationEvent,
+  investigationEvents,
+}: LineageGraphProps) {
   const [activeView, setActiveView] = useState<LineageEntityType>('table')
   const [selectedNodeId, setSelectedNodeId] = useState(() => getDefaultNodeId(nodes, 'table'))
   const [impactMode, setImpactMode] = useState<ImpactMode>('direct')
@@ -90,7 +121,20 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [isInvestigationActive, setIsInvestigationActive] = useState(false)
+  const [selectedInvestigationEventId, setSelectedInvestigationEventId] = useState(
+    () => investigationEvents?.[0]?.id ?? investigationEvent?.id ?? '',
+  )
   const timerIds = useRef<number[]>([])
+
+  const eventOptions = useMemo(() => {
+    if (investigationEvents && investigationEvents.length > 0) {
+      return investigationEvents
+    }
+
+    return investigationEvent ? [getLegacyInvestigationEvent(investigationEvent)] : []
+  }, [investigationEvent, investigationEvents])
+  const activeInvestigationEvent =
+    eventOptions.find((event) => event.id === selectedInvestigationEventId) ?? eventOptions[0]
 
   const visibleGraph = useMemo(
     () => getLineageView(nodes, edges, activeView),
@@ -108,19 +152,19 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
   )
   const investigationResult = useMemo(
     () =>
-      investigationEvent
-        ? analyzeLineageInvestigation(nodes, edges, investigationEvent)
+      activeInvestigationEvent
+        ? analyzeLineageInvestigation(nodes, edges, activeInvestigationEvent)
         : undefined,
-    [edges, investigationEvent, nodes],
+    [activeInvestigationEvent, edges, nodes],
   )
   const investigationDownstreamOrder = useMemo(
     () =>
-      investigationEvent
-        ? getDownstreamNodes(nodes, edges, investigationEvent.sourceEntityId, {
+      activeInvestigationEvent
+        ? getDownstreamNodes(nodes, edges, activeInvestigationEvent.sourceEntityId, {
             includeCrossEntity: true,
           })
         : [],
-    [edges, investigationEvent, nodes],
+    [activeInvestigationEvent, edges, nodes],
   )
   const propagationOrder = isInvestigationActive
     ? investigationDownstreamOrder
@@ -129,12 +173,16 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
     () => getBlastRadius(visibleGraph.nodes, visibleGraph.edges, activeSelectedNodeId),
     [activeSelectedNodeId, visibleGraph.edges, visibleGraph.nodes],
   )
-  const investigationSource = investigationEvent
-    ? getNode(nodes, investigationEvent.sourceEntityId)
+  const investigationSource = activeInvestigationEvent
+    ? getNode(nodes, activeInvestigationEvent.sourceEntityId)
     : undefined
-  const investigationTarget = investigationEvent
-    ? getNode(nodes, investigationEvent.affectedEntityId)
+  const investigationTarget = activeInvestigationEvent
+    ? getNode(nodes, activeInvestigationEvent.affectedEntityId)
     : undefined
+  const displayedImpact =
+    isInvestigationActive && investigationResult ? investigationResult.impact : analysis
+  const displayedBlastRadius =
+    isInvestigationActive && investigationResult ? investigationResult.blastRadius : blastRadius
   const searchResults = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
     if (!normalizedQuery) {
@@ -145,14 +193,14 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
   }, [searchQuery, visibleGraph.nodes])
   const selectedRelatedIds = useMemo(() => {
     const highlightedDownstream =
-      impactMode === 'direct' ? analysis.directDownstream : analysis.finalImpact
+      impactMode === 'direct' ? displayedImpact.directDownstream : displayedImpact.finalImpact
 
-    return new Set([activeSelectedNodeId, ...analysis.upstream, ...highlightedDownstream])
+    return new Set([activeSelectedNodeId, ...displayedImpact.upstream, ...highlightedDownstream])
   }, [
     activeSelectedNodeId,
-    analysis.directDownstream,
-    analysis.finalImpact,
-    analysis.upstream,
+    displayedImpact.directDownstream,
+    displayedImpact.finalImpact,
+    displayedImpact.upstream,
     impactMode,
   ])
   const relatedEdges = useMemo(
@@ -162,8 +210,22 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
       ),
     [selectedRelatedIds, visibleGraph.edges],
   )
+  const evidenceEdges = useMemo(() => {
+    const uniqueEdges = new Map<string, LineageEdge>()
+
+    for (const edge of relatedEdges) {
+      uniqueEdges.set(getLineageEdgeId(edge), edge)
+    }
+    if (isInvestigationActive && investigationResult?.path) {
+      for (const edge of investigationResult.path.edges) {
+        uniqueEdges.set(getLineageEdgeId(edge), edge)
+      }
+    }
+
+    return [...uniqueEdges.values()]
+  }, [investigationResult, isInvestigationActive, relatedEdges])
   const selectedEdge = selectedEdgeId
-    ? visibleGraph.edges.find((edge) => getLineageEdgeId(edge) === selectedEdgeId)
+    ? edges.find((edge) => getLineageEdgeId(edge) === selectedEdgeId)
     : undefined
   const isSimulationFinished = impactStep >= propagationOrder.length + 1 && impactStep > 0
 
@@ -182,6 +244,14 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
     setIsInvestigationActive(false)
     setSelectedEdgeId(null)
     setSelectedNodeId(nodeId)
+  }
+
+  function selectInvestigationEvent(eventId: string) {
+    clearTimers()
+    setSelectedInvestigationEventId(eventId)
+    setImpactStep(0)
+    setIsInvestigationActive(false)
+    setSelectedEdgeId(null)
   }
 
   function changeView(entityType: LineageEntityType) {
@@ -226,7 +296,7 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
   }
 
   function startInvestigation() {
-    if (!investigationSource || !investigationEvent) {
+    if (!investigationSource || !activeInvestigationEvent) {
       return
     }
 
@@ -333,28 +403,86 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
         </div>
       )}
 
-      {investigationEvent && investigationSource && investigationResult && (
+      {eventOptions.length > 0 && activeInvestigationEvent && investigationResult && (
         <section className="lineage-investigation" aria-labelledby="lineage-investigation-title">
           <div className="lineage-investigation__copy">
             <span className="eyebrow eyebrow--small">
-              字段变更调查 · {EVENT_LABELS[investigationEvent.eventType]}
+              Investigation entry · {EVENT_ENTRY_POINT_LABELS[activeInvestigationEvent.entryPoint]}
             </span>
             <h3 id="lineage-investigation-title">
-              如果 {investigationSource.label} 的含义发生变化
+              {activeInvestigationEvent.label}：从 {investigationSource?.label ?? '事件对象'} 开始
             </h3>
             <p>
-              先预测影响范围，再执行路径回放，验证它是否会触及{' '}
+              {activeInvestigationEvent.summary} 先预测影响范围，再执行路径回放，验证它是否会触及{' '}
               {investigationTarget?.label ?? '下游对象'}。
             </p>
             <small>
-              事件证据：{EVIDENCE_LABELS[investigationEvent.evidence.source]} ·{' '}
-              {investigationEvent.evidence.detail}
+              事件证据：{EVIDENCE_LABELS[activeInvestigationEvent.evidence.source]} ·{' '}
+              {activeInvestigationEvent.evidence.detail}
             </small>
+            {activeInvestigationEvent.context && (
+              <div className="lineage-investigation__context" aria-label="事件运行上下文">
+                {activeInvestigationEvent.context.taskId && (
+                  <span>
+                    task <code>{activeInvestigationEvent.context.taskId}</code>
+                  </span>
+                )}
+                {activeInvestigationEvent.context.runId && (
+                  <span>
+                    run <code>{activeInvestigationEvent.context.runId}</code>
+                  </span>
+                )}
+                {activeInvestigationEvent.context.partition && (
+                  <span>
+                    partition{' '}
+                    <code>
+                      {activeInvestigationEvent.context.partition.column} ={' '}
+                      {activeInvestigationEvent.context.partition.value}
+                    </code>
+                  </span>
+                )}
+                {activeInvestigationEvent.context.attempt !== undefined && (
+                  <span>attempt {activeInvestigationEvent.context.attempt}</span>
+                )}
+              </div>
+            )}
+            <div className="lineage-investigation__event-picker">
+              <span className="lineage-control-label">选择调查事件</span>
+              <div role="tablist" aria-label="选择血缘调查事件">
+                {eventOptions.map((event) => (
+                  <button
+                    className={`lineage-investigation__event${event.id === activeInvestigationEvent.id ? ' is-selected' : ''}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={event.id === activeInvestigationEvent.id}
+                    onClick={() => selectInvestigationEvent(event.id)}
+                    key={event.id}
+                  >
+                    <strong>{event.label}</strong>
+                    <small>{EVENT_ENTRY_POINT_LABELS[event.entryPoint]}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="lineage-investigation__summary" aria-label="字段变更预测结果">
-            <div>
-              <strong>{investigationResult.blastRadius.total}</strong>
-              <span>预测最终影响</span>
+          <div className="lineage-investigation__summary" aria-label="调查影响预测结果">
+            <div className="lineage-investigation__summary-grid">
+              <div>
+                <strong>{investigationResult.impact.upstream.length}</strong>
+                <span>上游</span>
+              </div>
+              <div>
+                <strong>{investigationResult.impact.directDownstream.length}</strong>
+                <span>直接下游</span>
+              </div>
+              <div>
+                <strong>{investigationResult.impact.finalImpact.length}</strong>
+                <span>传递下游</span>
+              </div>
+              <div>
+                <strong>{investigationResult.blastRadius.total}</strong>
+                <span>最终 blast radius</span>
+              </div>
             </div>
             <p>
               {LINEAGE_ENTITY_TYPES.map(
@@ -369,9 +497,9 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
             onClick={handleInvestigationAction}
           >
             {!isInvestigationActive
-              ? '定位字段并预测'
+              ? '定位事件并预测'
               : isSimulationFinished
-                ? '重新回放字段路径'
+                ? '重新回放调查路径'
                 : impactStep > 0
                   ? '影响传播中…'
                   : '执行影响分析'}
@@ -434,7 +562,7 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
 
             const edgeIsDirect =
               edge.source === activeSelectedNodeId &&
-              analysis.directDownstream.includes(edge.target)
+              displayedImpact.directDownstream.includes(edge.target)
             const edgeIsInImpact =
               selectedRelatedIds.has(edge.source) && selectedRelatedIds.has(edge.target)
             const edgeIsActive = impactMode === 'direct' ? edgeIsDirect : edgeIsInImpact
@@ -513,28 +641,34 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
 
       <div className="impact-stats" aria-label="影响分析统计">
         <div>
-          <strong>{analysis.upstream.length}</strong>
+          <strong>{displayedImpact.upstream.length}</strong>
           <span>上游</span>
         </div>
         <div>
-          <strong>{analysis.directDownstream.length}</strong>
+          <strong>{displayedImpact.directDownstream.length}</strong>
           <span>直接下游</span>
         </div>
         <div>
-          <strong>{analysis.finalImpact.length}</strong>
+          <strong>{displayedImpact.finalImpact.length}</strong>
           <span>传递下游</span>
         </div>
         <div>
-          <strong>{blastRadius.total}</strong>
+          <strong>{displayedBlastRadius.total}</strong>
           <span>最终影响</span>
         </div>
       </div>
 
-      <div className="lineage-blast-radius" aria-label="当前视图爆炸半径">
-        <span className="lineage-control-label">当前视图爆炸半径</span>
+      <div
+        className="lineage-blast-radius"
+        aria-label={isInvestigationActive ? '调查事件最终爆炸半径' : '当前视图爆炸半径'}
+      >
+        <span className="lineage-control-label">
+          {isInvestigationActive ? '调查事件最终 blast radius' : '当前视图爆炸半径'}
+        </span>
         <p>
           {LINEAGE_ENTITY_TYPES.map(
-            (entityType) => `${ENTITY_TYPE_LABELS[entityType]} ${blastRadius.byType[entityType]}`,
+            (entityType) =>
+              `${ENTITY_TYPE_LABELS[entityType]} ${displayedBlastRadius.byType[entityType]}`,
           ).join(' · ')}
         </p>
       </div>
@@ -571,8 +705,8 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
           <p>箭头表达依赖关系，不自动代表业务因果。</p>
         </div>
         <div className="lineage-evidence__edges">
-          {relatedEdges.length > 0 ? (
-            relatedEdges.map((edge) => {
+          {evidenceEdges.length > 0 ? (
+            evidenceEdges.map((edge) => {
               const source = getNode(nodes, edge.source)
               const target = getNode(nodes, edge.target)
               const evidence = getLineageEdgeEvidence(edge)
@@ -589,7 +723,8 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
                   </strong>
                   <small>
                     {RELATION_LABELS[getLineageEdgeRelation(edge)]} ·{' '}
-                    {EVIDENCE_LABELS[evidence.source]}
+                    {EVIDENCE_LABELS[evidence.source]} ·{' '}
+                    {CONFIDENCE_LABELS[getLineageEdgeConfidence(edge)]}
                   </small>
                 </button>
               )
@@ -628,9 +763,9 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
           <div className="lineage-evidence__heading">
             <div>
               <span className="eyebrow eyebrow--small">Path replay</span>
-              <h3 id="lineage-path-title">字段变更路径</h3>
+              <h3 id="lineage-path-title">{activeInvestigationEvent?.label ?? '调查路径'}</h3>
             </div>
-            <p>从字段变更起点走到目标指标，逐边核对证据。</p>
+            <p>{activeInvestigationEvent?.summary ?? '从事件起点逐边核对上游、下游和证据。'}</p>
           </div>
           <ol>
             {investigationResult.path.nodeIds.map((nodeId, index) => {
@@ -643,7 +778,8 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
                   {edge && evidence && (
                     <small>
                       {RELATION_LABELS[getLineageEdgeRelation(edge)]} ·{' '}
-                      {EVIDENCE_LABELS[evidence.source]}
+                      {EVIDENCE_LABELS[evidence.source]} ·{' '}
+                      {CONFIDENCE_LABELS[getLineageEdgeConfidence(edge)]}
                     </small>
                   )}
                 </li>
@@ -655,8 +791,8 @@ export function LineageGraph({ nodes, edges, investigationEvent }: LineageGraphP
 
       <p className="visualization-note">
         <span aria-hidden="true">↳</span>
-        这是教学模拟：真实项目中的血缘通常来自任务配置、SQL
-        解析和元数据采集；本图不替代质量或调度系统。
+        这是教学模拟：图中的 SQL / Scheduler 证据来自第 05、06
+        章静态确定性契约；本图不替代真实质量、调度或元数据系统。
       </p>
     </div>
   )
