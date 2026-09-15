@@ -103,6 +103,7 @@ function VisualizationBody({
           nodes={visualization.nodes}
           edges={visualization.edges}
           investigationEvent={visualization.investigationEvent}
+          investigationEvents={visualization.investigationEvents}
         />
       )
     case 'modeling-intro':
