@@ -11,6 +11,7 @@ import type {
   SourceSystem,
   StarSchemaVisualization,
 } from '../types'
+import type { SchedulerVisualization } from '../features/scheduler/types'
 import type { SqlTransformationVisualization } from '../features/sql-transformation/types'
 import type { PerformanceVisualization } from '../features/performance/types'
 
@@ -122,6 +123,7 @@ export type LessonVisualization =
   | LakehouseVisualization
   | SqlTransformationVisualization
   | PerformanceVisualization
+  | SchedulerVisualization
 
 export interface LessonContent {
   eyebrow: string

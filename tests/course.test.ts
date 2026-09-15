@@ -61,10 +61,18 @@ describe('课程数据与导航', () => {
     ])
   })
 
-  it('课程骨架只显示章节编号，不直接暴露排序权重', () => {
-    expect(getLessonContent(getLessonBySlug('scheduling-system')!).eyebrow).toBe(
-      '第 06 章 · 课程骨架',
-    )
+  it('第六章已注册时间轴驱动的调度实验', () => {
+    const lesson = getLessonBySlug('scheduling-system')!
+    const content = getLessonContent(lesson)
+
+    expect(lesson.demo).toBe('scheduler')
+    expect(content.eyebrow).toBe('第 06 课 · 时间轴驱动 DAG Run')
+    expect(
+      content.sections.some(
+        (section) => section.kind === 'visualization' && section.visualization.kind === 'scheduler',
+      ),
+    ).toBe(true)
+    expect(content.visualization).toBeUndefined()
   })
 
   it('返回当前课程的上一节和下一节', () => {
