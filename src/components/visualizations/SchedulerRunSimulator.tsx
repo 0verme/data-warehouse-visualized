@@ -102,7 +102,7 @@ const SCENARIO_OPTIONS: readonly {
   {
     value: 'upstream-late',
     label: '上游迟到',
-    detail: '支付批次 06:20 才到，DWD 在此之前只能等待。',
+    detail: '账户余额快照 06:20 才到，DWD 在此之前只能等待。',
     moment: 'upstream-late',
   },
   {
@@ -227,7 +227,7 @@ function DagCanvas({
         </div>
         <p>节点是任务，边是可执行条件；状态会沿依赖传播。</p>
       </div>
-      <div className="scheduler-dag__track" aria-label="订单销售日批任务依赖图">
+      <div className="scheduler-dag__track" aria-label="存款余额日批任务依赖图">
         {LAYER_ORDER.map((layer, layerIndex) => {
           const layerTasks = tasks.filter((task) => task.layer === layer)
           return (
@@ -352,7 +352,7 @@ function SimulationToolbar({
           >
             {businessDateOptions.map((date) => (
               <option value={date} key={date}>
-                dt = {date}
+                snapshot_date = {date}
               </option>
             ))}
           </select>
@@ -796,9 +796,9 @@ function OutputPreview({ visualization }: { visualization: SchedulerVisualizatio
       <div className="scheduler-panel-heading">
         <div>
           <span className="eyebrow eyebrow--small">业务分区与迟到数据</span>
-          <h3 id="scheduler-output-preview-title">同一个业务分区，迟到数据会改变结果</h3>
+          <h3 id="scheduler-output-preview-title">同一个业务分区，迟到快照会改变结果</h3>
         </div>
-        <p>订单明细加工完成后，迟到到达的数据必须通过补数重新计算该业务分区。</p>
+        <p>存款余额加工完成后，迟到到达的快照必须按业务日期补数，重新计算该分区。</p>
       </div>
       <div className="scheduler-output-preview__metric">
         <div>
@@ -952,7 +952,7 @@ export function SchedulerRunSimulator({ visualization }: SchedulerRunSimulatorPr
   function applyRerunPlan() {
     setIsPlaying(false)
     const trigger = rerunMode === 'partial' ? 'partition-rerun' : 'full-rerun'
-    const runId = `run.sales.daily.${formatDateForRun(state.businessDate)}.${rerunMode}.002`
+    const runId = `run.deposit-balance.daily.${formatDateForRun(state.businessDate)}.${rerunMode}.002`
     setState(createRun('happy-path', state.businessDate, trigger, rerunPlan, runId))
   }
 

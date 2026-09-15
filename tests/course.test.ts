@@ -65,6 +65,36 @@ describe('课程数据与导航', () => {
     ])
   })
 
+  it('第五章正式拆成五节存款余额加工课程', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '05')
+
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
+      'sql-and-transformation',
+      'sql-transformation-cleaning',
+      'sql-transformation-join',
+      'sql-transformation-layers',
+      'sql-transformation-contract',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'sql-transformation',
+      'sql-transformation',
+      'sql-transformation',
+      'sql-transformation',
+      'sql-transformation',
+    ])
+    expect(
+      chapterLessons.map((lesson) => {
+        const visualization = getLessonContent(lesson).sections.find(
+          (section) => section.kind === 'visualization',
+        )
+        return visualization?.kind === 'visualization' &&
+          visualization.visualization.kind === 'sql-transformation'
+          ? visualization.visualization.focus
+          : undefined
+      }),
+    ).toEqual(['plan', 'cleaning', 'join', 'layers', 'contract'])
+  })
+
   it('第六章已注册时间轴驱动的调度实验', () => {
     const lesson = getLessonBySlug('scheduling-system')!
     const content = getLessonContent(lesson)

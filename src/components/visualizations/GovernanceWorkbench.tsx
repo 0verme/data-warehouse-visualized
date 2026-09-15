@@ -181,7 +181,7 @@ function SearchFilters({
         <input
           type="search"
           value={filters.query}
-          placeholder="例如：销售、DWS.SALES、手机号"
+          placeholder="例如：余额、DWS.DEPOSIT_BALANCE、客户标识"
           onChange={(event) => onChange('query', event.target.value)}
         />
       </label>
@@ -370,7 +370,7 @@ function MetricEvidence({ asset }: { asset: GovernanceAsset }) {
           <dd>{definition.timeField}</dd>
         </div>
         <div>
-          <dt>度量 / 退款</dt>
+          <dt>度量 / 余额口径</dt>
           <dd>
             {definition.measure} · {definition.refundRule}
           </dd>
@@ -606,7 +606,7 @@ function AssetInspector({
             <span className="governance-overline">Metric evidence</span>
             <h4 id="governance-metric-title">指标关联</h4>
           </div>
-          <p>目录引用指标定义，资产选择时不重复计算销售额。</p>
+          <p>目录引用指标定义，资产选择时不重复计算存款余额。</p>
         </div>
         <MetricEvidence asset={asset} />
       </section>
@@ -1064,7 +1064,8 @@ function DecisionRecordPanel({
 
 export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps) {
   const defaultAsset =
-    visualization.assets.find((asset) => asset.id === 'dws-sales') ?? visualization.assets[0]
+    visualization.assets.find((asset) => asset.id === 'dws-deposit-balance') ??
+    visualization.assets[0]
   const [filters, setFilters] = useState<GovernanceCatalogFilters>(DEFAULT_GOVERNANCE_FILTERS)
   const [selectedAssetId, setSelectedAssetId] = useState(defaultAsset?.id ?? '')
   const [selectedFieldName, setSelectedFieldName] = useState(defaultAsset?.fields[0]?.name ?? '')
@@ -1231,7 +1232,7 @@ export function GovernanceWorkbench({ visualization }: GovernanceWorkbenchProps)
         <div className="governance-section-heading">
           <div>
             <span className="governance-overline">01 · Discover assets</span>
-            <h3 id="governance-catalog-title">先用业务语义搜索订单域资产</h3>
+            <h3 id="governance-catalog-title">先用业务语义搜索存款域资产</h3>
           </div>
           <p>结果卡片直接暴露 definition、Owner、lifecycle、sensitivity 和 freshness 差异。</p>
         </div>

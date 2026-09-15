@@ -920,7 +920,7 @@ export function createGovernanceDecisionRecord({
 
   return {
     id: `governance-decision-${asset.id}-${field.name}-${policyDecision.role}-${policyDecision.purpose}`,
-    recordedAt: '2026-09-14 10:00',
+    recordedAt: '2026-10-01 10:00',
     selectedAssetId: asset.id,
     selectedAssetName: asset.businessName,
     fieldName: field.name,

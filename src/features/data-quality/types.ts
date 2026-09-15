@@ -34,12 +34,18 @@ export type QualityEvidenceKind =
 
 export type QualityInjection =
   | 'none'
+  | 'missing-balance-snapshot'
+  | 'duplicate-account-snapshot'
+  | 'invalid-currency'
+  | 'orphan-account-balance'
+  | 'deposit-reconciliation-drift'
+  | 'late-partition'
+  /** Legacy injection aliases retained for callers of the former e-commerce demo. */
   | 'missing-order-item'
   | 'duplicate-order-item'
   | 'invalid-payment-status'
   | 'orphan-order-item'
   | 'sales-reconciliation-drift'
-  | 'late-partition'
 
 export type QualityThresholdUnit = 'rows' | 'minutes' | 'currency'
 export type QualityThresholdOperator = 'at-most' | 'at-least' | 'equals'

@@ -131,7 +131,43 @@ export const lessonDefinitions = [
     chapter: '05',
     order: 100,
     difficulty: 'intermediate',
-    estimatedMinutes: 15,
+    estimatedMinutes: 10,
+    demo: 'sql-transformation',
+  },
+  {
+    id: 'lesson-05-cleaning',
+    slug: 'sql-transformation-cleaning',
+    chapter: '05',
+    order: 200,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'sql-transformation',
+  },
+  {
+    id: 'lesson-05-join',
+    slug: 'sql-transformation-join',
+    chapter: '05',
+    order: 300,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'sql-transformation',
+  },
+  {
+    id: 'lesson-05-layers',
+    slug: 'sql-transformation-layers',
+    chapter: '05',
+    order: 400,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'sql-transformation',
+  },
+  {
+    id: 'lesson-05-contract',
+    slug: 'sql-transformation-contract',
+    chapter: '05',
+    order: 500,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
     demo: 'sql-transformation',
   },
   {
@@ -274,9 +310,29 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['指标', '口径'],
     },
     'lesson-05': {
-      title: 'SQL 与数据加工',
-      summary: '一段 SQL 结果翻倍时，沿表快照排查粒度、关联和聚合顺序。',
-      tags: ['SQL', 'ETL', '粒度', '数据加工'],
+      title: '口径已经说清楚，为什么还不能直接算？',
+      summary: '从存款余额指标卡列出输入和加工计划，确认结果的一行代表什么。',
+      tags: ['指标到加工', '输入设计', '数据粒度'],
+    },
+    'lesson-05-cleaning': {
+      title: '原始输入怎样变成可信明细？',
+      summary: '用去重、缺失关联和编码标准化，把账户余额快照整理成可信 DWD 明细。',
+      tags: ['DWD', '去重', '关联完整性'],
+    },
+    'lesson-05-join': {
+      title: 'Join 为什么会让金额变大？',
+      summary: '用账户介质的一对多关系，观察 Join 如何复制余额并改变数据粒度。',
+      tags: ['Join', '数据粒度', '金额对账'],
+    },
+    'lesson-05-layers': {
+      title: '从 DWD 到 DWS / ADS，一行发生了什么变化？',
+      summary: '沿存款余额加工链观察明细、主题汇总和指标结果的行含义变化。',
+      tags: ['DWD', 'DWS', 'ADS', '聚合'],
+    },
+    'lesson-05-contract': {
+      title: '这段加工怎样交给下一环节？',
+      summary: '为存款余额加工写下输入、输出、业务日期、分区和重复执行预期。',
+      tags: ['加工契约', '业务日期', '分区'],
     },
     'lesson-06': {
       title: '调度系统：数据任务如何按时到达？',
@@ -312,7 +368,7 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     'lesson-09': {
       title: '数据治理：当数据平台开始失控',
       summary:
-        '新员工申请用户销售数据时，比较资产定义、字段权限、责任人和生命周期，留下可追溯的使用决定。',
+        '新员工申请存款余额数据时，比较资产定义、字段权限、责任人和生命周期，留下可追溯的使用决定。',
       tags: ['治理', '资产目录', '决策台', '血缘影响'],
     },
     'lesson-10': {

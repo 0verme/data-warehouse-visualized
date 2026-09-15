@@ -28,7 +28,7 @@ import type {
   TransformationRow,
   TransformationTableSnapshot,
 } from '../features/sql-transformation/types'
-import { sqlTransformationDataset } from '../content/lessons/sql-and-transformation'
+import { DEPOSIT_BALANCE_SCOPE, depositBalanceDataset } from '../data/deposit-balance'
 import {
   SCHEDULER_DEFAULT_SCHEDULED_AT,
   SCHEDULER_TASK_IDS,
@@ -36,15 +36,15 @@ import {
   createInitialSchedulerRun,
   getSchedulerMinutesBetween,
 } from './scheduler'
-import { getLayerSnapshots } from './sql-transformation'
+import { appendLateBalanceSnapshot, getLayerSnapshots } from './sql-transformation'
 
 export const QUALITY_RULE_IDS = {
-  completeness: 'dq.dwd.order-item.completeness.v1',
-  uniqueness: 'dq.dwd.order-item.unique-key.v1',
-  validity: 'dq.dwd.payment-status.enum.v1',
-  referentialIntegrity: 'dq.dwd.order-item.order-reference.v1',
-  reconciliation: 'dq.dws.sales.reconciliation.v1',
-  freshness: 'dq.ads.sales.partition-freshness.v1',
+  completeness: 'dq.dwd.deposit-balance.completeness.v1',
+  uniqueness: 'dq.dwd.deposit-balance.unique-key.v1',
+  validity: 'dq.dwd.deposit-balance.currency.v1',
+  referentialIntegrity: 'dq.dwd.deposit-balance.account-reference.v1',
+  reconciliation: 'dq.dws.deposit-balance.reconciliation.v1',
+  freshness: 'dq.ads.deposit-balance.partition-freshness.v1',
 } as const
 
 export const QUALITY_DIMENSION_LABELS = {
@@ -96,7 +96,7 @@ export const QUALITY_ACTION_OPTIONS: readonly {
   {
     value: 'block',
     label: 'block · 阻断',
-    detail: '失败规则阻断完整报表，修复后按分区重跑。',
+    detail: '失败规则阻断完整指标结果，修复后按业务日期分区重跑。',
   },
   {
     value: 'warn',
@@ -122,44 +122,44 @@ export const QUALITY_INJECTION_OPTIONS: readonly QualityInjectionOption[] = [
     description: '不注入故障；用来确认规则覆盖后的 clean run。',
   },
   {
-    id: 'missing-order-item',
-    label: '完整性 · 缺订单明细',
-    description: '从 DWD 输出移除 I1002-2，任务仍可成功但少了一行事实。',
+    id: 'missing-balance-snapshot',
+    label: '完整性 · 缺余额快照',
+    description: '从 DWD 输出移除 A002，观察事实缺行如何影响目标余额。',
     dimension: 'completeness',
     ruleId: QUALITY_RULE_IDS.completeness,
   },
   {
-    id: 'duplicate-order-item',
-    label: '唯一性 · 重复明细',
-    description: '把 O1002 / I1002-1 再写入一次，观察重复如何放大金额。',
+    id: 'duplicate-account-snapshot',
+    label: '唯一性 · 重复账户日',
+    description: '把 A002 × 2026-09-30 再写入一次，观察重复如何放大余额。',
     dimension: 'uniqueness',
     ruleId: QUALITY_RULE_IDS.uniqueness,
   },
   {
-    id: 'invalid-payment-status',
-    label: '有效性 · 非法状态',
-    description: '把一条 payment_status 改成未注册的 CHARGEBACK 枚举值。',
+    id: 'invalid-currency',
+    label: '有效性 · 非法币种',
+    description: '把一条 DWD 记录的币种改成未注册的 JPY 编码。',
     dimension: 'validity',
     ruleId: QUALITY_RULE_IDS.validity,
   },
   {
-    id: 'orphan-order-item',
-    label: '引用 · 孤儿订单',
-    description: '追加一个找不到订单主表的 O9999 明细，模拟外键断裂。',
+    id: 'orphan-account-balance',
+    label: '引用 · 孤儿账户',
+    description: '追加一个找不到 dim_account 的 A999 余额，模拟关联键断裂。',
     dimension: 'referential-integrity',
     ruleId: QUALITY_RULE_IDS.referentialIntegrity,
   },
   {
-    id: 'sales-reconciliation-drift',
-    label: '对账 · 汇总漂移',
-    description: '把 DWS.sales_amount 少记 40 元，和 DWD 明细重新对账。',
+    id: 'deposit-reconciliation-drift',
+    label: '对账 · 余额漂移',
+    description: '把 DWS 目标分组少记 40 元，和 DWD 明细重新对账。',
     dimension: 'reconciliation',
     ruleId: QUALITY_RULE_IDS.reconciliation,
   },
   {
     id: 'late-partition',
     label: 'Freshness · 分区迟到',
-    description: '复用 Scheduler 的 upstream-late 场景，支付批次 06:20 才到。',
+    description: '复用 Scheduler 的 upstream-late 场景，账户余额快照 06:20 才到。',
     dimension: 'freshness',
     ruleId: QUALITY_RULE_IDS.freshness,
   },
@@ -169,7 +169,7 @@ interface QualityFixture {
   dwd: TransformationTableSnapshot
   dws: TransformationTableSnapshot
   expectedDwd: TransformationTableSnapshot
-  orderIds: ReadonlySet<string>
+  accountIds: ReadonlySet<string>
 }
 
 interface QualityObservation {
@@ -209,16 +209,17 @@ function getTableOrThrow(
 }
 
 function getQualityFixture(includeLateData: boolean): QualityFixture {
-  const snapshots = getLayerSnapshots(sqlTransformationDataset, 'order-item', includeLateData)
-  const expectedSnapshots = includeLateData
-    ? getLayerSnapshots(sqlTransformationDataset, 'order-item', false)
-    : snapshots
+  const sourceDataset = includeLateData
+    ? appendLateBalanceSnapshot(depositBalanceDataset)
+    : depositBalanceDataset
+  const snapshots = getLayerSnapshots(sourceDataset)
+  const expectedSnapshots = getLayerSnapshots(depositBalanceDataset)
 
   return {
-    dwd: getTableOrThrow(snapshots, 'dwd_order_item'),
-    dws: getTableOrThrow(snapshots, 'dws_sales_daily'),
-    expectedDwd: getTableOrThrow(expectedSnapshots, 'dwd_order_item'),
-    orderIds: new Set(sqlTransformationDataset.orders.map((order) => order.orderId)),
+    dwd: getTableOrThrow(snapshots, 'dwd_deposit_balance_detail'),
+    dws: getTableOrThrow(snapshots, 'dws_deposit_balance_daily'),
+    expectedDwd: getTableOrThrow(expectedSnapshots, 'dwd_deposit_balance_detail'),
+    accountIds: new Set(depositBalanceDataset.accounts.map((account) => account.accountId)),
   }
 }
 
@@ -253,49 +254,52 @@ function toSample(
   }
 }
 
+function matchesInjection(injection: QualityInjection, ...ids: QualityInjection[]): boolean {
+  return ids.includes(injection)
+}
+
 function getScenarioFixture(injection: QualityInjection): QualityFixture {
   const fixture = getQualityFixture(injection === 'late-partition')
   const dwdRows = [...fixture.dwd.rows]
 
-  if (injection === 'missing-order-item') {
-    const removedItemId = 'I1002-2'
+  if (matchesInjection(injection, 'missing-balance-snapshot', 'missing-order-item')) {
     return {
       ...fixture,
       dwd: replaceRows(
         fixture.dwd,
-        dwdRows.filter((row) => row.item_id !== removedItemId),
+        dwdRows.filter((row) => row.account_id !== 'A002'),
       ),
     }
   }
 
-  if (injection === 'duplicate-order-item') {
-    const duplicate = fixture.dwd.rows.find((row) => row.item_id === 'I1002-1')
+  if (matchesInjection(injection, 'duplicate-account-snapshot', 'duplicate-order-item')) {
+    const duplicate = fixture.dwd.rows.find((row) => row.account_id === 'A002')
     if (!duplicate) {
-      throw new Error('质量 fixture 缺少用于重复注入的 I1002-1')
+      throw new Error('质量 fixture 缺少用于重复注入的 A002 账户日明细')
     }
 
     return { ...fixture, dwd: replaceRows(fixture.dwd, [...dwdRows, { ...duplicate }]) }
   }
 
-  if (injection === 'invalid-payment-status') {
-    const invalidRow = fixture.dwd.rows.find((row) => row.order_id === 'O1001')
+  if (matchesInjection(injection, 'invalid-currency', 'invalid-payment-status')) {
+    const invalidRow = fixture.dwd.rows.find((row) => row.account_id === 'A002')
     if (!invalidRow) {
-      throw new Error('质量 fixture 缺少用于有效性注入的 O1001')
+      throw new Error('质量 fixture 缺少用于有效性注入的 A002')
     }
 
     return {
       ...fixture,
       dwd: replaceRows(
         fixture.dwd,
-        dwdRows.map((row) => (row === invalidRow ? { ...row, payment_status: 'CHARGEBACK' } : row)),
+        dwdRows.map((row) => (row === invalidRow ? { ...row, currency: 'JPY' } : row)),
       ),
     }
   }
 
-  if (injection === 'orphan-order-item') {
-    const template = fixture.dwd.rows.find((row) => row.payment_status === 'PAID')
+  if (matchesInjection(injection, 'orphan-account-balance', 'orphan-order-item')) {
+    const template = fixture.dwd.rows.find((row) => row.account_id === 'A001')
     if (!template) {
-      throw new Error('质量 fixture 缺少用于引用完整性注入的 PAID 明细')
+      throw new Error('质量 fixture 缺少用于引用完整性注入的 A001')
     }
 
     return {
@@ -304,22 +308,26 @@ function getScenarioFixture(injection: QualityInjection): QualityFixture {
         ...dwdRows,
         {
           ...template,
-          order_id: 'O9999',
-          item_id: 'I9999-1',
-          product: '孤儿订单教学样本',
-          item_amount: 30,
-          refund_amount: 0,
-          net_amount: 30,
+          account_id: 'A999',
+          customer_id: null,
+          product_id: null,
+          branch_id: null,
+          customer_scope: null,
+          product_type: null,
+          branch_name: null,
+          balance: 30000,
+          missing_dimensions: 'customer、product、branch',
         },
       ]),
     }
   }
 
-  if (injection === 'sales-reconciliation-drift') {
-    const targetDate = sqlTransformationDataset.targetDate
-    const targetRow = fixture.dws.rows.find((row) => row.paid_date === targetDate)
+  if (matchesInjection(injection, 'deposit-reconciliation-drift', 'sales-reconciliation-drift')) {
+    const targetRow = fixture.dws.rows.find((row) =>
+      isTargetScope(row, depositBalanceDataset.targetDate),
+    )
     if (!targetRow) {
-      throw new Error(`质量 fixture 缺少 ${targetDate} 的 DWS 汇总行`)
+      throw new Error(`质量 fixture 缺少 ${depositBalanceDataset.targetDate} 的 DWS 目标分组`)
     }
 
     return {
@@ -327,13 +335,23 @@ function getScenarioFixture(injection: QualityInjection): QualityFixture {
       dws: replaceRows(
         fixture.dws,
         fixture.dws.rows.map((row) =>
-          row === targetRow ? { ...row, sales_amount: getNumber(row, 'sales_amount') - 40 } : row,
+          row === targetRow ? { ...row, balance: getNumber(row, 'balance') - 40 } : row,
         ),
       ),
     }
   }
 
   return fixture
+}
+
+function isTargetScope(row: TransformationRow, targetDate: string): boolean {
+  return (
+    row.snapshot_date === targetDate &&
+    row.branch_name === DEPOSIT_BALANCE_SCOPE.branchName &&
+    row.customer_scope === DEPOSIT_BALANCE_SCOPE.customerScope &&
+    row.product_type === DEPOSIT_BALANCE_SCOPE.productType &&
+    row.currency === DEPOSIT_BALANCE_SCOPE.currency
+  )
 }
 
 function getSchedulerContext(
@@ -363,7 +381,7 @@ function getSchedulerContext(
 function getDuplicateRows(rows: readonly TransformationRow[]): TransformationRow[] {
   const groups = new Map<string, TransformationRow[]>()
   for (const row of rows) {
-    const key = `${String(row.order_id ?? 'NULL')}|${String(row.item_id ?? 'NULL')}`
+    const key = `${String(row.snapshot_date ?? 'NULL')}|${String(row.account_id ?? 'NULL')}`
     const group = groups.get(key) ?? []
     group.push(row)
     groups.set(key, group)
@@ -372,10 +390,10 @@ function getDuplicateRows(rows: readonly TransformationRow[]): TransformationRow
   return [...groups.values()].flatMap((group) => group.slice(1))
 }
 
-function sumPaidAmount(rows: readonly TransformationRow[], targetDate: string): number {
+function sumTargetBalance(rows: readonly TransformationRow[], targetDate: string): number {
   return rows
-    .filter((row) => row.paid_date === targetDate && row.payment_status === 'PAID')
-    .reduce((total, row) => total + getNumber(row, 'net_amount'), 0)
+    .filter((row) => isTargetScope(row, targetDate))
+    .reduce((total, row) => total + getNumber(row, 'balance'), 0)
 }
 
 function getCompletenessObservation(fixture: QualityFixture): QualityObservation {
@@ -383,23 +401,27 @@ function getCompletenessObservation(fixture: QualityFixture): QualityObservation
   const expectedCount = fixture.expectedDwd.rows.length
   const missingCount = Math.max(0, expectedCount - dwdRows.length)
   const missingRow = fixture.expectedDwd.rows.find(
-    (row) => !dwdRows.some((candidate) => candidate.item_id === row.item_id),
+    (row) =>
+      !dwdRows.some(
+        (candidate) =>
+          candidate.snapshot_date === row.snapshot_date && candidate.account_id === row.account_id,
+      ),
   )
   return {
     observedValue: missingCount,
     violationCount: missingCount,
     evaluatedRowCount: Math.max(expectedCount, dwdRows.length),
     evidenceKind: 'failed-sample',
-    detail: `期望 ${expectedCount} 行 DWD 明细，实际只有 ${dwdRows.length} 行。`,
+    detail: `期望 ${expectedCount} 行 DWD 账户日明细，实际只有 ${dwdRows.length} 行。`,
     expectedLabel: '缺失行数 ≤ 0',
     samples:
       missingCount > 0 && missingRow
         ? [
             toSample(
-              'sample.missing-order-item',
+              'sample.missing-balance-snapshot',
               missingRow,
-              '应当从 ODS 明细进入 DWD，但当前输出没有这条事实。',
-              ['order_id', 'item_id', 'item_amount'],
+              '应当从 ODS 账户余额快照进入 DWD，但当前输出没有这条事实。',
+              ['snapshot_date', 'account_id', 'balance'],
             ),
           ]
         : [],
@@ -413,41 +435,40 @@ function getUniquenessObservation(fixture: QualityFixture): QualityObservation {
     violationCount: duplicateRows.length,
     evaluatedRowCount: fixture.dwd.rows.length,
     evidenceKind: 'failed-sample',
-    detail: `扫描 ${fixture.dwd.rows.length} 行，发现 ${duplicateRows.length} 行重复的 order_id + item_id。`,
+    detail: `扫描 ${fixture.dwd.rows.length} 行，发现 ${duplicateRows.length} 行重复的 snapshot_date + account_id。`,
     expectedLabel: '重复行数 ≤ 0',
     samples: duplicateRows
       .slice(0, 3)
       .map((row, index) =>
         toSample(
-          `sample.duplicate-order-item.${index + 1}`,
+          `sample.duplicate-account-day.${index + 1}`,
           row,
-          '同一业务主键已经出现过，重复写入会放大明细金额。',
-          ['order_id', 'item_id', 'item_amount', 'net_amount'],
+          '同一账户同一快照日已经出现过，重复写入会放大存款余额。',
+          ['snapshot_date', 'account_id', 'balance'],
         ),
       ),
   }
 }
 
 function getValidityObservation(fixture: QualityFixture): QualityObservation {
-  const allowedStatuses = new Set(['PAID', 'UNPAID'])
   const invalidRows = fixture.dwd.rows.filter(
-    (row) => typeof row.payment_status !== 'string' || !allowedStatuses.has(row.payment_status),
+    (row) => row.currency !== DEPOSIT_BALANCE_SCOPE.currency,
   )
   return {
     observedValue: invalidRows.length,
     violationCount: invalidRows.length,
     evaluatedRowCount: fixture.dwd.rows.length,
     evidenceKind: 'failed-sample',
-    detail: `payment_status 允许 PAID / UNPAID，实际发现 ${invalidRows.length} 行非法值。`,
+    detail: `currency 允许标准编码 CNY，实际发现 ${invalidRows.length} 行非法值。`,
     expectedLabel: '非法枚举行数 ≤ 0',
     samples: invalidRows
       .slice(0, 3)
       .map((row, index) =>
         toSample(
-          `sample.invalid-payment-status.${index + 1}`,
+          `sample.invalid-currency.${index + 1}`,
           row,
-          '字段值不在已注册枚举内，下游状态分组不能安全解释。',
-          ['order_id', 'payment_status', 'paid_date'],
+          '币种编码不在指标契约内，下游分组不能安全解释。',
+          ['snapshot_date', 'account_id', 'source_currency', 'currency'],
         ),
       ),
   }
@@ -455,54 +476,54 @@ function getValidityObservation(fixture: QualityFixture): QualityObservation {
 
 function getReferenceObservation(fixture: QualityFixture): QualityObservation {
   const orphanRows = fixture.dwd.rows.filter(
-    (row) => typeof row.order_id !== 'string' || !fixture.orderIds.has(row.order_id),
+    (row) => typeof row.account_id !== 'string' || !fixture.accountIds.has(row.account_id),
   )
   return {
     observedValue: orphanRows.length,
     violationCount: orphanRows.length,
     evaluatedRowCount: fixture.dwd.rows.length,
     evidenceKind: 'failed-sample',
-    detail: `DWD 明细中的 order_id 应能在订单事件主表找到，发现 ${orphanRows.length} 个孤儿引用。`,
+    detail: `DWD 明细中的 account_id 应能在 dim_account 找到，发现 ${orphanRows.length} 个孤儿引用。`,
     expectedLabel: '孤儿引用行数 ≤ 0',
     samples: orphanRows
       .slice(0, 3)
       .map((row, index) =>
         toSample(
-          `sample.orphan-order-item.${index + 1}`,
+          `sample.orphan-account.${index + 1}`,
           row,
-          'order_id 在订单主表不存在，无法确认这条明细属于哪个订单。',
-          ['order_id', 'item_id', 'user_id', 'net_amount'],
+          'account_id 在账户关系表不存在，无法确认这条余额属于哪个账户。',
+          ['snapshot_date', 'account_id', 'balance'],
         ),
       ),
   }
 }
 
 function getReconciliationObservation(fixture: QualityFixture): QualityObservation {
-  const targetDate = sqlTransformationDataset.targetDate
-  const expectedAmount = sumPaidAmount(fixture.dwd.rows, targetDate)
-  const observedRow = fixture.dws.rows.find((row) => row.paid_date === targetDate)
-  const observedAmount = observedRow ? getNumber(observedRow, 'sales_amount') : 0
+  const targetDate = depositBalanceDataset.targetDate
+  const expectedAmount = sumTargetBalance(fixture.dwd.rows, targetDate)
+  const observedRow = fixture.dws.rows.find((row) => isTargetScope(row, targetDate))
+  const observedAmount = observedRow ? getNumber(observedRow, 'balance') : 0
   const delta = Math.abs(expectedAmount - observedAmount)
   return {
     observedValue: delta,
     violationCount: delta > 0 ? 1 : 0,
     evaluatedRowCount: fixture.dwd.rows.length,
     evidenceKind: 'metric-comparison',
-    detail: `DWD 明细净额 ${expectedAmount} 元，对账到 DWS 的 sales_amount 为 ${observedAmount} 元，差额 ${delta} 元。`,
+    detail: `DWD 目标余额 ${expectedAmount} 元，对账到 DWS 的 balance 为 ${observedAmount} 元，差额 ${delta} 元。`,
     expectedLabel: '对账差额 ≤ 0 元',
     samples:
       delta > 0
         ? [
             {
-              sampleId: 'sample.sales-reconciliation',
-              rowKey: `${targetDate} / sales_amount`,
+              sampleId: 'sample.deposit-reconciliation',
+              rowKey: `${targetDate} / balance`,
               values: {
-                paid_date: targetDate,
-                dwd_net_amount: expectedAmount,
-                dws_sales_amount: observedAmount,
+                snapshot_date: targetDate,
+                dwd_balance: expectedAmount,
+                dws_balance: observedAmount,
                 delta,
               },
-              reason: '同一业务分区的明细合计与主题汇总不一致。',
+              reason: '同一业务分区的账户日明细合计与主题汇总不一致。',
             },
           ]
         : [],
@@ -557,8 +578,6 @@ function getRuleObservation(
       return getReconciliationObservation(fixture)
     case QUALITY_RULE_IDS.freshness:
       return getFreshnessObservation(schedulerContext)
-    default:
-      throw new Error(`没有为规则实现质量检查: ${rule.ruleId}`)
   }
 }
 
@@ -694,10 +713,10 @@ function getUpstreamHints(dimension: QualityDimension): readonly string[] {
     return ['检查上游输入到达时间、业务日期分区和 Scheduler SLA。']
   }
   if (dimension === 'reconciliation') {
-    return ['沿 DWD → DWS 聚合边界复核过滤、退款和汇总口径。']
+    return ['沿 DWD → DWS 聚合边界复核过滤、币种和汇总口径。']
   }
   if (dimension === 'referential-integrity') {
-    return ['沿订单主表与明细的 JOIN 关系检查迟到或错误写入。']
+    return ['沿账户余额快照与 dim_account 的 JOIN 关系检查迟到或错误写入。']
   }
   return ['回到 DWD 的 ODS 输入、去重规则和字段映射，确认异常是在加工前还是加工后产生。']
 }
@@ -774,13 +793,7 @@ function getRuleIdsByStatus(
   checks: readonly QualityCheckResult[],
   status: QualityCheckStatus,
 ): string[] {
-  const ruleIds: string[] = []
-  for (const check of checks) {
-    if (check.status === status) {
-      ruleIds.push(check.ruleId)
-    }
-  }
-  return ruleIds
+  return checks.filter((check) => check.status === status).map((check) => check.ruleId)
 }
 
 function createReleaseDecision(
@@ -795,10 +808,11 @@ function createReleaseDecision(
   const nonPassChecks = checks.filter((check) => check.status !== 'pass')
   const failedRuleIds = getRuleIdsByStatus(checks, 'fail')
   const warningRuleIds = getRuleIdsByStatus(checks, 'warn')
+  const status = getDecisionStatus(action, checkCounts.fail, checkCounts.warn)
   return {
     decisionId: `decision.quality.${schedulerRun.runId}.${action}`,
     action,
-    status: getDecisionStatus(action, checkCounts.fail, checkCounts.warn),
+    status,
     isBlocked: false,
     schedulerRunId: schedulerRun.runId,
     businessDate: schedulerRun.businessDate,
@@ -810,12 +824,7 @@ function createReleaseDecision(
     affectedOutputs: [],
     quarantinedSampleCount: 0,
     remediation: [],
-    rationale: getDecisionRationale(
-      action,
-      getDecisionStatus(action, checkCounts.fail, checkCounts.warn),
-      checkCounts.fail,
-      checkCounts.warn,
-    ),
+    rationale: getDecisionRationale(action, status, checkCounts.fail, checkCounts.warn),
   }
 }
 
@@ -855,85 +864,92 @@ export function createQualityRules(schedulerRun: SchedulerRunState): QualityRule
   const dwdTask = getTaskOrThrow(schedulerRun.tasks, SCHEDULER_TASK_IDS.dwd)
   const dwsTask = getTaskOrThrow(schedulerRun.tasks, SCHEDULER_TASK_IDS.dws)
   const adsTask = getTaskOrThrow(schedulerRun.tasks, SCHEDULER_TASK_IDS.ads)
+  const dwsOutput = dwsTask.contract.outputTable
+  const adsOutput = adsTask.contract.outputTable
 
   return [
     {
       ruleId: QUALITY_RULE_IDS.completeness,
-      name: 'DWD 订单明细完整性',
+      name: 'DWD 账户余额完整性',
       dimension: 'completeness',
       ruleType: 'row-count',
-      target: { table: 'dwd_order_item', field: 'item_id', partition },
+      target: { table: 'dwd_deposit_balance_detail', field: 'account_id', partition },
       severity: 'high',
       threshold: { operator: 'at-most', value: 0, unit: 'rows' },
-      description: 'SQL 加工声明的订单商品事实不能在 DWD 分区中无故缺行。',
-      remediationHint: '回查 ODS.order_item 是否到齐，并确认 DWD 的过滤或 JOIN 没有丢明细。',
+      description: '账户余额快照进入 DWD 后不能在加工中无故缺行。',
+      remediationHint:
+        '回查 ods_account_balance_snapshot 是否到齐，并确认 DWD 的过滤或 JOIN 没有丢余额。',
       schedulerTaskId: dwdTask.taskId,
-      downstreamImpacts: ['dws_sales_daily', 'ads_yesterday_sales'],
+      downstreamImpacts: [dwsOutput, adsOutput],
     },
     {
       ruleId: QUALITY_RULE_IDS.uniqueness,
-      name: 'DWD 订单明细唯一性',
+      name: 'DWD 账户日唯一性',
       dimension: 'uniqueness',
       ruleType: 'unique-key',
-      target: { table: 'dwd_order_item', field: 'order_id + item_id', partition },
+      target: {
+        table: 'dwd_deposit_balance_detail',
+        field: 'snapshot_date + account_id',
+        partition,
+      },
       severity: 'critical',
       threshold: { operator: 'at-most', value: 0, unit: 'rows' },
-      description: '订单商品业务主键在统一明细层只能出现一次。',
-      remediationHint: '检查事件去重键和分区写入是否幂等，避免重复事实放大销售额。',
+      description: '账户余额明细在一个快照日只能出现一次。',
+      remediationHint: '检查账户日去重键和分区写入是否幂等，避免重复事实放大存款余额。',
       schedulerTaskId: dwdTask.taskId,
-      downstreamImpacts: ['dws_sales_daily', 'ads_yesterday_sales'],
+      downstreamImpacts: [dwsOutput, adsOutput],
     },
     {
       ruleId: QUALITY_RULE_IDS.validity,
-      name: '支付状态枚举有效性',
+      name: '币种编码有效性',
       dimension: 'validity',
       ruleType: 'enum',
-      target: { table: 'dwd_order_item', field: 'payment_status', partition },
+      target: { table: 'dwd_deposit_balance_detail', field: 'currency', partition },
       severity: 'high',
       threshold: { operator: 'at-most', value: 0, unit: 'rows' },
-      description: 'payment_status 只能使用已注册的 PAID / UNPAID 业务枚举。',
-      remediationHint: '修复状态映射或补充经过评审的枚举契约，再重新计算销售主题。',
+      description: 'currency 进入 DWD 后只能使用指标契约注册的 CNY 编码。',
+      remediationHint: '修复币种标准化映射或补充经过评审的编码契约，再重新计算存款余额主题。',
       schedulerTaskId: dwdTask.taskId,
-      downstreamImpacts: ['dws_sales_daily', 'ads_yesterday_sales'],
+      downstreamImpacts: [dwsOutput, adsOutput],
     },
     {
       ruleId: QUALITY_RULE_IDS.referentialIntegrity,
-      name: '订单明细引用完整性',
+      name: '账户余额引用完整性',
       dimension: 'referential-integrity',
       ruleType: 'foreign-key',
-      target: { table: 'dwd_order_item', field: 'order_id', partition },
+      target: { table: 'dwd_deposit_balance_detail', field: 'account_id', partition },
       severity: 'high',
       threshold: { operator: 'at-most', value: 0, unit: 'rows' },
-      description: '每条 DWD 明细都必须能回到 ODS 订单事件主表。',
-      remediationHint: '隔离找不到主订单的明细，并沿订单事件到达情况确认是否需要补数。',
+      description: '每条 DWD 余额都必须能回到 dim_account 的账户关系。',
+      remediationHint: '隔离找不到账户关系的余额，并确认关联表是否迟到或错误写入。',
       schedulerTaskId: dwdTask.taskId,
-      downstreamImpacts: ['dws_sales_daily', 'ads_yesterday_sales'],
+      downstreamImpacts: [dwsOutput, adsOutput],
     },
     {
       ruleId: QUALITY_RULE_IDS.reconciliation,
-      name: 'DWD / DWS 销售额对账',
+      name: 'DWD / DWS 存款余额对账',
       dimension: 'reconciliation',
       ruleType: 'aggregate-match',
-      target: { table: 'dws_sales_daily', field: 'sales_amount', partition },
+      target: { table: 'dws_deposit_balance_daily', field: 'balance', partition },
       severity: 'critical',
       threshold: { operator: 'at-most', value: 0, unit: 'currency', warningRange: 30 },
-      description: 'DWS 的支付日净销售额必须和 DWD 明细按同一口径聚合后的结果一致。',
-      remediationHint: '对照 DWD 明细、退款分摊和 DWS 聚合 SQL，确认差额不是口径或写入顺序造成。',
+      description: 'DWS 指标分组余额必须和 DWD 按同一口径聚合后的结果一致。',
+      remediationHint: '对照 DWD 明细、指标筛选和 DWS 聚合 SQL，确认差额不是粒度或写入顺序造成。',
       schedulerTaskId: dwsTask.taskId,
-      downstreamImpacts: ['ads_yesterday_sales'],
+      downstreamImpacts: [adsOutput],
     },
     {
       ruleId: QUALITY_RULE_IDS.freshness,
       name: 'ADS 分区 Freshness',
       dimension: 'freshness',
       ruleType: 'max-delay',
-      target: { table: adsTask.contract.outputTable, field: 'dt', partition },
+      target: { table: adsOutput, field: 'snapshot_date', partition },
       severity: 'medium',
       threshold: { operator: 'at-most', value: 30, unit: 'minutes', warningRange: 15 },
-      description: '业务日报应在日批触发后 30 分钟内完成发布，迟到只能按业务日期回补。',
-      remediationHint: '确认上游批次到达时间，必要时按同一业务日期重跑，而不是新建错误日期报表。',
+      description: '业务日期指标应在日批触发后 30 分钟内完成发布，迟到只能按业务日期回补。',
+      remediationHint: '确认上游快照到达时间，必要时按同一业务日期重跑，而不是新建错误日期报表。',
       schedulerTaskId: adsTask.taskId,
-      downstreamImpacts: [adsTask.contract.outputTable, 'BI 销售日报'],
+      downstreamImpacts: [adsOutput, 'BI 存款余额日报'],
     },
   ]
 }
@@ -950,7 +966,7 @@ export function createQualitySchedulerRun(
     businessDate,
     scenario,
     scheduledAt,
-    runId: `run.sales.daily.${businessDate.replace(/-/gu, '')}.quality-${scenarioSuffix}.001`,
+    runId: `run.deposit-balance.daily.${businessDate.replace(/-/gu, '')}.quality-${scenarioSuffix}.001`,
   })
   const terminal = buildSchedulerTimeline(initial).at(-1)
   if (!terminal || (terminal.status !== 'success' && terminal.status !== 'failed')) {
@@ -969,7 +985,7 @@ export function createDataQualityVisualization(
     schedulerRun,
     rules: createQualityRules(schedulerRun),
     injections: QUALITY_INJECTION_OPTIONS,
-    defaultInjection: 'missing-order-item',
+    defaultInjection: 'missing-balance-snapshot',
   }
 }
 
@@ -1056,7 +1072,6 @@ function finalizeReleaseDecision(
   initialDecision: QualityReleaseDecision,
   checks: readonly QualityCheckResult[],
   rules: readonly QualityRuleDefinition[],
-  action: QualityAction,
 ): QualityReleaseDecision {
   const isBlocked = initialDecision.status === 'blocked' || initialDecision.status === 'quarantined'
   const nonPassChecks = getNonPassChecks(checks)
@@ -1067,7 +1082,7 @@ function finalizeReleaseDecision(
     quarantinedSampleCount:
       initialDecision.status === 'quarantined' ? getQuarantinedSampleCount(checks) : 0,
     remediation: nonPassChecks.map((check) =>
-      createRemediation(getRuleById(rules, check.ruleId), action),
+      createRemediation(getRuleById(rules, check.ruleId), initialDecision.action),
     ),
   }
 }
@@ -1136,12 +1151,7 @@ export function evaluateDataQuality(
     options.thresholdOverrides,
   )
   const initialDecision = createReleaseDecision(checks, action, schedulerRun)
-  const releaseDecision = finalizeReleaseDecision(
-    initialDecision,
-    checks,
-    visualization.rules,
-    action,
-  )
+  const releaseDecision = finalizeReleaseDecision(initialDecision, checks, visualization.rules)
   const events = createQualityEvents({
     checks,
     rules: visualization.rules,

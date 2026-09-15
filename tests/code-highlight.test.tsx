@@ -43,8 +43,8 @@ describe('build-time code highlighting', () => {
     expect(highlightedCode).toContain('  paid_date')
   })
 
-  it('collects and highlights all eight SQL workbench steps at build time', () => {
-    expect(TRANSFORMATION_STEPS).toHaveLength(8)
+  it('collects and highlights all five SQL workbench steps at build time', () => {
+    expect(TRANSFORMATION_STEPS).toHaveLength(5)
 
     const stepHighlights = TRANSFORMATION_STEPS.map(
       (step) => codeHighlights[getCodeHighlightKey('sql', step.sql)],
@@ -53,14 +53,14 @@ describe('build-time code highlighting', () => {
       stepHighlights.every((highlightedCode) => highlightedCode?.includes('class="shiki nord"')),
     ).toBe(true)
 
-    const wrongJoin = TRANSFORMATION_STEPS.find((step) => step.id === 'wrong-join')
+    const wrongJoin = TRANSFORMATION_STEPS.find((step) => step.id === 'join-fanout')
     expect(wrongJoin).toBeDefined()
     const highlightedCode = codeHighlights[getCodeHighlightKey('sql', wrongJoin!.sql)]
 
     expect(highlightedCode).toMatch(/<span style="color:[^"]+">SELECT<\/span>/)
     expect(highlightedCode).toMatch(/<span style="color:[^"]+">FROM<\/span>/)
     expect(highlightedCode).toMatch(/<span style="color:[^"]+">LEFT JOIN<\/span>/)
-    expect(highlightedCode).toMatch(/<span style="color:[^"]+">ON<\/span>/)
+    expect(highlightedCode).toMatch(/<span style="color:[^"]+">\s*ON<\/span>/)
     expect(highlightedCode).toMatch(/<span style="color:[^"]+">AS<\/span>/)
 
     const html = renderToStaticMarkup(

@@ -57,10 +57,10 @@ function getProjectedQualityEvidence(
   return qualityEvaluationToGovernanceEvidence(evaluation, rule)
 }
 
-describe('数据治理 Phase 2', () => {
+describe('数据治理决策台', () => {
   it('QualityEvent 会被投影成可解释的治理质量证据，而不是复制质量领域模型', () => {
     const evaluation = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'missing-order-item',
+      injection: 'missing-balance-snapshot',
       action: 'block',
     })
     const event = evaluation.events.find(
@@ -70,14 +70,14 @@ describe('数据治理 Phase 2', () => {
       throw new Error('测试需要真实 QualityEvent')
     }
 
-    const evidence = qualityEventToGovernanceEvidence(event, 'DWD 明细完整性')
+    const evidence = qualityEventToGovernanceEvidence(event, 'DWD 账户余额完整性')
 
     expect(evidence).toMatchObject({
       source: 'chapter-07',
       status: 'fail',
       severity: 'high',
       eventId: event.eventId,
-      ruleName: 'DWD 明细完整性',
+      ruleName: 'DWD 账户余额完整性',
       ruleId: QUALITY_RULE_IDS.completeness,
       target: event.target,
       expectedValue: 0,
@@ -85,19 +85,19 @@ describe('数据治理 Phase 2', () => {
         action: 'block',
         status: 'blocked',
         isBlocked: true,
-        affectedOutputs: ['dws_sales_daily', 'ads_yesterday_sales'],
+        affectedOutputs: ['dws_deposit_balance_daily_staging', 'ads_deposit_balance_daily'],
       },
     })
     expect(evidence.evidence[0]).toMatchObject({
-      evidenceId: 'evidence.dq.dwd.order-item.completeness.v1',
-      detail: '期望 5 行 DWD 明细，实际只有 4 行。',
-      samples: [{ rowKey: 'O1002 / I1002-2 / 200' }],
+      evidenceId: 'evidence.dq.dwd.deposit-balance.completeness.v1',
+      detail: '期望 4 行 DWD 账户日明细，实际只有 3 行。',
+      samples: [{ rowKey: '2026-09-30 / A002 / 200000' }],
     })
     expect(evidence.failedSampleCount).toBe(1)
     expect(evidence.remainingRisk).toContain('Release Decision')
   })
 
-  it('课程入口注册治理工作台，并删除 Phase 1 的质量占位状态', () => {
+  it('课程入口注册治理工作台，并保留质量未知状态', () => {
     expect(getLessonBySlug('data-governance')).toMatchObject({
       title: '数据治理：当数据平台开始失控',
       chapter: '09',
@@ -113,14 +113,14 @@ describe('数据治理 Phase 2', () => {
           !asset.qualityEvidence || ['pass', 'warn', 'fail'].includes(asset.qualityEvidence.status),
       ),
     ).toBe(true)
-    expect(getAsset('dwd-order-detail').qualityEvidence).toMatchObject({
+    expect(getAsset('dwd-deposit-balance').qualityEvidence).toMatchObject({
       source: 'chapter-07',
       status: 'fail',
       ruleId: QUALITY_RULE_IDS.completeness,
-      eventId: 'event.quality.dq.dwd.order-item.completeness.v1',
+      eventId: 'event.quality.dq.dwd.deposit-balance.completeness.v1',
       releaseDecision: { action: 'block', status: 'blocked', isBlocked: true },
     })
-    expect(getAsset('dws-sales').qualityEvidence).toMatchObject({
+    expect(getAsset('dws-deposit-balance').qualityEvidence).toMatchObject({
       source: 'chapter-07',
       status: 'pass',
       ruleId: QUALITY_RULE_IDS.reconciliation,
@@ -129,51 +129,54 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('按业务关键词、技术名、tag 和治理筛选目录', () => {
-    const salesAssets = filterGovernanceAssets(assets, {
+    const balanceAssets = filterGovernanceAssets(assets, {
       ...DEFAULT_GOVERNANCE_FILTERS,
-      query: '销售',
+      query: '余额',
     })
-    expect(salesAssets.map((asset) => asset.id)).toEqual([
-      'dwd-order-detail',
-      'dws-sales',
-      'ads-report',
-      'dws-user',
-      'ads-sales-report-v1',
+    expect(balanceAssets.map((asset) => asset.id)).toEqual([
+      'ods-account-balance',
+      'dwd-deposit-balance',
+      'dws-deposit-balance',
+      'ads-deposit-balance',
+      'ads-deposit-balance-v1',
     ])
 
     expect(
-      filterGovernanceAssets(assets, { ...DEFAULT_GOVERNANCE_FILTERS, query: 'DWS.SALES' }),
-    ).toEqual([getAsset('dws-sales')])
+      filterGovernanceAssets(assets, {
+        ...DEFAULT_GOVERNANCE_FILTERS,
+        query: 'DWS.DEPOSIT_BALANCE',
+      }),
+    ).toEqual([getAsset('dws-deposit-balance')])
     expect(
       filterGovernanceAssets(assets, { ...DEFAULT_GOVERNANCE_FILTERS, tag: 'deprecated' }).map(
         (asset) => asset.id,
       ),
-    ).toEqual(['ads-sales-report-v1'])
+    ).toEqual(['ads-deposit-balance-v1'])
     expect(
       filterGovernanceAssets(assets, {
         ...DEFAULT_GOVERNANCE_FILTERS,
         lifecycle: 'deprecated',
       }).map((asset) => asset.id),
-    ).toEqual(['ads-sales-report-v1'])
+    ).toEqual(['ads-deposit-balance-v1'])
     expect(
       filterGovernanceAssets(assets, {
         ...DEFAULT_GOVERNANCE_FILTERS,
         sensitivity: 'restricted',
       }).map((asset) => asset.id),
-    ).toEqual(['dws-user'])
+    ).toEqual(['dws-account-profile'])
     expect(
       filterGovernanceAssets(assets, {
         ...DEFAULT_GOVERNANCE_FILTERS,
         ownerStatus: 'missing',
       }).map((asset) => asset.id),
-    ).toEqual(['dws-user'])
+    ).toEqual(['dws-account-profile'])
   })
 
   it('用可解释因素判断推荐程度，而不是返回黑盒分数', () => {
-    const recommended = getGovernanceRecommendation(getAsset('dws-sales'))
-    const cautious = getGovernanceRecommendation(getAsset('ads-report'))
-    const ambiguous = getGovernanceRecommendation(getAsset('dws-user'))
-    const deprecated = getGovernanceRecommendation(getAsset('ads-sales-report-v1'))
+    const recommended = getGovernanceRecommendation(getAsset('dws-deposit-balance'))
+    const cautious = getGovernanceRecommendation(getAsset('ads-deposit-balance'))
+    const ambiguous = getGovernanceRecommendation(getAsset('dws-account-profile'))
+    const deprecated = getGovernanceRecommendation(getAsset('ads-deposit-balance-v1'))
 
     expect(recommended.status).toBe('recommended')
     expect(recommended.factors.map((factor) => factor.label)).toEqual([
@@ -194,33 +197,33 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('Quality pass、warn、block 分别产生 recommended、usable-with-caution、not-recommended', () => {
-    const pass = getGovernanceRecommendation(getAsset('dws-sales'))
+    const pass = getGovernanceRecommendation(getAsset('dws-deposit-balance'))
     const warn = getGovernanceRecommendation({
-      ...getAsset('dws-sales'),
+      ...getAsset('dws-deposit-balance'),
       qualityEvidence: getProjectedQualityEvidence(
         'late-partition',
         QUALITY_RULE_IDS.freshness,
         'continue-with-risk',
       ),
     })
-    const block = getGovernanceRecommendation(getAsset('dwd-order-detail'))
+    const block = getGovernanceRecommendation(getAsset('dwd-deposit-balance'))
 
     expect(pass.status).toBe('recommended')
     expect(warn.status).toBe('usable-with-caution')
     expect(warn.reasons.join(' ')).toContain('warn')
     expect(block.status).toBe('not-recommended')
-    expect(block.reasons.join(' ')).toContain('期望 5 行 DWD 明细')
+    expect(block.reasons.join(' ')).toContain('期望 4 行 DWD 账户日明细')
   })
 
   it('Owner 缺失、定义含糊和 deprecated / retiring 仍会降低推荐程度', () => {
     const ownerMissing = getGovernanceRecommendation({
-      ...getAsset('dws-sales'),
+      ...getAsset('dws-deposit-balance'),
       owner: undefined,
     })
-    const ambiguous = getGovernanceRecommendation(getAsset('dws-user'))
-    const deprecated = getGovernanceRecommendation(getAsset('ads-sales-report-v1'))
+    const ambiguous = getGovernanceRecommendation(getAsset('dws-account-profile'))
+    const deprecated = getGovernanceRecommendation(getAsset('ads-deposit-balance-v1'))
     const retiring = getGovernanceRecommendation({
-      ...getAsset('dws-sales'),
+      ...getAsset('dws-deposit-balance'),
       lifecycle: 'retiring',
     })
 
@@ -235,10 +238,10 @@ describe('数据治理 Phase 2', () => {
 
   it('严重 freshness 延迟也会阻止默认复用', () => {
     const recommendation = getGovernanceRecommendation({
-      ...getAsset('dws-sales'),
+      ...getAsset('dws-deposit-balance'),
       freshnessMetadata: {
-        lastUpdatedAt: '2026-09-14 00:00',
-        expectedRefresh: '每 15 分钟',
+        lastUpdatedAt: '2026-09-30 00:00',
+        expectedRefresh: '每天 06:30',
         observedDelayMinutes: 180,
         status: 'delayed',
       },
@@ -249,28 +252,28 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('同一敏感字段会随角色和用途得到不同的 policy decision', () => {
-    const asset = getAsset('dwd-order-detail')
+    const asset = getAsset('dwd-deposit-balance')
     const analyst = evaluateGovernancePolicy({
       asset,
-      fieldName: 'user_email',
+      fieldName: 'customer_id',
       role: 'analyst',
       purpose: 'business-analysis',
     })
     const analystExport = evaluateGovernancePolicy({
       asset,
-      fieldName: 'user_email',
+      fieldName: 'customer_id',
       role: 'analyst',
       purpose: 'data-export',
     })
     const marketing = evaluateGovernancePolicy({
       asset,
-      fieldName: 'user_email',
+      fieldName: 'customer_id',
       role: 'marketing',
       purpose: 'user-outreach',
     })
     const external = evaluateGovernancePolicy({
       asset,
-      fieldName: 'user_email',
+      fieldName: 'customer_id',
       role: 'external-collaborator',
       purpose: 'external-sharing',
     })
@@ -288,8 +291,8 @@ describe('数据治理 Phase 2', () => {
     expect(analyst.remainingRisk).toContain('质量风险单独记录')
 
     const qualityPassPolicy = evaluateGovernancePolicy({
-      asset: { ...asset, qualityEvidence: getAsset('dws-sales').qualityEvidence },
-      fieldName: 'user_email',
+      asset: { ...asset, qualityEvidence: getAsset('dws-deposit-balance').qualityEvidence },
+      fieldName: 'customer_id',
       role: 'analyst',
       purpose: 'business-analysis',
     })
@@ -300,11 +303,11 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('对 restricted 字段和可直接读取的内部字段分别处理 allow、masked、approval、deny', () => {
-    const asset = getAsset('dws-user')
+    const asset = getAsset('dws-account-profile')
     expect(
       evaluateGovernancePolicy({
         asset,
-        fieldName: 'user_phone',
+        fieldName: 'customer_id',
         role: 'analyst',
         purpose: 'business-analysis',
       }).decision,
@@ -312,7 +315,7 @@ describe('数据治理 Phase 2', () => {
     expect(
       evaluateGovernancePolicy({
         asset,
-        fieldName: 'user_phone',
+        fieldName: 'customer_id',
         role: 'marketing',
         purpose: 'user-outreach',
       }).decision,
@@ -320,15 +323,15 @@ describe('数据治理 Phase 2', () => {
     expect(
       evaluateGovernancePolicy({
         asset,
-        fieldName: 'user_phone',
+        fieldName: 'customer_id',
         role: 'external-collaborator',
         purpose: 'business-analysis',
       }).decision,
     ).toBe('deny')
 
     const allow = evaluateGovernancePolicy({
-      asset: getAsset('dws-sales'),
-      fieldName: 'pay_gmv',
+      asset: getAsset('dws-deposit-balance'),
+      fieldName: 'balance',
       role: 'analyst',
       purpose: 'business-analysis',
     })
@@ -336,44 +339,46 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('支持 active → deprecated、deprecated → retiring 和字段 semantic change', () => {
-    const deprecateEvent = getEvent('governance-ads-report-deprecated')
-    const deprecated = applyGovernanceEvent(getAsset('ads-report'), deprecateEvent)
+    const deprecateEvent = getEvent('governance-ads-deposit-balance-deprecated')
+    const deprecated = applyGovernanceEvent(getAsset('ads-deposit-balance'), deprecateEvent)
     expect(deprecated.changed).toBe(true)
     expect(deprecated.asset.lifecycle).toBe('deprecated')
 
-    const retireEvent = getEvent('governance-legacy-retiring')
-    const retiring = applyGovernanceEvent(getAsset('ads-sales-report-v1'), retireEvent)
+    const retireEvent = getEvent('governance-legacy-deposit-balance-retiring')
+    const retiring = applyGovernanceEvent(getAsset('ads-deposit-balance-v1'), retireEvent)
     expect(retiring.changed).toBe(true)
     expect(retiring.asset.lifecycle).toBe('retiring')
 
     const fieldChange = applyGovernanceEvent(
-      getAsset('dwd-order-detail'),
-      getEvent('governance-order-status-semantic-change'),
+      getAsset('dwd-deposit-balance'),
+      getEvent('governance-balance-semantic-change'),
     )
-    const changedField = fieldChange.asset.fields.find((field) => field.name === 'order_state')
+    const changedField = fieldChange.asset.fields.find(
+      (field) => field.name === 'available_balance',
+    )
     expect(fieldChange.changed).toBe(true)
     expect(fieldChange.asset.definitionCompleteness).toBe('partial')
     expect(changedField).toMatchObject({ semanticStatus: 'review-needed' })
     expect(changedField?.description).toContain('语义变更待确认')
 
-    const invalidTransition = applyGovernanceEvent(getAsset('ads-report'), retireEvent)
+    const invalidTransition = applyGovernanceEvent(getAsset('ads-deposit-balance'), retireEvent)
     expect(invalidTransition.changed).toBe(false)
     expect(invalidTransition.asset.lifecycle).toBe('active')
   })
 
   it('消费同一套 LineageGraph，区分直接影响、传递影响、消费者和通知顺序', () => {
-    const fieldEvent = getEvent('governance-order-status-semantic-change')
+    const fieldEvent = getEvent('governance-balance-semantic-change')
     const impact = getGovernanceLineageImpact(assets, lineageNodes, lineageEdges, fieldEvent)
 
-    expect(impact.source?.id).toBe('field-dwd-order-status')
-    expect(impact.directImpacts.map((node) => node.id)).toContain('task-build-order-detail')
-    expect(impact.transitiveImpacts.map((node) => node.id)).toContain('dws-sales')
+    expect(impact.source?.id).toBe('field-dwd-balance')
+    expect(impact.directImpacts.map((node) => node.id)).toContain('task-build-deposit-detail')
+    expect(impact.transitiveImpacts.map((node) => node.id)).toContain('dws-deposit-balance')
     expect(impact.consumers.map((node) => node.id)).toEqual(
       expect.arrayContaining([
-        'dwd-order-detail',
-        'dws-sales',
-        'dws-user',
-        'metric-sales-status-rate',
+        'dwd-deposit-balance',
+        'dws-deposit-balance',
+        'dws-account-profile',
+        'metric-deposit-balance',
       ]),
     )
     expect(impact.notificationTargets.length).toBe(impact.suggestedOrder.length)
@@ -383,14 +388,17 @@ describe('数据治理 Phase 2', () => {
     ).toBe(true)
 
     const assetImpact = getAssetLineageImpact(
-      getAsset('dwd-order-detail'),
+      getAsset('dwd-deposit-balance'),
       assets,
       lineageNodes,
       lineageEdges,
     )
-    expect(assetImpact.directImpacts.map((node) => node.id)).toEqual(['dws-sales', 'dws-user'])
-    expect(assetImpact.transitiveImpacts.map((node) => node.id)).toContain('ads-report')
-    expect(assetImpact.upstreamImpacts.map((node) => node.id)).toContain('ods-order')
+    expect(assetImpact.directImpacts.map((node) => node.id)).toEqual([
+      'dws-deposit-balance',
+      'dws-account-profile',
+    ])
+    expect(assetImpact.transitiveImpacts.map((node) => node.id)).toContain('ads-deposit-balance')
+    expect(assetImpact.upstreamImpacts.map((node) => node.id)).toContain('ods-account-balance')
     expect(assetImpact.directImpacts[0]).toMatchObject({
       confidence: expect.any(String),
       evidence: expect.arrayContaining([expect.objectContaining({ source: expect.any(String) })]),
@@ -398,7 +406,7 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('质量 block 会结合真实 Lineage consumer 暴露升级为 critical，并提升通知优先级', () => {
-    const asset = getAsset('dwd-order-detail')
+    const asset = getAsset('dwd-deposit-balance')
     const impact = getAssetLineageImpact(asset, assets, lineageNodes, lineageEdges, {
       includeCrossEntity: true,
       qualityEvidence: asset.qualityEvidence,
@@ -406,7 +414,12 @@ describe('数据治理 Phase 2', () => {
 
     expect(impact.riskLevel).toBe('critical')
     expect(impact.consumers.map((node) => node.id)).toEqual(
-      expect.arrayContaining(['dws-sales', 'dws-user', 'ads-report', 'metric-report-status']),
+      expect.arrayContaining([
+        'dws-deposit-balance',
+        'dws-account-profile',
+        'ads-deposit-balance',
+        'metric-deposit-report',
+      ]),
     )
     expect(impact.notificationTargets[0]?.priority).toBe('urgent')
     expect(impact.riskReason).toContain('真实消费者')
@@ -418,24 +431,24 @@ describe('数据治理 Phase 2', () => {
   })
 
   it('资产 deprecation 使用真实字段血缘找到消费者和通知顺序', () => {
-    const event = getEvent('governance-ads-report-deprecated')
+    const event = getEvent('governance-ads-deposit-balance-deprecated')
     const impact = getGovernanceLineageImpact(assets, lineageNodes, lineageEdges, event)
-    const deprecated = applyGovernanceEvent(getAsset('ads-report'), event)
+    const deprecated = applyGovernanceEvent(getAsset('ads-deposit-balance'), event)
 
     expect(deprecated.asset.lifecycle).toBe('deprecated')
-    expect(impact.source?.id).toBe('field-ads-report-status')
-    expect(impact.consumers.map((node) => node.id)).toContain('metric-report-status')
+    expect(impact.source?.id).toBe('field-ads-balance')
+    expect(impact.consumers.map((node) => node.id)).toContain('metric-deposit-report')
     expect(impact.notificationTargets.map((target) => target.label)).toContain(
-      'metric.report_status_summary',
+      'metric.deposit_report',
     )
-    expect(impact.suggestedOrder.map((node) => node.id)).toContain('metric-report-status')
+    expect(impact.suggestedOrder.map((node) => node.id)).toContain('metric-deposit-report')
   })
 
   it('同样的目录、事件和请求始终得到相同结果，并能生成决策记录', () => {
-    const asset = getAsset('dwd-order-detail')
-    const field = asset.fields.find((candidate) => candidate.name === 'user_email')
+    const asset = getAsset('dwd-deposit-balance')
+    const field = asset.fields.find((candidate) => candidate.name === 'customer_id')
     if (!field) {
-      throw new Error('governance test needs user_email')
+      throw new Error('governance test needs customer_id')
     }
 
     const recommendation = getGovernanceRecommendation(asset)
@@ -445,7 +458,7 @@ describe('数据治理 Phase 2', () => {
       role: 'analyst',
       purpose: 'business-analysis',
     })
-    const event = getEvent('governance-order-status-semantic-change')
+    const event = getEvent('governance-balance-semantic-change')
     const impact = getGovernanceLineageImpact(assets, lineageNodes, lineageEdges, event)
     const record = createGovernanceDecisionRecord({
       asset,
@@ -466,11 +479,11 @@ describe('数据治理 Phase 2', () => {
     ).toEqual(policyDecision)
     expect(getGovernanceLineageImpact(assets, lineageNodes, lineageEdges, event)).toEqual(impact)
     expect(record).toMatchObject({
-      id: 'governance-decision-dwd-order-detail-user_email-analyst-business-analysis',
-      selectedAssetName: 'DWD 订单明细',
+      id: 'governance-decision-dwd-deposit-balance-customer_id-analyst-business-analysis',
+      selectedAssetName: 'DWD 账户日余额',
       accessDecision: 'masked',
       lifecycle: 'active',
-      owner: '订单数据组',
+      owner: '存款数据组',
       sensitivity: 'sensitive',
       impactEventId: event.id,
     })

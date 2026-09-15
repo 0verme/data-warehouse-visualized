@@ -17,5 +17,9 @@
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
 - `data-lineage.ts`：血缘关系与影响分析
 - `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
-- `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
-- `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟
+- `sql-and-transformation.ts`：存款余额指标定义与加工计划
+- `sql-and-transformation-cleaning.ts`：账户日明细去重、缺失关联与币种标准化
+- `sql-and-transformation-join.ts`：账户介质一对多 Join 与余额放大
+- `sql-and-transformation-layers.ts`：DWD → DWS → ADS 分层聚合
+- `sql-and-transformation-contract.ts`：输入、输出、业务日期与加工契约
+- `scheduling-system.ts`：复用存款余额任务契约的时间轴 DAG Run 模拟

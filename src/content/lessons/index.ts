@@ -13,6 +13,10 @@ import { performanceAndPracticeContent } from './performance-and-practice'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { schedulingSystemContent } from './scheduling-system'
 import { sqlAndTransformationContent } from './sql-and-transformation'
+import { sqlTransformationCleaningContent } from './sql-and-transformation-cleaning'
+import { sqlTransformationContractContent } from './sql-and-transformation-contract'
+import { sqlTransformationJoinContent } from './sql-and-transformation-join'
+import { sqlTransformationLayersContent } from './sql-and-transformation-layers'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { whyDataWarehouseContent } from './why-data-warehouse'
@@ -32,6 +36,10 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   lakehouse: lakehouseContent,
   'scheduling-system': schedulingSystemContent,
   'sql-and-transformation': sqlAndTransformationContent,
+  'sql-transformation-cleaning': sqlTransformationCleaningContent,
+  'sql-transformation-join': sqlTransformationJoinContent,
+  'sql-transformation-layers': sqlTransformationLayersContent,
+  'sql-transformation-contract': sqlTransformationContractContent,
   'performance-and-practice': performanceAndPracticeContent,
 }
 

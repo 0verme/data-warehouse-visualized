@@ -2,33 +2,25 @@ import { useMemo, useState } from 'react'
 import type {
   SqlTransformationVisualization,
   TransformationEvidence,
-  TransformationGrain,
+  TransformationFocus,
   TransformationLayer,
-  TransformationLayerSnapshot,
-  TransformationPrediction,
   TransformationRow,
-  TransformationRowChangeKind,
+  TransformationRowChange,
+  TransformationStepDefinition,
   TransformationStepId,
   TransformationStepResult,
   TransformationTableSnapshot,
-  TransformationWorkbenchState,
 } from '../../features/sql-transformation/types'
-import { CodeRenderer } from '../lesson/CodeRenderer'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
 import { getCodeHighlightKey } from '../../utils/code-highlight'
 import {
   TRANSFORMATION_LAYER_ORDER,
-  TRANSFORMATION_STEPS,
-  canExecuteTransformationStep,
-  createInitialTransformationState,
-  executeTransformationStep,
   getLayerSnapshots,
   getTableMetrics,
+  getTransformationStep,
   getTransformationStepResult,
-  selectTransformationGrain,
-  selectTransformationStep,
-  setTransformationPrediction,
 } from '../../utils/sql-transformation'
+import { CodeRenderer } from '../lesson/CodeRenderer'
 import '../../styles/lessons/sql-workbench.css'
 
 interface SqlTransformationWorkbenchProps {
@@ -36,73 +28,88 @@ interface SqlTransformationWorkbenchProps {
   codeHighlights?: CodeHighlightMap
 }
 
-type SnapshotLayer = TransformationLayer
+type Layer = TransformationLayer
 
-type GrainOption = {
-  value: TransformationGrain
+type PlanField = {
+  key: string
   label: string
-  statement: string
+  source: string
+  value: string
   detail: string
 }
 
-const grainOptions: readonly GrainOption[] = [
-  {
-    value: 'order-item',
-    label: '订单商品',
-    statement: '一行 = 一个订单中的一个商品',
-    detail: '保留最细的交易明细，退款按明细金额分摊。',
-  },
-  {
-    value: 'order',
-    label: '订单',
-    statement: '一行 = 一个订单',
-    detail: '本例销售额推荐粒度，支付和退款都能一对一对齐。',
-  },
-  {
-    value: 'day',
-    label: '支付日',
-    statement: '一行 = 一个支付日',
-    detail: '可以直接回答日报，但会过早丢失订单和商品明细。',
-  },
-]
-
-const layerLabels: Record<SnapshotLayer, string> = {
-  ods: '原始数据',
-  dwd: '标准明细',
+const LAYER_LABELS: Record<Layer, string> = {
+  ods: '原始输入',
+  dwd: '可信明细',
   dws: '主题汇总',
-  ads: '应用指标',
+  ads: '指标结果',
 }
 
-const predictionOptions: readonly {
-  value: TransformationPrediction
-  label: string
-  detail: string
-}[] = [
-  { value: 'increase', label: '增加', detail: '输出行数或金额会变大' },
-  { value: 'decrease', label: '减少', detail: '输出行数或金额会变小' },
-  { value: 'unchanged', label: '不变', detail: '粒度和金额应保持一致' },
+const EVIDENCE_LABELS: Record<TransformationEvidence['kind'], string> = {
+  'duplicate-snapshot': '重复快照',
+  'missing-dimension': '缺失关联',
+  'currency-normalized': '编码标准化',
+  'one-to-many': '一对多 Join',
+  'grain-mismatch': '数据粒度',
+  'target-scope': '指标口径',
+}
+
+const PLAN_FIELDS: readonly PlanField[] = [
+  {
+    key: 'snapshot_date',
+    label: '统计日期',
+    source: 'AccountBalanceSnapshot.snapshot_date',
+    value: '2026-09-30',
+    detail: '确定这次加工读取哪个业务日期分区。',
+  },
+  {
+    key: 'balance',
+    label: '度量',
+    source: 'AccountBalanceSnapshot.balance',
+    value: 'balance',
+    detail: '账户余额快照提供要聚合的数值。',
+  },
+  {
+    key: 'customer_scope',
+    label: '客户口径',
+    source: 'Customer.customer_scope',
+    value: '小微',
+    detail: '客户维度提供指标卡要求的客户范围。',
+  },
+  {
+    key: 'product_type',
+    label: '产品口径',
+    source: 'Product.product_type',
+    value: '定期',
+    detail: '产品维度提供产品分类。',
+  },
+  {
+    key: 'branch_name',
+    label: '机构范围',
+    source: 'Branch.branch_name',
+    value: '杭州分行',
+    detail: '机构维度提供统计范围。',
+  },
+  {
+    key: 'currency',
+    label: '币种',
+    source: 'AccountBalanceSnapshot.currency',
+    value: 'CNY',
+    detail: '进入稳定层前统一同义编码。',
+  },
 ]
 
-const changeLabels: Record<TransformationRowChangeKind, string> = {
-  same: '未变化',
-  added: '新增',
-  removed: '删除',
-  merged: '合并',
-  duplicated: '重复',
-  updated: '更新',
+function getStep(stepId: TransformationStepId): TransformationStepDefinition {
+  const step = getTransformationStep(stepId)
+  if (!step) {
+    throw new Error(`找不到 SQL 加工步骤: ${stepId}`)
+  }
+
+  return step
 }
 
-const evidenceLabels: Record<TransformationEvidence['kind'], string> = {
-  'duplicate-event': '重复事件',
-  'null-preserved': 'NULL 保留',
-  'many-to-many': '多对多 JOIN',
-  'grain-mismatch': '粒度错位',
-  'time-boundary': '时间边界',
-  'late-partition': '迟到分区',
-}
-
-function getGrainOption(grain: TransformationGrain | null): GrainOption | undefined {
-  return grainOptions.find((option) => option.value === grain)
+function getRowKey(row: TransformationRow, columns: readonly string[]): string {
+  return columns.map((column) => `${column}=${String(row[column] ?? 'NULL')}`).join('|')
 }
 
 function formatCell(value: string | number | null) {
@@ -113,24 +120,6 @@ function formatCell(value: string | number | null) {
   return typeof value === 'number' ? value.toLocaleString('zh-CN') : value
 }
 
-function getRowKey(row: TransformationRow, columns: readonly string[]): string {
-  return columns
-    .map((column) => {
-      const value =
-        column === 'paid_date' && !Object.prototype.hasOwnProperty.call(row, 'paid_date')
-          ? row.dt
-          : column === 'dt' && !Object.prototype.hasOwnProperty.call(row, 'dt')
-            ? row.paid_date
-            : row[column]
-      return `${column}=${String(value ?? 'NULL')}`
-    })
-    .join('|')
-}
-
-function getChangeLabel(kind: TransformationRowChangeKind): string {
-  return changeLabels[kind]
-}
-
 function SnapshotTable({
   table,
   changes = [],
@@ -138,7 +127,7 @@ function SnapshotTable({
   caption,
 }: {
   table: TransformationTableSnapshot
-  changes?: TransformationStepResult['changes']
+  changes?: readonly TransformationRowChange[]
   comparisonColumns?: readonly string[]
   caption: string
 }) {
@@ -165,7 +154,7 @@ function SnapshotTable({
           {table.rows.map((row, rowIndex) => {
             const change = changeByKey.get(getRowKey(row, keyColumns))
             const changeKind = change?.kind ?? 'same'
-            const rowLabel = getChangeLabel(changeKind)
+            const changeLabel = changeKind === 'same' ? '·' : changeKind
 
             return (
               <tr
@@ -173,7 +162,7 @@ function SnapshotTable({
                 key={`${rowIndex}-${getRowKey(row, table.rowKey)}`}
               >
                 <th scope="row" className="sql-workbench__change-cell">
-                  <span title={rowLabel}>{changeKind === 'same' ? '·' : rowLabel}</span>
+                  {changeLabel}
                 </th>
                 {table.columns.map((column) => (
                   <td key={column}>{formatCell(row[column] ?? null)}</td>
@@ -187,182 +176,22 @@ function SnapshotTable({
   )
 }
 
-function TablePlaceholder({ tableName }: { tableName: string }) {
-  return (
-    <div className="sql-workbench__table-placeholder" role="status">
-      <span className="sql-workbench__placeholder-mark" aria-hidden="true">
-        ?
-      </span>
-      <strong>执行后查看 {tableName}</strong>
-      <p>预测行数和金额的变化后，按下执行。</p>
-    </div>
-  )
-}
-
-function StepList({
-  state,
-  onSelect,
-}: {
-  state: TransformationWorkbenchState
-  onSelect: (stepId: TransformationStepId) => void
-}) {
-  const nextStepIndex = state.completedStepIds.length
-
-  return (
-    <nav className="sql-workbench__steps" aria-label="SQL 加工步骤">
-      <div className="sql-workbench__steps-heading">
-        <span className="eyebrow eyebrow--small">PROCESS</span>
-        <h3>加工步骤</h3>
-        <p>每一步只改变一件事，先预测再执行。</p>
-      </div>
-      <ol>
-        {TRANSFORMATION_STEPS.map((step, index) => {
-          const isCompleted = state.completedStepIds.includes(step.id)
-          const isActive = state.activeStepId === step.id
-          const isLocked = index > nextStepIndex
-
-          return (
-            <li key={step.id}>
-              <button
-                className={`sql-workbench__step${isActive ? ' is-active' : ''}${isCompleted ? ' is-completed' : ''}`}
-                type="button"
-                disabled={isLocked}
-                aria-current={isActive ? 'step' : undefined}
-                onClick={() => onSelect(step.id)}
-              >
-                <span className="sql-workbench__step-number">{step.number}</span>
-                <span className="sql-workbench__step-copy">
-                  <strong>{step.label}</strong>
-                  <small>{step.title}</small>
-                </span>
-                <span className="sql-workbench__step-status" aria-hidden="true">
-                  {isCompleted ? '✓' : isLocked ? '锁' : '→'}
-                </span>
-              </button>
-            </li>
-          )
-        })}
-      </ol>
-    </nav>
-  )
-}
-
-function GrainGate({
-  selectedGrain,
-  onSelect,
-}: {
-  selectedGrain: TransformationGrain | null
-  onSelect: (grain: TransformationGrain) => void
-}) {
-  return (
-    <section className="sql-workbench__grain-gate" aria-labelledby="sql-grain-gate-title">
-      <div className="sql-workbench__grain-heading">
-        <span className="eyebrow">STEP 00 · GRAIN FIRST</span>
-        <h3 id="sql-grain-gate-title">先选择目标粒度</h3>
-        <p>在执行任何 SQL 之前，先回答：输出表里的一行究竟代表什么？</p>
-      </div>
-      <div className="sql-workbench__grain-options" role="radiogroup" aria-label="目标粒度">
-        {grainOptions.map((option) => {
-          const isSelected = selectedGrain === option.value
-          return (
-            <button
-              className={`sql-workbench__grain-option${isSelected ? ' is-selected' : ''}`}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => onSelect(option.value)}
-              key={option.value}
-            >
-              <span className="sql-workbench__radio" aria-hidden="true">
-                {isSelected ? '●' : '○'}
-              </span>
-              <span>
-                <strong>{option.label}</strong>
-                <small>{option.statement}</small>
-                <em>{option.detail}</em>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-      {!selectedGrain && (
-        <p className="sql-workbench__gate-note" role="status">
-          还没有目标粒度；左侧步骤已锁定。
-        </p>
-      )}
-    </section>
-  )
-}
-
-function PredictionPanel({
-  step,
-  prediction,
-  onSelect,
-  onExecute,
-  canExecute,
-  isExecuted,
-}: {
-  step: TransformationStepResult['step']
-  prediction: TransformationPrediction | undefined
-  onSelect: (prediction: TransformationPrediction) => void
-  onExecute: () => void
-  canExecute: boolean
-  isExecuted: boolean
-}) {
-  return (
-    <section className="sql-workbench__prediction" aria-labelledby="sql-prediction-title">
-      <div>
-        <span className="eyebrow eyebrow--small">PREDICT FIRST</span>
-        <h3 id="sql-prediction-title">执行前，你认为会怎样？</h3>
-        <p>{step.expectedChangeLabel}。选完预测，才会解锁执行。</p>
-      </div>
-      <div className="sql-workbench__prediction-actions">
-        <div className="sql-workbench__prediction-options" role="group" aria-label="预测行数变化">
-          {predictionOptions.map((option) => {
-            const isSelected = prediction === option.value
-            return (
-              <button
-                className={`sql-workbench__prediction-option${isSelected ? ' is-selected' : ''}`}
-                type="button"
-                aria-pressed={isSelected}
-                disabled={isExecuted}
-                onClick={() => onSelect(option.value)}
-                key={option.value}
-              >
-                <strong>{option.label}</strong>
-                <small>{option.detail}</small>
-              </button>
-            )
-          })}
-        </div>
-        <button
-          className="button button--primary sql-workbench__execute"
-          type="button"
-          disabled={!canExecute || isExecuted}
-          onClick={onExecute}
-        >
-          {isExecuted ? '已执行' : `执行 ${step.number}`}
-        </button>
-      </div>
-    </section>
-  )
-}
-
-function StepCode({
-  step,
+function CodePanel({
+  stepId,
   codeHighlights,
 }: {
-  step: TransformationStepResult['step']
+  stepId: TransformationStepId
   codeHighlights?: CodeHighlightMap
 }) {
+  const step = getStep(stepId)
   const highlightedCode = codeHighlights?.[getCodeHighlightKey('sql', step.sql)]
 
   return (
-    <section className="sql-workbench__sql" aria-labelledby="sql-fragment-title">
-      <div className="sql-workbench__sql-heading">
+    <section className="sql-workbench__code-panel" aria-labelledby={`sql-code-${step.id}`}>
+      <div className="sql-workbench__section-heading">
         <div>
-          <span className="eyebrow eyebrow--small">SQL 加工步骤</span>
-          <h3 id="sql-fragment-title">{step.title}</h3>
+          <span className="eyebrow eyebrow--small">SQL 只是表达工具</span>
+          <h3 id={`sql-code-${step.id}`}>{step.title}</h3>
         </div>
         <span>{step.layer}</span>
       </div>
@@ -372,92 +201,63 @@ function StepCode({
         code={step.sql}
         highlightedCode={highlightedCode}
       />
-      <small>对照各阶段 SQL 逻辑与表快照，观察清洗、关联与聚合的变化过程。</small>
     </section>
   )
 }
 
-function MetricsBar({ result }: { result: TransformationStepResult }) {
-  const cards = [
-    ['输入行数', result.inputMetrics.rowCount, '输出', result.outputMetrics.rowCount],
-    [
-      '输入金额',
-      result.inputMetrics.amount,
-      '输出',
-      result.outputMetrics.amount,
-      result.outputMetrics.amountColumn,
-    ],
-    ['目标日期金额', result.inputMetrics.targetAmount, '输出', result.outputMetrics.targetAmount],
-  ] as const
+function MetricsStrip({ result }: { result: TransformationStepResult }) {
+  const metrics = [
+    {
+      label: '行数',
+      before: result.inputMetrics.rowCount,
+      after: result.outputMetrics.rowCount,
+      suffix: '行',
+    },
+    {
+      label: '总余额',
+      before: result.inputMetrics.amount,
+      after: result.outputMetrics.amount,
+      suffix: '元',
+    },
+    {
+      label: '目标日期余额',
+      before: result.inputMetrics.targetAmount,
+      after: result.outputMetrics.targetAmount,
+      suffix: '元',
+    },
+  ]
 
   return (
     <div className="sql-workbench__metrics" aria-live="polite">
-      {cards.map(([label, inputValue, outputLabel, outputValue, note]) => (
-        <div className="sql-workbench__metric" key={label}>
-          <span>{label}</span>
+      {metrics.map((metric) => (
+        <div className="sql-workbench__metric" key={metric.label}>
+          <span>{metric.label}</span>
           <div>
-            <strong>{inputValue.toLocaleString('zh-CN')}</strong>
+            <strong>{metric.before.toLocaleString('zh-CN')}</strong>
             <b aria-hidden="true">→</b>
-            <strong>{outputValue.toLocaleString('zh-CN')}</strong>
+            <strong>{metric.after.toLocaleString('zh-CN')}</strong>
           </div>
-          <small>
-            {outputLabel} {note ? `· ${note}` : ''}
-          </small>
+          <small>{metric.suffix} · 输入 → 输出</small>
         </div>
       ))}
     </div>
   )
 }
 
-function ChangeLegend({ changes }: { changes: TransformationStepResult['changes'] }) {
-  const counts = changes.reduce<Partial<Record<TransformationRowChangeKind, number>>>(
-    (result, change) => {
-      result[change.kind] = (result[change.kind] ?? 0) + 1
-      return result
-    },
-    {},
-  )
-  const visibleChanges = Object.entries(counts).filter(([kind]) => kind !== 'same') as Array<
-    [TransformationRowChangeKind, number]
-  >
-
-  if (visibleChanges.length === 0) {
-    return (
-      <p className="sql-workbench__change-note">
-        没有检测到行级变化；这一步主要改变字段或验证边界。
-      </p>
-    )
-  }
-
+function EvidenceList({ evidence }: { evidence: readonly TransformationEvidence[] }) {
   return (
-    <div className="sql-workbench__change-legend" aria-label="表快照差异图例">
-      <span>差异证据</span>
-      {visibleChanges.map(([kind, count]) => (
-        <span className={`is-${kind}`} key={kind}>
-          <i aria-hidden="true" />
-          {getChangeLabel(kind)} {count}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-function EvidencePanel({ evidence }: { evidence: readonly TransformationEvidence[] }) {
-  return (
-    <section
-      className="sql-workbench__evidence"
-      aria-labelledby="sql-evidence-title"
-      aria-live="polite"
-    >
-      <div className="sql-workbench__evidence-heading">
-        <span className="eyebrow eyebrow--small">PROOF</span>
-        <h3 id="sql-evidence-title">证据，不只是答案</h3>
+    <section className="sql-workbench__evidence" aria-labelledby="sql-evidence-title">
+      <div className="sql-workbench__section-heading">
+        <div>
+          <span className="eyebrow eyebrow--small">PROOF · 证据</span>
+          <h3 id="sql-evidence-title">每个变化都能指出原因</h3>
+        </div>
       </div>
       <div className="sql-workbench__evidence-list">
         {evidence.map((item) => (
           <article className="sql-workbench__evidence-item" key={`${item.kind}-${item.title}`}>
             <div>
-              <span>{evidenceLabels[item.kind]}</span>
+              <span>{EVIDENCE_LABELS[item.kind]}</span>
               <strong>{item.title}</strong>
             </div>
             <p>{item.detail}</p>
@@ -473,154 +273,370 @@ function EvidencePanel({ evidence }: { evidence: readonly TransformationEvidence
   )
 }
 
-function TableComparison({
+function TablePair({
   result,
-  executed,
+  outputOverride,
+  outputCaption,
 }: {
   result: TransformationStepResult
-  executed: boolean
+  outputOverride?: TransformationTableSnapshot
+  outputCaption?: string
 }) {
-  return (
-    <section className="sql-workbench__comparison" aria-labelledby="sql-comparison-title">
-      <div className="sql-workbench__comparison-heading">
-        <div>
-          <span className="eyebrow eyebrow--small">SNAPSHOT DIFF</span>
-          <h3 id="sql-comparison-title">输入表 → 输出表</h3>
-        </div>
-        <p>
-          输入：<code>{result.input.name}</code> · 输出：<code>{result.output.name}</code>
-        </p>
-      </div>
-      <div className="sql-workbench__tables">
-        <article className="sql-workbench__table-panel">
-          <div className="sql-workbench__table-panel-heading">
-            <span>输入表</span>
-            <strong>{result.input.grain}</strong>
-          </div>
-          <SnapshotTable
-            table={result.input}
-            changes={executed ? result.changes : []}
-            comparisonColumns={result.comparisonColumns}
-            caption={`${result.input.name} 输入快照`}
-          />
-        </article>
-        <div className="sql-workbench__table-arrow" aria-hidden="true">
-          →
-        </div>
-        <article className="sql-workbench__table-panel">
-          <div className="sql-workbench__table-panel-heading">
-            <span>输出表</span>
-            <strong>{result.output.grain}</strong>
-          </div>
-          {executed ? (
-            <SnapshotTable
-              table={result.output}
-              changes={executed ? result.changes : []}
-              comparisonColumns={result.comparisonColumns}
-              caption={`${result.output.name} 输出快照`}
-            />
-          ) : (
-            <TablePlaceholder tableName={result.output.name} />
-          )}
-        </article>
-      </div>
-      {executed && <ChangeLegend changes={result.changes} />}
-    </section>
-  )
-}
-
-function ResultFeedback({
-  result,
-  prediction,
-}: {
-  result: TransformationStepResult
-  prediction: TransformationPrediction | undefined
-}) {
-  const isCorrect = prediction === result.actualChange
-  const predictionText = prediction
-    ? predictionOptions.find((option) => option.value === prediction)?.label
-    : '未选择'
-  const actualText = predictionOptions.find((option) => option.value === result.actualChange)?.label
+  const output = outputOverride ?? result.output
 
   return (
-    <div
-      className={`sql-workbench__feedback${isCorrect ? ' is-correct' : ' is-mismatch'}`}
-      role="status"
-    >
-      <strong>{isCorrect ? '预测命中' : '预测与快照不一致'}</strong>
-      <span>
-        你的预测：{predictionText} · 实际行数变化：{actualText}
-      </span>
+    <div className="sql-workbench__table-pair">
+      <article className="sql-workbench__table-card">
+        <div className="sql-workbench__table-card-heading">
+          <span>加工前</span>
+          <strong>{result.input.name}</strong>
+          <small>{result.input.grain}</small>
+        </div>
+        <SnapshotTable
+          table={result.input}
+          changes={result.changes}
+          comparisonColumns={result.comparisonColumns}
+          caption={`${result.input.name} 加工前快照`}
+        />
+      </article>
+      <div className="sql-workbench__table-arrow" aria-hidden="true">
+        →
+      </div>
+      <article className="sql-workbench__table-card">
+        <div className="sql-workbench__table-card-heading">
+          <span>加工后</span>
+          <strong>{output.name}</strong>
+          <small>{output.grain}</small>
+        </div>
+        <SnapshotTable
+          table={output}
+          changes={result.changes}
+          comparisonColumns={result.comparisonColumns}
+          caption={outputCaption ?? `${output.name} 加工后快照`}
+        />
+      </article>
     </div>
   )
 }
 
-function SnapshotExplorer({
-  snapshots,
-  targetDate,
-  selectedLayer,
-  selectedTableId,
-  onSelectLayer,
-  onSelectTable,
+function PlanView({
+  visualization,
+  codeHighlights,
 }: {
-  snapshots: readonly TransformationLayerSnapshot[]
-  targetDate: string
-  selectedLayer: SnapshotLayer
-  selectedTableId: string
-  onSelectLayer: (layer: SnapshotLayer) => void
-  onSelectTable: (tableId: string) => void
+  visualization: SqlTransformationVisualization
+  codeHighlights?: CodeHighlightMap
 }) {
-  const activeSnapshot =
-    snapshots.find((snapshot) => snapshot.layer === selectedLayer) ?? snapshots[0]
-  const activeTable =
-    activeSnapshot?.tables.find((table) => table.id === selectedTableId) ??
-    activeSnapshot?.tables[0]
-  const activeIndex = TRANSFORMATION_LAYER_ORDER.indexOf(selectedLayer)
-  const previousSnapshot = activeIndex > 0 ? snapshots[activeIndex - 1] : undefined
-  const previousTable = previousSnapshot?.tables[0]
-  const activeMetrics = activeTable ? getTableMetrics(activeTable, targetDate) : undefined
+  const result = useMemo(
+    () => getTransformationStepResult(visualization.dataset, 'plan'),
+    [visualization.dataset],
+  )
+  const [selectedField, setSelectedField] = useState('branch_name')
+  const selected = PLAN_FIELDS.find((field) => field.key === selectedField) ?? PLAN_FIELDS[0]!
 
-  if (!activeSnapshot || !activeTable) {
-    return null
+  return (
+    <div className="sql-workbench__focus sql-workbench__focus--plan">
+      <div className="sql-workbench__focus-intro">
+        <div>
+          <span className="eyebrow">01 · 指标定义 → 加工计划</span>
+          <h3>先确认每个条件从哪张表来</h3>
+        </div>
+        <p>目标业务日期：{visualization.targetDate}</p>
+      </div>
+      <div className="sql-workbench__plan-layout">
+        <div className="sql-workbench__plan-fields" role="list" aria-label="指标卡字段映射">
+          {PLAN_FIELDS.map((field) => (
+            <button
+              className={`sql-workbench__plan-field${field.key === selected.key ? ' is-selected' : ''}`}
+              type="button"
+              role="listitem"
+              onClick={() => setSelectedField(field.key)}
+              key={field.key}
+            >
+              <span>{field.label}</span>
+              <strong>{field.value}</strong>
+              <small>{field.source}</small>
+            </button>
+          ))}
+        </div>
+        <aside className="sql-workbench__plan-detail" aria-live="polite">
+          <span className="eyebrow eyebrow--small">当前映射</span>
+          <strong>{selected.label}</strong>
+          <code>{selected.source}</code>
+          <p>{selected.detail}</p>
+          <div className="sql-workbench__plan-grain">
+            <span>目标数据粒度</span>
+            <b>snapshot_date × 机构 × 客户口径 × 产品 × 币种</b>
+          </div>
+        </aside>
+      </div>
+      <TablePair result={result} />
+      <CodePanel stepId="plan" codeHighlights={codeHighlights} />
+      <EvidenceList evidence={result.evidence} />
+    </div>
+  )
+}
+
+function CleaningView({
+  visualization,
+  codeHighlights,
+}: {
+  visualization: SqlTransformationVisualization
+  codeHighlights?: CodeHighlightMap
+}) {
+  const result = useMemo(
+    () => getTransformationStepResult(visualization.dataset, 'clean-detail'),
+    [visualization.dataset],
+  )
+  const [selectedEvidence, setSelectedEvidence] = useState(0)
+  const selected = result.evidence[selectedEvidence] ?? result.evidence[0]
+
+  return (
+    <div className="sql-workbench__focus sql-workbench__focus--cleaning">
+      <div className="sql-workbench__focus-intro">
+        <div>
+          <span className="eyebrow">02 · ODS → DWD</span>
+          <h3>处理异常，但不把异常藏起来</h3>
+        </div>
+        <p>目标：一行 = 一个账户 × 一个快照日</p>
+      </div>
+      <MetricsStrip result={result} />
+      <div className="sql-workbench__cleaning-layout">
+        <div className="sql-workbench__cleaning-table">
+          <TablePair result={result} />
+        </div>
+        <aside className="sql-workbench__signal-panel" aria-labelledby="sql-cleaning-signals-title">
+          <span className="eyebrow eyebrow--small">三类处理</span>
+          <h4 id="sql-cleaning-signals-title">点击一条证据</h4>
+          <div className="sql-workbench__signal-list">
+            {result.evidence.map((item, index) => (
+              <button
+                className={`sql-workbench__signal${selected === item ? ' is-selected' : ''}`}
+                type="button"
+                onClick={() => setSelectedEvidence(index)}
+                key={item.kind}
+              >
+                <span>{EVIDENCE_LABELS[item.kind]}</span>
+                <strong>{item.title}</strong>
+              </button>
+            ))}
+          </div>
+          {selected && (
+            <div className="sql-workbench__signal-detail" aria-live="polite">
+              <p>{selected.detail}</p>
+              <div>
+                {selected.keys.map((key) => (
+                  <code key={key}>{key}</code>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
+      </div>
+      <CodePanel stepId="clean-detail" codeHighlights={codeHighlights} />
+    </div>
+  )
+}
+
+function JoinView({
+  visualization,
+  codeHighlights,
+}: {
+  visualization: SqlTransformationVisualization
+  codeHighlights?: CodeHighlightMap
+}) {
+  const result = useMemo(
+    () => getTransformationStepResult(visualization.dataset, 'join-fanout'),
+    [visualization.dataset],
+  )
+  const [mode, setMode] = useState<'wrong' | 'safe'>('wrong')
+  const analysis = result.joinAnalysis!
+  const ods = getLayerSnapshots(visualization.dataset)[0]!
+  const mediumTable = ods.tables.find((table) => table.id === 'ods-account-media')!
+  const safeOutput = result.input
+
+  return (
+    <div className="sql-workbench__focus sql-workbench__focus--join">
+      <div className="sql-workbench__focus-intro">
+        <div>
+          <span className="eyebrow">03 · Join 对照</span>
+          <h3>先数匹配行，再决定要不要 Join</h3>
+        </div>
+        <p>Join key：{analysis.joinKey}</p>
+      </div>
+      <div className="sql-workbench__join-facts" aria-label="Join 前后行数与金额">
+        <div>
+          <span>左表</span>
+          <strong>{analysis.leftRows} 行</strong>
+          <small>账户 × 快照日</small>
+        </div>
+        <div>
+          <span>右表</span>
+          <strong>{analysis.rightRows} 行</strong>
+          <small>账户 × 账户介质</small>
+        </div>
+        <div className="is-danger">
+          <span>直接 Join 后</span>
+          <strong>{analysis.outputRows} 行</strong>
+          <small>目标余额 {analysis.wrongTargetAmount.toLocaleString('zh-CN')}</small>
+        </div>
+        <div className="is-safe">
+          <span>保持账户日粒度</span>
+          <strong>{analysis.correctOutputRows} 行</strong>
+          <small>目标余额 {analysis.correctTargetAmount.toLocaleString('zh-CN')}</small>
+        </div>
+      </div>
+      <div className="sql-workbench__join-mode" role="group" aria-label="选择 Join 对照">
+        <button
+          className={mode === 'wrong' ? 'is-selected' : ''}
+          type="button"
+          onClick={() => setMode('wrong')}
+        >
+          查看错误 Join
+        </button>
+        <button
+          className={mode === 'safe' ? 'is-selected' : ''}
+          type="button"
+          onClick={() => setMode('safe')}
+        >
+          保持账户日粒度
+        </button>
+      </div>
+      <div className="sql-workbench__join-match-grid">
+        <article className="sql-workbench__join-match-card">
+          <div className="sql-workbench__section-heading">
+            <div>
+              <span className="eyebrow eyebrow--small">KEY CARDINALITY</span>
+              <h4>每个账户最多匹配几行？</h4>
+            </div>
+          </div>
+          <table className="sql-workbench__match-table">
+            <thead>
+              <tr>
+                <th scope="col">account_id</th>
+                <th scope="col">左表</th>
+                <th scope="col">右表</th>
+                <th scope="col">Join 后</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysis.matches.map((match) => (
+                <tr className={match.rightCount > 1 ? 'is-danger' : undefined} key={match.key}>
+                  <th scope="row">{match.key}</th>
+                  <td>{match.leftCount}</td>
+                  <td>{match.rightCount || '—'}</td>
+                  <td>{match.outputCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </article>
+        <article className="sql-workbench__join-reason">
+          <span className="eyebrow eyebrow--small">一行代表什么？</span>
+          <strong>{mode === 'wrong' ? '错误结果改变了数据粒度' : '当前指标不需要这张表'}</strong>
+          <p>
+            {mode === 'wrong'
+              ? 'A001 的 100000 被复制到三个账户介质行，SQL 没报错，但按行求和已经失去账户日余额的含义。'
+              : '如果业务只需要存款余额，就直接使用 DWD。若要判断是否有介质，应先把 AccountMedium 聚合到账户级，或使用 EXISTS。'}
+          </p>
+        </article>
+      </div>
+      <div className="sql-workbench__join-tables">
+        <article className="sql-workbench__table-card">
+          <div className="sql-workbench__table-card-heading">
+            <span>左表</span>
+            <strong>{result.input.name}</strong>
+            <small>{result.input.grain}</small>
+          </div>
+          <SnapshotTable table={result.input} caption="DWD 存款余额明细" />
+        </article>
+        <article className="sql-workbench__table-card">
+          <div className="sql-workbench__table-card-heading">
+            <span>右表</span>
+            <strong>{mediumTable.name}</strong>
+            <small>{mediumTable.grain}</small>
+          </div>
+          <SnapshotTable table={mediumTable} caption="账户介质辅助表" />
+        </article>
+      </div>
+      <article className="sql-workbench__join-output">
+        <div className="sql-workbench__table-card-heading">
+          <span>{mode === 'wrong' ? '错误 Join 输出' : '不 Join 的结果'}</span>
+          <strong>{mode === 'wrong' ? result.output.name : safeOutput.name}</strong>
+          <small>{mode === 'wrong' ? result.output.grain : safeOutput.grain}</small>
+        </div>
+        <SnapshotTable
+          table={mode === 'wrong' ? result.output : safeOutput}
+          changes={mode === 'wrong' ? result.changes : []}
+          comparisonColumns={mode === 'wrong' ? result.comparisonColumns : undefined}
+          caption="Join 结果快照"
+        />
+      </article>
+      <CodePanel stepId="join-fanout" codeHighlights={codeHighlights} />
+      <EvidenceList evidence={result.evidence} />
+    </div>
+  )
+}
+
+function LayerView({
+  visualization,
+  codeHighlights,
+}: {
+  visualization: SqlTransformationVisualization
+  codeHighlights?: CodeHighlightMap
+}) {
+  const snapshots = useMemo(() => getLayerSnapshots(visualization.dataset), [visualization.dataset])
+  const [selectedLayer, setSelectedLayer] = useState<Layer>('dwd')
+  const [selectedTableId, setSelectedTableId] = useState('dwd-deposit-balance-detail')
+  const activeSnapshot =
+    snapshots.find((snapshot) => snapshot.layer === selectedLayer) ?? snapshots[0]!
+  const activeTable =
+    activeSnapshot.tables.find((table) => table.id === selectedTableId) ?? activeSnapshot.tables[0]!
+  const activeMetrics = getTableMetrics(activeTable, visualization.targetDate)
+  const result = useMemo(
+    () => getTransformationStepResult(visualization.dataset, 'aggregate-layers'),
+    [visualization.dataset],
+  )
+
+  function selectLayer(layer: Layer) {
+    const nextSnapshot = snapshots.find((snapshot) => snapshot.layer === layer)
+    setSelectedLayer(layer)
+    setSelectedTableId(nextSnapshot?.tables[0]?.id ?? '')
   }
 
   return (
-    <section className="sql-workbench__snapshots" aria-labelledby="sql-snapshots-title">
-      <div className="sql-workbench__snapshot-heading">
+    <div className="sql-workbench__focus sql-workbench__focus--layers">
+      <div className="sql-workbench__focus-intro">
         <div>
-          <span className="eyebrow">LAYER SNAPSHOTS</span>
-          <h3 id="sql-snapshots-title">切换 ODS → DWD → DWS → ADS</h3>
+          <span className="eyebrow">04 · 分层快照</span>
+          <h3>切换一层，重新读一行</h3>
         </div>
-        <p>同一个销售问题，在不同层看到的行数、粒度和金额并不相同。</p>
+        <p>业务日期：{visualization.targetDate}</p>
       </div>
-      <div className="sql-workbench__layer-tabs" role="tablist" aria-label="数仓分层快照">
-        {snapshots.map((snapshot) => {
-          const isSelected = snapshot.layer === selectedLayer
+      <div className="sql-workbench__layer-flow" aria-label="存款余额加工链">
+        {TRANSFORMATION_LAYER_ORDER.map((layer, index) => {
+          const snapshot = snapshots.find((candidate) => candidate.layer === layer)!
+          const table = snapshot.tables[0]!
           return (
-            <button
-              className={`sql-workbench__layer-tab${isSelected ? ' is-selected' : ''}`}
-              type="button"
-              role="tab"
-              aria-selected={isSelected}
-              aria-controls={`sql-layer-panel-${snapshot.layer}`}
-              onClick={() => onSelectLayer(snapshot.layer)}
-              key={snapshot.layer}
-            >
-              <strong>{snapshot.label}</strong>
-              <span>{layerLabels[snapshot.layer]}</span>
-            </button>
+            <div className="sql-workbench__layer-flow-item" key={layer}>
+              <button
+                className={selectedLayer === layer ? 'is-selected' : ''}
+                type="button"
+                onClick={() => selectLayer(layer)}
+              >
+                <span>{snapshot.label}</span>
+                <strong>{table.rows.length} 行</strong>
+                <small>{LAYER_LABELS[layer]}</small>
+              </button>
+              {index < TRANSFORMATION_LAYER_ORDER.length - 1 && <b aria-hidden="true">→</b>}
+            </div>
           )
         })}
       </div>
-      <div
-        className="sql-workbench__snapshot-panel"
-        id={`sql-layer-panel-${activeSnapshot.layer}`}
-        role="tabpanel"
-      >
-        <div className="sql-workbench__snapshot-panel-heading">
+      <section className="sql-workbench__layer-panel" aria-labelledby="sql-layer-panel-title">
+        <div className="sql-workbench__section-heading">
           <div>
             <span className="eyebrow eyebrow--small">{activeSnapshot.label}</span>
-            <h4>{activeSnapshot.title}</h4>
+            <h4 id="sql-layer-panel-title">{activeSnapshot.title}</h4>
           </div>
           <p>{activeSnapshot.description}</p>
         </div>
@@ -632,11 +648,11 @@ function SnapshotExplorer({
           >
             {activeSnapshot.tables.map((table) => (
               <button
-                className={`sql-workbench__table-tab${table.id === activeTable.id ? ' is-selected' : ''}`}
+                className={activeTable.id === table.id ? 'is-selected' : ''}
                 type="button"
                 role="tab"
-                aria-selected={table.id === activeTable.id}
-                onClick={() => onSelectTable(table.id)}
+                aria-selected={activeTable.id === table.id}
+                onClick={() => setSelectedTableId(table.id)}
                 key={table.id}
               >
                 {table.name}
@@ -644,96 +660,131 @@ function SnapshotExplorer({
             ))}
           </div>
         )}
-        <div className="sql-workbench__snapshot-meta" aria-live="polite">
+        <div className="sql-workbench__layer-meta">
           <div>
-            <span>当前粒度</span>
+            <span>当前一行</span>
             <strong>{activeTable.grain}</strong>
           </div>
           <div>
             <span>行数</span>
-            <strong>{activeTable.rows.length}</strong>
+            <strong>{activeMetrics.rowCount}</strong>
           </div>
           <div>
-            <span>金额字段</span>
-            <strong>{activeTable.amountColumn ?? '—'}</strong>
-          </div>
-          <div>
-            <span>表金额</span>
-            <strong>{activeMetrics?.amount.toLocaleString('zh-CN') ?? '0'}</strong>
+            <span>金额合计</span>
+            <strong>{activeMetrics.amount.toLocaleString('zh-CN')}</strong>
           </div>
         </div>
         <SnapshotTable table={activeTable} caption={`${activeTable.name} 分层快照`} />
-        {previousTable && (
-          <p className="sql-workbench__snapshot-diff-note">
-            <span>上一层对照：</span>
-            {previousTable.rows.length} 行 → {activeTable.rows.length}{' '}
-            行；执行步骤后的差异表会用颜色标记新增、删除、合并、重复或更新。
-          </p>
-        )}
+      </section>
+      <div className="sql-workbench__layer-observation">
+        <div>
+          <span className="eyebrow eyebrow--small">变化解释</span>
+          <strong>DWD 4 行 → DWS 3 行 → ADS 1 行</strong>
+        </div>
+        <p>
+          A001 与 A002 在 DWS 合并为杭州分行、小微、定期、CNY 这一组，目标余额是{' '}
+          {result.output.rows
+            .find((row) => row.customer_scope === '小微')
+            ?.balance?.toLocaleString('zh-CN') ?? '0'}{' '}
+          元；ADS 再筛出指标卡对应的一行。
+        </p>
       </div>
-    </section>
+      <CodePanel stepId="aggregate-layers" codeHighlights={codeHighlights} />
+      <EvidenceList evidence={result.evidence} />
+    </div>
   )
 }
 
-function TaskContract({ visualization }: { visualization: SqlTransformationVisualization }) {
+function ContractView({
+  visualization,
+  codeHighlights,
+}: {
+  visualization: SqlTransformationVisualization
+  codeHighlights?: CodeHighlightMap
+}) {
+  const result = useMemo(
+    () => getTransformationStepResult(visualization.dataset, 'contract'),
+    [visualization.dataset],
+  )
   const { taskContract } = visualization
 
   return (
-    <section className="sql-workbench__contract" aria-labelledby="sql-contract-title">
-      <div className="sql-workbench__contract-heading">
+    <div className="sql-workbench__focus sql-workbench__focus--contract">
+      <div className="sql-workbench__focus-intro">
         <div>
-          <span className="eyebrow">任务设计要素</span>
-          <h3 id="sql-contract-title">数据任务的六个关键要素</h3>
+          <span className="eyebrow">05 · 加工契约（Task Contract）</span>
+          <h3>把数据语义交给下一环节</h3>
         </div>
-        <p>每次加工都要写清输入、输出、业务分区、上游依赖、重跑方式和迟到数据处理。</p>
+        <p>先写边界，再交给运行系统安排</p>
       </div>
-
-      <div className="sql-workbench__contract-grid">
-        <div className="sql-workbench__contract-item">
-          <span>任务名称</span>
+      <section className="sql-workbench__contract-card" aria-labelledby="sql-contract-title">
+        <div className="sql-workbench__section-heading">
+          <div>
+            <span className="eyebrow eyebrow--small">DELIVERY BOUNDARY</span>
+            <h4 id="sql-contract-title">存款余额加工契约</h4>
+          </div>
           <code>{taskContract.taskId}</code>
         </div>
-        <div className="sql-workbench__contract-item">
-          <span>输入表</span>
+        <dl className="sql-workbench__contract-grid">
           <div>
-            {taskContract.inputTables.map((table) => (
-              <code key={table}>{table}</code>
-            ))}
+            <dt>输入</dt>
+            <dd>
+              {taskContract.inputTables.map((table) => (
+                <code key={table}>{table}</code>
+              ))}
+            </dd>
           </div>
-        </div>
-        <div className="sql-workbench__contract-item">
-          <span>输出表</span>
-          <code>{taskContract.outputTable}</code>
-        </div>
-        <div className="sql-workbench__contract-item">
-          <span>业务分区</span>
-          <strong>
-            {taskContract.partition.column} = {taskContract.partition.value}
-          </strong>
-        </div>
-        <div className="sql-workbench__contract-item">
-          <span>上游依赖</span>
           <div>
-            {taskContract.dependencies.map((dependency) => (
-              <span key={dependency}>{dependency}</span>
-            ))}
+            <dt>输出</dt>
+            <dd>
+              <code>{taskContract.outputTable}</code>
+            </dd>
           </div>
-        </div>
-        <div className="sql-workbench__contract-item">
-          <span>重跑方式</span>
           <div>
-            <span>幂等覆盖：</span>
-            <strong>{taskContract.isIdempotent ? '是' : '否'}</strong>
-            <span> · 部分重跑：</span>
-            <strong>{taskContract.supportsPartialRerun ? '支持' : '不支持'}</strong>
+            <dt>数据粒度</dt>
+            <dd>
+              <strong>{taskContract.outputGrain}</strong>
+            </dd>
           </div>
-        </div>
+          <div>
+            <dt>业务日期</dt>
+            <dd>
+              <strong>{taskContract.businessDate}</strong>
+            </dd>
+          </div>
+          <div>
+            <dt>目标分区</dt>
+            <dd>
+              <code>
+                {taskContract.partition.column} = {taskContract.partition.value}
+              </code>
+            </dd>
+          </div>
+          <div>
+            <dt>上游依赖</dt>
+            <dd>
+              {taskContract.dependencies.map((dependency) => (
+                <code key={dependency}>{dependency}</code>
+              ))}
+            </dd>
+          </div>
+          <div className="sql-workbench__contract-grid-wide">
+            <dt>重复执行预期</dt>
+            <dd>
+              <strong>{taskContract.repeatExecution}</strong>
+            </dd>
+          </div>
+        </dl>
+      </section>
+      <TablePair result={result} />
+      <div className="sql-workbench__handoff-note">
+        <strong>留给运行系统的问题：</strong>
+        如果属于 {taskContract.businessDate}{' '}
+        的输入晚到，什么时候触发这条加工、需要重新处理哪个分区，由调度系统根据依赖和运行记录决定。
       </div>
-
-      <div className="sql-workbench__contract-callout">
-        <strong>迟到数据提示：</strong> {taskContract.rerunHint}
-      </div>
-    </section>
+      <CodePanel stepId="contract" codeHighlights={codeHighlights} />
+      <EvidenceList evidence={result.evidence} />
+    </div>
   )
 }
 
@@ -741,134 +792,33 @@ export function SqlTransformationWorkbench({
   visualization,
   codeHighlights,
 }: SqlTransformationWorkbenchProps) {
-  const [state, setState] = useState<TransformationWorkbenchState>(createInitialTransformationState)
-  const [selectedLayer, setSelectedLayer] = useState<SnapshotLayer>('ods')
-  const [selectedTableId, setSelectedTableId] = useState('ods-orders')
-
-  const targetGrain = state.targetGrain ?? 'order'
-  const includeLateData = state.completedStepIds.includes('late-data')
-  const snapshots = useMemo(
-    () => getLayerSnapshots(visualization.dataset, targetGrain, includeLateData),
-    [includeLateData, targetGrain, visualization.dataset],
-  )
-  const activeStep =
-    TRANSFORMATION_STEPS.find((step) => step.id === state.activeStepId) ?? TRANSFORMATION_STEPS[0]!
-  const activeResult = useMemo(
-    () => getTransformationStepResult(visualization.dataset, targetGrain, activeStep.id),
-    [activeStep.id, targetGrain, visualization.dataset],
-  )
-  const isActiveStepExecuted = state.completedStepIds.includes(activeStep.id)
-  const canExecute = Boolean(state.targetGrain && canExecuteTransformationStep(state))
-  const selectedGrainOption = getGrainOption(state.targetGrain)
-  const completedCount = state.completedStepIds.length
-
-  function handleSelectGrain(grain: TransformationGrain) {
-    setState((current) => selectTransformationGrain(current, grain))
-    setSelectedLayer('ods')
-    setSelectedTableId('ods-orders')
-  }
-
-  function handleSelectStep(stepId: TransformationStepId) {
-    setState((current) => selectTransformationStep(current, stepId))
-  }
-
-  function handlePrediction(prediction: TransformationPrediction) {
-    setState((current) => setTransformationPrediction(current, prediction))
-  }
-
-  function handleExecute() {
-    setState((current) => executeTransformationStep(current))
-  }
-
-  function resetExperiment() {
-    setState(createInitialTransformationState())
-    setSelectedLayer('ods')
-    setSelectedTableId('ods-orders')
-  }
+  const focus: TransformationFocus = visualization.focus ?? 'layers'
 
   return (
-    <div className="sql-transformation-workbench">
+    <div className={`sql-transformation-workbench sql-transformation-workbench--${focus}`}>
       <div className="sql-workbench__toolbar">
         <div>
-          <span className="sql-workbench__toolbar-label">SQL 数据加工工作台</span>
-          <p aria-live="polite">
-            {state.targetGrain
-              ? `目标粒度：${selectedGrainOption?.statement ?? '—'} · 已完成 ${completedCount}/${TRANSFORMATION_STEPS.length} 步`
-              : '目标粒度未选择 · 核心实验尚未解锁'}
-          </p>
+          <span className="sql-workbench__toolbar-label">
+            SQL 与数据加工 · Banking Teaching Domain
+          </span>
+          <p>业务日期 {visualization.targetDate} · 账户余额快照 → 存款余额指标</p>
         </div>
-        <button
-          className="button button--quiet button--small"
-          type="button"
-          onClick={resetExperiment}
-        >
-          重置实验
-        </button>
       </div>
-
-      <GrainGate selectedGrain={state.targetGrain} onSelect={handleSelectGrain} />
-
-      <div className="sql-workbench__workspace">
-        <StepList state={state} onSelect={handleSelectStep} />
-        <section className="sql-workbench__main" aria-labelledby="sql-active-step-title">
-          <div className="sql-workbench__active-heading">
-            <div>
-              <span className="eyebrow">
-                STEP {activeStep.number} · {activeStep.layer}
-              </span>
-              <h3 id="sql-active-step-title">{activeStep.title}</h3>
-            </div>
-            <span className="sql-workbench__active-grain">
-              {selectedGrainOption?.label ?? '等待选择粒度'}
-            </span>
-          </div>
-
-          {state.targetGrain ? (
-            <>
-              <StepCode step={activeResult.step} codeHighlights={codeHighlights} />
-              <PredictionPanel
-                step={activeResult.step}
-                prediction={state.predictions[activeStep.id]}
-                onSelect={handlePrediction}
-                onExecute={handleExecute}
-                canExecute={canExecute}
-                isExecuted={isActiveStepExecuted}
-              />
-              <TableComparison result={activeResult} executed={isActiveStepExecuted} />
-              {isActiveStepExecuted && (
-                <>
-                  <MetricsBar result={activeResult} />
-                  <ResultFeedback
-                    result={activeResult}
-                    prediction={state.predictions[activeStep.id]}
-                  />
-                  <EvidencePanel evidence={activeResult.evidence} />
-                </>
-              )}
-            </>
-          ) : (
-            <div className="sql-workbench__locked" role="status">
-              <span aria-hidden="true">01</span>
-              <strong>目标粒度是实验的入口</strong>
-              <p>先在上方选择订单商品、订单或支付日，才能看到可执行的 SQL 和输出快照。</p>
-            </div>
-          )}
-        </section>
-      </div>
-
-      <SnapshotExplorer
-        snapshots={snapshots}
-        targetDate={visualization.targetDate}
-        selectedLayer={selectedLayer}
-        selectedTableId={selectedTableId}
-        onSelectLayer={(layer) => {
-          setSelectedLayer(layer)
-          const nextSnapshot = snapshots.find((snapshot) => snapshot.layer === layer)
-          setSelectedTableId(nextSnapshot?.tables[0]?.id ?? '')
-        }}
-        onSelectTable={setSelectedTableId}
-      />
-      <TaskContract visualization={visualization} />
+      {focus === 'plan' && (
+        <PlanView visualization={visualization} codeHighlights={codeHighlights} />
+      )}
+      {focus === 'cleaning' && (
+        <CleaningView visualization={visualization} codeHighlights={codeHighlights} />
+      )}
+      {focus === 'join' && (
+        <JoinView visualization={visualization} codeHighlights={codeHighlights} />
+      )}
+      {focus === 'layers' && (
+        <LayerView visualization={visualization} codeHighlights={codeHighlights} />
+      )}
+      {focus === 'contract' && (
+        <ContractView visualization={visualization} codeHighlights={codeHighlights} />
+      )}
     </div>
   )
 }

@@ -42,11 +42,11 @@ describe('数据质量领域契约与质量闸门', () => {
   })
 
   it.each([
-    ['missing-order-item', QUALITY_RULE_IDS.completeness],
-    ['duplicate-order-item', QUALITY_RULE_IDS.uniqueness],
-    ['invalid-payment-status', QUALITY_RULE_IDS.validity],
-    ['orphan-order-item', QUALITY_RULE_IDS.referentialIntegrity],
-    ['sales-reconciliation-drift', QUALITY_RULE_IDS.reconciliation],
+    ['missing-balance-snapshot', QUALITY_RULE_IDS.completeness],
+    ['duplicate-account-snapshot', QUALITY_RULE_IDS.uniqueness],
+    ['invalid-currency', QUALITY_RULE_IDS.validity],
+    ['orphan-account-balance', QUALITY_RULE_IDS.referentialIntegrity],
+    ['deposit-reconciliation-drift', QUALITY_RULE_IDS.reconciliation],
     ['late-partition', QUALITY_RULE_IDS.freshness],
   ] as const)('注入 %s 会生成带样本的非 pass 质量结果', (injection, ruleId) => {
     const { evaluation, check } = getCheck(injection, ruleId)
@@ -59,7 +59,10 @@ describe('数据质量领域契约与质量闸门', () => {
   })
 
   it('默认故事证明 task success 不代表数据正确，并保留调查上下文', () => {
-    const { evaluation, check } = getCheck('missing-order-item', QUALITY_RULE_IDS.completeness)
+    const { evaluation, check } = getCheck(
+      'missing-balance-snapshot',
+      QUALITY_RULE_IDS.completeness,
+    )
     const event = evaluation.events.find((candidate) => candidate.ruleId === check.ruleId)
 
     expect(check.schedulerContext.taskStatus).toBe('success')
@@ -67,9 +70,9 @@ describe('数据质量领域契约与质量闸门', () => {
     expect(event).toMatchObject({
       status: 'fail',
       target: {
-        table: 'dwd_order_item',
-        field: 'item_id',
-        partition: { column: 'dt', value: dataQualityVisualization.targetDate },
+        table: 'dwd_deposit_balance_detail',
+        field: 'account_id',
+        partition: { column: 'snapshot_date', value: dataQualityVisualization.targetDate },
       },
       schedulerContext: {
         taskId: SCHEDULER_TASK_IDS.dwd,
@@ -81,28 +84,30 @@ describe('数据质量领域契约与质量闸门', () => {
       },
     })
     expect(event?.evidence[0]?.samples[0]).toMatchObject({
-      rowKey: 'O1002 / I1002-2 / 200',
+      rowKey: '2026-09-30 / A002 / 200000',
     })
     expect(event?.investigationContext.upstreamHints.length).toBeGreaterThan(0)
-    expect(event?.investigationContext.downstreamImpacts).toContain('ads_yesterday_sales')
+    expect(event?.investigationContext.downstreamImpacts).toContain(
+      'dws_deposit_balance_daily_staging',
+    )
   })
 
   it('支持 block、warn、quarantine、continue with risk 四种确定性发布决定', () => {
     const statuses = {
       block: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
+        injection: 'deposit-reconciliation-drift',
         action: 'block',
       }).releaseDecision,
       warn: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
+        injection: 'deposit-reconciliation-drift',
         action: 'warn',
       }).releaseDecision,
       quarantine: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
+        injection: 'deposit-reconciliation-drift',
         action: 'quarantine',
       }).releaseDecision,
       risk: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
+        injection: 'deposit-reconciliation-drift',
         action: 'continue-with-risk',
       }).releaseDecision,
     }
@@ -122,11 +127,11 @@ describe('数据质量领域契约与质量闸门', () => {
 
   it('调整阈值会改变判定而不会删除证据', () => {
     const failed = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'sales-reconciliation-drift',
+      injection: 'deposit-reconciliation-drift',
       action: 'block',
     })
     const relaxed = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'sales-reconciliation-drift',
+      injection: 'deposit-reconciliation-drift',
       action: 'block',
       thresholdOverrides: { [QUALITY_RULE_IDS.reconciliation]: 40 },
     })
