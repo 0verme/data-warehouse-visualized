@@ -1,4 +1,5 @@
 export { BusinessSystemFlow } from './BusinessSystemFlow'
+export { DataQualityWorkbench } from './DataQualityWorkbench'
 export { GovernanceWorkbench } from './GovernanceWorkbench'
 export { LakehouseArchitectureLab } from './LakehouseArchitectureLab'
 export { LineageGraph } from './LineageGraph'
