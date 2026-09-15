@@ -462,6 +462,111 @@ export interface MetricVisualization {
   detailRows: MetricOrderDetail[]
 }
 
+export type BankingMetricCustomerScope = 'all' | 'individual' | 'corporate' | 'small-business'
+export type BankingMetricCustomerCategory = Exclude<BankingMetricCustomerScope, 'all'>
+export type BankingMetricProduct = 'demand' | 'term' | 'negotiated' | 'margin'
+export type BankingMetricProductScope = 'all' | BankingMetricProduct
+export type BankingMetricBranch = 'hangzhou' | 'shanghai'
+export type BankingMetricBranchScope = 'all' | BankingMetricBranch
+export type BankingMetricCurrency = 'CNY' | 'USD'
+
+export interface BankingMetricAccountSnapshot {
+  accountId: string
+  snapshotDate: string
+  customerScope: BankingMetricCustomerCategory
+  product: BankingMetricProduct
+  branch: BankingMetricBranch
+  currency: BankingMetricCurrency
+  status: 'active' | 'closed'
+  balance: number
+}
+
+export interface BankingMetricBalanceFilter {
+  snapshotDate: string
+  customerScope: BankingMetricCustomerScope
+  productScope: BankingMetricProductScope
+  branch: BankingMetricBranchScope
+  currency: BankingMetricCurrency
+  excludedProducts?: BankingMetricProduct[]
+}
+
+export interface BankingMetricScopeScenario {
+  id: string
+  label: string
+  title: string
+  description: string
+  filter: BankingMetricBalanceFilter
+}
+
+export interface BankingMetricDefinition {
+  name: string
+  businessMeaning: string
+  statisticTime: string
+  subject: string
+  measure: string
+  customerScope: string
+  productScope: string
+  branch: string
+  currency: string
+  unit: string
+  requiredFilters: string
+  grain: string
+}
+
+export type BankingMetricDefinitionStageId = 'name-only' | 'whole-bank' | 'specific-scope'
+
+export interface BankingMetricDefinitionStage {
+  id: BankingMetricDefinitionStageId
+  label: string
+  description: string
+  definition: BankingMetricDefinition
+}
+
+export interface BankingMetricScopeVisualization {
+  kind: 'banking-metric-scope'
+  targetDate: string
+  snapshots: BankingMetricAccountSnapshot[]
+  scenarios: BankingMetricScopeScenario[]
+}
+
+export interface BankingMetricDefinitionVisualization {
+  kind: 'banking-metric-definition'
+  stages: BankingMetricDefinitionStage[]
+}
+
+export type BankingMetricTimeMode = 'as-of' | 'period'
+
+export interface BankingMetricSnapshotRow {
+  accountId: string
+  snapshotDate: string
+  balance: number
+}
+
+export type BankingMetricTransactionType = 'deposit' | 'withdrawal'
+
+export interface BankingMetricTransactionEvent {
+  transactionId: string
+  accountId: string
+  eventDate: string
+  type: BankingMetricTransactionType
+  amount: number
+}
+
+export interface BankingMetricTimeVisualization {
+  kind: 'banking-metric-time'
+  asOfDate: string
+  periodStart: string
+  periodEnd: string
+  snapshots: BankingMetricSnapshotRow[]
+  transactions: BankingMetricTransactionEvent[]
+}
+
+export interface BankingMetricDerivationVisualization {
+  kind: 'banking-metric-derivations'
+  snapshots: BankingMetricAccountSnapshot[]
+  defaultFilter: BankingMetricBalanceFilter
+}
+
 export type LakehouseArchitecture = 'warehouse' | 'lake' | 'lakehouse'
 export type LakehouseWorkload = 'bi' | 'exploration' | 'ml' | 'streaming'
 export type LakehouseConstraint =
