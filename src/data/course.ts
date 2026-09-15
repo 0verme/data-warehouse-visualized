@@ -16,6 +16,10 @@ export type LessonDemo =
   | 'star-schema'
   | 'scd'
   | 'metric-definition'
+  | 'banking-metric-scope'
+  | 'banking-metric-definition'
+  | 'banking-metric-time'
+  | 'banking-metric-derivations'
   | 'lakehouse'
   | 'sql-transformation'
   | 'governance'
@@ -123,7 +127,34 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
-    demo: 'metric-definition',
+    demo: 'banking-metric-scope',
+  },
+  {
+    id: 'lesson-metric-definition',
+    slug: 'deposit-metric-definition',
+    chapter: '04',
+    order: 200,
+    difficulty: 'beginner',
+    estimatedMinutes: 10,
+    demo: 'banking-metric-definition',
+  },
+  {
+    id: 'lesson-metric-time',
+    slug: 'deposit-metric-time',
+    chapter: '04',
+    order: 300,
+    difficulty: 'beginner',
+    estimatedMinutes: 10,
+    demo: 'banking-metric-time',
+  },
+  {
+    id: 'lesson-metric-derivations',
+    slug: 'deposit-metric-derivations',
+    chapter: '04',
+    order: 400,
+    difficulty: 'beginner',
+    estimatedMinutes: 12,
+    demo: 'banking-metric-derivations',
   },
   {
     id: 'lesson-05',
@@ -305,9 +336,24 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['Grain', '粒度', 'Join'],
     },
     'lesson-04': {
-      title: '指标体系：同一个数字为什么不一样？',
-      summary: '拆开指标口径、统计粒度与时间范围，理解指标管理的必要性。',
-      tags: ['指标', '口径'],
+      title: '同一个“存款余额”，为什么会有不同答案？',
+      summary: '用三个确定性的存款余额结果，理解统计集合不同会造成口径差异。',
+      tags: ['指标', '口径', '存款余额'],
+    },
+    'lesson-metric-definition': {
+      title: '一个指标到底由什么组成？',
+      summary: '用指标定义卡补齐统计时间、对象、度量、范围、单位和底层 Grain。',
+      tags: ['指标定义', '口径', 'Grain'],
+    },
+    'lesson-metric-time': {
+      title: '“截至某天”和“一段时间”有什么区别？',
+      summary: '对照存款余额状态与累计存入事件，理解时点和期间两种时间语义。',
+      tags: ['时间语义', '快照', '交易事实'],
+    },
+    'lesson-metric-derivations': {
+      title: '一个“存款余额”为什么能派生出这么多指标？',
+      summary: '切换客户、产品、币种、机构和日期，观察基础度量如何形成指标族。',
+      tags: ['指标派生', '存款余额', '口径组合'],
     },
     'lesson-05': {
       title: 'SQL 与数据加工',

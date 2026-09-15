@@ -11,6 +11,10 @@ import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-hig
 import {
   BankingCustomerHistoryLab,
   BankingFactTypesLab,
+  BankingMetricDefinitionLab,
+  BankingMetricDerivationLab,
+  BankingMetricScopeLab,
+  BankingMetricTimeLab,
   BankingStarSchemaLab,
   BusinessSystemFlow,
   DataQualityWorkbench,
@@ -130,6 +134,14 @@ function VisualizationBody({
       return <SlowlyChangingDimension visualization={visualization} />
     case 'metric-definition':
       return <MetricDefinitionLab visualization={visualization} />
+    case 'banking-metric-scope':
+      return <BankingMetricScopeLab visualization={visualization} />
+    case 'banking-metric-definition':
+      return <BankingMetricDefinitionLab visualization={visualization} />
+    case 'banking-metric-time':
+      return <BankingMetricTimeLab visualization={visualization} />
+    case 'banking-metric-derivations':
+      return <BankingMetricDerivationLab visualization={visualization} />
     case 'lakehouse':
       return <LakehouseArchitectureLab visualization={visualization} />
     case 'sql-transformation':

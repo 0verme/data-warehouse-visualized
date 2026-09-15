@@ -189,6 +189,9 @@ describe('课程数据与导航', () => {
       'fact-table-types',
       'slowly-changing-dimension',
       'metric-system',
+      'deposit-metric-definition',
+      'deposit-metric-time',
+      'deposit-metric-derivations',
     ]
     let pathname = `/learn/${expectedSlugs[0]}/`
 
@@ -296,20 +299,45 @@ describe('课程数据与导航', () => {
     expect(scd.pitfalls).toBeUndefined()
   })
 
-  it('指标体系已升级为正式交互课程并连接 SQL 章节', () => {
-    expect(getLessonBySlug('metric-system')).toMatchObject({
-      title: '指标体系：同一个数字为什么不一样？',
-      order: 100,
-      chapter: '04',
-      demo: 'metric-definition',
-    })
-    expect(getLessonContent(getLessonBySlug('metric-system')!)).toMatchObject({
-      visualization: { kind: 'metric-definition' },
-      opening: { title: '昨天 GMV 到底是多少？' },
-    })
+  it('第 04 章按存款余额口径、定义、时间和派生连成四节课程', () => {
+    expect(lessons.slice(7, 11).map((lesson) => lesson.slug)).toEqual([
+      'metric-system',
+      'deposit-metric-definition',
+      'deposit-metric-time',
+      'deposit-metric-derivations',
+    ])
+    expect(lessons.slice(7, 11).map((lesson) => lesson.title)).toEqual([
+      '同一个“存款余额”，为什么会有不同答案？',
+      '一个指标到底由什么组成？',
+      '“截至某天”和“一段时间”有什么区别？',
+      '一个“存款余额”为什么能派生出这么多指标？',
+    ])
+    expect(lessons.slice(7, 11).map((lesson) => lesson.demo)).toEqual([
+      'banking-metric-scope',
+      'banking-metric-definition',
+      'banking-metric-time',
+      'banking-metric-derivations',
+    ])
+
     expect(getAdjacentLessons(lessons, 'metric-system')).toEqual({
       previous: expect.objectContaining({ slug: 'slowly-changing-dimension' }),
+      next: expect.objectContaining({ slug: 'deposit-metric-definition' }),
+    })
+    expect(getAdjacentLessons(lessons, 'deposit-metric-definition')).toEqual({
+      previous: expect.objectContaining({ slug: 'metric-system' }),
+      next: expect.objectContaining({ slug: 'deposit-metric-time' }),
+    })
+    expect(getAdjacentLessons(lessons, 'deposit-metric-time')).toEqual({
+      previous: expect.objectContaining({ slug: 'deposit-metric-definition' }),
+      next: expect.objectContaining({ slug: 'deposit-metric-derivations' }),
+    })
+    expect(getAdjacentLessons(lessons, 'deposit-metric-derivations')).toEqual({
+      previous: expect.objectContaining({ slug: 'deposit-metric-time' }),
       next: expect.objectContaining({ slug: 'sql-and-transformation' }),
+    })
+
+    expect(getLessonContent(getLessonBySlug('metric-system')!)).toMatchObject({
+      opening: { title: '截至 2026-09-30，全行存款余额是多少？' },
     })
   })
 
