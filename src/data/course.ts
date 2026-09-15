@@ -14,6 +14,8 @@ export type LessonDemo =
   | 'lakehouse'
   | 'sql-transformation'
   | 'governance'
+  | 'performance-lab'
+  | 'scheduler'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -124,7 +126,7 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
-    demo: 'coming-soon',
+    demo: 'scheduler',
   },
   {
     id: 'lesson-07',
@@ -187,7 +189,7 @@ export const lessonDefinitions = [
     order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 15,
-    demo: 'coming-soon',
+    demo: 'performance-lab',
   },
   {
     id: 'lesson-12',
@@ -249,8 +251,8 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-06': {
       title: '调度系统：数据任务如何按时到达？',
-      summary: '用 DAG 思维理解任务依赖、触发和失败重试。',
-      tags: ['DAG', '调度'],
+      summary: '沿着时间轴运行第 05 章的 ODS → DWD → DWS → ADS，观察依赖、迟到、重试和分区重跑。',
+      tags: ['DAG', '调度', '重跑'],
     },
     'lesson-07': {
       title: '数据质量：怎样知道数据可信？',

@@ -13,6 +13,9 @@ import type {
   TransformationTableSnapshot,
   TransformationWorkbenchState,
 } from '../../features/sql-transformation/types'
+import { CodeRenderer } from '../lesson/CodeRenderer'
+import type { CodeHighlightMap } from '../../utils/code-highlight'
+import { getCodeHighlightKey } from '../../utils/code-highlight'
 import {
   TRANSFORMATION_LAYER_ORDER,
   TRANSFORMATION_STEPS,
@@ -30,6 +33,7 @@ import '../../styles/lessons/sql-workbench.css'
 
 interface SqlTransformationWorkbenchProps {
   visualization: SqlTransformationVisualization
+  codeHighlights?: CodeHighlightMap
 }
 
 type SnapshotLayer = TransformationLayer
@@ -344,7 +348,15 @@ function PredictionPanel({
   )
 }
 
-function StepCode({ step }: { step: TransformationStepResult['step'] }) {
+function StepCode({
+  step,
+  codeHighlights,
+}: {
+  step: TransformationStepResult['step']
+  codeHighlights?: CodeHighlightMap
+}) {
+  const highlightedCode = codeHighlights?.[getCodeHighlightKey('sql', step.sql)]
+
   return (
     <section className="sql-workbench__sql" aria-labelledby="sql-fragment-title">
       <div className="sql-workbench__sql-heading">
@@ -355,9 +367,11 @@ function StepCode({ step }: { step: TransformationStepResult['step'] }) {
         <span>{step.layer}</span>
       </div>
       <p>{step.description}</p>
-      <pre>
-        <code>{step.sql}</code>
-      </pre>
+      <CodeRenderer
+        className="sql-workbench__code"
+        code={step.sql}
+        highlightedCode={highlightedCode}
+      />
       <small>这是本地确定性实验片段，不会连接数据库或执行任意 SQL。</small>
     </section>
   )
@@ -729,7 +743,10 @@ function TaskContract({ visualization }: { visualization: SqlTransformationVisua
   )
 }
 
-export function SqlTransformationWorkbench({ visualization }: SqlTransformationWorkbenchProps) {
+export function SqlTransformationWorkbench({
+  visualization,
+  codeHighlights,
+}: SqlTransformationWorkbenchProps) {
   const [state, setState] = useState<TransformationWorkbenchState>(createInitialTransformationState)
   const [selectedLayer, setSelectedLayer] = useState<SnapshotLayer>('ods')
   const [selectedTableId, setSelectedTableId] = useState('ods-orders')
@@ -814,7 +831,7 @@ export function SqlTransformationWorkbench({ visualization }: SqlTransformationW
 
           {state.targetGrain ? (
             <>
-              <StepCode step={activeResult.step} />
+              <StepCode step={activeResult.step} codeHighlights={codeHighlights} />
               <PredictionPanel
                 step={activeResult.step}
                 prediction={state.predictions[activeStep.id]}

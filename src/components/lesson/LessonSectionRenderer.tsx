@@ -15,7 +15,9 @@ import {
   LineageGraph,
   MetricDefinitionLab,
   ModelingIntro,
+  PerformanceLab,
   PipelineFlow,
+  SchedulerRunSimulator,
   SlowlyChangingDimension,
   SqlTransformationWorkbench,
   StarSchemaFlow,
@@ -41,6 +43,7 @@ interface LessonSectionRendererProps {
 interface VisualizationBlockProps {
   lessonId: string
   visualization: LessonVisualization
+  codeHighlights?: CodeHighlightMap
   eyebrow: string
   title: string
   description: string
@@ -76,7 +79,13 @@ function NarrativeSection({
   )
 }
 
-function VisualizationBody({ visualization }: { visualization: LessonVisualization }) {
+function VisualizationBody({
+  visualization,
+  codeHighlights,
+}: {
+  visualization: LessonVisualization
+  codeHighlights?: CodeHighlightMap
+}) {
   switch (visualization.kind) {
     case 'systems':
       return (
@@ -107,9 +116,15 @@ function VisualizationBody({ visualization }: { visualization: LessonVisualizati
     case 'lakehouse':
       return <LakehouseArchitectureLab visualization={visualization} />
     case 'sql-transformation':
-      return <SqlTransformationWorkbench visualization={visualization} />
+      return (
+        <SqlTransformationWorkbench visualization={visualization} codeHighlights={codeHighlights} />
+      )
     case 'governance':
       return <GovernanceWorkbench visualization={visualization} />
+    case 'performance-lab':
+      return <PerformanceLab visualization={visualization} />
+    case 'scheduler':
+      return <SchedulerRunSimulator visualization={visualization} />
   }
 }
 
@@ -120,6 +135,7 @@ function VisualizationBlock({
   title,
   description,
   blockId,
+  codeHighlights,
 }: VisualizationBlockProps) {
   const headingId = `${lessonId}-${blockId}-title`
 
@@ -130,7 +146,7 @@ function VisualizationBlock({
         <h2 id={headingId}>{title}</h2>
         <p>{description}</p>
       </div>
-      <VisualizationBody visualization={visualization} />
+      <VisualizationBody visualization={visualization} codeHighlights={codeHighlights} />
     </section>
   )
 }
@@ -170,6 +186,13 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
         title: '昨天的销售额到底是多少？',
         description:
           '先选择目标粒度，再逐步执行去重、JOIN、聚合和分区重跑，观察每一行数据如何改变。',
+      }
+    case 'scheduler':
+      return {
+        eyebrow: '调度系统 · DAG Run 模拟器',
+        title: '早上 8 点，报表为什么还没到？',
+        description:
+          '沿着时间轴推进第 05 章的 ODS → DWD → DWS → ADS，观察迟到、失败、重试和重跑如何传播。',
       }
     default:
       return {
@@ -233,6 +256,7 @@ function LegacyBlocks({
           visualization={legacyVisualization}
           {...visualizationCopy}
           blockId="legacy-visualization"
+          codeHighlights={codeHighlights}
         />
       )}
       {legacyComparison && (
@@ -294,6 +318,7 @@ function renderSection(
         <VisualizationBlock
           {...section}
           blockId={`section-${index}`}
+          codeHighlights={codeHighlights}
           key={`visualization-${index}`}
           lessonId={lessonId}
         />

@@ -15,3 +15,5 @@
 - `slowly-changing-dimension.ts`：Type 1 / Type 2 对比与维度历史时间轴实验
 - `data-lineage.ts`：血缘关系与影响分析
 - `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
+- `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
+- `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟

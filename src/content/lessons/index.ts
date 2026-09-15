@@ -6,7 +6,9 @@ import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
 import { lakehouseContent } from './lakehouse'
 import { metricSystemContent } from './metric-system'
+import { performanceAndPracticeContent } from './performance-and-practice'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
+import { schedulingSystemContent } from './scheduling-system'
 import { sqlAndTransformationContent } from './sql-and-transformation'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
@@ -22,7 +24,9 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,
+  'scheduling-system': schedulingSystemContent,
   'sql-and-transformation': sqlAndTransformationContent,
+  'performance-and-practice': performanceAndPracticeContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

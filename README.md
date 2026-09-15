@@ -51,6 +51,8 @@
 - 星型模型与粒度交互实验：大宽表拆分、粒度切换与重复计算修复
 - SCD Type 2 维度历史实验：直接 UPDATE 冲突、版本区间与时间点查询
 - 指标口径交互实验：状态、退款、时间语义与粒度变化
+- SQL 与数据加工实验：ODS → DWD → DWS → ADS 表快照和任务契约
+- 时间轴驱动 DAG Run 模拟：依赖门控、迟到、重试、阻断、分区重跑和 SLA
 - Desktop、Tablet、Mobile 响应式布局
 - `prefers-reduced-motion` 降级支持
 - 基础 title、description、canonical 和 Open Graph 元数据
@@ -76,7 +78,7 @@
 11. 性能与工程实践
 12. 从 0 搭一套数据仓库
 
-当前已完成 6 个真实交互 Demo，分别对应课程顺序第 1、2、4、5、6、10 课；数据建模导入课也已开放，其余课程先保留在完整路线中。
+当前已完成 11 个真实交互 Demo，覆盖课程顺序第 1、2、3（含导入、星型模型与 SCD Type 2）、4、5、6、8、10、11 课；其余课程先保留在完整路线中。
 
 ## 本地开发
 
@@ -114,7 +116,7 @@ src/
 ├── pages/               # 首页、学习入口和动态 Lesson 路由
 ├── styles/              # CSS Variables、组件样式和响应式规则
 ├── types.ts             # 可视化通用数据类型
-└── utils/               # 课程导航、进度持久化、血缘计算
+└── utils/               # 课程导航、进度持久化、血缘与调度计算
 ```
 
 新增课程通常只需要在 `src/data/course.ts` 添加元数据，并在 `src/content/lessons/` 添加内容；新增可视化组件后，可通过 `LessonVisualization` 数据类型复用到不同 Lesson。
@@ -134,13 +136,13 @@ src/
 - [x] 星型模型可视化
 - [x] 粒度变化模拟
 - [x] SCD2 拉链表时间轴
-- [ ] Partition Pruning 模拟
-- [ ] Shuffle / 数据倾斜模拟
+- [x] Partition Pruning 模拟
+- [x] Shuffle / 数据倾斜模拟
 
 ### Phase 3
 
-- [ ] DAG 调度模拟器
-- [ ] 补数与重跑模拟
+- [x] DAG 调度模拟器
+- [x] 补数与重跑模拟
 - [ ] 数据质量实验
 - [ ] SQL 血缘演示
 - [ ] 爆炸半径高级模式

@@ -3,10 +3,13 @@ import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
 import { SiteFooter } from '../components/SiteFooter'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import { chapters, lessons } from '../data/course'
+import { HERO_METRIC_SQL_EXAMPLE } from '../data/code-examples'
 import { getMessage } from '../i18n/messages'
+import { buildCodeHighlightMap } from '../utils/build-code-highlight'
 import { getChapterDisplayNumber } from '../utils/lesson'
 
 const actualDemoCount = lessons.filter((lesson) => lesson.demo !== 'coming-soon').length
+const codeHighlights = await buildCodeHighlightMap([HERO_METRIC_SQL_EXAMPLE])
 const baseUrl = import.meta.env.BASE_URL
 ---
 
@@ -71,7 +74,7 @@ const baseUrl = import.meta.env.BASE_URL
             <span class="home-section-kicker">INTERACTIVE DATA FLOW</span>
             <h2 id="hero-demo-title">一行数据如何变成一个指标</h2>
           </div>
-          <HeroDataFlow client:load />
+          <HeroDataFlow client:load codeHighlights={codeHighlights} />
         </div>
       </section>
 
