@@ -65,18 +65,55 @@ describe('课程数据与导航', () => {
     ])
   })
 
-  it('第六章已注册时间轴驱动的调度实验', () => {
-    const lesson = getLessonBySlug('scheduling-system')!
-    const content = getLessonContent(lesson)
+  it('第六章拆成五节不同学习目标的调度实验', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '06')
+    const expectedSlugs = [
+      'scheduling-system',
+      'scheduling-readiness',
+      'scheduling-failure',
+      'scheduling-rerun',
+      'scheduling-sla',
+    ]
 
-    expect(lesson.demo).toBe('scheduler')
-    expect(content.eyebrow).toBe('第 06 课 · 时间轴驱动 DAG Run')
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(expectedSlugs)
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'scheduler',
+      'scheduler',
+      'scheduler',
+      'scheduler',
+      'scheduler',
+    ])
+    expect(chapterLessons.map((lesson) => getLessonContent(lesson).concept.term)).toEqual([
+      '业务日期（Business Date）',
+      '运行条件（Run Condition）',
+      '失败传播（Failure Propagation）',
+      '幂等（Idempotency）',
+      'SLA（服务级别约定）',
+    ])
     expect(
-      content.sections.some(
-        (section) => section.kind === 'visualization' && section.visualization.kind === 'scheduler',
+      chapterLessons.map(
+        (lesson) =>
+          getLessonContent(lesson).sections.find((section) => section.kind === 'visualization')
+            ?.visualization.kind,
       ),
-    ).toBe(true)
-    expect(content.visualization).toBeUndefined()
+    ).toEqual(['scheduler', 'scheduler', 'scheduler', 'scheduler', 'scheduler'])
+    expect(
+      chapterLessons.map(
+        (lesson) =>
+          getLessonContent(lesson).sections.find((section) => section.kind === 'visualization')
+            ?.visualization,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ lessonFocus: 'business-date' }),
+        expect.objectContaining({ lessonFocus: 'readiness' }),
+        expect.objectContaining({ lessonFocus: 'failure' }),
+        expect.objectContaining({ lessonFocus: 'rerun' }),
+        expect.objectContaining({ lessonFocus: 'sla' }),
+      ]),
+    )
+    expect(getAdjacentLessons(lessons, 'scheduling-system').next?.slug).toBe('scheduling-readiness')
+    expect(getAdjacentLessons(lessons, 'scheduling-sla').next?.slug).toBe('data-quality')
   })
 
   it('第七章稳定注册为 7-1 到 7-5，并保留 data-quality slug', () => {

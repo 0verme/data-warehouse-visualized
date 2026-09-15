@@ -4,7 +4,7 @@ import { qualityEventAdapter } from '../../features/lineage/quality-adapter'
 import { bindLineageProductionChain } from '../../features/lineage/production'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../../utils/data-quality'
 import { dataQualityVisualization } from './data-quality'
-import { schedulerVisualization } from './scheduling-system'
+import { legacySchedulerVisualization } from './legacy-scheduling-system'
 import { sqlTransformationVisualization } from './sql-and-transformation'
 
 const sqlTransformation: LineageEvidence = {
@@ -433,7 +433,7 @@ const lineageProductionGraph = bindLineageProductionChain({
   baseNodes: lineageNodes,
   baseEdges: lineageEdges,
   transformation: sqlTransformationVisualization,
-  scheduler: schedulerVisualization,
+  scheduler: legacySchedulerVisualization,
 })
 
 export const dataLineageContent: LessonContent = {

@@ -1,7 +1,13 @@
 import type { Lesson } from '../../data/course'
 import { getChapterDisplayNumber } from '../../utils/lesson'
 import type { LessonContent } from '../types'
-import { dataGovernanceContent } from './data-governance'
+import {
+  dataGovernanceContent,
+  governanceChangeResponsibilityContent,
+  governanceEvidenceContent,
+  governanceFieldAccessContent,
+  governanceLifecycleContent,
+} from './data-governance'
 import { dataQualityDatasetContent } from './data-quality-dataset'
 import { dataQualityEvidenceContent } from './data-quality-evidence'
 import { dataQualityReleaseContent } from './data-quality-release'
@@ -18,7 +24,11 @@ import { depositMetricDerivationsContent } from './deposit-metric-derivations'
 import { depositMetricTimeContent } from './deposit-metric-time'
 import { performanceAndPracticeContent } from './performance-and-practice'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
-import { schedulingSystemContent } from './scheduling-system'
+import { schedulingBusinessDateContent } from './scheduling-business-date'
+import { schedulingFailureContent } from './scheduling-failure'
+import { schedulingReadinessContent } from './scheduling-readiness'
+import { schedulingRerunContent } from './scheduling-rerun'
+import { schedulingSlaContent } from './scheduling-sla'
 import { sqlAndTransformationContent } from './sql-and-transformation'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
@@ -26,6 +36,10 @@ import { whyDataWarehouseContent } from './why-data-warehouse'
 
 const lessonContentBySlug: Record<string, LessonContent> = {
   'data-governance': dataGovernanceContent,
+  'data-governance-evidence': governanceEvidenceContent,
+  'data-governance-field-access': governanceFieldAccessContent,
+  'data-governance-lifecycle': governanceLifecycleContent,
+  'data-governance-change-responsibility': governanceChangeResponsibilityContent,
   'data-quality': dataQualityContent,
   'data-quality-rules': dataQualityRulesContent,
   'data-quality-dataset': dataQualityDatasetContent,
@@ -44,7 +58,11 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,
-  'scheduling-system': schedulingSystemContent,
+  'scheduling-system': schedulingBusinessDateContent,
+  'scheduling-readiness': schedulingReadinessContent,
+  'scheduling-failure': schedulingFailureContent,
+  'scheduling-rerun': schedulingRerunContent,
+  'scheduling-sla': schedulingSlaContent,
   'sql-and-transformation': sqlAndTransformationContent,
   'performance-and-practice': performanceAndPracticeContent,
 }

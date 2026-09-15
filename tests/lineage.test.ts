@@ -4,6 +4,7 @@ import { qualityEventToLineageInvestigation } from '../src/features/lineage/qual
 import { dataLineageContent } from '../src/content/lessons/data-lineage'
 import { dataQualityVisualization } from '../src/content/lessons/data-quality'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../src/utils/data-quality'
+import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
 import {
   analyzeLineageInvestigation,
@@ -143,7 +144,7 @@ describe('数据血缘分析', () => {
         field: 'branch_id',
         partition: { column: 'business_date', value: dataQualityVisualization.targetDate },
       },
-      schedulerContext: { taskId: SCHEDULER_TASK_IDS.dwd },
+      schedulerContext: { taskId: BANKING_SCHEDULER_TASK_IDS.dwd },
     })
   })
 
@@ -171,7 +172,7 @@ describe('数据血缘分析', () => {
       affectedEntityId: 'metric-report-status',
       evidence: { source: 'quality_event' },
       context: {
-        taskId: SCHEDULER_TASK_IDS.dwd,
+        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
         runId: qualityEvent.schedulerContext.runId,
         businessDate: dataQualityVisualization.targetDate,
         partition: qualityEvent.target.partition,

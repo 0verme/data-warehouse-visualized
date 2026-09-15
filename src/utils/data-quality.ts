@@ -29,7 +29,6 @@ import type {
 import { depositAccountSnapshots } from '../content/lessons/deposit-data'
 import {
   SCHEDULER_DEFAULT_SCHEDULED_AT,
-  SCHEDULER_TASK_IDS,
   buildSchedulerTimeline,
   createInitialSchedulerRun,
 } from './scheduler'
@@ -192,6 +191,18 @@ function getTaskOrThrow(
   return task
 }
 
+function getTaskByLayerOrThrow(
+  tasks: readonly SchedulerTaskDefinition[],
+  layer: SchedulerTaskDefinition['layer'],
+): SchedulerTaskDefinition {
+  const task = tasks.find((candidate) => candidate.layer === layer)
+  if (!task) {
+    throw new Error(`数据质量规则找不到 ${layer} 层对应的 Scheduler task`)
+  }
+
+  return task
+}
+
 function target(
   table: string,
   partition: { column: string; value: string },
@@ -202,9 +213,9 @@ function target(
 
 export function createQualityRules(schedulerRun: SchedulerRunState): QualityRuleDefinition[] {
   const partition = { column: 'business_date', value: schedulerRun.businessDate }
-  const dwdTask = getTaskOrThrow(schedulerRun.tasks, SCHEDULER_TASK_IDS.dwd)
-  const dwsTask = getTaskOrThrow(schedulerRun.tasks, SCHEDULER_TASK_IDS.dws)
-  const adsTask = getTaskOrThrow(schedulerRun.tasks, SCHEDULER_TASK_IDS.ads)
+  const dwdTask = getTaskByLayerOrThrow(schedulerRun.tasks, 'dwd')
+  const dwsTask = getTaskByLayerOrThrow(schedulerRun.tasks, 'dws')
+  const adsTask = getTaskByLayerOrThrow(schedulerRun.tasks, 'ads')
 
   return [
     {

@@ -16,13 +16,18 @@
 - `fact-table-types.ts`：Transaction Fact、Periodic Snapshot Fact、Accumulating Snapshot Fact 对照
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
 - `data-lineage.ts`：血缘关系与影响分析
-- `data-governance.ts`：资产目录、治理决策台、生命周期与血缘影响消费
+- `data-governance.ts`：第 09 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
 - `sql-and-transformation.ts`：SQL 表快照、加工差异与任务契约
 - `metric-system.ts`：存款余额的统计集合与口径差异
 - `deposit-metric-definition.ts`：指标定义卡逐项补全
 - `deposit-metric-time.ts`：存款余额状态与期间存入事件的时间语义
 - `deposit-metric-derivations.ts`：客户、产品、币种、机构和日期口径组合
-- `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟
+- `scheduling-business-date.ts`：业务日期、到达时间和目标分区时间轴
+- `scheduling-readiness.ts`：三种启动条件与 DAG 放行
+- `scheduling-failure.ts`：失败传播、Attempt 与 Retry
+- `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
+- `scheduling-sla.ts`：迟到数据传播与业务 SLA
+- `scheduling-system.ts`：兼容旧调度事实的导出入口
 - `data-quality.ts`：7-1 运行状态、质量状态与发布状态
 - `data-quality-rules.ts`：7-2 从 Grain 推出记录级质量规则
 - `data-quality-dataset.ts`：7-3 应到集合、Freshness 与跨层对账

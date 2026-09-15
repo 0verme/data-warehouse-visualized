@@ -8,7 +8,7 @@ import {
   evaluateDataQuality,
 } from '../src/utils/data-quality'
 import { schedulerVisualization } from '../src/content/lessons/scheduling-system'
-import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
+import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 
 function evaluate(
   scenario: QualityScenario,
@@ -126,7 +126,7 @@ describe('07 数据质量：Banking Teaching Domain 质量契约', () => {
       observed: 'B9999',
       failedRows: 1,
       schedulerContext: {
-        taskId: SCHEDULER_TASK_IDS.dwd,
+        taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
         taskStatus: 'success',
       },
     })

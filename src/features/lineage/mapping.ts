@@ -1,3 +1,4 @@
+import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { SCHEDULER_TASK_IDS } from '../../utils/scheduler'
 
 /** Stable mapping from the production Scheduler identity to the existing graph node. */
@@ -6,6 +7,14 @@ export const LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
   [SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
   [SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
   [SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
+  [BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.account]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.customer]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.product]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.branch]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
+  [BANKING_SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
+  [BANKING_SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
 }
 
 /**

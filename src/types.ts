@@ -691,7 +691,10 @@ export type GovernanceLifecycle = 'active' | 'deprecated' | 'retiring'
 export type GovernanceSensitivity = 'public' | 'internal' | 'sensitive' | 'restricted'
 export type GovernanceDefinitionCompleteness = 'complete' | 'partial' | 'ambiguous'
 export type GovernanceFreshnessStatus = 'current' | 'delayed' | 'unknown'
+export type GovernanceQualityStatus = 'pass' | 'unknown'
 export type GovernanceOwnerStatus = 'assigned' | 'missing'
+export type GovernanceLessonFocus =
+  'asset-selection' | 'evidence-check' | 'field-access' | 'lifecycle' | 'change-responsibility'
 
 export interface GovernanceCatalogFilters {
   query: string
@@ -723,7 +726,55 @@ export interface GovernanceField {
   sensitivity: GovernanceSensitivity
   semanticStatus?: 'stable' | 'review-needed'
   maskingStrategy?: string
+  maskingSample?: string
   lineageNodeId?: string
+}
+
+export type GovernanceFieldAccessOutcome = 'direct' | 'masked' | 'unavailable'
+
+export interface GovernanceFieldAccessResult {
+  outcome: GovernanceFieldAccessOutcome
+  label: string
+  reason: string
+  value?: string
+  evidence: string[]
+}
+
+export interface GovernanceQualityCase {
+  id: string
+  label: string
+  assetId: string
+  semanticMatch: boolean
+  grainMatch: boolean
+  qualityStatus: GovernanceQualityStatus
+  freshnessLabel: string
+  freshnessStatus: GovernanceFreshnessStatus
+  evidence: string[]
+}
+
+export interface GovernanceEvidenceDecision {
+  status: 'recommended' | 'not-recommended'
+  headline: '建议使用' | '暂不建议使用'
+  evidence: string[]
+  reason: string
+}
+
+export type GovernanceResponsibilityKind = 'source' | 'asset' | 'consumer'
+
+export interface GovernanceResponsibilityItem {
+  id: string
+  kind: GovernanceResponsibilityKind
+  label: string
+  assetId?: string
+  owner: string
+  action: string
+}
+
+export interface GovernanceChangeImpact {
+  evidenceLabel: string
+  changedField: string
+  path: string[]
+  responsibilities: GovernanceResponsibilityItem[]
 }
 
 export interface GovernanceMetricReference {
@@ -804,11 +855,14 @@ export interface GovernanceAsset {
   metricDefinition?: GovernanceMetricReference
   lineageEvidence: GovernanceLineageEvidence
   qualityEvidence?: GovernanceQualityEvidence
+  qualityStatus?: GovernanceQualityStatus
+  qualityNote?: string
+  replacementAssetId?: string
 }
 
 export type GovernanceRole = 'analyst' | 'marketing' | 'external-collaborator'
 export type GovernancePurpose =
-  'business-analysis' | 'user-outreach' | 'data-export' | 'external-sharing'
+  'business-analysis' | 'customer-service' | 'user-outreach' | 'data-export' | 'external-sharing'
 export type GovernancePolicyDecision = 'allow' | 'masked' | 'approval-required' | 'deny'
 
 export interface GovernancePolicyFactor {
@@ -926,8 +980,11 @@ export interface GovernanceDecisionRecord {
 
 export interface GovernanceVisualization {
   kind: 'governance'
+  focus: GovernanceLessonFocus
   assets: GovernanceAsset[]
   lineageNodes: LineageNode[]
   lineageEdges: LineageEdge[]
   events: GovernanceLifecycleEvent[]
+  qualityCases?: GovernanceQualityCase[]
+  changeImpact?: GovernanceChangeImpact
 }
