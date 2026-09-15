@@ -24,18 +24,18 @@ if (!lineageVisualization || lineageVisualization.kind !== 'lineage') {
 }
 
 const qualityIncidentEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'missing-order-item',
+  injection: 'missing-branch-reference',
   action: 'block',
 })
 const qualityIncident = qualityIncidentEvaluation.events.find(
-  (event) => event.ruleId === QUALITY_RULE_IDS.completeness,
+  (event) => event.ruleId === QUALITY_RULE_IDS.branchReference,
 )
 if (!qualityIncident) {
   throw new Error('数据治理课程缺少完整性质量事件')
 }
 
 const qualityBaselineEvaluation = evaluateDataQuality(dataQualityVisualization, {
-  injection: 'none',
+  injection: 'baseline',
   action: 'block',
 })
 const dwsSalesQualityRule = dataQualityVisualization.rules.find(
@@ -45,7 +45,11 @@ if (!dwsSalesQualityRule) {
   throw new Error('数据治理课程缺少对账质量规则')
 }
 
-const dwdQualityEvidence = qualityEventToGovernanceEvidence(qualityIncident, 'DWD 明细完整性')
+const dwdQualityEvidence = qualityEventToGovernanceEvidence(
+  qualityIncident,
+  'DWD 存款账户余额引用完整性',
+  qualityIncidentEvaluation.releaseDecision,
+)
 const dwsSalesQualityEvidence = qualityEvaluationToGovernanceEvidence(
   qualityBaselineEvaluation,
   dwsSalesQualityRule,

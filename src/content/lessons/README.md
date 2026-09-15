@@ -23,3 +23,8 @@
 - `deposit-metric-time.ts`：存款余额状态与期间存入事件的时间语义
 - `deposit-metric-derivations.ts`：客户、产品、币种、机构和日期口径组合
 - `scheduling-system.ts`：复用 SQL 任务契约的时间轴 DAG Run 模拟
+- `data-quality.ts`：7-1 运行状态、质量状态与发布状态
+- `data-quality-rules.ts`：7-2 从 Grain 推出记录级质量规则
+- `data-quality-dataset.ts`：7-3 应到集合、Freshness 与跨层对账
+- `data-quality-evidence.ts`：7-4 Quality Event 与行级/聚合证据
+- `data-quality-release.ts`：7-5 银行关键数据 BLOCK 与埋点 quarantine 对照

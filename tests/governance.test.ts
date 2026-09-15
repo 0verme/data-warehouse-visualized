@@ -10,7 +10,7 @@ import {
 } from '../src/features/governance/quality-adapter'
 import { dataQualityVisualization } from '../src/content/lessons/data-quality'
 import type { GovernanceAsset } from '../src/types'
-import type { QualityInjection } from '../src/features/data-quality/types'
+import type { QualityAction, QualityScenario } from '../src/features/data-quality/types'
 import { QUALITY_RULE_IDS, evaluateDataQuality } from '../src/utils/data-quality'
 import {
   applyGovernanceEvent,
@@ -44,11 +44,16 @@ function getEvent(id: string) {
 }
 
 function getProjectedQualityEvidence(
-  injection: QualityInjection,
+  injection: QualityScenario,
   ruleId: string,
-  action: 'block' | 'continue-with-risk' = 'block',
+  action: QualityAction = 'block',
+  thresholdOverrides?: Readonly<Record<string, number>>,
 ) {
-  const evaluation = evaluateDataQuality(dataQualityVisualization, { injection, action })
+  const evaluation = evaluateDataQuality(dataQualityVisualization, {
+    injection,
+    action,
+    thresholdOverrides,
+  })
   const rule = dataQualityVisualization.rules.find((candidate) => candidate.ruleId === ruleId)
   if (!rule) {
     throw new Error(`Unknown quality rule: ${ruleId}`)
@@ -60,38 +65,46 @@ function getProjectedQualityEvidence(
 describe('数据治理 Phase 2', () => {
   it('QualityEvent 会被投影成可解释的治理质量证据，而不是复制质量领域模型', () => {
     const evaluation = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'missing-order-item',
+      injection: 'missing-branch-reference',
       action: 'block',
     })
     const event = evaluation.events.find(
-      (candidate) => candidate.ruleId === QUALITY_RULE_IDS.completeness,
+      (candidate) => candidate.ruleId === QUALITY_RULE_IDS.branchReference,
     )
     if (!event) {
       throw new Error('测试需要真实 QualityEvent')
     }
 
-    const evidence = qualityEventToGovernanceEvidence(event, 'DWD 明细完整性')
+    const evidence = qualityEventToGovernanceEvidence(
+      event,
+      'DWD 存款余额引用完整性',
+      evaluation.releaseDecision,
+    )
 
     expect(evidence).toMatchObject({
       source: 'chapter-07',
       status: 'fail',
-      severity: 'high',
+      severity: 'critical',
       eventId: event.eventId,
-      ruleName: 'DWD 明细完整性',
-      ruleId: QUALITY_RULE_IDS.completeness,
+      ruleName: 'DWD 存款余额引用完整性',
+      ruleId: QUALITY_RULE_IDS.branchReference,
       target: event.target,
       expectedValue: 0,
       releaseDecision: {
         action: 'block',
         status: 'blocked',
         isBlocked: true,
-        affectedOutputs: ['dws_sales_daily', 'ads_yesterday_sales'],
+        affectedOutputs: [
+          'dwd_deposit_account_balance',
+          'dws_deposit_balance_daily',
+          'ads_deposit_balance_metric',
+        ],
       },
     })
     expect(evidence.evidence[0]).toMatchObject({
-      evidenceId: 'evidence.dq.dwd.order-item.completeness.v1',
-      detail: '期望 5 行 DWD 明细，实际只有 4 行。',
-      samples: [{ rowKey: 'O1002 / I1002-2 / 200' }],
+      evidenceId: 'evidence.dq.dwd.deposit-balance.branch-reference.v1',
+      detail: 'Branch 参考集合中没有 1 条记录使用的机构标识。',
+      samples: [{ rowKey: 'A003 / 2026-09-30' }],
     })
     expect(evidence.failedSampleCount).toBe(1)
     expect(evidence.remainingRisk).toContain('Release Decision')
@@ -116,8 +129,8 @@ describe('数据治理 Phase 2', () => {
     expect(getAsset('dwd-order-detail').qualityEvidence).toMatchObject({
       source: 'chapter-07',
       status: 'fail',
-      ruleId: QUALITY_RULE_IDS.completeness,
-      eventId: 'event.quality.dq.dwd.order-item.completeness.v1',
+      ruleId: QUALITY_RULE_IDS.branchReference,
+      eventId: 'event.quality.dq.dwd.deposit-balance.branch-reference.v1',
       releaseDecision: { action: 'block', status: 'blocked', isBlocked: true },
     })
     expect(getAsset('dws-sales').qualityEvidence).toMatchObject({
@@ -198,9 +211,10 @@ describe('数据治理 Phase 2', () => {
     const warn = getGovernanceRecommendation({
       ...getAsset('dws-sales'),
       qualityEvidence: getProjectedQualityEvidence(
-        'late-partition',
-        QUALITY_RULE_IDS.freshness,
-        'continue-with-risk',
+        'balance-reconciliation-drift',
+        QUALITY_RULE_IDS.reconciliation,
+        'block',
+        { [QUALITY_RULE_IDS.reconciliation]: 150_000_000 },
       ),
     })
     const block = getGovernanceRecommendation(getAsset('dwd-order-detail'))
@@ -209,7 +223,7 @@ describe('数据治理 Phase 2', () => {
     expect(warn.status).toBe('usable-with-caution')
     expect(warn.reasons.join(' ')).toContain('warn')
     expect(block.status).toBe('not-recommended')
-    expect(block.reasons.join(' ')).toContain('期望 5 行 DWD 明细')
+    expect(block.reasons.join(' ')).toContain('fail · 失败')
   })
 
   it('Owner 缺失、定义含糊和 deprecated / retiring 仍会降低推荐程度', () => {
@@ -475,7 +489,7 @@ describe('数据治理 Phase 2', () => {
       impactEventId: event.id,
     })
     expect(record.qualityEvidenceUsed.join(' ')).toContain('chapter-07 Quality')
-    expect(record.qualityEvidenceUsed.join(' ')).toContain(QUALITY_RULE_IDS.completeness)
+    expect(record.qualityEvidenceUsed.join(' ')).toContain(QUALITY_RULE_IDS.branchReference)
     expect(record.lineageEvidenceUsed.join(' ')).toContain('Lineage risk')
     expect(record.directImpact.length).toBeGreaterThan(0)
     expect(record.transitiveImpact.length).toBeGreaterThan(0)

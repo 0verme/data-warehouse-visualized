@@ -1,103 +1,98 @@
-import type { DataQualityVisualization } from '../../features/data-quality/types'
 import type { LessonContent } from '../types'
-import { createDataQualityVisualization, createQualitySchedulerRun } from '../../utils/data-quality'
+import type { DataQualityVisualization } from '../../features/data-quality/types'
+import {
+  QUALITY_BUSINESS_DATE,
+  createDataQualityVisualization,
+  createQualitySchedulerRun,
+  createQualityTeachingModel,
+} from '../../utils/data-quality'
 import { schedulerVisualization } from './scheduling-system'
 
-const qualitySchedulerRun = createQualitySchedulerRun(
+export const qualitySchedulerRun = createQualitySchedulerRun(
   schedulerVisualization.tasks,
-  schedulerVisualization.targetDate,
+  QUALITY_BUSINESS_DATE,
+)
+export const qualityTeachingModel = createQualityTeachingModel()
+
+/** 7-1 keeps the existing slug and introduces the three independent states. */
+export const dataQualityVisualization: DataQualityVisualization = createDataQualityVisualization(
+  qualitySchedulerRun,
+  'status',
+  qualityTeachingModel,
 )
 
-export const dataQualityVisualization: DataQualityVisualization =
-  createDataQualityVisualization(qualitySchedulerRun)
-
 export const dataQualityContent: LessonContent = {
-  eyebrow: '第 07 课 · 质量事件调查台',
+  eyebrow: '第 07 章 · 7-1 数据质量状态',
   opening: {
-    eyebrow: '调度全部显示打勾，报表数据就一定准吗？',
-    title: '任务成功了，数据就一定准吗？',
+    eyebrow: '任务成功了，数据就可信了吗？',
+    title: '任务成功了，数据就可信了吗？',
     intro:
-      '早上的报表按时生成，调度页面也全部显示 success，但销售额比财务对账少了一半。打开质量检查，逐条找出缺行、重复、非法状态、孤儿引用、对账漂移和迟到分区。',
+      'business_date 是 2026-09-30。AccountBalanceSnapshot 与 Account、Customer、Product、Branch 一起加工成 DWD、DWS 和 ADS；日批在 07:20 完成，Scheduler 显示 SUCCESS，SLA 也显示 MET，但存款余额仍然对不上。接下来要看的，是一条独立的质量状态。',
     cards: [
-      { label: 'Scheduler Run', value: 'success', detail: '代码执行完成，不等于数据正确' },
-      {
-        label: 'Quality checks',
-        value: '6 rules',
-        detail: '完整性、唯一性、有效性、引用、对账、Freshness',
-      },
-      { label: '真实证据', value: 'samples', detail: '每个异常都回到表、字段和业务分区' },
-      {
-        label: 'Release',
-        value: '4 actions',
-        detail: 'block / warn / quarantine / continue with risk',
-      },
+      { label: 'Run Status', value: 'SUCCESS', detail: '程序运行完成' },
+      { label: 'SLA', value: 'MET', detail: '按约定时间完成' },
+      { label: 'Quality', value: 'FAILED', detail: '数据内容检查没有通过' },
+      { label: 'Release', value: 'BLOCKED', detail: '关键银行结果暂不发布' },
     ],
-    question: '如果任务是绿色的，但销售额少了一半，你会先查哪一条规则？',
+    question: '任务已经成功且按时完成，为什么存款余额仍然不能发布？',
   },
-  subtitle:
-    '调度成功后，逐条核对完整性、唯一性、有效性、引用关系、金额对账和数据时效，再决定报表能不能发布。',
+  subtitle: '从第 06 章交接来的 SUCCESS 和 SLA MET，只是质量判断的起点。',
   quickSummary:
-    '质量检查要说明查哪张表、哪个字段、哪个分区和阈值；异常要带失败样本，发布决定要能解释阻断、告警、隔离或带风险继续。',
+    '运行完成、数据通过质量检查、允许发布是三个独立判断。质量失败时，要留下证据，并在关键结果上阻断发布。',
   concept: {
-    term: '质量闸门',
+    term: '质量状态',
     definition:
-      '质量闸门把一次已成功的 Scheduler Run 再交给规则检查；它输出规则级 pass / warn / fail、可回放的质量事件与证据，并根据处置策略决定下游是否放行。',
+      '质量状态描述产出的数据是否满足已声明的检查规则。它不改写 Scheduler 的运行状态，也不自动等价于发布许可。',
   },
   sections: [
     {
       kind: 'narrative',
-      title: '任务成功，只说明代码跑完了吗？',
+      title: '同一轮日批里，三个状态各自回答什么？',
       paragraphs: [
-        '调度页面的 success 只能证明任务没有报错，不能证明每一条订单都已到达、金额没有重复或汇总没有漂移。质量检查要把运行结果和具体数据样本放在一起看。',
-        '默认场景故意从 DWD 输出拿掉 I1002-2。DWD task 仍然是 success，但完整性规则会指出少了哪一条明细，DWD / DWS 对账也会暴露金额差异。',
+        'Scheduler SUCCESS 回答“程序有没有正常结束”；SLA MET 回答“任务有没有在约定时间内结束”。它们都没有回答“产出的账户余额能不能相信”。',
+        '质量检查会把同一轮运行的业务日期、分区、任务和产出内容放在一起核对。只有检查通过，结果才有机会进入发布判断。',
       ],
       bullets: [
-        '规则定义不能只留下一个分数：要能说出检查了哪张表、哪个字段和哪个分区。',
-        '阈值是规则的一部分；调整它会改变 pass / warn / fail，但不会改写失败样本。',
+        '运行状态：这次任务有没有跑完。',
+        'Quality 状态：这批数据是否满足已声明的规则。',
+        'Release 状态：现在是否允许把结果交给下游使用。',
       ],
     },
     {
       kind: 'visualization',
-      eyebrow: 'QUALITY EVENT INVESTIGATION · 质量异常调查',
-      title: '失败样本如何决定发布',
+      eyebrow: 'STATUS FLOW · 三个状态分开看',
+      title: 'SUCCESS → Quality FAILED → Release BLOCKED',
       description:
-        '选择一个异常场景，点击规则查看失败样本；调整阈值并切换处置动作，观察同一批证据如何改变下游发布结果。',
+        '点击查看本次对账失败留下的事实证据。这里不重新演示等待、重试或补数；那些判断属于第 06 章。',
       visualization: dataQualityVisualization,
     },
     {
       kind: 'narrative',
-      title: '五种质量问题，五种不同的调查入口',
+      title: '质量检查从哪里接手？',
       paragraphs: [
-        '完整性和唯一性要回到 DWD 明细粒度；有效性要回到状态枚举；引用完整性要沿订单主表与明细的关系确认；跨表对账要比较 DWD 净额和 DWS 汇总；Freshness 则要把业务日期和 Scheduler 的实际完成时间放在一起看。',
-        '例如，缺少 I1002-2 会同时影响 DWD 完整性和 DWS 对账。把异常落到具体行、字段和分区，才能判断应该阻断哪一个下游结果。',
+        '质量层拿到 run id、business date、partition、task status 和输出表等运行上下文，再检查表里的数据。这样“任务跑完了”与“结果可信”之间有一条可以复核的边界。',
+        '本章后面会把问题拆开：先看一行余额记录是否合理，再看整批数据和加工链，最后保存能交给调查流程继续使用的质量事实。',
       ],
       bullets: [
-        '表级行数缺失：发现“订单明细少了一行”。',
-        '主键重复：发现重复写入会放大金额。',
-        '枚举和引用：发现状态不可解释或明细找不到主订单。',
-        '跨表对账和 Freshness：发现汇总漂移与迟到分别影响正确性和时效。',
+        '第 06 章说明任务何时运行、依赖是否放行。',
+        '第 07 章说明产出内容是否满足规则。',
+        '第 08 章再沿质量事实查可能的来源和影响。',
       ],
     },
     {
       kind: 'takeaway',
-      title: '发布决定必须留下完整链路',
-      text: '一次可复盘的质量决定，至少要能从 release decision 找回本次 Scheduler Run、失败规则、阈值、失败样本、严重级别、下游影响和 remediation。',
+      title: '先记住这条判断链',
+      text: '一次运行成功，只能把问题带到质量检查门口。银行关键数据已知失败时，质量失败会让发布保持 BLOCKED。',
       bullets: [
-        'block：失败规则阻断完整下游发布，修复后按同一业务日期重跑。',
-        'warn：带着告警继续，消费方必须看见证据和风险。',
-        'quarantine：隔离失败样本，不把未经确认的完整结果放行。',
-        'continue with risk：明确记录豁免和剩余风险，而不是把 fail 改名为 pass。',
+        'SUCCESS 不等于 Quality PASS。',
+        'SLA MET 不等于数据内容足够新。',
+        'Release BLOCKED 是发布判断，不是 Scheduler 任务失败。',
       ],
     },
     {
-      kind: 'engineering-note',
-      title: '质量校验必须精确拦截到异常样本，而不是只报一个错误分数',
-      text: '检查结果要指出异常所在的表、字段、业务分区和样本行，并说明它对下游输出的影响。只有这样，值班工程师才能判断该修复、隔离还是允许带风险发布。',
-    },
-    {
       kind: 'pitfall',
-      title: '质量通过也有边界',
-      text: '规则没有覆盖的字段、过宽或过窄的阈值、以及本身错误的业务口径，都可能让所有检查 pass 但报表仍然不可信。质量闸门提升可解释性，不替代业务定义、血缘调查和治理责任。',
+      title: '不要用一个绿色勾代替三个问题',
+      text: '看到任务成功就直接发布，会把运行问题、数据问题和发布责任混在一起。每个状态都要有自己的证据。',
     },
   ],
 }

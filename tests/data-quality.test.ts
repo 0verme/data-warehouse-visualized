@@ -1,206 +1,182 @@
 import { describe, expect, it } from 'vitest'
-import { dataQualityContent, dataQualityVisualization } from '../src/content/lessons/data-quality'
-import type { QualityInjection } from '../src/features/data-quality/types'
+import { dataQualityVisualization } from '../src/content/lessons/data-quality'
+import type { QualityScenario } from '../src/features/data-quality/types'
 import {
   QUALITY_RULE_IDS,
   createDataQualityVisualization,
   createQualitySchedulerRun,
   evaluateDataQuality,
-  evaluateQualityStatus,
 } from '../src/utils/data-quality'
+import { schedulerVisualization } from '../src/content/lessons/scheduling-system'
 import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
 
-function getCheck(
-  injection: QualityInjection,
-  ruleId: string,
+function evaluate(
+  scenario: QualityScenario,
   options: Parameters<typeof evaluateDataQuality>[1] = {},
 ) {
-  const evaluation = evaluateDataQuality(dataQualityVisualization, { injection, ...options })
-  const check = evaluation.checks.find((candidate) => candidate.ruleId === ruleId)
+  return evaluateDataQuality(dataQualityVisualization, { scenario, ...options })
+}
+
+function getCheck(scenario: QualityScenario, ruleId: string) {
+  const result = evaluate(scenario)
+  const check = result.checks.find((candidate) => candidate.ruleId === ruleId)
   if (!check) {
     throw new Error(`测试找不到规则: ${ruleId}`)
   }
-
-  return { evaluation, check }
+  return { result, check }
 }
 
-describe('数据质量领域契约与质量闸门', () => {
-  it('注册第 07 课并连接真实 Scheduler Run', () => {
-    expect(dataQualityContent.sections.some((section) => section.kind === 'visualization')).toBe(
+describe('07 数据质量：Banking Teaching Domain 质量契约', () => {
+  it('从现有 Banking Metric 快照构造确定性的 AccountBalanceSnapshot 教学模型', () => {
+    expect(dataQualityVisualization.targetDate).toBe('2026-09-30')
+    expect(dataQualityVisualization.model.sourceSnapshots).toHaveLength(7)
+    expect(dataQualityVisualization.model.knownBranchIds).toContain('hangzhou')
+    expect(dataQualityVisualization.model.knownCurrencyCodes).toContain('CNY')
+    expect(dataQualityVisualization.rules.map((rule) => rule.target.table)).toContain(
+      'dwd_deposit_account_balance',
+    )
+  })
+
+  it('Scheduler SUCCESS 与 Quality FAILED 可以同时成立，并默认阻断银行结果', () => {
+    const result = evaluate('balance-reconciliation-drift')
+
+    expect(result.schedulerRun.status).toBe('success')
+    expect(result.schedulerRun.businessDate).toBe('2026-09-30')
+    expect(result.releaseDecision).toMatchObject({ status: 'blocked', isBlocked: true })
+    expect(result.events.some((event) => event.ruleId === QUALITY_RULE_IDS.reconciliation)).toBe(
       true,
     )
-    expect(dataQualityVisualization.kind).toBe('data-quality')
-    expect(dataQualityVisualization.rules).toHaveLength(6)
-    expect(dataQualityVisualization.schedulerRun.status).toBe('success')
-    expect(dataQualityVisualization.schedulerRun.taskRuns[SCHEDULER_TASK_IDS.ads]?.status).toBe(
-      'success',
-    )
-    expect(
-      dataQualityVisualization.rules.find((rule) => rule.ruleId === QUALITY_RULE_IDS.freshness)
-        ?.schedulerTaskId,
-    ).toBe(SCHEDULER_TASK_IDS.ads)
   })
 
   it.each([
-    ['missing-order-item', QUALITY_RULE_IDS.completeness],
-    ['duplicate-order-item', QUALITY_RULE_IDS.uniqueness],
-    ['invalid-payment-status', QUALITY_RULE_IDS.validity],
-    ['orphan-order-item', QUALITY_RULE_IDS.referentialIntegrity],
-    ['sales-reconciliation-drift', QUALITY_RULE_IDS.reconciliation],
-    ['late-partition', QUALITY_RULE_IDS.freshness],
-  ] as const)('注入 %s 会生成带样本的非 pass 质量结果', (injection, ruleId) => {
-    const { evaluation, check } = getCheck(injection, ruleId)
+    ['duplicate-grain', QUALITY_RULE_IDS.grain],
+    ['missing-required-field', QUALITY_RULE_IDS.requiredFields],
+    ['invalid-currency', QUALITY_RULE_IDS.currency],
+    ['missing-branch-reference', QUALITY_RULE_IDS.branchReference],
+  ] as const)('记录级故障 %s 生成行级证据', (scenario, ruleId) => {
+    const { check } = getCheck(scenario, ruleId)
 
-    expect(check.status).not.toBe('pass')
-    expect(check.evidence.some((evidence) => evidence.samples.length > 0)).toBe(true)
-    expect(evaluation.events.some((event) => event.ruleId === ruleId)).toBe(true)
-    expect(check.schedulerContext.runId).toBe(evaluation.schedulerRun.runId)
-    expect(check.schedulerContext.partition).toEqual(evaluation.schedulerRun.partition)
+    expect(check.status).toBe('fail')
+    expect(check.failedRows).toBeGreaterThan(0)
+    expect(check.evidence[0]?.kind).toBe('row')
+    expect(check.evidence[0]?.sample).toBeDefined()
   })
 
-  it('默认故事证明 task success 不代表数据正确，并保留调查上下文', () => {
-    const { evaluation, check } = getCheck('missing-order-item', QUALITY_RULE_IDS.completeness)
-    const event = evaluation.events.find((candidate) => candidate.ruleId === check.ruleId)
+  it('Grain 是第一锚点，Account × snapshot_date 重复规则保持零容忍', () => {
+    const result = evaluate('duplicate-grain', {
+      thresholdOverrides: { [QUALITY_RULE_IDS.grain]: 100 },
+    })
+    const check = result.checks.find((candidate) => candidate.ruleId === QUALITY_RULE_IDS.grain)
 
+    expect(check).toMatchObject({ status: 'fail', observedValue: 1, threshold: { value: 0 } })
+    expect(check?.evidence[0]?.sample?.values).toMatchObject({ account_id: 'A005' })
+  })
+
+  it('整批完整性使用应到集合，不依赖昨天行数，也不伪造坏行', () => {
+    const { result, check } = getCheck('batch-incomplete', QUALITY_RULE_IDS.batchCompleteness)
+
+    expect(check).toMatchObject({ status: 'fail', observedValue: 3000, failedRows: 3000 })
+    expect(check.expected).toBe('10000 个有效 Account')
+    expect(check.observed).toBe('7000 个 AccountBalanceSnapshot')
+    expect(check.evidence[0]?.kind).toBe('set')
+    expect(check.evidence[0]?.sample).toBeUndefined()
+    expect(result.events[0]?.sample).toBeUndefined()
+  })
+
+  it('Freshness 检查内容日期，而不是 Scheduler 到达或等待状态', () => {
+    const { result, check } = getCheck('stale-snapshot', QUALITY_RULE_IDS.freshness)
+
+    expect(result.schedulerRun.status).toBe('success')
     expect(check.schedulerContext.taskStatus).toBe('success')
-    expect(check.status).toBe('fail')
-    expect(event).toMatchObject({
+    expect(check).toMatchObject({
       status: 'fail',
+      expected: '2026-09-30',
+      observed: '2026-09-29',
+    })
+    expect(check.evidence[0]?.kind).toBe('date')
+    expect(check.failedRows).toBeUndefined()
+    expect(check.evidence[0]?.sample).toBeUndefined()
+  })
+
+  it('跨层对账限定同一业务口径，并保留带符号的 delta 聚合证据', () => {
+    const { check } = getCheck('balance-reconciliation-drift', QUALITY_RULE_IDS.reconciliation)
+
+    expect(check).toMatchObject({ status: 'fail', observedValue: 200_000_000 })
+    expect(check.expected).toBe('delta = 0')
+    expect(check.observed).toBe('delta = -200000000')
+    expect(check.evidence[0]?.kind).toBe('aggregate')
+    expect(check.evidence[0]?.sample).toBeUndefined()
+  })
+
+  it('Quality Event 只携带质量事实和 Scheduler 上下文，不携带调查结论', () => {
+    const result = evaluate('missing-branch-reference')
+    const event = result.events.find(
+      (candidate) => candidate.ruleId === QUALITY_RULE_IDS.branchReference,
+    )
+
+    expect(event).toMatchObject({
+      ruleId: QUALITY_RULE_IDS.branchReference,
+      businessDate: '2026-09-30',
       target: {
-        table: 'dwd_order_item',
-        field: 'item_id',
-        partition: { column: 'dt', value: dataQualityVisualization.targetDate },
+        table: 'dwd_deposit_account_balance',
+        field: 'branch_id',
+        partition: { column: 'business_date', value: '2026-09-30' },
       },
+      expected: 'branch_id ∈ {hangzhou, shanghai}',
+      observed: 'B9999',
+      failedRows: 1,
       schedulerContext: {
         taskId: SCHEDULER_TASK_IDS.dwd,
         taskStatus: 'success',
       },
-      releaseImpact: {
-        isBlocked: true,
-        downstreamRelease: 'blocked',
-      },
     })
-    expect(event?.evidence[0]?.samples[0]).toMatchObject({
-      rowKey: 'O1002 / I1002-2 / 200',
+    expect(event?.sample?.values).toMatchObject({
+      account_id: 'A003',
+      branch_id: 'B9999',
+      balance: 230000,
     })
-    expect(event?.investigationContext.upstreamHints.length).toBeGreaterThan(0)
-    expect(event?.investigationContext.downstreamImpacts).toContain('ads_yesterday_sales')
+    expect(event).not.toHaveProperty('rootCause')
+    expect(event).not.toHaveProperty('upstreamHints')
+    expect(event).not.toHaveProperty('downstreamImpacts')
+    expect(event).not.toHaveProperty('releaseImpact')
   })
 
-  it('支持 block、warn、quarantine、continue with risk 四种确定性发布决定', () => {
-    const statuses = {
-      block: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
-        action: 'block',
-      }).releaseDecision,
-      warn: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
-        action: 'warn',
-      }).releaseDecision,
-      quarantine: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
-        action: 'quarantine',
-      }).releaseDecision,
-      risk: evaluateDataQuality(dataQualityVisualization, {
-        injection: 'sales-reconciliation-drift',
-        action: 'continue-with-risk',
-      }).releaseDecision,
-    }
+  it('银行关键数据默认 BLOCK，非关键独立埋点才使用 quarantine 对照', () => {
+    const banking = evaluate('bank-critical-branch-failure')
+    const telemetry = evaluate('telemetry-invalid-records')
 
-    expect(statuses.block).toMatchObject({ status: 'blocked', isBlocked: true })
-    expect(statuses.warn).toMatchObject({ status: 'released-with-warning', isBlocked: false })
-    expect(statuses.quarantine).toMatchObject({
+    expect(banking.releaseDecision).toMatchObject({ status: 'blocked', isBlocked: true })
+    expect(banking.events[0]?.failedRows).toBe(3)
+    expect(telemetry.releaseDecision).toMatchObject({
       status: 'quarantined',
-      isBlocked: true,
-      quarantinedSampleCount: 1,
-    })
-    expect(statuses.risk).toMatchObject({
-      status: 'released-with-risk',
       isBlocked: false,
+      quarantinedSampleCount: 3,
     })
+    expect(telemetry.events[0]?.failedRows).toBe(3)
   })
 
-  it('调整阈值会改变判定而不会删除证据', () => {
-    const failed = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'sales-reconciliation-drift',
-      action: 'block',
-    })
-    const relaxed = evaluateDataQuality(dataQualityVisualization, {
-      injection: 'sales-reconciliation-drift',
-      action: 'block',
-      thresholdOverrides: { [QUALITY_RULE_IDS.reconciliation]: 40 },
-    })
-    const failedCheck = failed.checks.find(
-      (check) => check.ruleId === QUALITY_RULE_IDS.reconciliation,
-    )
-    const relaxedCheck = relaxed.checks.find(
-      (check) => check.ruleId === QUALITY_RULE_IDS.reconciliation,
-    )
+  it('无故障基线全部通过，质量模型结果可重放', () => {
+    const first = evaluate('baseline')
+    const second = evaluate('baseline')
 
-    expect(failedCheck?.status).toBe('fail')
-    expect(failedCheck?.evidence[0]?.samples).toHaveLength(1)
-    expect(relaxedCheck).toMatchObject({ status: 'pass', observedValue: 40 })
-    expect(relaxedCheck?.evidence[0]?.expectedLabel).toBe('对账差额 ≤ ¥40')
-    expect(relaxedCheck?.evidence[0]?.samples).toHaveLength(1)
-    expect(relaxed.releaseDecision.status).toBe('released')
+    expect(first).toEqual(second)
+    expect(first.checks.every((check) => check.status === 'pass')).toBe(true)
+    expect(first.events).toEqual([])
+    expect(first.releaseDecision.status).toBe('released')
   })
 
-  it('Freshness 迟到复用 Scheduler 的 upstream-late Run 而不是伪造状态', () => {
-    const { evaluation, check } = getCheck('late-partition', QUALITY_RULE_IDS.freshness)
+  it('质量模型仍通过 Scheduler adapter 接收 run、business date、partition 和 task status', () => {
+    const run = createQualitySchedulerRun(schedulerVisualization.tasks, '2026-09-30', 'dwd-blocked')
+    const visualization = createDataQualityVisualization(run, 'status')
+    const result = evaluateDataQuality(visualization, { scenario: 'baseline' })
+    const grainCheck = result.checks.find((check) => check.ruleId === QUALITY_RULE_IDS.grain)
 
-    expect(evaluation.schedulerRun.scenario).toBe('upstream-late')
-    expect(evaluation.schedulerRun.status).toBe('success')
-    expect(check.schedulerContext.taskStatus).toBe('success')
-    expect(check.observedValue).toBeGreaterThan(30)
-    expect(check.status).toBe('warn')
-    expect(check.evidence[0]?.kind).toBe('partition-freshness')
-    expect(check.evidence[0]?.samples[0]?.values).toMatchObject({
-      task_status: 'success',
+    expect(run.status).toBe('failed')
+    expect(grainCheck?.schedulerContext).toMatchObject({
+      runId: run.runId,
+      businessDate: '2026-09-30',
+      taskStatus: 'failed',
     })
-  })
-
-  it('Scheduler 前置失败时，证据仍保留 task status 语义', () => {
-    const failedRun = createQualitySchedulerRun(
-      dataQualityVisualization.schedulerRun.tasks,
-      dataQualityVisualization.targetDate,
-      'dwd-blocked',
-    )
-    const evaluation = evaluateDataQuality(createDataQualityVisualization(failedRun), {
-      injection: 'none',
-    })
-    const dwdCheck = evaluation.checks.find(
-      (check) => check.ruleId === QUALITY_RULE_IDS.completeness,
-    )
-
-    expect(failedRun.status).toBe('failed')
-    expect(dwdCheck).toMatchObject({
-      status: 'fail',
-      schedulerContext: { taskStatus: 'failed' },
-    })
-    expect(dwdCheck?.evidence[0]?.expectedLabel).toBe('Scheduler task status = success')
-  })
-
-  it('正常基线全部通过，状态判定支持 pass / warn / fail', () => {
-    const baseline = evaluateDataQuality(dataQualityVisualization, { injection: 'none' })
-
-    expect(baseline.checks.every((check) => check.status === 'pass')).toBe(true)
-    expect(baseline.events).toEqual([])
-    expect(baseline.releaseDecision.status).toBe('released')
-    expect(
-      evaluateQualityStatus(37, {
-        operator: 'at-most',
-        value: 30,
-        unit: 'minutes',
-        warningRange: 15,
-      }),
-    ).toBe('warn')
-    expect(
-      evaluateQualityStatus(50, {
-        operator: 'at-most',
-        value: 30,
-        unit: 'minutes',
-        warningRange: 15,
-      }),
-    ).toBe('fail')
+    expect(grainCheck?.status).toBe('fail')
   })
 })
