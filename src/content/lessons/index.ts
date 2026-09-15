@@ -1,6 +1,7 @@
 import type { Lesson } from '../../data/course'
 import { getChapterDisplayNumber } from '../../utils/lesson'
 import type { LessonContent } from '../types'
+import { dataGovernanceContent } from './data-governance'
 import { dataLineageContent } from './data-lineage'
 import { dataModelingContent } from './data-modeling'
 import { lakehouseContent } from './lakehouse'
@@ -14,6 +15,7 @@ import { warehouseLayersContent } from './warehouse-layers'
 import { whyDataWarehouseContent } from './why-data-warehouse'
 
 const lessonContentBySlug: Record<string, LessonContent> = {
+  'data-governance': dataGovernanceContent,
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,

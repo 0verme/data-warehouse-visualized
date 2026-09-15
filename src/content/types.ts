@@ -1,5 +1,6 @@
 import type {
   FlowOutput,
+  GovernanceVisualization,
   LakehouseVisualization,
   LineageEdge,
   LineageInvestigationEvent,
@@ -122,6 +123,7 @@ export type LessonVisualization =
   | MetricVisualization
   | LakehouseVisualization
   | SqlTransformationVisualization
+  | GovernanceVisualization
   | PerformanceVisualization
   | SchedulerVisualization
 
