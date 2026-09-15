@@ -1,91 +1,106 @@
 import { describe, expect, it } from 'vitest'
 import { slowlyChangingDimensionContent } from '../src/content/lessons/slowly-changing-dimension'
 import { getLessonBySlug } from '../src/data/course'
-import type { ScdVisualization } from '../src/types'
+import type { BankingCustomerHistoryVisualization } from '../src/types'
 import {
-  applyType1Update,
-  applyType2Update,
-  getDimensionVersionAt,
-  SCD_OPEN_END,
-} from '../src/utils/scd'
+  applyCustomerType1Update,
+  applyCustomerType2Update,
+  BANKING_CUSTOMER_HISTORY_OPEN_END,
+  getCustomerVersionAt,
+} from '../src/utils/customer-history'
 
-let visualization: ScdVisualization | undefined
+let visualization: BankingCustomerHistoryVisualization | undefined
 
 for (const section of slowlyChangingDimensionContent.sections) {
-  if (section.kind === 'visualization' && section.visualization.kind === 'scd') {
+  if (
+    section.kind === 'visualization' &&
+    section.visualization.kind === 'banking-customer-history'
+  ) {
     visualization = section.visualization
     break
   }
 }
 
 if (!visualization) {
-  throw new Error('SCD 测试需要 scd visualization 数据')
+  throw new Error('客户历史测试需要 banking-customer-history visualization 数据')
 }
 
-describe('SCD Type 2 维度历史', () => {
-  it('课程元数据和可视化数据已注册', () => {
+describe('维度历史与拉链表', () => {
+  it('课程元数据和客户历史可视化已注册', () => {
     expect(getLessonBySlug('slowly-changing-dimension')).toMatchObject({
-      title: '维度为什么要保存历史？SCD Type 2',
+      title: '维度为什么要保存历史？——拉链表',
       chapter: '03',
-      order: 300,
-      demo: 'scd',
+      order: 500,
+      demo: 'banking-customer-history',
     })
-    expect(visualization.initialVersion).toMatchObject({
-      userId: 'U1001',
-      city: '杭州',
-      memberLevel: '普通会员',
+    expect(visualization.initialVersion).toEqual({
+      customerSk: 101,
+      customerId: 'C001',
+      level: '普通',
+      branch: '杭州支行',
+      effectiveFrom: '2025-01-01',
+      effectiveTo: '9999-12-31',
+      isCurrent: true,
     })
-    expect(visualization.orders.map((order) => order.orderTime)).toEqual([
-      '2026-02-10',
-      '2026-04-10',
-    ])
+    expect(visualization.loanNote).toMatchObject({
+      noteId: 'N001',
+      customerId: 'C001',
+      disbursedDate: '2025-10-10',
+    })
   })
 
-  it('Type 1 直接覆盖后只剩当前状态，旧订单只能命中错误的当前值', () => {
-    const updated = applyType1Update(visualization.initialVersion, {
-      memberLevel: '黄金会员',
+  it('覆盖更新只留下今天的客户属性', () => {
+    const updated = applyCustomerType1Update(visualization.initialVersion, {
+      level: visualization.change.level,
+      branch: visualization.change.branch,
     })
 
-    expect(updated.memberLevel).toBe('黄金会员')
-    expect(updated.effectiveFrom).toBe('2026-01-01')
-    expect(updated.effectiveTo).toBe('9999-12-31')
-    expect(getDimensionVersionAt([updated], '2026-02-10')?.memberLevel).toBe('黄金会员')
-    expect(visualization.initialVersion.memberLevel).toBe('普通会员')
+    expect(updated).toMatchObject({
+      customerId: 'C001',
+      customerSk: 101,
+      level: 'VIP',
+      branch: '上海支行',
+      effectiveFrom: '2025-01-01',
+      effectiveTo: '9999-12-31',
+    })
+    expect(getCustomerVersionAt([updated], '2025-10-10')?.level).toBe('VIP')
   })
 
-  it('Type 2 会关闭旧版本并新增当前版本', () => {
-    const versions = applyType2Update(
-      [visualization.initialVersion],
-      { memberLevel: '黄金会员' },
-      visualization.change.effectiveFrom,
-    )
+  it('拉链表关闭旧版本并插入 customer_sk 205', () => {
+    const versions = applyCustomerType2Update([visualization.initialVersion], visualization.change)
 
     expect(versions).toEqual([
       {
         ...visualization.initialVersion,
-        effectiveTo: '2026-03-01',
+        effectiveTo: '2026-04-01',
         isCurrent: false,
       },
       {
         ...visualization.initialVersion,
-        memberLevel: '黄金会员',
-        effectiveFrom: '2026-03-01',
-        effectiveTo: SCD_OPEN_END,
+        customerSk: 205,
+        level: 'VIP',
+        branch: '上海支行',
+        effectiveFrom: '2026-04-01',
+        effectiveTo: BANKING_CUSTOMER_HISTORY_OPEN_END,
         isCurrent: true,
       },
     ])
-    expect(getDimensionVersionAt(versions, '2026-02-10')?.memberLevel).toBe('普通会员')
-    expect(getDimensionVersionAt(versions, '2026-04-10')?.memberLevel).toBe('黄金会员')
+    expect(getCustomerVersionAt(versions, '2025-10-10')).toMatchObject({
+      customerSk: 101,
+      level: '普通',
+      branch: '杭州支行',
+    })
+    expect(getCustomerVersionAt(versions, '2026-04-01')).toMatchObject({
+      customerSk: 205,
+      level: 'VIP',
+      branch: '上海支行',
+    })
   })
 
-  it('升级边界属于新版本而不是旧版本', () => {
-    const versions = applyType2Update(
-      [visualization.initialVersion],
-      { memberLevel: '黄金会员' },
-      '2026-03-01',
-    )
+  it('变更日属于新版本，前一天仍属于旧版本', () => {
+    const versions = applyCustomerType2Update([visualization.initialVersion], visualization.change)
 
-    expect(getDimensionVersionAt(versions, '2026-03-01 00:00:00')?.memberLevel).toBe('黄金会员')
-    expect(getDimensionVersionAt(versions, '2026-02-28 23:59:59')?.memberLevel).toBe('普通会员')
+    expect(getCustomerVersionAt(versions, '2026-04-01 00:00:00')?.customerSk).toBe(205)
+    expect(getCustomerVersionAt(versions, '2026-03-31 23:59:59')?.customerSk).toBe(101)
   })
 })

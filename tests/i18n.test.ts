@@ -33,9 +33,17 @@ describe('轻量 i18n API', () => {
       id: '03',
       title: '数据建模',
       lessons: [
-        expect.objectContaining({ slug: 'data-modeling' }),
-        expect.objectContaining({ slug: 'star-schema-and-grain' }),
-        expect.objectContaining({ slug: 'slowly-changing-dimension' }),
+        expect.objectContaining({ slug: 'data-modeling', title: '业务过程：到底要记录哪件事？' }),
+        expect.objectContaining({ slug: 'grain', title: 'Grain：一行究竟代表什么？' }),
+        expect.objectContaining({
+          slug: 'star-schema-and-grain',
+          title: '事实、维度与星型模型',
+        }),
+        expect.objectContaining({ slug: 'fact-table-types', title: '事实表不只有一种' }),
+        expect.objectContaining({
+          slug: 'slowly-changing-dimension',
+          title: '维度为什么要保存历史？——拉链表',
+        }),
       ],
     })
     expect(getChapterTitle('03')).toBe('数据建模')

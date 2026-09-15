@@ -1,105 +1,138 @@
 import type { LessonContent } from '../types'
 
 export const slowlyChangingDimensionContent: LessonContent = {
-  eyebrow: '第 05 课 · 维度历史与 SCD Type 2',
-  subtitle: '会员等级会变化，但历史订单不应该被今天的状态重新改写。',
+  eyebrow: '第 03 章 · 维度历史',
+  subtitle: '客户等级和所属机构会变化，但分析历史贷款时，应该还能还原当时的客户状态。',
   quickSummary:
-    'U1001 从普通会员升级为黄金会员后，订单 A 和订单 B 应该各自命中哪个版本？用 Type 1 与 SCD Type 2 对照，保存普通会员和黄金会员两个有效版本。',
+    '用 Customer C001 从普通客户、杭州支行变为 VIP、上海支行的例子，比较覆盖更新与拉链表如何影响 2025-10-10 的 LoanNote N001。',
   concept: {
-    term: 'SCD Type 2',
+    term: '拉链表（SCD Type 2 / Slowly Changing Dimension Type 2）',
     definition:
-      '当维度属性变化时不覆盖旧行，而是关闭旧版本、插入新版本，并用有效时间区间表示每个版本何时生效。',
+      '拉链表在维度属性变化时关闭旧版本、插入新版本，并用有效时间区间保存每个版本何时生效，从而可以按历史时间点还原属性。',
   },
   sections: [
     {
       kind: 'narrative',
-      title: '用户升了 VIP，半年前的订单算什么等级？',
+      title: '客户升级以后，2025 年的贷款算哪个等级？',
       paragraphs: [
-        'U1001 在 2026-03-01 从普通会员升级为黄金会员。现在查询 2026-02-10 的订单 A，应该显示今天的黄金会员，还是下单当时的普通会员？',
-        '如果直接 UPDATE dim_user，表里只剩黄金会员，历史答案就消失了。这节课用一条时间线，让你亲手把时间拨回升级前。',
+        'Customer C001 在 2025 年是普通客户，所属机构是杭州支行。2026 年 4 月 1 日，客户等级变为 VIP，所属机构变为上海支行。现在分析 2025-10-10 的 LoanNote N001，业务需要知道客户当时是什么状态。',
+        '如果维度表只保留今天的值，查询历史贷款时只能读到 VIP 和上海支行。问题不是客户资料不能更新，而是当前属性和历史分析所需的属性有不同的时间语义。',
+      ],
+      bullets: [
+        'customer_id = C001：稳定的客户业务 identity。',
+        'customer_sk = 101 / 205：某一个客户历史版本的代理键。',
+        '历史 LoanNote N001：2025-10-10，放款本金 ¥300,000。',
       ],
     },
     {
       kind: 'visualization',
-      eyebrow: '时间旅行实验 · 用订单时间命中版本',
-      title: '把时间拨回去，看看当时的会员状态',
+      eyebrow: '历史版本实验 · 时间点还原',
+      title: '同一个 customer_id，保留两个时间版本',
       description:
-        '执行一次会员升级，用时间点按钮或滑块查看订单 A、升级节点和订单 B。切换 Type 1 / Type 2，比较同一个时间点为什么会得到不同答案。',
+        '先写入客户等级和机构变更，再在覆盖更新与拉链表之间切换；拖动时间线到 N001 的放款日，查看两种策略命中的 Customer 状态。',
       visualization: {
-        kind: 'scd',
+        kind: 'banking-customer-history',
         initialVersion: {
-          userId: 'U1001',
-          city: '杭州',
-          memberLevel: '普通会员',
-          effectiveFrom: '2026-01-01',
+          customerSk: 101,
+          customerId: 'C001',
+          level: '普通',
+          branch: '杭州支行',
+          effectiveFrom: '2025-01-01',
           effectiveTo: '9999-12-31',
           isCurrent: true,
         },
         change: {
-          effectiveFrom: '2026-03-01',
-          memberLevel: '黄金会员',
+          customerSk: 205,
+          effectiveFrom: '2026-04-01',
+          level: 'VIP',
+          branch: '上海支行',
         },
-        orders: [
-          { id: 'order-a', label: '订单 A', orderTime: '2026-02-10', amount: 128 },
-          { id: 'order-b', label: '订单 B', orderTime: '2026-04-10', amount: 256 },
+        loanNote: {
+          noteId: 'N001',
+          customerId: 'C001',
+          disbursedDate: '2025-10-10',
+          disbursedPrincipal: 300000,
+        },
+        timeline: [
+          {
+            date: '2025-01-01',
+            label: '初始版本',
+            detail: '普通 · 杭州支行生效',
+            kind: 'start',
+          },
+          {
+            date: '2025-10-10',
+            label: 'LoanNote N001',
+            detail: '历史贷款放款 ¥300,000',
+            kind: 'loan-note',
+          },
+          {
+            date: '2026-04-01',
+            label: '属性变更',
+            detail: '等级和所属机构发生变化',
+            kind: 'change',
+          },
+          {
+            date: '2026-09-15',
+            label: '今天',
+            detail: 'VIP · 上海支行',
+            kind: 'now',
+          },
         ],
-        timelineLabels: ['2026-01', '2026-02', '2026-03', '2026-04'],
       },
     },
     {
       kind: 'compare',
-      title: '直接覆盖还是保留历史：取决于业务怎么查',
-      intro: '没有绝对更好的类型，关键是业务问题是否需要“当时的属性”。',
+      title: '覆盖更新还是拉链表：看查询是否需要“当时”',
+      intro: '两种策略都可能合理，关键是历史分析是否需要保留属性变化前的版本。',
       columns: [
         {
-          label: 'TYPE 1',
-          title: '直接覆盖',
-          points: ['实现简单、行数少', '适合只关心当前值的属性', '无法还原历史订单当时的状态'],
+          label: '覆盖更新（SCD Type 1）',
+          title: '只保存当前属性',
+          points: [
+            '实现简单，维度只保留一行',
+            '适合只关心今天值的属性',
+            '2025 年的 N001 会读到 VIP、上海支行',
+          ],
         },
         {
-          label: 'TYPE 2',
-          title: '新增版本',
+          label: '拉链表（SCD Type 2）',
+          title: '按有效区间保存历史',
           points: [
-            '保留旧行并插入新行',
-            '适合需要历史语义的属性',
-            '会增加行数、ETL 复杂度和 Join 成本',
+            '关闭旧行并插入新版本',
+            '适合需要还原历史语义的属性',
+            'N001 可以命中普通、杭州支行的旧版本',
           ],
         },
       ],
     },
     {
-      kind: 'sql',
-      label: 'SCD Type 2 的时间连接条件',
-      language: 'sql',
-      code: `SELECT
-  o.order_id,
-  o.order_time,
-  d.member_level
-FROM fact_order o
-JOIN dim_user d
-  ON o.user_id = d.user_id
- AND o.order_time >= d.effective_from
- AND o.order_time < d.effective_to;`,
-    },
-    {
-      kind: 'engineering-note',
-      title: '只为关键属性保留历史版本',
-      text: 'SCD Type 2 会导致维度表行数膨胀、ETL 逻辑复杂以及关联成本上升。生产中通常只对直接影响财务结算、核心指标分类的关键属性（如会员等级、归属部门）做版本化，其他次要属性（如手机号、收货地址）直接覆盖即可。',
-    },
-    {
-      kind: 'takeaway',
-      title: '把历史语义写进数据模型',
-      text: 'SCD Type 2 的本质，是让历史订单关联用户维度时，能够准确匹配到下单那一刻生效的状态版本。',
-      bullets: [
-        '关闭旧版本，再插入新版本。',
-        '使用 [effective_from, effective_to) 半开区间。',
-        '只对真正需要历史解释的属性做版本化。',
+      kind: 'narrative',
+      title: '两个 key，各自回答不同问题',
+      paragraphs: [
+        'customer_id 说明“是哪位客户”，是跨时间稳定的业务键；customer_sk 说明“这个客户的哪一个属性版本”。历史查询先用 customer_id 找到版本集合，再用 LoanNote 的 disbursedDate 判断落在哪个有效区间。',
+        '本例的两个版本可以写成：101 / C001 / 普通 / 杭州支行 / 2025-01-01 到 2026-03-31，以及 205 / C001 / VIP / 上海支行 / 2026-04-01 到 9999-12-31。变更日属于新版本，旧版本的结束时间不包含变更日。',
       ],
     },
     {
+      kind: 'takeaway',
+      title: '维度历史要由业务问题决定',
+      text: '当问题带着“当时”两个字时，当前唯一行往往不够。拉链表把属性变化变成有边界的版本，让历史 LoanNote 可以恢复当时的客户状态。',
+      bullets: [
+        '覆盖更新：适合只看当前值，历史属性会被新值替代。',
+        '拉链表：使用 [start_date, end_date) 保存不重叠的历史版本。',
+        'customer_id 保持业务 identity，customer_sk 标识具体历史版本。',
+      ],
+    },
+    {
+      kind: 'engineering-note',
+      title: '只为真正需要追溯的属性保留版本',
+      text: '拉链表会增加维度行数、写入逻辑和时间 Join 成本。生产中应先确认客户等级、机构归属等属性是否影响历史解释，再决定是否版本化，不要把所有字段都机械复制成历史行。',
+    },
+    {
       kind: 'pitfall',
-      title: '边界时刻必须只命中一个版本',
-      text: '不要用 BETWEEN 替代半开区间而忽略边界；effective_to 是开区间，升级瞬间应命中新版本，否则同一个订单可能同时 JOIN 到两行。',
+      title: '有效区间的边界必须统一',
+      text: '使用 [start_date, end_date) 半开区间：2026-04-01 这一天命中新版本，2026-03-31 仍命中旧版本，避免同一笔历史贷款同时 Join 到两行。',
     },
   ],
 }

@@ -9,11 +9,16 @@ import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
 import {
+  BankingCustomerHistoryLab,
+  BankingFactTypesLab,
+  BankingStarSchemaLab,
   BusinessSystemFlow,
   DataQualityWorkbench,
   GovernanceWorkbench,
   LakehouseArchitectureLab,
   LineageGraph,
+  LoanBusinessProcessLab,
+  LoanGrainLab,
   MetricDefinitionLab,
   ModelingIntro,
   PerformanceLab,
@@ -109,6 +114,16 @@ function VisualizationBody({
       )
     case 'modeling-intro':
       return <ModelingIntro visualization={visualization} />
+    case 'loan-business-process':
+      return <LoanBusinessProcessLab visualization={visualization} />
+    case 'loan-grain':
+      return <LoanGrainLab visualization={visualization} />
+    case 'banking-star-schema':
+      return <BankingStarSchemaLab visualization={visualization} />
+    case 'banking-fact-types':
+      return <BankingFactTypesLab visualization={visualization} />
+    case 'banking-customer-history':
+      return <BankingCustomerHistoryLab visualization={visualization} />
     case 'star-schema':
       return <StarSchemaFlow visualization={visualization} />
     case 'scd':

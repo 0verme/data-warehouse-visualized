@@ -1,4 +1,7 @@
 import type {
+  BankingCustomerHistoryVisualization,
+  BankingFactTypesVisualization,
+  BankingStarSchemaVisualization,
   FlowOutput,
   GovernanceVisualization,
   LakehouseVisualization,
@@ -6,6 +9,8 @@ import type {
   LineageInvestigationEvent,
   LineageNode,
   MetricVisualization,
+  LoanBusinessProcessVisualization,
+  LoanGrainVisualization,
   ModelingIntroVisualization,
   PipelineStage,
   ScdVisualization,
@@ -121,6 +126,11 @@ export type LessonVisualization =
       investigationEvents?: LineageInvestigationEventDefinition[]
     }
   | ModelingIntroVisualization
+  | LoanBusinessProcessVisualization
+  | LoanGrainVisualization
+  | BankingStarSchemaVisualization
+  | BankingFactTypesVisualization
+  | BankingCustomerHistoryVisualization
   | StarSchemaVisualization
   | ScdVisualization
   | MetricVisualization
