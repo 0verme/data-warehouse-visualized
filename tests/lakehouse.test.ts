@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { lakehouseContent } from '../src/content/lessons/lakehouse'
 import { getLessonBySlug } from '../src/data/course'
+import type { LessonSection, LessonVisualizationSection } from '../src/content/types'
 import type { LakehouseVisualization } from '../src/types'
 import {
   buildDecisionRecord,
@@ -14,9 +15,12 @@ import {
   timeTravelTo,
 } from '../src/utils/lakehouse'
 
-const visualization = lakehouseContent.sections.find(
-  (section) => section.kind === 'visualization' && section.visualization.kind === 'lakehouse',
-)?.visualization
+const isLakehouseVisualizationSection = (
+  section: LessonSection,
+): section is LessonVisualizationSection & { visualization: LakehouseVisualization } =>
+  section.kind === 'visualization' && section.visualization.kind === 'lakehouse'
+
+const visualization = lakehouseContent.sections.find(isLakehouseVisualizationSection)?.visualization
 
 if (!visualization || visualization.kind !== 'lakehouse') {
   throw new Error('湖仓测试需要 lakehouse visualization 数据')
@@ -112,7 +116,7 @@ describe('湖仓架构选择与版本实验', () => {
 
   it('time travel 能还原 v1，普通 schema 演进不会覆盖历史', () => {
     const evolved = evolveSnapshotSchema(initialSnapshot, [
-      { name: 'device_type', defaultValue: null },
+      { name: 'device_type', label: '设备类型', defaultValue: null },
     ])
     const committed = commitSnapshot(
       lakehouseVisualization.snapshots,
