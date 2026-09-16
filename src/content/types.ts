@@ -32,6 +32,7 @@ import type { SchedulerVisualization } from '../features/scheduler/types'
 import type { SqlTransformationVisualization } from '../features/sql-transformation/types'
 import type { PerformanceVisualization } from '../features/performance/types'
 import type { DataQualityVisualization } from '../features/data-quality/types'
+import type { DataServiceVisualization } from '../features/data-service/types'
 
 export interface LessonOpening {
   eyebrow: string
@@ -159,6 +160,7 @@ export type LessonVisualization =
   | PerformanceVisualization
   | SchedulerVisualization
   | DataQualityVisualization
+  | DataServiceVisualization
 
 export interface LessonContent {
   eyebrow: string

@@ -22,7 +22,8 @@
 - `data-lineage-investigation.ts`：7-3 Quality Event 调查
 - `data-lineage-impact.ts`：7-4 变更影响范围
 - `data-lineage-evidence.ts`：7-5 血缘关系证据
-- `data-governance.ts`：第 09 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
+- `data-governance.ts`：第 08 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
+- `lakehouse.ts`：第 09 章四节湖仓课程，依次练习 Lake-first、异构湖仓复制、Table Layer 与湖仓一体
 - `sql-and-transformation.ts`：存款余额指标定义与加工计划
 - `sql-and-transformation-cleaning.ts`：账户日明细去重、缺失关联与币种标准化
 - `sql-and-transformation-join.ts`：账户介质一对多 Join 与余额放大
@@ -43,4 +44,4 @@
 - `data-quality-dataset.ts`：6-3 应到集合、Freshness 与跨层对账
 - `data-quality-evidence.ts`：6-4 Quality Event 与行级/聚合证据
 - `data-quality-release.ts`：6-5 银行关键数据 BLOCK 与埋点 quarantine 对照
-- `lakehouse.ts`：第 10 章四节湖仓课程，依次练习 Lake-first、异构湖仓复制、Table Layer 与湖仓一体
+- `data-service.ts`：10-1 至 10-5 已发布存款余额的报表 / BI、TXT + FLAG、API 与消费方式选择

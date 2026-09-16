@@ -13,6 +13,13 @@ import { dataQualityEvidenceContent } from './data-quality-evidence'
 import { dataQualityReleaseContent } from './data-quality-release'
 import { dataQualityRulesContent } from './data-quality-rules'
 import { dataQualityContent } from './data-quality'
+import {
+  dataServiceApiContent,
+  dataServiceDecisionContent,
+  dataServiceContent,
+  dataServiceFileContent,
+  dataServiceReportContent,
+} from './data-service'
 import { dataLineageContent } from './data-lineage'
 import { dataLineageEvidenceContent } from './data-lineage-evidence'
 import { dataLineageFieldsContent } from './data-lineage-fields'
@@ -60,6 +67,11 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'data-quality-dataset': dataQualityDatasetContent,
   'data-quality-evidence': dataQualityEvidenceContent,
   'data-quality-release': dataQualityReleaseContent,
+  'data-service': dataServiceContent,
+  'data-service-report': dataServiceReportContent,
+  'data-service-file': dataServiceFileContent,
+  'data-service-api': dataServiceApiContent,
+  'data-service-choice': dataServiceDecisionContent,
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
   'report-metric-journey': reportMetricJourneyContent,
