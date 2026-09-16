@@ -89,4 +89,16 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-impact"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-evidence"')
   })
+
+  it('SSR 展开第 10 章时只显示四节湖仓课程', () => {
+    const markup = renderSidebarForLesson('lakehouse-table-layer')
+    const chapterMarkup = getChapterMarkup(markup, '10')
+
+    expect(chapterMarkup).toContain('aria-expanded="true"')
+    expect(chapterMarkup).toContain('>0/4</span>')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10-replication"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10-table-layer"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10-unity"')
+  })
 })
