@@ -17,9 +17,7 @@ import {
 } from '../../utils/progress'
 import {
   getAdjacentLessons,
-  getChapterDisplayNumber,
   getLessonChapterId,
-  getLessonDisplayNumber,
   getLessonFromPath,
   isLearnIndexPath,
   toggleExpandedChapter,
@@ -446,9 +444,6 @@ export function LearnShell({
                         <path d="m4 6 4 4 4-4" />
                       </svg>
                     </span>
-                    <span className="course-chapter__index">
-                      {getChapterDisplayNumber(chapter.id)}
-                    </span>
                     <strong>{chapter.title}</strong>
                     <span
                       className={`course-chapter__progress${isChapterComplete ? ' is-complete' : ''}`}
@@ -492,9 +487,6 @@ export function LearnShell({
                                   <path d="m3.5 8.5 3 3 6-7" />
                                 </svg>
                               )}
-                            </span>
-                            <span className="course-lesson__number" aria-hidden="true">
-                              {getLessonDisplayNumber(lesson, chapter.lessons)}
                             </span>
                             <span className="course-lesson__title">{lesson.title}</span>
                           </a>

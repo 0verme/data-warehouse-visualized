@@ -32,7 +32,7 @@ function getChapterMarkup(markup: string, chapterId: string): string {
 }
 
 describe('课程 Sidebar Accordion', () => {
-  it('SSR 第一章显示四节课程并保留 1-1 到 1-4 编号', () => {
+  it('SSR 第一章显示四节课程，隐藏视觉编号并完整展示小节标题', () => {
     const markup = renderSidebarForLesson('why-data-warehouse')
     const chapterMarkup = getChapterMarkup(markup, '01')
 
@@ -44,6 +44,20 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-01-terms"')
     expect(chapterMarkup).toContain('>为什么有业务系统，还需要数据仓库？</span>')
     expect(chapterMarkup).toContain('>这些数仓术语到底在说什么？</span>')
+    expect(chapterMarkup).not.toContain('course-chapter__index')
+    expect(chapterMarkup).not.toContain('course-lesson__number')
+    expect(chapterMarkup).not.toContain('>01</span>')
+    expect(chapterMarkup).not.toContain('>1-1</span>')
+  })
+
+  it('Sidebar 全局移除章节与小节的视觉编号，保留无前缀完整标题和链接属性', () => {
+    const markup = renderSidebarForLesson('why-data-warehouse')
+
+    expect(markup).not.toContain('course-chapter__index')
+    expect(markup).not.toContain('course-lesson__number')
+    expect(markup).toContain('class="course-lesson is-active"')
+    expect(markup).toContain('data-progress-lesson-link="lesson-01"')
+    expect(markup).toContain('<span class="course-lesson__title">为什么有业务系统，还需要数据仓库？</span>')
   })
 
   it('SSR 初始只展开当前课程所属章节，并保留当前课程高亮和章节进度', () => {
