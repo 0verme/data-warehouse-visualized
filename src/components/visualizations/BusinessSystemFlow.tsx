@@ -57,7 +57,7 @@ export function BusinessSystemFlow({ systems, warehouseLabel, outputs }: Busines
     <div className={`business-flow business-flow--phase-${phase}`}>
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">数据搬运实验</span>
+          <span className="visualization-toolbar__label">跨系统汇聚实验</span>
           <p aria-live="polite">{phaseLabels[phase]}</p>
         </div>
         <div className="visualization-toolbar__actions">
@@ -76,7 +76,7 @@ export function BusinessSystemFlow({ systems, warehouseLabel, outputs }: Busines
 
       <div className="business-flow__diagram">
         <div className="business-flow__sources">
-          <div className="business-flow__column-label">多个业务系统</div>
+          <div className="business-flow__column-label">并列数据源</div>
           <div className="business-flow__source-grid">
             {systems.map((system, index) => {
               const isSelected = system.id === selectedSystemId
@@ -145,7 +145,7 @@ export function BusinessSystemFlow({ systems, warehouseLabel, outputs }: Busines
           <span className="flow-inspector__tag">当前查看</span>
           <div>
             <strong>{selectedSystem.name}</strong>
-            <p>{selectedSystem.detail}。它负责把交易事实记录好，而不是承担所有跨主题分析。</p>
+            <p>{selectedSystem.detail}。它记录自己的业务事实，跨系统分析在数据仓库中完成。</p>
           </div>
         </div>
       )}

@@ -72,7 +72,7 @@ function normalizedConfig(overrides: Partial<PerformanceConfig> = {}): Performan
 }
 
 /**
- * Converts the existing Chapter 10 state into model modifiers. The state itself
+ * Converts the existing Chapter 09 state into model modifiers. The state itself
  * remains the source of truth; this function deliberately does not create a
  * second architecture/capability model.
  */
@@ -98,7 +98,7 @@ export function mapArchitectureStateToPerformanceInput(
   }
 }
 
-/** Convenient mapping seam for callers that only have Chapter 10 selections. */
+/** Convenient mapping seam for callers that only have Chapter 09 selections. */
 export function getPerformanceArchitectureInput(
   architecture: Parameters<typeof getArchitectureState>[0],
   workload: Parameters<typeof getArchitectureState>[1],

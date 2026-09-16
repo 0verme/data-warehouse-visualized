@@ -52,7 +52,7 @@ export const legacySchedulerVisualization: SchedulerVisualization = {
 }
 
 export const legacySchedulingSystemContent: LessonContent = {
-  eyebrow: '第 06 课 · 时间轴驱动 DAG Run',
+  eyebrow: '第 05 章 · 时间轴驱动 DAG Run',
   opening: {
     eyebrow: '早上 8 点，报表为什么还没到？',
     title: '报表晚到时，时间线上的绿色勾说明什么？',

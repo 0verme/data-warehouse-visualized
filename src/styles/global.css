@@ -6,6 +6,7 @@
 @import './layouts/home-legacy.css';
 @import './layouts/learn-shell.css';
 @import './components/shared-lesson.css';
+@import './lessons/warehouse-intro.css';
 @import './lessons/data-modeling.css';
 @import './lessons/star-schema.css';
 @import './lessons/metric.css';

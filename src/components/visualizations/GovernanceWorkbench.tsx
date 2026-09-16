@@ -135,7 +135,7 @@ function AssetSelectionLab({ visualization }: { visualization: GovernanceVisuali
     <div className="governance-workbench" data-governance-focus="asset-selection">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">09-1 · 资产搜索结果</span>
+          <span className="visualization-toolbar__label">08-1 · 资产搜索结果</span>
           <p aria-live="polite">搜索“存款余额”，比较每一行实际代表什么。</p>
         </div>
         <button
@@ -244,10 +244,10 @@ function EvidenceCheckLab({ visualization }: { visualization: GovernanceVisualiz
     <div className="governance-workbench" data-governance-focus="evidence-check">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">09-2 · Quality + Freshness</span>
+          <span className="visualization-toolbar__label">08-2 · Quality + Freshness</span>
           <p aria-live="polite">当前需求：今天查看昨天业务日的机构存款余额。</p>
         </div>
-        <span className="governance-toolbar-hint">只消费第 07 章已提供的证据</span>
+        <span className="governance-toolbar-hint">只消费第 06 章已提供的证据</span>
       </div>
       <section className="governance-panel" aria-labelledby="governance-evidence-title">
         <PanelHeading
@@ -372,7 +372,7 @@ function FieldAccessLab({ visualization }: { visualization: GovernanceVisualizat
     <div className="governance-workbench" data-governance-focus="field-access">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">09-3 · 字段级使用</span>
+          <span className="visualization-toolbar__label">08-3 · 字段级使用</span>
           <p aria-live="polite">当前角色：经营分析人员；只选择真正需要的字段。</p>
         </div>
         <span className="governance-toolbar-hint">资产可用 ≠ 所有字段都可直接用</span>
@@ -493,7 +493,7 @@ function LifecycleLab({ visualization }: { visualization: GovernanceVisualizatio
     <div className="governance-workbench" data-governance-focus="lifecycle">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">09-4 · 生命周期</span>
+          <span className="visualization-toolbar__label">08-4 · 生命周期</span>
           <p aria-live="polite">搜索仍可访问的旧资产，判断是否继续建立新的依赖。</p>
         </div>
         <button
@@ -622,7 +622,7 @@ function ChangeResponsibilityLab({ visualization }: { visualization: GovernanceV
     <div className="governance-workbench" data-governance-focus="change-responsibility">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">09-5 · Owner responsibility</span>
+          <span className="visualization-toolbar__label">08-5 · Owner responsibility</span>
           <p aria-live="polite">{impact.evidenceLabel}；本节不重新计算血缘。</p>
         </div>
         <button

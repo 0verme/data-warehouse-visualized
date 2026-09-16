@@ -27,6 +27,87 @@ export interface PipelineStage {
   output: string
 }
 
+export interface LayerEvolutionSource {
+  id: string
+  label: string
+  detail: string
+}
+
+export interface LayerEvolutionConsumer {
+  id: string
+  label: string
+  detail: string
+}
+
+export interface LayerEvolutionDemand {
+  id: string
+  label: string
+  title: string
+  description: string
+  architecture: 'direct' | 'shared'
+  consumers: LayerEvolutionConsumer[]
+  repeatedWork: string[]
+}
+
+export interface LayerEvolutionStage {
+  id: string
+  label: string
+  title: string
+  detail: string
+  output: string
+}
+
+export interface LayerEvolutionVisualization {
+  kind: 'layer-evolution'
+  sources: LayerEvolutionSource[]
+  demands: LayerEvolutionDemand[]
+  sharedStages: LayerEvolutionStage[]
+}
+
+export interface ReportMetricJourneyStep {
+  id: string
+  label: string
+  title: string
+  detail: string
+  value?: string
+}
+
+export interface ReportMetricJourneyVisualization {
+  kind: 'report-metric-journey'
+  metricLabel: string
+  formula: string
+  result: string
+  steps: ReportMetricJourneyStep[]
+}
+
+export type WarehouseTermId = 'oltp' | 'etl' | 'elt' | 'olap' | 'data-warehouse'
+
+export interface WarehouseTermDefinition {
+  id: WarehouseTermId
+  group: string
+  groupLabel: string
+  term: string
+  chinese: string
+  fullName: string
+  solves: string
+  relation: string
+}
+
+export interface WarehouseTermScenario {
+  id: string
+  label: string
+  prompt: string
+  answerLabel: string
+  answerTermIds: WarehouseTermId[]
+  explanation: string
+}
+
+export interface WarehouseTermsVisualization {
+  kind: 'warehouse-terms'
+  terms: WarehouseTermDefinition[]
+  scenarios: WarehouseTermScenario[]
+}
+
 export type LineageEntityType = 'table' | 'field' | 'task' | 'metric'
 export type LineageRelationType = 'transform' | 'depends_on' | 'derives' | 'consumes'
 export type LineageEvidenceSource =
@@ -801,7 +882,7 @@ export interface GovernanceLineageEvidence {
 }
 
 /**
- * A small governance projection of the chapter 07 Quality Contract.
+ * A small governance projection of the chapter 06 Quality Contract.
  * Governance owns the summary; the quality domain still owns the full event/check model.
  */
 export interface GovernanceQualitySample {
@@ -822,7 +903,7 @@ export interface GovernanceQualityEvidenceItem {
 }
 
 export interface GovernanceQualityEvidence {
-  source: 'chapter-07'
+  source: 'chapter-06'
   status: QualityCheckResult['status']
   severity?: QualityEvent['severity']
   eventId?: QualityEvent['eventId']

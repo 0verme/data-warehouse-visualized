@@ -432,7 +432,7 @@ function QualityEventCard({ config }: { config: LineageInvestigationTeachingConf
         <strong>Quality FAILED</strong>
         <strong>Release BLOCKED</strong>
       </div>
-      <h4 id={`${headingId}-title`}>第 07 章留下的 Quality Event</h4>
+      <h4 id={`${headingId}-title`}>第 06 章留下的 Quality Event</h4>
       <dl className="lineage-teaching-event-facts">
         <div>
           <dt>business_date</dt>

@@ -38,7 +38,7 @@ describe('湖仓架构选择与版本实验', () => {
   it('课程元数据和同一份多形态输入已注册', () => {
     expect(getLessonBySlug('lakehouse')).toMatchObject({
       title: '湖仓：为什么数据湖最终需要仓库能力',
-      chapter: '10',
+      chapter: '09',
       demo: 'lakehouse',
     })
     expect(lakehouseVisualization.dataSources.map((source) => source.format)).toEqual([

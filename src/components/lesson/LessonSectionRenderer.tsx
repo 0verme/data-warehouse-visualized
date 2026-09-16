@@ -20,6 +20,7 @@ import {
   DataQualityWorkbench,
   GovernanceWorkbench,
   LakehouseArchitectureLab,
+  LayerEvolutionLab,
   LineageGraph,
   LoanBusinessProcessLab,
   LoanGrainLab,
@@ -27,10 +28,12 @@ import {
   ModelingIntro,
   PerformanceLab,
   PipelineFlow,
+  ReportMetricJourney,
   SchedulerRunSimulator,
   SlowlyChangingDimension,
   SqlTransformationWorkbench,
   StarSchemaFlow,
+  WarehouseTermsLab,
 } from '../visualizations'
 import { CodeBlock } from './CodeBlock'
 import { CompareSplit } from './CompareSplit'
@@ -107,6 +110,12 @@ function VisualizationBody({
       )
     case 'pipeline':
       return <PipelineFlow stages={visualization.stages} />
+    case 'layer-evolution':
+      return <LayerEvolutionLab visualization={visualization} />
+    case 'report-metric-journey':
+      return <ReportMetricJourney visualization={visualization} />
+    case 'warehouse-terms':
+      return <WarehouseTermsLab visualization={visualization} />
     case 'lineage':
       return (
         <LineageGraph
@@ -223,8 +232,7 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
       return {
         eyebrow: '调度系统 · DAG Run 模拟器',
         title: '存款余额指标为什么还没更新？',
-        description:
-          '沿着时间轴推进第 05 章的 ODS → DWD → DWS → ADS，观察迟到、失败、重试和重跑如何传播。',
+        description: '沿着时间轴推进第 04 章已经确定的加工链，观察迟到、失败、重试和重跑如何传播。',
       }
     default:
       return {

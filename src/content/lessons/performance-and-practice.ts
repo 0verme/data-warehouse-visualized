@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const performanceAndPracticeContent: LessonContent = {
-  eyebrow: '第 11 课 · 性能与工程实践',
+  eyebrow: '第 11 章 · 性能与工程实践',
   opening: {
     eyebrow: '同一份销售任务，规模开始增长',
     title: '为什么昨天能跑完，今天却超时？',

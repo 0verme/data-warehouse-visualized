@@ -40,7 +40,9 @@ import { sqlTransformationJoinContent } from './sql-and-transformation-join'
 import { sqlTransformationLayersContent } from './sql-and-transformation-layers'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
+import { warehouseTermsContent } from './warehouse-terms'
 import { whyDataWarehouseContent } from './why-data-warehouse'
+import { reportMetricJourneyContent } from './report-metric-journey'
 
 const lessonContentBySlug: Record<string, LessonContent> = {
   'data-governance': dataGovernanceContent,
@@ -55,6 +57,8 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'data-quality-release': dataQualityReleaseContent,
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
+  'report-metric-journey': reportMetricJourneyContent,
+  'warehouse-terms': warehouseTermsContent,
   'data-lineage': dataLineageContent,
   'data-lineage-fields': dataLineageFieldsContent,
   'data-lineage-investigation': dataLineageInvestigationContent,

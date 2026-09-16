@@ -70,7 +70,7 @@ export const depositMetricDefinitionVisualization: BankingMetricDefinitionVisual
 }
 
 export const depositMetricDefinitionContent: LessonContent = {
-  eyebrow: '第 04 章 · 指标定义卡',
+  eyebrow: '第 03 章 · 指标定义卡',
   subtitle: '“存款余额”只是一个名字；把时间、对象、度量和范围补齐，别人才能复述并复算它。',
   quickSummary:
     '用一张轻量定义卡，把“存款余额”逐步补成全行口径，再补成“杭州分行小微口径人民币定期存款余额”，同时标出 Account × snapshot_date 的底层 Grain。',
@@ -100,7 +100,7 @@ export const depositMetricDefinitionContent: LessonContent = {
       kind: 'narrative',
       title: 'Grain 只需要在这里点明它的作用',
       paragraphs: [
-        '第 03 章已经讨论过 Grain。这里不重新讲事实表设计，只确认指标依赖的输入行：如果底层是一行一个账户在一个快照日的状态，那么余额可以按账户快照汇总；如果把交易事件直接当成余额，就换了业务过程。',
+        '第 02 章已经讨论过 Grain。这里不重新讲事实表设计，只确认指标依赖的输入行：如果底层是一行一个账户在一个快照日的状态，那么余额可以按账户快照汇总；如果把交易事件直接当成余额，就换了业务过程。',
         '当定义写成“Account × snapshot_date + balance”，工程师可以继续追问快照来源、状态过滤和范围条件，而不是猜“存款余额”四个字的含义。',
       ],
     },

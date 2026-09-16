@@ -9,7 +9,7 @@ export const dataQualityDatasetVisualization = createDataQualityVisualization(
 )
 
 export const dataQualityDatasetContent: LessonContent = {
-  eyebrow: '第 07 章 · 7-3 整批与加工链',
+  eyebrow: '第 06 章 · 6-3 整批与加工链',
   opening: {
     eyebrow: '每一行都正常，为什么结果还是可能错？',
     title: '每一行都正常，为什么结果还是可能错？',
@@ -59,8 +59,8 @@ export const dataQualityDatasetContent: LessonContent = {
         '这里比较的是产出记录表达的日期，不再次讲上游什么时候到、为什么等待或怎样重试。',
       ],
       bullets: [
-        '运行及时：属于第 06 章的任务事实。',
-        '内容新鲜：属于第 07 章的日期质量。',
+        '运行及时：属于第 05 章的任务事实。',
+        '内容新鲜：属于第 06 章的日期质量。',
         '两者可以同时为真，也可以一个为真、另一个失败。',
       ],
     },

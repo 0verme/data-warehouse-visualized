@@ -8,19 +8,21 @@
 
 当前已实现：
 
-- `why-data-warehouse.ts`：业务系统与分析负载
-- `warehouse-layers.ts`：ODS / DWD / DWS / ADS 数据流
+- `why-data-warehouse.ts`：1-1 核心系统、信贷系统与跨系统分析
+- `warehouse-layers.ts`：1-2 数据职责、公共加工与变化影响
+- `report-metric-journey.ts`：1-3 存贷比报表数字的数据链路
+- `warehouse-terms.ts`：1-4 OLTP、OLAP、ETL、ELT 与 Data Warehouse 术语
 - `data-modeling.ts`：贷款业务过程选择与 LoanContract / LoanNote / Repayment 最小链路
 - `grain.ts`：合同、借据、还款三种 Grain 与 Join 放大错误
 - `star-schema-and-grain.ts`：账户交易字段归位、事实/维度与星型模型
 - `fact-table-types.ts`：Transaction Fact、Periodic Snapshot Fact、Accumulating Snapshot Fact 对照
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
-- `data-lineage.ts`：8-1 表级血缘
-- `data-lineage-fields.ts`：8-2 字段级血缘
-- `data-lineage-investigation.ts`：8-3 Quality Event 调查
-- `data-lineage-impact.ts`：8-4 变更影响范围
-- `data-lineage-evidence.ts`：8-5 血缘关系证据
-- `data-governance.ts`：第 09 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
+- `data-lineage.ts`：7-1 表级血缘
+- `data-lineage-fields.ts`：7-2 字段级血缘
+- `data-lineage-investigation.ts`：7-3 Quality Event 调查
+- `data-lineage-impact.ts`：7-4 变更影响范围
+- `data-lineage-evidence.ts`：7-5 血缘关系证据
+- `data-governance.ts`：第 08 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
 - `sql-and-transformation.ts`：存款余额指标定义与加工计划
 - `sql-and-transformation-cleaning.ts`：账户日明细去重、缺失关联与币种标准化
 - `sql-and-transformation-join.ts`：账户介质一对多 Join 与余额放大
@@ -36,8 +38,8 @@
 - `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
 - `scheduling-sla.ts`：迟到数据传播与业务 SLA
 - `scheduling-system.ts`：复用存款余额任务契约的时间轴 DAG Run 模拟，并保留旧调度事实导出入口
-- `data-quality.ts`：7-1 运行状态、质量状态与发布状态
-- `data-quality-rules.ts`：7-2 从 Grain 推出记录级质量规则
-- `data-quality-dataset.ts`：7-3 应到集合、Freshness 与跨层对账
-- `data-quality-evidence.ts`：7-4 Quality Event 与行级/聚合证据
-- `data-quality-release.ts`：7-5 银行关键数据 BLOCK 与埋点 quarantine 对照
+- `data-quality.ts`：6-1 运行状态、质量状态与发布状态
+- `data-quality-rules.ts`：6-2 从 Grain 推出记录级质量规则
+- `data-quality-dataset.ts`：6-3 应到集合、Freshness 与跨层对账
+- `data-quality-evidence.ts`：6-4 Quality Event 与行级/聚合证据
+- `data-quality-release.ts`：6-5 银行关键数据 BLOCK 与埋点 quarantine 对照

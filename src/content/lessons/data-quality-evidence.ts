@@ -9,7 +9,7 @@ export const dataQualityEvidenceVisualization = createDataQualityVisualization(
 )
 
 export const dataQualityEvidenceContent: LessonContent = {
-  eyebrow: '第 07 章 · 7-4 质量证据',
+  eyebrow: '第 06 章 · 6-4 质量证据',
   opening: {
     eyebrow: '质量失败以后，我们到底应该看什么？',
     title: '质量失败以后，我们到底应该看什么？',
@@ -36,7 +36,7 @@ export const dataQualityEvidenceContent: LessonContent = {
       title: '先问这条失败能不能被别人复核',
       paragraphs: [
         '引用完整性失败时，事件要让读者看到 rule、table、partition、business_date、field、expected、observed 和 failed_rows，并给出一条真实样本，例如 A10031 / B9999 / 230000。',
-        '事件只说观察到的质量事实。哪个上游过滤了数据、哪个下游指标受影响，需要第 08 章沿表、字段和任务关系继续调查。',
+        '事件只说观察到的质量事实。哪个上游过滤了数据、哪个下游指标受影响，需要第 07 章沿表、字段和任务关系继续调查。',
       ],
       bullets: [
         '规则身份：branch_reference_check。',
@@ -68,7 +68,7 @@ export const dataQualityEvidenceContent: LessonContent = {
     {
       kind: 'takeaway',
       title: 'Quality Event 在这里停住',
-      text: '第 07 章输出“发现了什么、观察到什么、证据在哪里”。第 08 章才根据 target、task 和表映射推导可能来源与影响路径。',
+      text: '第 06 章输出“发现了什么、观察到什么、证据在哪里”。第 07 章才根据 target、task 和表映射推导可能来源与影响路径。',
       bullets: [
         '保留 Scheduler run、task status 和 partition。',
         '不把 root cause 写进质量事实。',

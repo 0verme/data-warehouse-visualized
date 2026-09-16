@@ -2,7 +2,7 @@ import type { LessonContent } from '../types'
 import { createBankingSchedulerVisualization } from '../../features/scheduler/banking'
 
 export const schedulingBusinessDateContent: LessonContent = {
-  eyebrow: '第 06 章 · 业务日期与运行时间',
+  eyebrow: '第 05 章 · 业务日期与运行时间',
   opening: {
     eyebrow: '凌晨两点启动的任务，处理的是哪一天？',
     title: '今天凌晨跑的，为什么是昨天的数据？',

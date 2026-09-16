@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const dataModelingContent: LessonContent = {
-  eyebrow: '第 03 章 · 业务过程',
+  eyebrow: '第 02 章 · 业务过程',
   subtitle: '业务方说“新增贷款”时，先把这句话拆成可以被记录、核对和追问的业务过程。',
   quickSummary:
     '沿着 Customer → LoanContract → LoanNote → Repayment 的最小链路，比较合同约定、实际放款、借据本金和当前余额，先声明到底要记录哪件事。',

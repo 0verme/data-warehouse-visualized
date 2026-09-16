@@ -164,7 +164,7 @@ export interface TransformationTaskContract {
   }
   dependencies: readonly string[]
   repeatExecution: string
-  /** 第 06 章调度实验继续消费的运行属性；第 05 章正文不把它们当作重点。 */
+  /** 第 05 章调度实验继续消费的运行属性；第 04 章正文不把它们当作重点。 */
   isIdempotent: boolean
   supportsPartialRerun: boolean
   rerunHint: string

@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const grainContent: LessonContent = {
-  eyebrow: '第 03 章 · Grain',
+  eyebrow: '第 02 章 · Grain',
   subtitle: '同一份贷款合同可以拆出借据和还款记录；先说清一行代表什么，金额才有正确的落点。',
   quickSummary:
     '用合同 C001、借据 N001/N002 和还款 R001/R002/R003 切换合同、借据、还款三种 Grain，观察 identity、行数、金额和可回答问题如何一起变化。',

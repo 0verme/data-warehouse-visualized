@@ -2,7 +2,7 @@ import type { LessonContent } from '../types'
 import { createBankingSchedulerVisualization } from '../../features/scheduler/banking'
 
 export const schedulingFailureContent: LessonContent = {
-  eyebrow: '第 06 章 · 失败传播与重试',
+  eyebrow: '第 05 章 · 失败传播与重试',
   opening: {
     eyebrow: 'DWD 失败以后，DWS 为什么没有开始？',
     title: '一个任务失败，后面的任务会怎样？',

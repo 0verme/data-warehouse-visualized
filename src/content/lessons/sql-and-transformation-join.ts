@@ -11,7 +11,7 @@ const visualization: SqlTransformationVisualization = {
 }
 
 export const sqlTransformationJoinContent: LessonContent = {
-  eyebrow: '第 05 章 · Join 与数据粒度',
+  eyebrow: '第 04 章 · Join 与数据粒度',
   opening: {
     eyebrow: 'SQL 没报错，A001 的余额为什么从 100,000 变成 300,000？',
     title: 'Join 为什么会让金额变大？',

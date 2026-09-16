@@ -13,8 +13,8 @@ import {
 } from '../../utils/data-quality'
 
 /**
- * 第 07 章交给血缘调查的最小真实事件。
- * 质量事件只保留规则观察到的事实；第 08 章通过 adapter 推导调查路径。
+ * 第 06 章交给血缘调查的最小真实事件。
+ * 质量事件只保留规则观察到的事实；第 07 章通过 adapter 推导调查路径。
  */
 export function createDepositBalanceQualityEvent(): QualityEvent {
   const schedulerRun = createQualitySchedulerRun(
@@ -37,7 +37,7 @@ export function createDepositBalanceQualityEvent(): QualityEvent {
   )
 
   if (!event) {
-    throw new Error('第 07 章的存款余额 Quality Event 需要对账失败事实')
+    throw new Error('第 06 章的存款余额 Quality Event 需要对账失败事实')
   }
 
   return event

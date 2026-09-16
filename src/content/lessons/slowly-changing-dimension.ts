@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const slowlyChangingDimensionContent: LessonContent = {
-  eyebrow: '第 03 章 · 维度历史',
+  eyebrow: '第 02 章 · 维度历史',
   subtitle: '客户等级和所属机构会变化，但分析历史贷款时，应该还能还原当时的客户状态。',
   quickSummary:
     '用 Customer C001 从普通客户、杭州支行变为 VIP、上海支行的例子，比较覆盖更新与拉链表如何影响 2025-10-10 的 LoanNote N001。',

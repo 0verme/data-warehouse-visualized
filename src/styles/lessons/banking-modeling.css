@@ -1,4 +1,4 @@
-/* Chapter 03 banking labs. Each lab has a different interaction shape; table chrome is the only shared primitive. */
+/* Chapter 02 banking labs. Each lab has a different interaction shape; table chrome is the only shared primitive. */
 
 .banking-lab__table-wrap {
   max-width: 100%;
@@ -57,7 +57,7 @@
   color: var(--text-secondary);
 }
 
-/* 3-1: business process selection */
+/* 2-1: business process selection */
 .loan-process-lab,
 .loan-grain-lab,
 .banking-star-lab,
@@ -462,7 +462,7 @@
   color: var(--blue-deep);
 }
 
-/* 3-2: grain switching and duplicate join error */
+/* 2-2: grain switching and duplicate join error */
 .loan-grain__options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -793,7 +793,7 @@
   line-height: 1.6;
 }
 
-/* 3-3: fact/dimension derivation and banking star schema */
+/* 2-3: fact/dimension derivation and banking star schema */
 .banking-star__stage-rail {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1377,7 +1377,7 @@
   line-height: 1.6;
 }
 
-/* 3-4: three fact table shapes */
+/* 2-4: three fact table shapes */
 .banking-facts__type-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1650,7 +1650,7 @@
   line-height: 1.6;
 }
 
-/* 3-5: customer history and as-of query */
+/* 2-5: customer history and as-of query */
 .banking-history__change-strip {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);

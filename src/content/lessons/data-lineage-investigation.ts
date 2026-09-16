@@ -3,7 +3,7 @@ import { createLineageVisualization, investigationTeaching } from './data-lineag
 import { depositBalanceQualityEvent } from './data-quality'
 
 export const dataLineageInvestigationContent: LessonContent = {
-  eyebrow: '第 08 章 · 8-3 质量事件调查',
+  eyebrow: '第 07 章 · 7-3 质量事件调查',
   subtitle: '收到 Quality Event 后，先沿直接上游检查，再决定是否扩大调查范围。',
   quickSummary:
     'Quality Event 固定异常事实；血缘调查按近到远检查可能来源，不把候选根因当作已证实结论。',
@@ -15,9 +15,9 @@ export const dataLineageInvestigationContent: LessonContent = {
   sections: [
     {
       kind: 'visualization',
-      eyebrow: '8-3 · 质量事件调查',
+      eyebrow: '7-3 · 质量事件调查',
       title: '质量告警以后，哪些上游值得先查？',
-      description: `第 07 章留下的质量事件在 ${depositBalanceQualityEvent.target.table}.${depositBalanceQualityEvent.target.field} 上发现 delta = ${depositBalanceQualityEvent.observedValue}，因此 Release BLOCKED。先检查 DWD 这个直接上游：如果 DWD 正常，停在当前转换；如果 DWD 已异常，再向 AccountBalanceSnapshot、Account、Branch、Product 展开。`,
+      description: `第 06 章留下的质量事件在 ${depositBalanceQualityEvent.target.table}.${depositBalanceQualityEvent.target.field} 上发现 delta = ${depositBalanceQualityEvent.observedValue}，因此 Release BLOCKED。先检查 DWD 这个直接上游：如果 DWD 正常，停在当前转换；如果 DWD 已异常，再向 AccountBalanceSnapshot、Account、Branch、Product 展开。`,
       visualization: createLineageVisualization(investigationTeaching),
     },
   ],

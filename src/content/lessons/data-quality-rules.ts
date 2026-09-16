@@ -9,7 +9,7 @@ export const dataQualityRulesVisualization = createDataQualityVisualization(
 )
 
 export const dataQualityRulesContent: LessonContent = {
-  eyebrow: '第 07 章 · 7-2 记录自身的质量',
+  eyebrow: '第 06 章 · 6-2 记录自身的质量',
   opening: {
     eyebrow: '一张表到底应该检查什么？',
     title: '一张表到底应该检查什么？',

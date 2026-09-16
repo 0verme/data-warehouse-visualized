@@ -1,7 +1,7 @@
 import type { BankingMetricAccountSnapshot } from '../../types'
 
 /**
- * 教学数据统一使用元保存；界面在第 04 章的口径对比中按“亿元”展示，避免把示例金额误读成真实经营数据。
+ * 教学数据统一使用元保存；界面在第 03 章的口径对比中按“亿元”展示，避免把示例金额误读成真实经营数据。
  */
 export const depositAccountSnapshots: BankingMetricAccountSnapshot[] = [
   {

@@ -11,7 +11,7 @@ const visualization: SqlTransformationVisualization = {
 }
 
 export const sqlTransformationLayersContent: LessonContent = {
-  eyebrow: '第 05 章 · DWD 到 ADS',
+  eyebrow: '第 04 章 · DWD 到 ADS',
   opening: {
     eyebrow: '从 4 行账户明细到 1 行指标，消失的行去哪了？',
     title: '从 DWD 到 DWS / ADS，一行发生了什么变化？',
@@ -38,7 +38,7 @@ export const sqlTransformationLayersContent: LessonContent = {
       title: 'DWD 还保留哪些事实？',
       paragraphs: [
         'DWD 的 4 行分别对应 A001、A002、A003、A004 在 2026-09-30 的账户余额。即使 A003 缺少客户关联、A004 缺少产品关联，它们仍然是已经发生的余额快照，不能在聚合前凭空消失。',
-        '这一步承接第 03 章的判断：数据粒度要能说清楚；这里关注的是加工后的一行含义如何变化，不再重新讲建模理论。',
+        '这一步承接第 02 章的判断：数据粒度要能说清楚；这里关注的是加工后的一行含义如何变化，不再重新讲建模理论。',
       ],
       bullets: [
         'DWD：一行 = 一个账户 × 一个快照日。',
@@ -65,7 +65,7 @@ export const sqlTransformationLayersContent: LessonContent = {
     {
       kind: 'takeaway',
       title: '读聚合结果的三个问题',
-      text: '哪些字段被保留在 GROUP BY？哪些明细被合并？最终一行是否正好对应第 04 章定义的指标口径？',
+      text: '哪些字段被保留在 GROUP BY？哪些明细被合并？最终一行是否正好对应第 03 章定义的指标口径？',
       bullets: [
         '先看 DWD 行含义，再看 DWS 的分组字段。',
         '金额从 4 行明细汇总到 3 行业务分组，目标分组为 300,000。',

@@ -60,10 +60,11 @@ describe('学习进度', () => {
     })
   })
 
-  it('新增第三章课程后仍保留旧课程的完成记录', () => {
+  it('重构第一章后仍保留旧课程 id 的完成记录', () => {
     const legacyProgress = {
       completedLessonIds: [
         'lesson-01',
+        'lesson-02',
         'lesson-03',
         'lesson-04',
         'lesson-scd-type-2',
@@ -92,7 +93,9 @@ describe('学习进度', () => {
     })
   })
 
-  it('通过 localStorage 兼容接口保存和读取进度', () => {
+  it('通过固定 localStorage key 保存和读取进度', () => {
+    expect(PROGRESS_STORAGE_KEY).toBe('data-warehouse-visualized:progress')
+
     const values = new Map<string, string>()
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,

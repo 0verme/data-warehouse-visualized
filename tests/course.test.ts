@@ -19,12 +19,12 @@ describe('课程数据与导航', () => {
     const ordered = sortLessons(reversedLessons)
 
     expect(ordered.map((lesson) => lesson.slug)).toEqual(lessons.map((lesson) => lesson.slug))
-    expect(ordered.slice(2, 7).map((lesson) => `${lesson.chapter}:${lesson.order}`)).toEqual([
-      '03:100',
-      '03:200',
-      '03:300',
-      '03:400',
-      '03:500',
+    expect(ordered.slice(4, 9).map((lesson) => `${lesson.chapter}:${lesson.order}`)).toEqual([
+      '02:100',
+      '02:200',
+      '02:300',
+      '02:400',
+      '02:500',
     ])
   })
 
@@ -32,14 +32,56 @@ describe('课程数据与导航', () => {
     expect(getChapterDisplayNumber('01')).toBe('01')
     expect(getChapterDisplayNumber('10')).toBe('10')
     expect(getLessonDisplayNumber(getLessonBySlug('why-data-warehouse')!, lessons)).toBe('1-1')
-    expect(getLessonDisplayNumber(getLessonBySlug('warehouse-layers')!, lessons)).toBe('2-1')
-    expect(getLessonDisplayNumber(getLessonBySlug('data-modeling')!, lessons)).toBe('3-1')
-    expect(getLessonDisplayNumber(getLessonBySlug('grain')!, lessons)).toBe('3-2')
-    expect(getLessonDisplayNumber(getLessonBySlug('star-schema-and-grain')!, lessons)).toBe('3-3')
-    expect(getLessonDisplayNumber(getLessonBySlug('fact-table-types')!, lessons)).toBe('3-4')
+    expect(getLessonDisplayNumber(getLessonBySlug('warehouse-layers')!, lessons)).toBe('1-2')
+    expect(getLessonDisplayNumber(getLessonBySlug('data-modeling')!, lessons)).toBe('2-1')
+    expect(getLessonDisplayNumber(getLessonBySlug('grain')!, lessons)).toBe('2-2')
+    expect(getLessonDisplayNumber(getLessonBySlug('star-schema-and-grain')!, lessons)).toBe('2-3')
+    expect(getLessonDisplayNumber(getLessonBySlug('fact-table-types')!, lessons)).toBe('2-4')
     expect(getLessonDisplayNumber(getLessonBySlug('slowly-changing-dimension')!, lessons)).toBe(
-      '3-5',
+      '2-5',
     )
+  })
+
+  it('第一章固定为四节并保留原有课程 id 与 slug', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '01')
+
+    expect(chapterLessons).toHaveLength(4)
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
+      'why-data-warehouse',
+      'warehouse-layers',
+      'report-metric-journey',
+      'warehouse-terms',
+    ])
+    expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
+      '1-1',
+      '1-2',
+      '1-3',
+      '1-4',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'systems',
+      'layer-evolution',
+      'report-metric-journey',
+      'warehouse-terms',
+    ])
+    expect(getLessonBySlug('why-data-warehouse')).toMatchObject({
+      id: 'lesson-01',
+      slug: 'why-data-warehouse',
+      chapter: '01',
+    })
+    expect(getLessonBySlug('warehouse-layers')).toMatchObject({
+      id: 'lesson-02',
+      slug: 'warehouse-layers',
+      chapter: '01',
+    })
+
+    const chapterText = JSON.stringify(chapterLessons.map((lesson) => getLessonContent(lesson)))
+    expect(chapterText).toContain('核心系统')
+    expect(chapterText).toContain('信贷系统')
+    expect(chapterText).toContain('90 ÷ 120 = 75%')
+    expect(chapterText).toContain('OLTP')
+    expect(chapterText).toContain('ETL')
+    expect(chapterText).toContain('Data Warehouse')
   })
 
   it('插入章节内 order 权重后自动重新计算后续展示编号', () => {
@@ -65,8 +107,8 @@ describe('课程数据与导航', () => {
     ])
   })
 
-  it('第五章正式拆成五节存款余额加工课程', () => {
-    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '05')
+  it('第四章正式拆成五节存款余额加工课程', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '04')
 
     expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
       'sql-and-transformation',
@@ -95,8 +137,8 @@ describe('课程数据与导航', () => {
     ).toEqual(['plan', 'cleaning', 'join', 'layers', 'contract'])
   })
 
-  it('第六章拆成五节不同学习目标的调度实验', () => {
-    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '06')
+  it('第五章拆成五节不同学习目标的调度实验', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '05')
     const expectedSlugs = [
       'scheduling-system',
       'scheduling-readiness',
@@ -146,8 +188,8 @@ describe('课程数据与导航', () => {
     expect(getAdjacentLessons(lessons, 'scheduling-sla').next?.slug).toBe('data-quality')
   })
 
-  it('第七章稳定注册为 7-1 到 7-5，并保留 data-quality slug', () => {
-    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '07')
+  it('第六章稳定注册为 6-1 到 6-5，并保留 data-quality slug', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '06')
 
     expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
       'data-quality',
@@ -157,11 +199,11 @@ describe('课程数据与导航', () => {
       'data-quality-release',
     ])
     expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
-      '7-1',
-      '7-2',
-      '7-3',
-      '7-4',
-      '7-5',
+      '6-1',
+      '6-2',
+      '6-3',
+      '6-4',
+      '6-5',
     ])
     expect(chapterLessons.map((lesson) => lesson.title)).toEqual([
       '任务成功了，数据就可信了吗？',
@@ -183,18 +225,18 @@ describe('课程数据与导航', () => {
     const adjacent = getAdjacentLessons(lessons, 'warehouse-layers')
 
     expect(adjacent.previous?.slug).toBe('why-data-warehouse')
-    expect(adjacent.next?.slug).toBe('data-modeling')
+    expect(adjacent.next?.slug).toBe('report-metric-journey')
   })
 
-  it('第三章按业务过程、Grain、星型模型、事实表类型、拉链表连成五节课程', () => {
-    expect(lessons.slice(2, 7).map((lesson) => lesson.slug)).toEqual([
+  it('第二章按业务过程、Grain、星型模型、事实表类型、拉链表连成五节课程', () => {
+    expect(lessons.slice(4, 9).map((lesson) => lesson.slug)).toEqual([
       'data-modeling',
       'grain',
       'star-schema-and-grain',
       'fact-table-types',
       'slowly-changing-dimension',
     ])
-    expect(lessons.slice(2, 7).map((lesson) => lesson.title)).toEqual([
+    expect(lessons.slice(4, 9).map((lesson) => lesson.title)).toEqual([
       '业务过程：到底要记录哪件事？',
       'Grain：一行究竟代表什么？',
       '事实、维度与星型模型',
@@ -208,7 +250,7 @@ describe('课程数据与导航', () => {
     expect(getLessonBySlug('slowly-changing-dimension')?.demo).toBe('banking-customer-history')
 
     expect(getAdjacentLessons(lessons, 'data-modeling')).toEqual({
-      previous: expect.objectContaining({ slug: 'warehouse-layers' }),
+      previous: expect.objectContaining({ slug: 'warehouse-terms' }),
       next: expect.objectContaining({ slug: 'grain' }),
     })
     expect(getAdjacentLessons(lessons, 'grain')).toEqual({
@@ -272,18 +314,18 @@ describe('课程数据与导航', () => {
   })
 
   it('按当前课程定位章节并保持单展开 Accordion', () => {
-    expect(getLessonChapterId(lessons, 'lesson-scd-type-2')).toBe('03')
-    expect(getLessonChapterId(lessons, 'lesson-04')).toBe('04')
+    expect(getLessonChapterId(lessons, 'lesson-scd-type-2')).toBe('02')
+    expect(getLessonChapterId(lessons, 'lesson-04')).toBe('03')
 
-    let expandedChapterId: string | null = '03'
-    expandedChapterId = toggleExpandedChapter(expandedChapterId, '04')
-    expect(expandedChapterId).toBe('04')
+    let expandedChapterId: string | null = '02'
+    expandedChapterId = toggleExpandedChapter(expandedChapterId, '03')
+    expect(expandedChapterId).toBe('03')
 
-    expandedChapterId = toggleExpandedChapter(expandedChapterId, '04')
+    expandedChapterId = toggleExpandedChapter(expandedChapterId, '03')
     expect(expandedChapterId).toBeNull()
   })
 
-  it('3-1 只从贷款业务过程开始，不提前使用后续模型概念', () => {
+  it('2-1 只从贷款业务过程开始，不提前使用后续模型概念', () => {
     const lesson = getLessonBySlug('data-modeling')
 
     expect(lesson).toBeDefined()
@@ -303,7 +345,7 @@ describe('课程数据与导航', () => {
   })
 
   it('五节课程使用各自的银行教学可视化', () => {
-    const visualizationKinds = lessons.slice(2, 7).map((lesson) => {
+    const visualizationKinds = lessons.slice(4, 9).map((lesson) => {
       const visualization = getLessonContent(lesson).sections.find(
         (section) => section.kind === 'visualization',
       )
@@ -347,20 +389,20 @@ describe('课程数据与导航', () => {
     expect(scd.pitfalls).toBeUndefined()
   })
 
-  it('第 04 章按存款余额口径、定义、时间和派生连成四节课程', () => {
-    expect(lessons.slice(7, 11).map((lesson) => lesson.slug)).toEqual([
+  it('第 03 章按存款余额口径、定义、时间和派生连成四节课程', () => {
+    expect(lessons.slice(9, 13).map((lesson) => lesson.slug)).toEqual([
       'metric-system',
       'deposit-metric-definition',
       'deposit-metric-time',
       'deposit-metric-derivations',
     ])
-    expect(lessons.slice(7, 11).map((lesson) => lesson.title)).toEqual([
+    expect(lessons.slice(9, 13).map((lesson) => lesson.title)).toEqual([
       '同一个“存款余额”，为什么会有不同答案？',
       '一个指标到底由什么组成？',
       '“截至某天”和“一段时间”有什么区别？',
       '一个“存款余额”为什么能派生出这么多指标？',
     ])
-    expect(lessons.slice(7, 11).map((lesson) => lesson.demo)).toEqual([
+    expect(lessons.slice(9, 13).map((lesson) => lesson.demo)).toEqual([
       'banking-metric-scope',
       'banking-metric-definition',
       'banking-metric-time',
@@ -389,8 +431,8 @@ describe('课程数据与导航', () => {
     })
   })
 
-  it('第 08 章正式拆成 8-1 到 8-5 的五节数据血缘课程', () => {
-    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '08')
+  it('第 07 章正式拆成 7-1 到 7-5 的五节数据血缘课程', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '07')
     const expectedSlugs = [
       'data-lineage',
       'data-lineage-fields',
@@ -400,15 +442,15 @@ describe('课程数据与导航', () => {
     ]
 
     expect(chapterLessons).toHaveLength(5)
-    expect(chapterLessons.map((lesson) => lesson.chapter)).toEqual(['08', '08', '08', '08', '08'])
+    expect(chapterLessons.map((lesson) => lesson.chapter)).toEqual(['07', '07', '07', '07', '07'])
     expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(expectedSlugs)
     expect(chapterLessons.map((lesson) => lesson.order)).toEqual([100, 200, 300, 400, 500])
     expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
-      '8-1',
-      '8-2',
-      '8-3',
-      '8-4',
-      '8-5',
+      '7-1',
+      '7-2',
+      '7-3',
+      '7-4',
+      '7-5',
     ])
     expect(chapterLessons.map((lesson) => lesson.title)).toEqual([
       '这份数据到底从哪里来？',
@@ -451,7 +493,7 @@ describe('课程数据与导航', () => {
     expect(getLessonBySlug('data-lineage')).toMatchObject({
       id: 'lesson-08',
       order: 100,
-      chapter: '08',
+      chapter: '07',
     })
 
     expect(getAdjacentLessons(lessons, 'data-lineage').next?.slug).toBe('data-lineage-fields')
