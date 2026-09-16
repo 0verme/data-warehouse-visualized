@@ -57,7 +57,9 @@ describe('课程 Sidebar Accordion', () => {
     expect(markup).not.toContain('course-lesson__number')
     expect(markup).toContain('class="course-lesson is-active"')
     expect(markup).toContain('data-progress-lesson-link="lesson-01"')
-    expect(markup).toContain('<span class="course-lesson__title">为什么有业务系统，还需要数据仓库？</span>')
+    expect(markup).toContain(
+      '<span class="course-lesson__title">为什么有业务系统，还需要数据仓库？</span>',
+    )
   })
 
   it('SSR 初始只展开当前课程所属章节，并保留当前课程高亮和章节进度', () => {
