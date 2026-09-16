@@ -17,6 +17,7 @@ import {
   BankingMetricTimeLab,
   BankingStarSchemaLab,
   BusinessSystemFlow,
+  CapstoneWorkbench,
   DataQualityWorkbench,
   DataServiceWorkbench,
   GovernanceWorkbench,
@@ -169,6 +170,8 @@ function VisualizationBody({
       return <PerformanceLab visualization={visualization} />
     case 'scheduler':
       return <SchedulerRunSimulator visualization={visualization} />
+    case 'capstone':
+      return <CapstoneWorkbench visualization={visualization} />
   }
 }
 

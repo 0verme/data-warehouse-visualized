@@ -8,6 +8,7 @@ export {
   BankingMetricTimeLab,
 } from './BankingMetricLabs'
 export { BusinessSystemFlow } from './BusinessSystemFlow'
+export { CapstoneWorkbench } from './CapstoneWorkbench'
 export { DataQualityWorkbench } from './DataQualityWorkbench'
 export { DataServiceWorkbench } from './DataServiceWorkbench'
 export { LayerEvolutionLab } from './LayerEvolutionLab'

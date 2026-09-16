@@ -23,6 +23,10 @@ export interface DataServicePublishedBalance {
   depositBalance: number
   previousDepositBalance: number
   currency: 'CNY'
+  /** Capstone projection fields; legacy deposit-only consumers may omit them. */
+  loanBalance?: number
+  loanDepositRatio?: number | null
+  loanDepositRatioStatus?: 'calculated' | 'not-calculable'
 }
 
 export interface DataServiceFileDelivery {
@@ -75,6 +79,10 @@ export interface DataServiceApiResponse {
   business_date: string
   deposit_balance: number
   currency: 'CNY'
+  /** Capstone projection fields; legacy deposit-only responses remain unchanged. */
+  loan_balance?: number
+  loan_deposit_ratio?: number | null
+  loan_deposit_ratio_status?: 'calculated' | 'not-calculable'
 }
 
 export interface DataServiceFileState {

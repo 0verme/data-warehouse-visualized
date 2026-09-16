@@ -1,6 +1,7 @@
 import type { Lesson } from '../../data/course'
 import { getChapterDisplayNumber } from '../../utils/lesson'
 import type { LessonContent } from '../types'
+import { capstoneContent } from './capstone'
 import {
   dataGovernanceContent,
   governanceChangeResponsibilityContent,
@@ -61,6 +62,7 @@ import { whyDataWarehouseContent } from './why-data-warehouse'
 import { reportMetricJourneyContent } from './report-metric-journey'
 
 const lessonContentBySlug: Record<string, LessonContent> = {
+  'build-a-warehouse': capstoneContent,
   'data-governance': dataGovernanceContent,
   'data-governance-evidence': governanceEvidenceContent,
   'data-governance-field-access': governanceFieldAccessContent,

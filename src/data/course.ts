@@ -30,6 +30,7 @@ export type LessonDemo =
   | 'scheduler'
   | 'data-quality'
   | 'data-service'
+  | 'capstone'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -562,8 +563,8 @@ export const lessonDefinitions = [
     chapter: '12',
     order: 100,
     difficulty: 'advanced',
-    estimatedMinutes: 20,
-    demo: 'coming-soon',
+    estimatedMinutes: 35,
+    demo: 'capstone',
   },
 ] as const satisfies readonly LessonDefinition[]
 
@@ -583,7 +584,7 @@ export const chapterTranslations: Partial<Record<Locale, Record<ChapterId, Chapt
     '09': { title: '湖仓' },
     '10': { title: '数据服务' },
     '11': { title: '性能与工程实践' },
-    '12': { title: '从 0 搭一套数据仓库' },
+    '12': { title: '跨系统分行经营分析数据产品' },
   },
 }
 
@@ -858,9 +859,10 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['工程取舍', 'SLA', 'Freshness'],
     },
     'lesson-12': {
-      title: '从 0 搭一套数据仓库',
-      summary: '围绕一个业务问题设计事实表、指标、质量检查和运行链路，形成可维护的数据产品。',
-      tags: ['实践', '项目'],
+      title: '跨系统分行经营分析数据产品',
+      summary:
+        '沿一条连续 Mission 串起存款、贷款、调度、质量、血缘、治理、数据服务和性能，完成 Launch Review。',
+      tags: ['Capstone', 'Mission', 'Launch Review'],
     },
   },
 }
