@@ -116,4 +116,19 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('>数据做好了，怎么交给别人用？</span>')
     expect(chapterMarkup).toContain('>同一份数据，应该怎么交付？</span>')
   })
+
+  it('SSR 展开第 11 章时显示五节性能与工程实践课程', () => {
+    const markup = renderSidebarForLesson('performance-and-practice')
+    const chapterMarkup = getChapterMarkup(markup, '11')
+
+    expect(chapterMarkup).toContain('aria-expanded="true"')
+    expect(chapterMarkup).toContain('>0/5</span>')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-scan-layout"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-shuffle-skew"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-first-seen"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-tradeoffs"')
+    expect(chapterMarkup).toContain('>任务变慢了，我们先看哪里？</span>')
+    expect(chapterMarkup).toContain('>跑快了，就算优化成功了吗？</span>')
+  })
 })
