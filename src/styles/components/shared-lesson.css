@@ -578,9 +578,9 @@
 .code-block {
   margin: 37px 0;
   overflow: hidden;
-  border: 1px solid #263a55;
+  border: 1px solid var(--line-strong);
   border-radius: 10px;
-  background: #17263b;
+  background: var(--code-bg);
 }
 
 .code-block__body {
@@ -589,7 +589,7 @@
 }
 
 .code-block__body .shiki {
-  background: #17263b !important;
+  background: var(--code-bg) !important;
   white-space: pre;
   -webkit-overflow-scrolling: touch;
 }
@@ -600,7 +600,7 @@
 }
 
 .code-block__body .shiki:focus-visible {
-  outline: 2px solid #6f9ed6;
+  outline: 2px solid var(--blue);
   outline-offset: -2px;
 }
 
@@ -631,7 +631,7 @@
   margin: 0;
   padding: 20px 18px 23px;
   overflow-x: auto;
-  color: #c5d8ef;
+  color: var(--code-text);
   font-size: 11px;
   line-height: 1.8;
   tab-size: 2;
@@ -737,7 +737,7 @@
 }
 
 .lesson-nav__link:hover {
-  border-color: #abc4e6;
+  border-color: var(--border-blue);
   background: var(--surface-blue);
 }
 
@@ -786,9 +786,9 @@
   align-items: center;
   justify-content: center;
   padding: 8px 15px;
-  border: 1px solid #addbd4;
+  border: 1px solid var(--border-teal);
   border-radius: 8px;
-  background: #f1fbf9;
+  background: var(--surface-teal);
   color: var(--teal);
   cursor: pointer;
   font-size: 11px;
@@ -813,7 +813,7 @@
 
 .complete-button.is-completed,
 .complete-button.is-completed span {
-  color: #fff;
+  color: var(--on-accent);
 }
 
 @keyframes packet-in {
