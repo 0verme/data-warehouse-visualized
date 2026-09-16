@@ -46,9 +46,12 @@ interface ProgressBootstrapState {
   currentLessonId: string
 }
 
+export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'dwv_sidebar_collapsed'
+
 declare global {
   interface Window {
     __DWV_PROGRESS__?: ProgressBootstrapState
+    __DWV_SIDEBAR_COLLAPSED__?: boolean
   }
 }
 
@@ -59,6 +62,7 @@ function createProgressBootstrapScript(locale: Locale): string {
   const lessonNotCompleted = JSON.stringify(getMessage('notCompleted', locale))
   const lessonsCompleted = JSON.stringify(getMessage('lessonsCompleted', locale))
   const markAsLearned = JSON.stringify(getMessage('markAsLearned', locale))
+  const expandSidebar = JSON.stringify(getMessage('expandSidebar', locale))
 
   return `(() => {
   const root = document.currentScript?.closest('astro-island')?.querySelector('.learn-app')
@@ -69,6 +73,25 @@ function createProgressBootstrapScript(locale: Locale): string {
     stored = raw ? JSON.parse(raw) : null
   } catch {
     stored = null
+  }
+
+  let isSidebarCollapsed = false
+  try {
+    isSidebarCollapsed =
+      window.localStorage.getItem(${JSON.stringify(SIDEBAR_COLLAPSED_STORAGE_KEY)}) === 'true'
+  } catch {
+    isSidebarCollapsed = false
+  }
+
+  window.__DWV_SIDEBAR_COLLAPSED__ = isSidebarCollapsed
+  if (isSidebarCollapsed && root) {
+    root.classList.add('is-sidebar-collapsed')
+    const desktopToggle = root.querySelector('.sidebar-collapse-toggle')
+    if (desktopToggle) {
+      desktopToggle.setAttribute('aria-expanded', 'false')
+      desktopToggle.setAttribute('aria-label', ${expandSidebar})
+      desktopToggle.setAttribute('title', ${expandSidebar})
+    }
   }
 
   const completedLessonIds = Array.isArray(stored?.completedLessonIds)
@@ -237,6 +260,24 @@ function getInitialProgress(
   )
 }
 
+function getInitialSidebarCollapsed(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  if (typeof window.__DWV_SIDEBAR_COLLAPSED__ === 'boolean') {
+    const bootstrapped = window.__DWV_SIDEBAR_COLLAPSED__
+    delete window.__DWV_SIDEBAR_COLLAPSED__
+    return bootstrapped
+  }
+
+  try {
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 export function LearnShell({
   lessons,
   initialLesson,
@@ -254,6 +295,7 @@ export function LearnShell({
   const [progress, setProgress] = useState<ProgressState>(() =>
     getInitialProgress(fallbackProgress, lessons, initialLesson.id, isIndex),
   )
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(getInitialSidebarCollapsed)
   const serverPathname = getRoute(isIndex ? '/learn/' : `/learn/${initialLesson.slug}/`)
   const pathname = useSyncExternalStore(
     subscribeToRouteChanges,
@@ -308,6 +350,28 @@ export function LearnShell({
       saveProgress(window.localStorage, progress)
     }
   }, [progress])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(isSidebarCollapsed))
+      } catch {
+        // ignore localStorage write errors
+      }
+    }
+  }, [isSidebarCollapsed])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(max-width: 900px)')
+    const handleMediaChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (!event.matches) {
+        setIsSidebarOpen(false)
+      }
+    }
+    media.addEventListener?.('change', handleMediaChange)
+    return () => media.removeEventListener?.('change', handleMediaChange)
+  }, [])
 
   const activeLesson =
     routeLesson ??
@@ -364,11 +428,50 @@ export function LearnShell({
 
   return (
     <div
-      className="learn-app"
+      className={`learn-app${isSidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}
       data-progress-index={isIndex ? 'true' : 'false'}
       data-initial-lesson-id={initialLesson.id}
     >
       <header className="learn-topbar">
+        <button
+          className="sidebar-collapse-toggle"
+          type="button"
+          aria-expanded={!isSidebarCollapsed}
+          aria-controls="course-sidebar"
+          aria-label={getMessage(isSidebarCollapsed ? 'expandSidebar' : 'collapseSidebar', locale)}
+          title={getMessage(isSidebarCollapsed ? 'expandSidebar' : 'collapseSidebar', locale)}
+          onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
+        >
+          <svg
+            className="sidebar-collapse-toggle__icon sidebar-collapse-toggle__icon--collapse"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 3v18" />
+            <path d="m16 15-3-3 3-3" />
+          </svg>
+          <svg
+            className="sidebar-collapse-toggle__icon sidebar-collapse-toggle__icon--expand"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M9 3v18" />
+            <path d="m14 9 3 3-3 3" />
+          </svg>
+        </button>
+
         <a
           className="brand brand--learn"
           href={getRoute('/')}

@@ -26,6 +26,8 @@ export interface MessageDictionary {
   lessonsCompleted: string
   availableLesson: string
   comingSoon: string
+  collapseSidebar: string
+  expandSidebar: string
 }
 
 export const messages: Partial<Record<Locale, MessageDictionary>> = {
@@ -55,6 +57,8 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     lessonsCompleted: '节已完成',
     availableLesson: '可学习',
     comingSoon: '即将开放',
+    collapseSidebar: '收起目录',
+    expandSidebar: '展开目录',
   },
 }
 

@@ -147,4 +147,31 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('>任务变慢了，我们先看哪里？</span>')
     expect(chapterMarkup).toContain('>跑快了，就算优化成功了吗？</span>')
   })
+
+  it('桌面端在 Logo 左侧渲染图标折叠按钮，支持无障碍属性和双图标状态', () => {
+    const markup = renderSidebarForLesson('why-data-warehouse')
+
+    const buttonIndex = markup.indexOf('class="sidebar-collapse-toggle"')
+    const brandIndex = markup.indexOf('class="brand brand--learn"')
+
+    expect(buttonIndex).toBeGreaterThan(-1)
+    expect(brandIndex).toBeGreaterThan(-1)
+    expect(buttonIndex).toBeLessThan(brandIndex)
+
+    expect(markup).toContain('aria-controls="course-sidebar"')
+    expect(markup).toContain('aria-expanded="true"')
+    expect(markup).toContain('aria-label="收起目录"')
+    expect(markup).toContain('title="收起目录"')
+    expect(markup).toContain('sidebar-collapse-toggle__icon--collapse')
+    expect(markup).toContain('sidebar-collapse-toggle__icon--expand')
+  })
+
+  it('首屏 bootstrap 脚本包含桌面侧边栏折叠状态读取与类名同步逻辑', () => {
+    const markup = renderSidebarForLesson('why-data-warehouse')
+
+    expect(markup).toContain('dwv_sidebar_collapsed')
+    expect(markup).toContain('__DWV_SIDEBAR_COLLAPSED__')
+    expect(markup).toContain('is-sidebar-collapsed')
+    expect(markup).toContain('.sidebar-collapse-toggle')
+  })
 })

@@ -59,4 +59,16 @@ describe('学习页 Learning Shell 布局', () => {
     expect(navigationRule).not.toContain('position: fixed')
     expect(navigationRule).not.toContain('left:')
   })
+
+  it('声明桌面侧边栏收起网格轨道与平滑过渡样式', () => {
+    const stylesheet = readFileSync(
+      new URL('../src/styles/layouts/learn-shell.css', import.meta.url),
+      'utf8',
+    )
+
+    expect(stylesheet).toContain('transition: grid-template-columns 300ms')
+    expect(stylesheet).toContain('grid-template-columns: 0 minmax(0, 1fr);')
+    expect(stylesheet).toContain('transform: translateX(-100%);')
+    expect(stylesheet).toContain('.sidebar-collapse-toggle')
+  })
 })

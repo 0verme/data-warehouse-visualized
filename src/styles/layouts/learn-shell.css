@@ -35,6 +35,60 @@
   backdrop-filter: blur(14px);
 }
 
+.sidebar-collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 12px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.sidebar-collapse-toggle:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+  border-color: var(--line-strong, #c5d2e0);
+}
+
+.sidebar-collapse-toggle:active {
+  transform: scale(0.96);
+}
+
+.sidebar-collapse-toggle:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.sidebar-collapse-toggle__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-toggle__icon--expand {
+  display: none;
+}
+
+.learn-app.is-sidebar-collapsed .sidebar-collapse-toggle__icon--collapse {
+  display: none;
+}
+
+.learn-app.is-sidebar-collapsed .sidebar-collapse-toggle__icon--expand {
+  display: block;
+}
+
 .brand--learn .brand__mark {
   width: 28px;
   height: 28px;
@@ -134,6 +188,7 @@
   min-height: 0;
   height: 100%;
   margin: 0 auto;
+  transition: grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .course-sidebar {
@@ -149,6 +204,25 @@
   padding: 24px 12px 36px 14px;
   border-right: 1px solid var(--line);
   box-sizing: border-box;
+  transition:
+    transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 250ms ease,
+    border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 901px) {
+  .learn-app.is-sidebar-collapsed .learn-layout {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .learn-app.is-sidebar-collapsed .course-sidebar {
+    transform: translateX(-100%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    border-right-color: transparent;
+  }
 }
 
 .course-sidebar__intro {
@@ -689,6 +763,10 @@
     margin-left: auto;
   }
 
+  .sidebar-collapse-toggle {
+    display: none;
+  }
+
   .sidebar-toggle {
     display: inline-flex;
     margin-left: 14px;
@@ -922,5 +1000,13 @@
 
   .lesson-section p {
     font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-layout,
+  .course-sidebar,
+  .sidebar-collapse-toggle {
+    transition: none !important;
   }
 }
