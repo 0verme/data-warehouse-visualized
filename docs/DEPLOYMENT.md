@@ -23,7 +23,7 @@ GitHub main
 - **Push to `main`**：完成验证与静态资源构建 (`dist/`) 后，自动调用共享 Action `0verme/ci-workflows/.github/actions/cloudflare-worker-deploy@v1` 将产物部署至 Cloudflare Workers。
 - **手动触发 (`workflow_dispatch`)**：支持在 GitHub Actions 界面手动选择分支触发生产发布。
 
-> **提示**：生产构建默认使用根路径 `/`（不设置 `BASE_PATH`）。若需部署到 GitHub Pages 等非根目录，可通过 `BASE_PATH=/repo-name/ npm run build` 进行构建。若需要生成绝对 canonical，可额外设置 `PUBLIC_SITE_URL=https://你的域名`。
+> **提示**：生产构建默认使用正式域名 `https://sql.sb` 和根路径 `/`（不设置 `BASE_PATH`），会生成绝对 canonical 与 sitemap URL。若需部署到 GitHub Pages 等非根目录，可通过 `BASE_PATH=/repo-name/ npm run build` 进行构建；若需为其他部署域名生成绝对 canonical，可设置 `PUBLIC_SITE_URL=https://你的域名`。
 
 ---
 
