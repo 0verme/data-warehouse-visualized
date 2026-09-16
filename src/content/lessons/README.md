@@ -45,3 +45,8 @@
 - `data-quality-evidence.ts`：6-4 Quality Event 与行级/聚合证据
 - `data-quality-release.ts`：6-5 银行关键数据 BLOCK 与埋点 quarantine 对照
 - `data-service.ts`：10-1 至 10-5 已发布存款余额的报表 / BI、TXT + FLAG、API 与消费方式选择
+- `performance-and-practice.ts`：11-1 反欺诈 T+1 特征任务的执行阶段诊断
+- `performance-scan-layout.ts`：11-2 Partition Pruning、小文件、Compaction 与日期分区倾斜
+- `performance-shuffle-skew.ts`：11-3 开户机构 Shuffle Key 倾斜、Worker 长尾与通用处理方向
+- `performance-first-seen.ts`：11-4 customer-counterparty first_seen 增量状态与固定窗口特征
+- `performance-tradeoffs.ts`：11-5 Before / After、迟到数据、副作用与工程取舍

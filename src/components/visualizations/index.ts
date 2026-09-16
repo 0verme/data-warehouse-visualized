@@ -20,7 +20,14 @@ export { LoanGrainLab } from './LoanGrainLab'
 export { MetricDefinitionLab } from './MetricDefinitionLab'
 export { ModelingIntro } from './ModelingIntro'
 export { PipelineFlow } from './PipelineFlow'
-export { PerformanceLab } from './PerformanceLab'
+export {
+  PerformanceDiagnosisLab,
+  PerformanceLab,
+  PerformanceScanLab,
+  PerformanceSkewLab,
+  PerformanceStateLab,
+  PerformanceTradeoffLab,
+} from './PerformanceLab'
 export { ReportMetricJourney } from './ReportMetricJourney'
 export { SlowlyChangingDimension } from './SlowlyChangingDimension'
 export { StarSchemaFlow } from './StarSchemaFlow'

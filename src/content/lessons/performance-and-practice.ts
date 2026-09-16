@@ -1,91 +1,77 @@
 import type { LessonContent } from '../types'
+import { performanceVisualizations } from '../../features/performance/banking'
 
 export const performanceAndPracticeContent: LessonContent = {
-  eyebrow: '第 11 章 · 性能与工程实践',
+  eyebrow: '第 11 章 · 11-1 性能诊断',
   opening: {
-    eyebrow: '同一份销售任务，规模开始增长',
-    title: '为什么昨天能跑完，今天却超时？',
+    eyebrow: 'T+1 反欺诈特征任务开始变慢',
+    title: '任务变慢了，我们先看哪里？',
     intro:
-      '销售日报仍然是同一个任务：扫描订单，JOIN 用户，shuffle，聚合，再写入结果。变化的是数据规模、布局和分布。下面把这些变量逐个打开，观察哪一个阶段先成为瓶颈。',
+      '这条离线 T+1 任务每天读取 Transaction（账户交易），加工客户与交易对手特征。一次运行的教学模拟记录已经从几分钟变成 68 min；现在要做的第一件事，是找到时间到底花在哪里。',
     cards: [
-      { label: '任务', value: 'sales_daily', detail: 'scan → join → shuffle → aggregate → write' },
-      { label: '核心实验', value: 'Pruning + Skew', detail: '一个减少无效扫描，一个暴露长尾' },
-      { label: '口径', value: '相对估算', detail: '用于比较同一任务在不同条件下的方向' },
+      { label: '主案例', value: 'Transaction', detail: '账户交易事实，一行一笔交易事件' },
+      { label: '业务问题', value: '客户交易对手特征', detail: '历史累计、首次出现、最近 30 天' },
+      { label: '本次记录', value: '68 min', detail: 'relative simulation / 教学模拟值' },
     ],
-    question: '如果延迟下降了，但写入、存储或 freshness 变差，这还算优化吗？',
+    question: '如果只知道任务变慢了，下一步应该先加资源，还是先找出最慢的阶段？',
   },
-  subtitle: '日报超时后，沿扫描、Shuffle、长尾和写入阶段查瓶颈，再比较优化方案的代价。',
+  subtitle: '把一次 T+1 运行拆成阶段，用证据定位瓶颈，再验证一个可以被复测的假设。',
   quickSummary:
-    '围绕同一销售任务改变 data volume、partition、selectivity、hot key ratio 和 file fragmentation，再用 before/after 对比扫描、shuffle、长尾、相对延迟、成本和 freshness。',
+    '先记录症状，再拆 Scan、Join、Shuffle、Aggregate、Write；对照阶段耗时、总运行时间和最长 Task，不凭平均值或直觉选择优化方案。',
   concept: {
-    term: '性能：让数据少走不必要的路',
+    term: '性能诊断：先定位，再改变计算',
     definition:
-      '可观测的性能分析要把端到端任务拆成 scan、join、shuffle、aggregate、write，并区分减少工作量、改善分布、增加复用与转移成本。',
+      '性能诊断是一个可复核的过程：从症状出发拆执行阶段，收集证据，提出假设，实施小范围修改，重新测量，并检查副作用。',
   },
   sections: [
     {
       kind: 'narrative',
-      title: '一条会超时的数据流长什么样？',
+      title: '同一条任务，先把症状写具体',
       paragraphs: [
-        '任务没有变，数据却从 1M 行涨到 100M 行。没有分区裁剪时，过滤条件只在扫描之后才生效；JOIN 把数据送到不同 worker，hot key 又让一个 worker 比其他 worker 多等很久。最后，写入许多碎文件会把下一次任务的扫描成本继续推高。',
-        '“加机器”或“换引擎”都可能只是把问题往后推。实验室把 scan、shuffle、长尾和 write 拆开，帮助确认哪个阶段耗时最长。',
+        '这次加工的业务日期是 2026-09-16。Transaction 以 txn_date 作为业务日期字段；counterparty_id 只在本章作为分析标识和特征键，不新增一个交易对手业务实体。',
+        '一次运行的阶段记录是 Scan 41 min、Join 6 min、Shuffle 15 min、Aggregate 5 min、Write 1 min。它们加起来是 68 min 的教学模拟值，但分布式任务还要另外观察最长 Task，不能只拿总时间或平均时间做结论。',
       ],
       bullets: [
-        'Partition Pruning：过滤条件命中少量分区时，扫描行数和 blocks 应该下降。',
-        'Data Skew：hot key ratio 上升时，平均 worker 可能没变，但 longest worker 会拖慢 stage。',
-        '相对估算用于比较趋势，生产结论仍要结合 query plan、资源和实际观测。',
+        '症状：T+1 结果变慢，业务窗口开始有风险。',
+        '阶段：先分开看 Scan、Join、Shuffle、Aggregate 和 Write。',
+        '证据：Query Plan、Stage、Task、Scan Bytes、Shuffle Bytes 是真实系统中常见的观测入口；本节不教授某个引擎的执行计划语法。',
       ],
     },
     {
       kind: 'visualization',
-      eyebrow: '性能对比实验室 · 可控变量',
-      title: '动手改变规模、布局和策略',
+      eyebrow: '11-1 · Stage / Task 诊断',
+      title: '先选出主要耗时阶段，再记录假设',
       description:
-        '把 data volume 和 file fragmentation 调大，观察基线；再开启 Partition Pruning、布局调整、两阶段聚合、增量处理或物化复用，比较收益和代价。',
-      visualization: {
-        kind: 'performance-lab',
-        architecture: {
-          architecture: 'lakehouse',
-          workload: 'bi',
-          dataVolumeCategory: 'large',
-        },
-        defaults: {
-          dataVolume: 10,
-          partitionCount: 100,
-          partitionFilterSelectivity: 0.1,
-          hotKeyRatio: 0.02,
-          fileFragmentation: 0.25,
-          workerCount: 8,
-        },
-      },
+        '点击阶段查看对应证据。选对首要阶段后，执行一次只改变 Scan 假设的验证性测量；如果选的是候选阶段，也要保留“证据还不够”的判断。',
+      visualization: performanceVisualizations.diagnosis,
     },
     {
       kind: 'narrative',
-      title: '读懂 before / after，而不是只看一个快了多少',
+      title: '三层优化模型要跟着证据走',
       paragraphs: [
-        'Partition Pruning 的关键证据是 partitions touched、scanned rows 和 scanned blocks 同时下降；Data Skew 的关键证据是 longest worker / stage，而不是只看所有 worker 的平均值。Shuffle volume 则告诉你 JOIN 与聚合是否把网络传输变成了新的瓶颈。',
-        '实验中的 relative runtime 和 relative cost 是固定公式产生的相对估计。它们帮助比较同一组输入下的方向；真实系统仍需结合 query plan、集群资源、文件统计和生产观测验证。',
+        '存储与执行层先回答“哪些数据被读了、文件怎样被读、哪个 Task 拖住了整体”。本节看到 Scan 41 min，因此优先调查分区命中、文件数量和 Task 证据。',
+        '如果读取范围已经合理，再看计算方案层：是否提前过滤、提前聚合，是否让 Join 或 Shuffle 传输了不必要的数据。最后才回到业务语义层，问“是不是每天都需要重新计算完整历史”。三层可能相互影响，但不能用一个模糊的“调优”代替定位。',
+      ],
+      bullets: [
+        '阶段耗时说明哪里慢，证据说明为什么可能慢。',
+        '验证性修改要尽量一次只检验一个假设。',
+        '重新测量以后，还要记录写入、Freshness、回补和维护方面的副作用。',
       ],
     },
     {
       kind: 'takeaway',
-      title: '优化是工程取舍，不是免费按钮',
-      text: '一个方案只有在业务目标、资源预算和 freshness 约束下仍然合适，才值得上线。把降低延迟的收益和写入成本、存储、复杂度、数据新鲜度一起记录。',
+      title: '第一步不是选择优化按钮',
+      text: '看到任务变慢，先把端到端运行拆开。Scan、Join、Shuffle、Aggregate、Write、总运行时间和最长 Task 各自回答不同问题；证据足够以后，才知道下一步该改变哪一层。',
       bullets: [
-        '布局调整与 compaction 可能减少读取，却增加写入和存储成本。',
-        '物化结果可以让查询更快，却需要额外刷新链路，并可能带来 freshness impact。',
-        '增量处理减少每次扫描，但要处理水位、迟到数据和可重跑边界。',
+        '当前教学记录的主要耗时阶段是 Scan。',
+        'Shuffle 15 min 也值得调查，但不能跳过 Worker / Task 分布。',
+        '所有时间和资源数字都是 relative simulation / 教学模拟值。',
       ],
     },
     {
-      kind: 'engineering-note',
-      title: '性能调优永远是读与写、存储与时效之间的取舍',
-      text: '同一种优化可能减少读取，却增加写入、存储或刷新延迟。评估性能时同时记录扫描量、shuffle、尾延迟、成本和 freshness，避免只看单次 runtime。',
-    },
-    {
       kind: 'pitfall',
-      title: '不要把平均值当成尾延迟',
-      text: '当 hot key 集中在少数 worker 时，平均吞吐可能看起来正常，最长 worker 却决定任务何时结束。也不要把“没有命中分区”误解成“扫描全表”：实验会明确显示零命中。',
+      title: '不要看到慢就默认加资源',
+      text: '加资源、调并发或修改某个引擎参数有时能改变表现，但它们不能替代“慢在哪里、为什么慢”的证据。先留下诊断记录，才能判断修改是否真的解决了问题。',
     },
   ],
 }

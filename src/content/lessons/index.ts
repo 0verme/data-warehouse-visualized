@@ -39,6 +39,10 @@ import { depositMetricDefinitionContent } from './deposit-metric-definition'
 import { depositMetricDerivationsContent } from './deposit-metric-derivations'
 import { depositMetricTimeContent } from './deposit-metric-time'
 import { performanceAndPracticeContent } from './performance-and-practice'
+import { performanceFirstSeenContent } from './performance-first-seen'
+import { performanceScanLayoutContent } from './performance-scan-layout'
+import { performanceShuffleSkewContent } from './performance-shuffle-skew'
+import { performanceTradeoffsContent } from './performance-tradeoffs'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { schedulingBusinessDateContent } from './scheduling-business-date'
 import { schedulingFailureContent } from './scheduling-failure'
@@ -105,6 +109,10 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'sql-transformation-layers': sqlTransformationLayersContent,
   'sql-transformation-contract': sqlTransformationContractContent,
   'performance-and-practice': performanceAndPracticeContent,
+  'performance-scan-layout': performanceScanLayoutContent,
+  'performance-shuffle-skew': performanceShuffleSkewContent,
+  'performance-first-seen': performanceFirstSeenContent,
+  'performance-tradeoffs': performanceTradeoffsContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {
