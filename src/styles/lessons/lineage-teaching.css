@@ -209,9 +209,13 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-choice:hover,
-.lineage-teaching-choice:focus-visible,
-.lineage-teaching-choice.is-selected,
-.lineage-teaching-choice.is-correct {
+.lineage-teaching-choice:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  outline: none;
+}
+
+.lineage-teaching-choice.is-selected {
   border-color: var(--teal);
   background: #f3fbf9;
   color: var(--teal);
@@ -219,7 +223,17 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-choice.is-correct {
+  border-color: var(--teal);
+  background: #f3fbf9;
+  color: var(--teal);
   box-shadow: inset 3px 0 0 var(--teal);
+}
+
+.lineage-teaching-choice.is-incorrect {
+  border-color: var(--danger);
+  background: #fdf3f3;
+  color: var(--danger);
+  box-shadow: inset 3px 0 0 var(--danger);
 }
 
 .lineage-teaching-feedback {
@@ -232,6 +246,11 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-feedback.is-success {
   color: var(--teal);
   font-weight: 700;
+}
+
+.lineage-teaching-feedback.is-error {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .lineage-teaching-contrast {

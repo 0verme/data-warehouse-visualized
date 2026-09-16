@@ -1,4 +1,7 @@
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { OverviewQuestion } from '../src/components/visualizations/LineageTeachingLab'
 import { depositBalanceQualityEvent } from '../src/content/lessons/data-quality'
 import { legacyLineageVisualization } from '../src/content/lessons/legacy-lineage-data'
 import {
@@ -288,5 +291,60 @@ describe('第 07 章数据血缘', () => {
         BANKING_LINEAGE_NODE_IDS.metric,
       )?.edges.every((edge) => edge.evidence && edge.verificationStatus),
     ).toBe(true)
+  })
+
+  it('读图单选题只高亮选中的选项，错误时不将正确答案和错误选项同时标为选中', () => {
+    const question = {
+      id: 'dws-direct-upstream',
+      prompt: 'DWS 的直接上游是谁？',
+      options: [
+        { id: 'dwd', label: 'dwd_account_balance_detail' },
+        { id: 'snapshot', label: 'AccountBalanceSnapshot' },
+        { id: 'ads', label: 'ads_deposit_balance' },
+      ],
+      correctAnswer: 'dwd',
+      explanation: 'DWD 紧挨着 DWS；AccountBalanceSnapshot 还隔着一层，是传递上游。',
+    }
+
+    // 未作答状态
+    const initialMarkup = renderToStaticMarkup(
+      React.createElement(OverviewQuestion, { question, onAnswer: () => {} }),
+    )
+    expect(initialMarkup).toContain('role="radiogroup"')
+    expect(initialMarkup).not.toContain('is-selected')
+    expect(initialMarkup).not.toContain('is-correct')
+    expect(initialMarkup).not.toContain('is-incorrect')
+    expect(initialMarkup).toContain('请选择一个判断。')
+
+    // 选中错误选项：只高亮选中的错误项，正确项不应同时被高亮选中
+    const wrongMarkup = renderToStaticMarkup(
+      React.createElement(OverviewQuestion, { question, answer: 'snapshot', onAnswer: () => {} }),
+    )
+    expect(wrongMarkup).toContain('role="radiogroup"')
+    // 只有 snapshot 带有 is-selected 和 is-incorrect
+    expect(wrongMarkup).toContain('AccountBalanceSnapshot')
+    expect(wrongMarkup).toMatch(
+      /class="[^"]*lineage-teaching-choice is-selected is-incorrect[^"]*"[^>]*aria-checked="true"[^>]*>AccountBalanceSnapshot/,
+    )
+    // dwd 不应该有 is-selected 或 is-correct
+    expect(wrongMarkup).toMatch(
+      /class="lineage-teaching-choice"[^>]*aria-checked="false"[^>]*>dwd_account_balance_detail/,
+    )
+    // 反馈带有 is-error
+    expect(wrongMarkup).toContain('lineage-teaching-feedback is-error')
+    expect(wrongMarkup).toContain('还差一步，看看标出的关系。')
+
+    // 选中正确选项：只高亮选中的正确项
+    const correctMarkup = renderToStaticMarkup(
+      React.createElement(OverviewQuestion, { question, answer: 'dwd', onAnswer: () => {} }),
+    )
+    expect(correctMarkup).toMatch(
+      /class="[^"]*lineage-teaching-choice is-selected is-correct[^"]*"[^>]*aria-checked="true"[^>]*>dwd_account_balance_detail/,
+    )
+    expect(correctMarkup).toMatch(
+      /class="lineage-teaching-choice"[^>]*aria-checked="false"[^>]*>AccountBalanceSnapshot/,
+    )
+    expect(correctMarkup).toContain('lineage-teaching-feedback is-success')
+    expect(correctMarkup).toContain('判断正确。')
   })
 })

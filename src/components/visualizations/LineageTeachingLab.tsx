@@ -132,7 +132,7 @@ function NodeFlow({
   )
 }
 
-function OverviewQuestion({
+export function OverviewQuestion({
   question,
   answer,
   onAnswer,
@@ -153,17 +153,19 @@ function OverviewQuestion({
   return (
     <fieldset className="lineage-teaching-question">
       <legend>{question.prompt}</legend>
-      <div className="lineage-teaching-choice-list">
+      <div className="lineage-teaching-choice-list" role="radiogroup" aria-label={question.prompt}>
         {question.options.map((option) => {
           const isSelected = answer === option.id
-          const isCorrectOption = isAnswered && option.id === question.correctAnswer
+          const isCorrectSelection = isSelected && isCorrect
+          const isIncorrectSelection = isSelected && !isCorrect
           return (
             <button
               className={`lineage-teaching-choice${isSelected ? ' is-selected' : ''}${
-                isCorrectOption ? ' is-correct' : ''
-              }`}
+                isCorrectSelection ? ' is-correct' : ''
+              }${isIncorrectSelection ? ' is-incorrect' : ''}`}
               type="button"
-              aria-pressed={isSelected}
+              role="radio"
+              aria-checked={isSelected}
               key={option.id}
               onClick={() => onAnswer(option.id)}
             >
@@ -172,7 +174,12 @@ function OverviewQuestion({
           )
         })}
       </div>
-      <p className="lineage-teaching-feedback" aria-live="polite">
+      <p
+        className={`lineage-teaching-feedback${
+          isAnswered ? (isCorrect ? ' is-success' : ' is-error') : ''
+        }`}
+        aria-live="polite"
+      >
         {isAnswered
           ? isCorrect
             ? '判断正确。'
