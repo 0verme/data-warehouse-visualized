@@ -18,4 +18,5 @@
 @import './layouts/home.css';
 @import './lessons/lakehouse.css';
 @import './lessons/performance.css';
+@import './lessons/capstone.css';
 @import './components/visualization-compact.css';

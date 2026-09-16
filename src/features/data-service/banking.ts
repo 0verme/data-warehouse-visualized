@@ -157,6 +157,13 @@ export function getDataServiceApiResponse(
     business_date: balance.businessDate,
     deposit_balance: balance.depositBalance,
     currency: balance.currency,
+    ...(balance.loanBalance === undefined ? {} : { loan_balance: balance.loanBalance }),
+    ...(balance.loanDepositRatio === undefined
+      ? {}
+      : { loan_deposit_ratio: balance.loanDepositRatio }),
+    ...(balance.loanDepositRatioStatus === undefined
+      ? {}
+      : { loan_deposit_ratio_status: balance.loanDepositRatioStatus }),
   }
 }
 

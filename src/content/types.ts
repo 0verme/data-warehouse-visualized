@@ -33,6 +33,7 @@ import type { SqlTransformationVisualization } from '../features/sql-transformat
 import type { PerformanceVisualization } from '../features/performance/types'
 import type { DataQualityVisualization } from '../features/data-quality/types'
 import type { DataServiceVisualization } from '../features/data-service/types'
+import type { CapstoneVisualization } from '../features/capstone/types'
 
 export interface LessonOpening {
   eyebrow: string
@@ -161,6 +162,7 @@ export type LessonVisualization =
   | SchedulerVisualization
   | DataQualityVisualization
   | DataServiceVisualization
+  | CapstoneVisualization
 
 export interface LessonContent {
   eyebrow: string
