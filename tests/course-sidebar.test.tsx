@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { getLessonContent } from '../src/content/lessons'
@@ -55,6 +56,7 @@ describe('课程 Sidebar Accordion', () => {
 
     expect(markup).not.toContain('course-chapter__index')
     expect(markup).not.toContain('course-lesson__number')
+    expect(markup).toContain('data-sidebar-scroll-container="true"')
     expect(markup).toContain('class="course-lesson is-active"')
     expect(markup).toContain('data-progress-lesson-link="lesson-01"')
     expect(markup).toContain(
@@ -131,6 +133,22 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-data-service-choice"')
     expect(chapterMarkup).toContain('>数据做好了，怎么交给别人用？</span>')
     expect(chapterMarkup).toContain('>同一份数据，应该怎么交付？</span>')
+  })
+
+  it('Sidebar 只在收到显式请求且目标不可见时负责最小滚动', () => {
+    const sidebarSource = readFileSync(
+      new URL('../src/components/course/CourseSidebar.tsx', import.meta.url),
+      'utf8',
+    )
+    const shellSource = readFileSync(
+      new URL('../src/components/course/LearnShell.tsx', import.meta.url),
+      'utf8',
+    )
+
+    expect(sidebarSource).toContain('ensureSidebarItemVisible')
+    expect(sidebarSource).toContain('lastHandledRevealRequestRef')
+    expect(sidebarSource).not.toContain('scrollIntoView')
+    expect(shellSource).not.toContain('scrollIntoView')
   })
 
   it('SSR 展开第 11 章时显示五节性能与工程实践课程', () => {
