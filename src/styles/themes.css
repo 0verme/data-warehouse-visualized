@@ -1,0 +1,156 @@
+/* Theme compatibility for shared lesson chrome and interactive lab surfaces. */
+
+html[data-theme='dark'] .home-page {
+  --home-canvas: var(--canvas);
+  --home-surface: var(--surface);
+  --home-ink: var(--ink);
+  --home-ink-soft: var(--ink-soft);
+  --home-ink-muted: var(--ink-muted);
+  --home-line: var(--line);
+  --home-line-strong: var(--line-strong);
+  --home-blue: var(--blue);
+  --home-blue-soft: var(--surface-blue);
+  --home-teal: var(--teal);
+  --home-teal-soft: var(--teal-soft);
+  --home-amber: var(--amber);
+  --home-amber-soft: var(--amber-soft);
+  background-color: var(--home-canvas);
+  color: var(--home-ink);
+}
+
+html[data-theme='dark'] .learn-app .visualization-section,
+html[data-theme='dark'] .learn-app .compare-card__column,
+html[data-theme='dark'] .learn-app .compare-split__column,
+html[data-theme='dark'] .learn-app .lesson-nav__link,
+html[data-theme='dark'] .learn-app .lesson-opening__card,
+html[data-theme='dark'] .learn-app .system-node,
+html[data-theme='dark'] .learn-app .output-node,
+html[data-theme='dark'] .learn-app .pipeline-stage {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .learn-app .concept-card,
+html[data-theme='dark'] .learn-app .warehouse-node,
+html[data-theme='dark'] .learn-app .pipeline-stage--processing {
+  border-color: var(--border-blue);
+  background: var(--surface-blue);
+}
+
+html[data-theme='dark'] .learn-app .pipeline-stage--done,
+html[data-theme='dark'] .learn-app .business-flow--phase-3 .output-node {
+  border-color: var(--border-teal);
+  background: var(--surface-teal-subtle);
+}
+
+html[data-theme='dark'] .learn-app table {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .learn-app table th,
+html[data-theme='dark'] .learn-app table td {
+  border-color: var(--line);
+  color: inherit;
+}
+
+html[data-theme='dark'] .learn-app table thead th {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .learn-app input,
+html[data-theme='dark'] .learn-app select,
+html[data-theme='dark'] .learn-app textarea {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .learn-app .data-quality-status-flow li,
+html[data-theme='dark'] .learn-app .data-quality-status-summary > div,
+html[data-theme='dark'] .learn-app .data-quality-comparison > div,
+html[data-theme='dark'] .learn-app .data-quality-reconciliation__values > div,
+html[data-theme='dark'] .learn-app .data-quality-scenario,
+html[data-theme='dark'] .learn-app .data-quality-rule,
+html[data-theme='dark'] .learn-app .data-quality-release-decision {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-theme='dark'] .learn-app .data-quality-status-flow li.is-warn,
+html[data-theme='dark'] .learn-app .data-quality-grain-callout,
+html[data-theme='dark'] .learn-app .data-quality-scope-line,
+html[data-theme='dark'] .learn-app .data-quality-release-rule {
+  background: var(--surface-warning);
+}
+
+html[data-theme='dark'] .learn-app .data-quality-status-flow li.is-fail,
+html[data-theme='dark'] .learn-app .data-quality-decision--block,
+html[data-theme='dark'] .learn-app .data-quality-decision--fail {
+  background: var(--surface-danger);
+}
+
+html[data-theme='dark'] .learn-app .data-quality-scenario:hover,
+html[data-theme='dark'] .learn-app .data-quality-scenario.is-selected {
+  border-color: var(--teal);
+  background: var(--surface-teal);
+}
+
+html[data-theme='dark'] .learn-app .capstone-workbench {
+  --capstone-ink: var(--ink);
+  --capstone-muted: var(--ink-muted);
+  --capstone-line: var(--line);
+  --capstone-blue: var(--blue);
+  --capstone-blue-soft: var(--surface-blue);
+  --capstone-teal: var(--teal);
+  --capstone-teal-soft: var(--surface-teal);
+  --capstone-amber: var(--amber);
+  --capstone-amber-soft: var(--surface-warning);
+  --capstone-red: var(--danger);
+  --capstone-red-soft: var(--surface-danger);
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-project-facts,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-project-facts span,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-checkpoint-nav,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-source-card,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-choice,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-table,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-build-steps article,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-timeline article {
+  border-color: var(--capstone-line);
+  background: var(--surface);
+  color: var(--capstone-ink);
+}
+
+html[data-theme='dark']
+  .learn-app
+  .capstone-workbench
+  .capstone-checkpoint
+  button:hover:not(:disabled),
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-checkpoint button:focus-visible,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-choice:hover,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-choice:focus-visible {
+  background: var(--surface-blue);
+}
+
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-checkpoint.is-active button,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-choice.is-selected {
+  background: var(--capstone-blue-soft);
+}
+
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-brief-callout,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-run-card,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-evidence-card,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-decision-panel,
+html[data-theme='dark'] .learn-app .capstone-workbench .capstone-scale-symptom {
+  border-color: var(--capstone-line);
+  background: var(--surface);
+  color: var(--capstone-ink);
+}

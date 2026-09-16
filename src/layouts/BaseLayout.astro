@@ -19,12 +19,39 @@ const canonicalUrl =
 ---
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f5f7fb" />
+    <script is:inline>
+      ;(() => {
+        const themeStorageKey = 'data-warehouse-visualized:theme'
+        const localeStorageKey = 'data-warehouse-visualized:locale'
+
+        function restorePreferences() {
+          let theme = 'light'
+          let locale = 'zh-CN'
+
+          try {
+            theme = localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light'
+            locale = localStorage.getItem(localeStorageKey) === 'en' ? 'en' : 'zh-CN'
+          } catch {
+            // localStorage 受限时保留默认偏好。
+          }
+
+          document.documentElement.dataset.theme = theme
+          document.documentElement.lang = locale
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', theme === 'dark' ? '#111927' : '#f5f7fb')
+        }
+
+        restorePreferences()
+        document.addEventListener('astro:after-swap', restorePreferences)
+      })()
+    </script>
     <link rel="icon" type="image/svg+xml" href={`${baseUrl}favicon.svg`} />
     <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content="website" />

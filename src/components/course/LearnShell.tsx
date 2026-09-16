@@ -23,8 +23,10 @@ import {
   toggleExpandedChapter,
 } from '../../utils/lesson'
 import { getRoute } from '../../utils/routes'
-import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
+import { DEFAULT_LOCALE, getStoredLocale, saveLocale, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
+import { LocaleSwitcher } from './LocaleSwitcher'
+import { ThemeToggle } from './ThemeToggle'
 import {
   LessonContent as LessonBody,
   LessonHeader,
@@ -213,6 +215,24 @@ function getCurrentPathname(): string {
   return window.location.pathname
 }
 
+function subscribeToLocaleChanges(onChange: () => void): () => void {
+  document.addEventListener('dwv:locale-change', onChange)
+
+  return () => document.removeEventListener('dwv:locale-change', onChange)
+}
+
+function getLocaleSnapshot(fallback: Locale): Locale {
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  try {
+    return getStoredLocale(window.localStorage, fallback)
+  } catch {
+    return fallback
+  }
+}
+
 function getInitialProgress(
   fallbackProgress: ProgressState,
   lessons: Lesson[],
@@ -245,8 +265,16 @@ export function LearnShell({
   isIndex = false,
   locale = DEFAULT_LOCALE,
 }: LearnShellProps) {
-  const localizedChapters = useMemo(() => getChapters(locale), [locale])
-  const progressBootstrapScript = useMemo(() => createProgressBootstrapScript(locale), [locale])
+  const activeLocale = useSyncExternalStore(
+    subscribeToLocaleChanges,
+    () => getLocaleSnapshot(locale),
+    () => locale,
+  )
+  const localizedChapters = useMemo(() => getChapters(activeLocale), [activeLocale])
+  const progressBootstrapScript = useMemo(
+    () => createProgressBootstrapScript(activeLocale),
+    [activeLocale],
+  )
   const fallbackProgress = useMemo(
     () => createInitialProgress(initialLesson.id),
     [initialLesson.id],
@@ -269,6 +297,10 @@ export function LearnShell({
   const activeLessonRef = useRef<HTMLAnchorElement | null>(null)
   const previousPathnameRef = useRef(pathname)
   const shouldResetMainScrollRef = useRef(false)
+
+  useEffect(() => {
+    document.documentElement.lang = activeLocale
+  }, [activeLocale])
 
   const routeLesson = getLessonFromPath(pathname, lessons)
   const isCourseIndex = isLearnIndexPath(pathname)
@@ -362,6 +394,19 @@ export function LearnShell({
     setExpandedChapterId((current) => toggleExpandedChapter(current, chapterId))
   }
 
+  function handleLocaleChange(nextLocale: Locale) {
+    if (typeof window !== 'undefined') {
+      try {
+        saveLocale(window.localStorage, nextLocale)
+      } catch {
+        // localStorage 受限时仍然在当前页面切换语言。
+      }
+    }
+
+    document.documentElement.lang = nextLocale
+    document.dispatchEvent(new Event('dwv:locale-change'))
+  }
+
   return (
     <div
       className="learn-app"
@@ -372,7 +417,7 @@ export function LearnShell({
         <a
           className="brand brand--learn"
           href={getRoute('/')}
-          aria-label={getMessage('homeAriaLabel', locale)}
+          aria-label={getMessage('homeAriaLabel', activeLocale)}
         >
           <span className="brand__mark" aria-hidden="true">
             <i />
@@ -380,8 +425,8 @@ export function LearnShell({
             <i />
           </span>
           <span className="brand__text">
-            <strong>数据仓库图解</strong>
-            <small>{getMessage('interactiveTextbook', locale)}</small>
+            <strong>{getMessage('siteName', activeLocale)}</strong>
+            <small>{getMessage('interactiveTextbook', activeLocale)}</small>
           </span>
         </a>
 
@@ -390,32 +435,51 @@ export function LearnShell({
             completedCount={completedCount}
             totalLessons={lessons.length}
             compact
-            locale={locale}
+            locale={activeLocale}
           />
         </div>
 
-        <button
-          className="sidebar-toggle"
-          type="button"
-          aria-expanded={isSidebarOpen}
-          aria-controls="course-sidebar"
-          onClick={() => setIsSidebarOpen((isOpen) => !isOpen)}
-        >
-          <span className="sidebar-toggle__icon" aria-hidden="true">
-            ☰
-          </span>
-          {getMessage('courseDirectory', locale)}
-        </button>
+        <div className="learn-topbar__actions">
+          <LocaleSwitcher locale={activeLocale} onLocaleChange={handleLocaleChange} />
+          <ThemeToggle locale={activeLocale} />
+          <button
+            className="sidebar-toggle"
+            type="button"
+            aria-expanded={isSidebarOpen}
+            aria-controls="course-sidebar"
+            aria-label={getMessage('courseDirectory', activeLocale)}
+            onClick={() => setIsSidebarOpen((isOpen) => !isOpen)}
+          >
+            <svg
+              className="sidebar-toggle__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="sidebar-toggle__label">
+              {getMessage('courseDirectory', activeLocale)}
+            </span>
+          </button>
+        </div>
       </header>
 
       <div className="learn-layout">
         <aside
           className={`course-sidebar${isSidebarOpen ? ' is-open' : ''}`}
           id="course-sidebar"
-          aria-label={getMessage('courseDirectory', locale)}
+          aria-label={getMessage('courseDirectory', activeLocale)}
         >
           <div className="course-sidebar__intro">
-            <span className="eyebrow eyebrow--small">{getMessage('learningRoute', locale)}</span>
+            <span className="eyebrow eyebrow--small">
+              {getMessage('learningRoute', activeLocale)}
+            </span>
             <h2>从一张表开始</h2>
             <p>沿着数据流动的方向，把抽象概念变成可以观察的步骤。</p>
           </div>
@@ -454,7 +518,7 @@ export function LearnShell({
                       data-progress-chapter-lessons={chapter.lessons
                         .map((lesson) => lesson.id)
                         .join(',')}
-                      aria-label={`${completedLessonCount}/${chapter.lessons.length} ${getMessage('lessonsCompleted', locale)}`}
+                      aria-label={`${completedLessonCount}/${chapter.lessons.length} ${getMessage('lessonsCompleted', activeLocale)}`}
                     >
                       {completedLessonCount}/{chapter.lessons.length}
                     </span>
@@ -465,11 +529,11 @@ export function LearnShell({
                       const isCompleted = progress.completedLessonIds.includes(lesson.id)
                       const statusLabel = isCompleted
                         ? isActive
-                          ? getMessage('learnedCurrentLesson', locale)
-                          : getMessage('learned', locale)
+                          ? getMessage('learnedCurrentLesson', activeLocale)
+                          : getMessage('learned', activeLocale)
                         : isActive
-                          ? getMessage('currentLesson', locale)
-                          : getMessage('notCompleted', locale)
+                          ? getMessage('currentLesson', activeLocale)
+                          : getMessage('notCompleted', activeLocale)
 
                       return (
                         <li key={lesson.id}>
@@ -508,7 +572,7 @@ export function LearnShell({
           <button
             className="sidebar-backdrop"
             type="button"
-            aria-label={getMessage('closeCourseDirectory', locale)}
+            aria-label={getMessage('closeCourseDirectory', activeLocale)}
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -516,9 +580,9 @@ export function LearnShell({
         <main className="learn-main">
           <div className="learn-main__scroll">
             <div className="learn-main__crumbs">
-              <a href={getRoute('/')}>{getMessage('home', locale)}</a>
+              <a href={getRoute('/')}>{getMessage('home', activeLocale)}</a>
               <span aria-hidden="true">/</span>
-              <span>{getMessage('courseLearning', locale)}</span>
+              <span>{getMessage('courseLearning', activeLocale)}</span>
               <span aria-hidden="true">/</span>
               <span>{activeLesson.title}</span>
             </div>
@@ -526,13 +590,13 @@ export function LearnShell({
               lesson={activeLesson}
               lessons={lessons}
               content={activeContent}
-              locale={locale}
+              locale={activeLocale}
             />
             <LessonBody
               lesson={activeLesson}
               content={activeContent}
               codeHighlights={codeHighlights}
-              locale={locale}
+              locale={activeLocale}
             />
           </div>
           <LessonNavigation
@@ -541,7 +605,7 @@ export function LearnShell({
             lessonId={activeLesson.id}
             isCompleted={isActiveLessonCompleted}
             onToggleComplete={toggleActiveLesson}
-            locale={locale}
+            locale={activeLocale}
           />
         </main>
       </div>

@@ -6,6 +6,7 @@
 
 html {
   min-width: 320px;
+  background: var(--canvas);
   scroll-behavior: smooth;
 }
 
@@ -17,6 +18,9 @@ body {
   color: var(--ink);
   font-size: 15px;
   line-height: 1.7;
+  transition:
+    background-color var(--motion-standard) ease,
+    color var(--motion-standard) ease;
 }
 
 button,
@@ -30,7 +34,7 @@ button {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgb(45 108 223 / 35%);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
