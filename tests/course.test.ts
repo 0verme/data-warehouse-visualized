@@ -389,8 +389,85 @@ describe('课程数据与导航', () => {
     })
   })
 
-  it('数据血缘顺序调整到第十课', () => {
-    expect(getLessonBySlug('data-lineage')).toMatchObject({ order: 100, chapter: '08' })
+  it('第 08 章正式拆成 8-1 到 8-5 的五节数据血缘课程', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '08')
+    const expectedSlugs = [
+      'data-lineage',
+      'data-lineage-fields',
+      'data-lineage-investigation',
+      'data-lineage-impact',
+      'data-lineage-evidence',
+    ]
+
+    expect(chapterLessons).toHaveLength(5)
+    expect(chapterLessons.map((lesson) => lesson.chapter)).toEqual(['08', '08', '08', '08', '08'])
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(expectedSlugs)
+    expect(chapterLessons.map((lesson) => lesson.order)).toEqual([100, 200, 300, 400, 500])
+    expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
+      '8-1',
+      '8-2',
+      '8-3',
+      '8-4',
+      '8-5',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.title)).toEqual([
+      '这份数据到底从哪里来？',
+      '只知道上游表，为什么还不够？',
+      '质量告警以后，哪些上游值得先查？',
+      '如果这里出问题，会影响哪些下游？',
+      '图上的这条箭头，凭什么相信？',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'lineage',
+      'lineage',
+      'lineage',
+      'lineage',
+      'lineage',
+    ])
+
+    expect(
+      chapterLessons.map((lesson) => {
+        const visualization = getLessonContent(lesson).sections.find(
+          (section) => section.kind === 'visualization',
+        )
+
+        return visualization?.kind === 'visualization'
+          ? {
+              kind: visualization.visualization.kind,
+              mode:
+                visualization.visualization.kind === 'lineage'
+                  ? visualization.visualization.teaching?.mode
+                  : undefined,
+            }
+          : undefined
+      }),
+    ).toEqual([
+      { kind: 'lineage', mode: 'overview' },
+      { kind: 'lineage', mode: 'field-dependencies' },
+      { kind: 'lineage', mode: 'investigation' },
+      { kind: 'lineage', mode: 'impact' },
+      { kind: 'lineage', mode: 'evidence' },
+    ])
+    expect(getLessonBySlug('data-lineage')).toMatchObject({
+      id: 'lesson-08',
+      order: 100,
+      chapter: '08',
+    })
+
+    expect(getAdjacentLessons(lessons, 'data-lineage').next?.slug).toBe('data-lineage-fields')
+    expect(getAdjacentLessons(lessons, 'data-lineage-fields').next?.slug).toBe(
+      'data-lineage-investigation',
+    )
+    expect(getAdjacentLessons(lessons, 'data-lineage-investigation').next?.slug).toBe(
+      'data-lineage-impact',
+    )
+    expect(getAdjacentLessons(lessons, 'data-lineage-impact').next?.slug).toBe(
+      'data-lineage-evidence',
+    )
+    expect(getAdjacentLessons(lessons, 'data-lineage-evidence').next?.slug).toBe('data-governance')
+    expect(getAdjacentLessons(lessons, 'data-governance').previous?.slug).toBe(
+      'data-lineage-evidence',
+    )
   })
 
   it('首尾课程不会产生越界导航', () => {

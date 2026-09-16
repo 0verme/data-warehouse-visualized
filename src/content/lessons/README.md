@@ -15,7 +15,11 @@
 - `star-schema-and-grain.ts`：账户交易字段归位、事实/维度与星型模型
 - `fact-table-types.ts`：Transaction Fact、Periodic Snapshot Fact、Accumulating Snapshot Fact 对照
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
-- `data-lineage.ts`：血缘关系与影响分析
+- `data-lineage.ts`：8-1 表级血缘
+- `data-lineage-fields.ts`：8-2 字段级血缘
+- `data-lineage-investigation.ts`：8-3 Quality Event 调查
+- `data-lineage-impact.ts`：8-4 变更影响范围
+- `data-lineage-evidence.ts`：8-5 血缘关系证据
 - `data-governance.ts`：第 09 章五节数据治理课程，依次练习资产选择、Quality / Freshness 证据、字段使用、deprecated 迁移和 Owner 责任清单
 - `sql-and-transformation.ts`：存款余额指标定义与加工计划
 - `sql-and-transformation-cleaning.ts`：账户日明细去重、缺失关联与币种标准化

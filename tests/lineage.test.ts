@@ -17,6 +17,10 @@ import { LEGACY_SCHEDULER_TASK_IDS, SCHEDULER_TASK_IDS } from '../src/utils/sche
 import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 import { QUALITY_RULE_IDS } from '../src/utils/data-quality'
 import { dataLineageContent } from '../src/content/lessons/data-lineage'
+import { dataLineageEvidenceContent } from '../src/content/lessons/data-lineage-evidence'
+import { dataLineageFieldsContent } from '../src/content/lessons/data-lineage-fields'
+import { dataLineageImpactContent } from '../src/content/lessons/data-lineage-impact'
+import { dataLineageInvestigationContent } from '../src/content/lessons/data-lineage-investigation'
 import {
   analyzeLineageInvestigation,
   getBlastRadius,
@@ -38,22 +42,43 @@ const { nodes, edges } = {
   edges: bankingLineageEdges,
 }
 
+const lineageContents = [
+  dataLineageContent,
+  dataLineageFieldsContent,
+  dataLineageInvestigationContent,
+  dataLineageImpactContent,
+  dataLineageEvidenceContent,
+]
+
 function getVisualizationModes() {
-  return dataLineageContent.sections.flatMap((section) =>
-    section.kind === 'visualization' && section.visualization.kind === 'lineage'
-      ? [section.visualization]
-      : [],
-  )
+  return lineageContents.map((content) => {
+    const section = content.sections.find((candidate) => candidate.kind === 'visualization')
+
+    if (section?.kind !== 'visualization' || section.visualization.kind !== 'lineage') {
+      throw new Error('Expected a lineage visualization section')
+    }
+
+    return section.visualization
+  })
 }
 
 describe('第 08 课数据血缘', () => {
   it('拆分为 8-1 到 8-5，并统一使用银行存款余额链路', () => {
-    expect(dataLineageContent.sections.map((section) => section.kind)).toEqual([
-      'visualization',
-      'visualization',
-      'visualization',
-      'visualization',
-      'visualization',
+    expect(
+      lineageContents.map((content) => content.sections.map((section) => section.kind)),
+    ).toEqual([
+      ['visualization'],
+      ['visualization'],
+      ['visualization'],
+      ['visualization'],
+      ['visualization'],
+    ])
+    expect(getVisualizationModes().map((visualization) => visualization.kind)).toEqual([
+      'lineage',
+      'lineage',
+      'lineage',
+      'lineage',
+      'lineage',
     ])
     expect(getVisualizationModes().map((visualization) => visualization.teaching?.mode)).toEqual([
       'overview',
@@ -62,10 +87,7 @@ describe('第 08 课数据血缘', () => {
       'impact',
       'evidence',
     ])
-    expect(dataLineageContent.visualization).toMatchObject({
-      kind: 'lineage',
-      teaching: { mode: 'overview' },
-    })
+    expect(dataLineageContent.visualization).toBeUndefined()
     expect(nodes.map((node) => node.label)).toEqual(
       expect.arrayContaining([
         'AccountBalanceSnapshot',
