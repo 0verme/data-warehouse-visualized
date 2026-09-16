@@ -250,7 +250,7 @@ const sourceCards = [
 ]
 
 export const lakehouseContent: LessonContent = {
-  eyebrow: '第 10 章 · 统一入口，按需服务',
+  eyebrow: '第 09 章 · 统一入口，按需服务',
   opening: {
     eyebrow: '银行平台每天接到三种数据',
     title: '为什么所有数据先进湖，却只有一部分进入仓？',
@@ -317,7 +317,7 @@ export const lakehouseContent: LessonContent = {
 }
 
 export const lakehouseReplicationContent: LessonContent = {
-  eyebrow: '第 10 章 · 异构体系的复制代价',
+  eyebrow: '第 09 章 · 异构体系的复制代价',
   opening: {
     eyebrow: '经营分析需要昨天的账户余额',
     title: '湖里已经有一份，为什么仓里还要再有一份？',
@@ -409,7 +409,7 @@ export const lakehouseReplicationContent: LessonContent = {
 }
 
 export const lakehouseTableLayerContent: LessonContent = {
-  eyebrow: '第 10 章 · Files + Metadata',
+  eyebrow: '第 09 章 · Files + Metadata',
   opening: {
     eyebrow: '一批手机银行事件已经写进 Lake',
     title: '文件上的数据怎样获得可靠的表能力？',
@@ -480,7 +480,7 @@ export const lakehouseTableLayerContent: LessonContent = {
 }
 
 export const lakehouseUnityContent: LessonContent = {
-  eyebrow: '第 10 章 · 共享基础能力',
+  eyebrow: '第 09 章 · 共享基础能力',
   opening: {
     eyebrow: '两套系统的边界开始重新设计',
     title: '湖仓一体到底“一体”了什么？',

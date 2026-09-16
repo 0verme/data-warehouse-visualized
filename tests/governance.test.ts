@@ -39,9 +39,9 @@ function getAsset(id: string): GovernanceAsset {
   return asset
 }
 
-describe('第 09 章数据治理判断链', () => {
+describe('第 08 章数据治理判断链', () => {
   it('课程注册为五节连续的 Banking Teaching Domain 课程', () => {
-    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '09')
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '08')
 
     expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
       'data-governance',
@@ -252,7 +252,7 @@ describe('第 09 章数据治理判断链', () => {
     expect(views[4]).toContain('Owner：存款指标组')
   })
 
-  it('通用血缘工具可以读取前置影响图，但第 09 章使用静态影响结果', () => {
+  it('通用血缘工具可以读取前置影响图，但第 08 章使用静态影响结果', () => {
     const event = events[0]
     const impact = getGovernanceLineageImpact(assets, lineageNodes, lineageEdges, event)
 

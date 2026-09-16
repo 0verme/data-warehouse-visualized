@@ -506,9 +506,88 @@ describe('课程数据与导航', () => {
     expect(getAdjacentLessons(lessons, 'data-lineage-impact').next?.slug).toBe(
       'data-lineage-evidence',
     )
-    expect(getAdjacentLessons(lessons, 'data-lineage-evidence').next?.slug).toBe('data-service')
-    expect(getAdjacentLessons(lessons, 'data-service').next?.slug).toBe('data-governance')
-    expect(getAdjacentLessons(lessons, 'data-governance').previous?.slug).toBe('data-service')
+    expect(getAdjacentLessons(lessons, 'data-lineage-evidence').next?.slug).toBe('data-governance')
+    expect(getAdjacentLessons(lessons, 'data-governance').previous?.slug).toBe(
+      'data-lineage-evidence',
+    )
+    expect(getAdjacentLessons(lessons, 'data-governance-change-responsibility').next?.slug).toBe(
+      'lakehouse',
+    )
+    expect(getAdjacentLessons(lessons, 'lakehouse').previous?.slug).toBe(
+      'data-governance-change-responsibility',
+    )
+    expect(getAdjacentLessons(lessons, 'lakehouse-unity').next?.slug).toBe('data-service')
+    expect(getAdjacentLessons(lessons, 'data-service').previous?.slug).toBe('lakehouse-unity')
+  })
+
+  it('第十章正式注册为五节数据服务课程并保留原链接', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '10')
+    const expectedSlugs = [
+      'data-service',
+      'data-service-report',
+      'data-service-file',
+      'data-service-api',
+      'data-service-choice',
+    ]
+
+    expect(chapterLessons).toHaveLength(5)
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(expectedSlugs)
+    expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
+      '10-1',
+      '10-2',
+      '10-3',
+      '10-4',
+      '10-5',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.title)).toEqual([
+      '数据做好了，怎么交给别人用？',
+      '报表与 BI：给人看的数据',
+      '文件接口：给系统批量交付数据',
+      'API：让系统按需获取数据',
+      '同一份数据，应该怎么交付？',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'data-service',
+      'data-service',
+      'data-service',
+      'data-service',
+      'data-service',
+    ])
+    expect(
+      chapterLessons.map(
+        (lesson) =>
+          getLessonContent(lesson).sections.find((section) => section.kind === 'visualization')
+            ?.visualization,
+      ),
+    ).toEqual([
+      expect.objectContaining({ kind: 'data-service', mode: 'overview' }),
+      expect.objectContaining({ kind: 'data-service', mode: 'report' }),
+      expect.objectContaining({ kind: 'data-service', mode: 'file' }),
+      expect.objectContaining({ kind: 'data-service', mode: 'api' }),
+      expect.objectContaining({ kind: 'data-service', mode: 'decision' }),
+    ])
+    expect(getLessonBySlug('data-service')).toMatchObject({
+      id: 'lesson-data-service',
+      slug: 'data-service',
+      chapter: '10',
+    })
+    expect(getAdjacentLessons(lessons, 'data-service').previous?.slug).toBe('lakehouse-unity')
+    expect(getAdjacentLessons(lessons, 'data-service').next?.slug).toBe('data-service-report')
+    expect(getAdjacentLessons(lessons, 'data-service-choice').previous?.slug).toBe(
+      'data-service-api',
+    )
+    expect(getAdjacentLessons(lessons, 'data-service-choice').next?.slug).toBe(
+      'performance-and-practice',
+    )
+    expect(getAdjacentLessons(lessons, 'performance-and-practice').previous?.slug).toBe(
+      'data-service-choice',
+    )
+
+    const chapterText = JSON.stringify(chapterLessons.map((lesson) => getLessonContent(lesson)))
+    expect(chapterText).toContain('普通业务系统不直接连接数仓')
+    expect(chapterText).toContain('API 不等于实时数据')
+    expect(chapterText).toContain('deposit_balance_20260930.flag')
+    expect(chapterText).toContain('12000000000')
   })
 
   it('首尾课程不会产生越界导航', () => {

@@ -90,9 +90,9 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-evidence"')
   })
 
-  it('SSR 展开第 10 章时只显示四节湖仓课程', () => {
+  it('SSR 展开第 09 章时只显示四节湖仓课程', () => {
     const markup = renderSidebarForLesson('lakehouse-table-layer')
-    const chapterMarkup = getChapterMarkup(markup, '10')
+    const chapterMarkup = getChapterMarkup(markup, '09')
 
     expect(chapterMarkup).toContain('aria-expanded="true"')
     expect(chapterMarkup).toContain('>0/4</span>')
@@ -100,5 +100,20 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10-replication"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10-table-layer"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-10-unity"')
+  })
+
+  it('SSR 展开第 10 章时显示五节数据服务课程', () => {
+    const markup = renderSidebarForLesson('data-service')
+    const chapterMarkup = getChapterMarkup(markup, '10')
+
+    expect(chapterMarkup).toContain('aria-expanded="true"')
+    expect(chapterMarkup).toContain('>0/5</span>')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-data-service"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-data-service-report"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-data-service-file"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-data-service-api"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-data-service-choice"')
+    expect(chapterMarkup).toContain('>数据做好了，怎么交给别人用？</span>')
+    expect(chapterMarkup).toContain('>同一份数据，应该怎么交付？</span>')
   })
 })

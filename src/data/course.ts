@@ -29,6 +29,7 @@ export type LessonDemo =
   | 'performance-lab'
   | 'scheduler'
   | 'data-quality'
+  | 'data-service'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -387,7 +388,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-1',
     slug: 'data-governance',
-    chapter: '09',
+    chapter: '08',
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -396,7 +397,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-2',
     slug: 'data-governance-evidence',
-    chapter: '09',
+    chapter: '08',
     order: 200,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -405,7 +406,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-3',
     slug: 'data-governance-field-access',
-    chapter: '09',
+    chapter: '08',
     order: 300,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -414,7 +415,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-4',
     slug: 'data-governance-lifecycle',
-    chapter: '09',
+    chapter: '08',
     order: 400,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -423,7 +424,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-5',
     slug: 'data-governance-change-responsibility',
-    chapter: '09',
+    chapter: '08',
     order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -432,7 +433,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-10',
     slug: 'lakehouse',
-    chapter: '10',
+    chapter: '09',
     order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 16,
@@ -441,7 +442,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-10-replication',
     slug: 'lakehouse-replication',
-    chapter: '10',
+    chapter: '09',
     order: 200,
     difficulty: 'advanced',
     estimatedMinutes: 14,
@@ -450,7 +451,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-10-table-layer',
     slug: 'lakehouse-table-layer',
-    chapter: '10',
+    chapter: '09',
     order: 300,
     difficulty: 'advanced',
     estimatedMinutes: 16,
@@ -459,7 +460,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-10-unity',
     slug: 'lakehouse-unity',
-    chapter: '10',
+    chapter: '09',
     order: 400,
     difficulty: 'advanced',
     estimatedMinutes: 14,
@@ -468,11 +469,47 @@ export const lessonDefinitions = [
   {
     id: 'lesson-data-service',
     slug: 'data-service',
-    chapter: '08',
+    chapter: '10',
     order: 100,
-    difficulty: 'advanced',
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'data-service',
+  },
+  {
+    id: 'lesson-data-service-report',
+    slug: 'data-service-report',
+    chapter: '10',
+    order: 200,
+    difficulty: 'intermediate',
+    estimatedMinutes: 10,
+    demo: 'data-service',
+  },
+  {
+    id: 'lesson-data-service-file',
+    slug: 'data-service-file',
+    chapter: '10',
+    order: 300,
+    difficulty: 'intermediate',
     estimatedMinutes: 12,
-    demo: 'coming-soon',
+    demo: 'data-service',
+  },
+  {
+    id: 'lesson-data-service-api',
+    slug: 'data-service-api',
+    chapter: '10',
+    order: 400,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'data-service',
+  },
+  {
+    id: 'lesson-data-service-choice',
+    slug: 'data-service-choice',
+    chapter: '10',
+    order: 500,
+    difficulty: 'intermediate',
+    estimatedMinutes: 12,
+    demo: 'data-service',
   },
   {
     id: 'lesson-11',
@@ -506,9 +543,9 @@ export const chapterTranslations: Partial<Record<Locale, Record<ChapterId, Chapt
     '05': { title: '调度系统' },
     '06': { title: '数据质量' },
     '07': { title: '数据血缘' },
-    '08': { title: '数据服务（规划中）' },
-    '09': { title: '数据治理' },
-    '10': { title: '湖仓' },
+    '08': { title: '数据治理' },
+    '09': { title: '湖仓' },
+    '10': { title: '数据服务' },
     '11': { title: '性能与工程实践' },
     '12': { title: '从 0 搭一套数据仓库' },
   },
@@ -732,9 +769,30 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['湖仓一体', '存算分离', '架构取舍'],
     },
     'lesson-data-service': {
-      title: '数据服务：数据最终怎么被使用？',
-      summary: '规划中的数据交付章节，比较报表、文件和 API 等数据消费方式。',
-      tags: ['数据服务', '数据交付'],
+      title: '数据做好了，怎么交给别人用？',
+      summary: '从已发布的存款余额出发，认识人查看、系统批量接收和系统按需获取三类消费模式。',
+      tags: ['数据服务', '数据消费', '交付边界'],
+    },
+    'lesson-data-service-report': {
+      title: '报表与 BI：给人看的数据',
+      summary: '用业务日期和机构筛选查看已发布存款余额，理解报表 / BI 作为受控分析消费者的边界。',
+      tags: ['报表', 'BI', '数据消费'],
+    },
+    'lesson-data-service-file': {
+      title: '文件接口：给系统批量交付数据',
+      summary: '通过 TXT 数据文件和 FLAG 完成标志，判断一批存款余额什么时候真正可以被下游消费。',
+      tags: ['文件接口', 'TXT', 'FLAG'],
+    },
+    'lesson-data-service-api': {
+      title: 'API：让系统按需获取数据',
+      summary:
+        '用机构和业务日期组成请求，观察 API 如何返回已发布的日终存款余额，并区分访问方式与实时性。',
+      tags: ['API', '请求响应', '业务日期'],
+    },
+    'lesson-data-service-choice': {
+      title: '同一份数据，应该怎么交付？',
+      summary: '根据消费者、数据量和触发方式选择报表 / BI、文件接口或 API，练习数据交付方式判断。',
+      tags: ['消费模式', '方式选择', '数据交付'],
     },
     'lesson-11': {
       title: '性能与工程实践',

@@ -18,6 +18,7 @@ import {
   BankingStarSchemaLab,
   BusinessSystemFlow,
   DataQualityWorkbench,
+  DataServiceWorkbench,
   GovernanceWorkbench,
   LakehouseArchitectureLab,
   LayerEvolutionLab,
@@ -162,6 +163,8 @@ function VisualizationBody({
       return <GovernanceWorkbench visualization={visualization} />
     case 'data-quality':
       return <DataQualityWorkbench visualization={visualization} />
+    case 'data-service':
+      return <DataServiceWorkbench visualization={visualization} />
     case 'performance-lab':
       return <PerformanceLab visualization={visualization} />
     case 'scheduler':
@@ -227,6 +230,13 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
         title: '存款余额这条指标是怎样加工出来的？',
         description:
           '按章节关注点切换指标计划、可信明细、Join 对照、分层聚合和加工契约，观察每一行数据如何改变。',
+      }
+    case 'data-service':
+      return {
+        eyebrow: '数据服务 · 消费工作台',
+        title: '同一份数据，怎样交给不同消费者？',
+        description:
+          '沿已发布的存款余额结果，比较人查看、系统批量接收和系统按需获取三种典型消费模式。',
       }
     case 'scheduler':
       return {

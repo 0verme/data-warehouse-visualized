@@ -9,6 +9,7 @@ export {
 } from './BankingMetricLabs'
 export { BusinessSystemFlow } from './BusinessSystemFlow'
 export { DataQualityWorkbench } from './DataQualityWorkbench'
+export { DataServiceWorkbench } from './DataServiceWorkbench'
 export { LayerEvolutionLab } from './LayerEvolutionLab'
 export { GovernanceWorkbench } from './GovernanceWorkbench'
 export { LakehouseArchitectureLab } from './LakehouseArchitectureLab'

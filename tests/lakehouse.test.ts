@@ -46,9 +46,9 @@ if (!initialSnapshot) {
   throw new Error('湖仓测试需要初始 snapshot')
 }
 
-describe('第 10 章湖仓课程注册', () => {
+describe('第 09 章湖仓课程注册', () => {
   it('固定注册四节课，并保留 lakehouse slug', () => {
-    const chapterLessons = getLessons().filter((lesson) => lesson.chapter === '10')
+    const chapterLessons = getLessons().filter((lesson) => lesson.chapter === '09')
 
     expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
       'lakehouse',
@@ -58,7 +58,7 @@ describe('第 10 章湖仓课程注册', () => {
     ])
     expect(getLessonBySlug('lakehouse')).toMatchObject({
       title: '为什么所有数据先进湖，却只有一部分进入仓？',
-      chapter: '10',
+      chapter: '09',
       demo: 'lakehouse',
     })
   })

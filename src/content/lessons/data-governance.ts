@@ -450,7 +450,7 @@ const sharedOpeningCards = [
 ]
 
 export const dataGovernanceContent: LessonContent = {
-  eyebrow: '第 09 章 · 选对资产',
+  eyebrow: '第 08 章 · 选对资产',
   subtitle: '搜索到相关资产以后，先读懂它的一行含义，再决定它是否回答当前问题。',
   quickSummary: '名称相似的资产可能有不同 Grain、范围和排除项；当前需求决定哪一份更合适。',
   opening: {
@@ -504,7 +504,7 @@ export const dataGovernanceContent: LessonContent = {
 }
 
 export const governanceEvidenceContent: LessonContent = {
-  eyebrow: '第 09 章 · 使用前核对证据',
+  eyebrow: '第 08 章 · 使用前核对证据',
   subtitle: '语义匹配以后，再看 Quality status 和 Freshness 是否满足昨天业务日的需求。',
   quickSummary:
     '当前是否适合使用，要同时看定义、Grain、Quality 和 Freshness，结论必须带证据和原因。',
@@ -559,7 +559,7 @@ export const governanceEvidenceContent: LessonContent = {
 }
 
 export const governanceFieldAccessContent: LessonContent = {
-  eyebrow: '第 09 章 · 字段级使用',
+  eyebrow: '第 08 章 · 字段级使用',
   subtitle: '资产可以使用，不代表其中的每个字段都应该直接暴露。',
   quickSummary: '同一个经营分析人员换一个用途，必要字段和字段处理方式也可能改变。',
   opening: {
@@ -614,7 +614,7 @@ export const governanceFieldAccessContent: LessonContent = {
 }
 
 export const governanceLifecycleContent: LessonContent = {
-  eyebrow: '第 09 章 · 生命周期判断',
+  eyebrow: '第 08 章 · 生命周期判断',
   subtitle: '能搜索、能查询、有数据，不代表资产仍然适合建立新的依赖。',
   quickSummary: '看到 deprecated 后，停止把旧资产当默认来源，找到替代资产并完成迁移判断。',
   opening: {
@@ -670,7 +670,7 @@ export const governanceLifecycleContent: LessonContent = {
 }
 
 export const governanceChangeResponsibilityContent: LessonContent = {
-  eyebrow: '第 09 章 · 变化后的责任',
+  eyebrow: '第 08 章 · 变化后的责任',
   subtitle: '第 07 章已经告诉我们谁会受影响；现在要把影响结果交给对应 Owner 处理。',
   quickSummary: '读取已有影响分析，展开受影响资产，映射 Owner，形成一份可以执行的变更责任清单。',
   opening: {
@@ -696,7 +696,7 @@ export const governanceChangeResponsibilityContent: LessonContent = {
       title: '第 07 章的影响结果在这里变成动作',
       paragraphs: [
         'Account.product_type 从活期、定期的分类规则开始变化。第 07 章已经确认它会沿 dwd_account_balance_detail、dws_deposit_balance_daily 和 ads_deposit_balance 影响存款产品结构分析。',
-        '第 09 章不重复计算这条路径。现在要回答的是：源字段谁确认新语义，日汇总谁确认加工逻辑，应用结果和消费者谁确认展示与分析结论。',
+        '第 08 章不重复计算这条路径。现在要回答的是：源字段谁确认新语义，日汇总谁确认加工逻辑，应用结果和消费者谁确认展示与分析结论。',
       ],
       bullets: ['先读取已有影响结果。', '再展开受影响资产。', '最后把每个动作交给对应 Owner。'],
     },
