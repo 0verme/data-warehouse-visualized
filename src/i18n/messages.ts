@@ -32,6 +32,8 @@ export interface MessageDictionary {
   simplifiedChinese: string
   englishPreview: string
   toggleTheme: string
+  collapseSidebar: string
+  expandSidebar: string
 }
 
 export const messages: Partial<Record<Locale, MessageDictionary>> = {
@@ -67,6 +69,8 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     simplifiedChinese: '简体中文',
     englishPreview: 'English · Preview',
     toggleTheme: '切换浅色 / 深色主题',
+    collapseSidebar: '收起目录',
+    expandSidebar: '展开目录',
   },
   en: {
     siteName: 'Data Warehouse Visualized',
@@ -100,6 +104,8 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     simplifiedChinese: 'Simplified Chinese',
     englishPreview: 'English · Preview',
     toggleTheme: 'Switch light / dark theme',
+    collapseSidebar: 'Collapse course directory',
+    expandSidebar: 'Expand course directory',
   },
 }
 

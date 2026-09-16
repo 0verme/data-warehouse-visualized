@@ -64,5 +64,7 @@ describe('轻量 i18n API', () => {
     expect(chapterDefinitions[0]).not.toHaveProperty('title')
     expect(getMessage('previousLesson')).toBe('上一节')
     expect(getMessage('markAsLearned', DEFAULT_LOCALE)).toBe('标记为已学会')
+    expect(getMessage('collapseSidebar')).toBe('收起目录')
+    expect(getMessage('expandSidebar')).toBe('展开目录')
   })
 })
