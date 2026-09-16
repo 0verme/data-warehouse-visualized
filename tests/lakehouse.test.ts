@@ -1,17 +1,24 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { lakehouseContent } from '../src/content/lessons/lakehouse'
-import { getLessonBySlug } from '../src/data/course'
+import { LakehouseArchitectureLab } from '../src/components/visualizations/LakehouseArchitectureLab'
+import {
+  lakehouseContent,
+  lakehouseReplicationContent,
+  lakehouseTableLayerContent,
+  lakehouseUnityContent,
+  lakehouseVisualizations,
+} from '../src/content/lessons/lakehouse'
+import { getLessonBySlug, getLessons } from '../src/data/course'
 import type { LessonSection, LessonVisualizationSection } from '../src/content/types'
 import type { LakehouseVisualization } from '../src/types'
 import {
-  buildDecisionRecord,
   commitSnapshot,
-  evaluateArchitecture,
   evolveSnapshotSchema,
-  getArchitectureFlow,
-  getArchitectureState,
-  getCapabilityMatrix,
-  getConsumerStates,
+  getAtomicCommitState,
+  getLakeFirstAssessment,
+  getLakehouseUnityState,
+  getReplicationState,
   timeTravelTo,
 } from '../src/utils/lakehouse'
 
@@ -20,124 +27,187 @@ const isLakehouseVisualizationSection = (
 ): section is LessonVisualizationSection & { visualization: LakehouseVisualization } =>
   section.kind === 'visualization' && section.visualization.kind === 'lakehouse'
 
-const visualization = lakehouseContent.sections.find(isLakehouseVisualizationSection)?.visualization
+function getVisualization(content: typeof lakehouseContent): LakehouseVisualization {
+  const visualization = content.sections.find(isLakehouseVisualizationSection)?.visualization
+  if (!visualization) {
+    throw new Error('湖仓测试需要 lakehouse visualization 数据')
+  }
 
-if (!visualization || visualization.kind !== 'lakehouse') {
-  throw new Error('湖仓测试需要 lakehouse visualization 数据')
+  return visualization
 }
 
-const lakehouseVisualization: LakehouseVisualization = visualization
-
-const initialSnapshot = lakehouseVisualization.snapshots[0]
+const lakeFirstVisualization = getVisualization(lakehouseContent)
+const replicationVisualization = getVisualization(lakehouseReplicationContent)
+const tableLayerVisualization = getVisualization(lakehouseTableLayerContent)
+const unityVisualization = getVisualization(lakehouseUnityContent)
+const initialSnapshot = tableLayerVisualization.snapshots[0]
 
 if (!initialSnapshot) {
   throw new Error('湖仓测试需要初始 snapshot')
 }
 
-describe('湖仓架构选择与版本实验', () => {
-  it('课程元数据和同一份多形态输入已注册', () => {
+describe('第 10 章湖仓课程注册', () => {
+  it('固定注册四节课，并保留 lakehouse slug', () => {
+    const chapterLessons = getLessons().filter((lesson) => lesson.chapter === '10')
+
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
+      'lakehouse',
+      'lakehouse-replication',
+      'lakehouse-table-layer',
+      'lakehouse-unity',
+    ])
     expect(getLessonBySlug('lakehouse')).toMatchObject({
-      title: '湖仓：为什么数据湖最终需要仓库能力',
-      chapter: '09',
+      title: '为什么所有数据先进湖，却只有一部分进入仓？',
+      chapter: '10',
       demo: 'lakehouse',
     })
-    expect(lakehouseVisualization.dataSources.map((source) => source.format)).toEqual([
+  })
+
+  it('四节课各自使用明确的教学动作和独立配置', () => {
+    expect(lakehouseContent.sections.map((section) => section.kind)).toContain('visualization')
+    expect(lakehouseReplicationContent.sections.map((section) => section.kind)).toContain(
+      'visualization',
+    )
+    expect(lakehouseTableLayerContent.sections.map((section) => section.kind)).toContain(
+      'visualization',
+    )
+    expect(lakehouseUnityContent.sections.map((section) => section.kind)).toContain('visualization')
+    expect(lakehouseVisualizations.lakeFirst.focus).toBe('lake-first')
+    expect(lakehouseVisualizations.replication.focus).toBe('replication')
+    expect(lakehouseVisualizations.tableLayer.focus).toBe('table-layer')
+    expect(lakehouseVisualizations.unity.focus).toBe('unity')
+  })
+
+  it('Architecture Lab 按四种 focus 渲染对应实验，不渲染评分面板', () => {
+    const lakeFirstMarkup = renderToStaticMarkup(
+      createElement(LakehouseArchitectureLab, { visualization: lakehouseVisualizations.lakeFirst }),
+    )
+    const replicationMarkup = renderToStaticMarkup(
+      createElement(LakehouseArchitectureLab, {
+        visualization: lakehouseVisualizations.replication,
+      }),
+    )
+    const tableLayerMarkup = renderToStaticMarkup(
+      createElement(LakehouseArchitectureLab, {
+        visualization: lakehouseVisualizations.tableLayer,
+      }),
+    )
+    const unityMarkup = renderToStaticMarkup(
+      createElement(LakehouseArchitectureLab, { visualization: lakehouseVisualizations.unity }),
+    )
+
+    expect(lakeFirstMarkup).toContain('Lake-first 需求观察')
+    expect(replicationMarkup).toContain('执行一次 Transform / Sync')
+    expect(tableLayerMarkup).toContain('模拟第 6 个文件失败')
+    expect(unityMarkup).toContain('共享基础能力的形态')
+    expect(unityMarkup).not.toContain('recommendedArchitecture')
+    expect(unityMarkup).not.toContain('得分')
+  })
+})
+
+describe('Lake-first 数据流与需求取舍', () => {
+  it('只保留少量代表性输入，并让需求改变 Warehouse 承接范围', () => {
+    expect(lakeFirstVisualization.dataSources.map((source) => source.format)).toEqual([
       'table',
       'event-log',
       'json-file',
     ])
-    expect(lakehouseVisualization.scenarios).toHaveLength(3)
-  })
+    expect(lakeFirstVisualization.dataSources).toHaveLength(3)
 
-  it('能力矩阵会让三种架构的边界发生可见变化', () => {
-    expect(getCapabilityMatrix('warehouse')['stable-query']).toBe('strong')
-    expect(getCapabilityMatrix('lake')['stable-query']).toBe('limited')
-    expect(getCapabilityMatrix('lakehouse')['version-history']).toBe('strong')
-    expect(getArchitectureFlow('lake')[2].status).toBe('limited')
-    expect(getArchitectureFlow('lakehouse')[2].status).toBe('strong')
-    expect(getConsumerStates('warehouse').find((consumer) => consumer.id === 'bi')?.status).toBe(
-      'strong',
+    if (lakeFirstVisualization.focus !== 'lake-first') {
+      throw new Error('需要 lake-first visualization')
+    }
+
+    const highFrequency = getLakeFirstAssessment(
+      lakeFirstVisualization.dataSources,
+      lakeFirstVisualization.lakeFirst,
+      'high-frequency-bi',
     )
-    expect(getConsumerStates('lake').find((consumer) => consumer.id === 'bi')?.status).toBe(
-      'limited',
+    const history = getLakeFirstAssessment(
+      lakeFirstVisualization.dataSources,
+      lakeFirstVisualization.lakeFirst,
+      'low-frequency-history',
     )
-  })
 
-  it('不同 workload 不会永远得到同一个推荐', () => {
-    const recommendations = new Set([
-      evaluateArchitecture('bi', []).recommendedArchitecture,
-      evaluateArchitecture('exploration', []).recommendedArchitecture,
-      evaluateArchitecture('ml', []).recommendedArchitecture,
-      evaluateArchitecture('streaming', []).recommendedArchitecture,
-    ])
-
-    expect(recommendations).toEqual(new Set(['warehouse', 'lake', 'lakehouse']))
-  })
-
-  it('约束组合会改变证据，且 Lakehouse 保留真实 trade-off', () => {
-    expect(evaluateArchitecture('bi', ['governance', 'history']).recommendedArchitecture).toBe(
-      'warehouse',
+    expect(highFrequency.warehouseCount).toBe(1)
+    expect(highFrequency.items.find((item) => item.sourceId === 'transactions')?.status).toBe(
+      'lake-and-warehouse',
     )
-    expect(
-      evaluateArchitecture('exploration', ['schema-change', 'cost-sensitive'])
-        .recommendedArchitecture,
-    ).toBe('lake')
-    expect(
-      evaluateArchitecture('ml', ['schema-change', 'concurrent-writes', 'history'])
-        .recommendedArchitecture,
-    ).toBe('lakehouse')
+    expect(history.warehouseCount).toBe(0)
+    expect(history.items.every((item) => item.status === 'lake-only')).toBe(true)
+  })
+})
 
-    const decision = evaluateArchitecture('bi', [])
-    const record = buildDecisionRecord('lakehouse', 'bi', ['cost-sensitive'])
+describe('复制、Table Layer 与版本实验', () => {
+  it('同步前后明确显示第二份 AccountBalanceSnapshot 的责任', () => {
+    if (replicationVisualization.focus !== 'replication') {
+      throw new Error('需要 replication visualization')
+    }
 
-    expect(decision.scores.lakehouse).toBeLessThan(decision.scores.warehouse)
-    expect(record.tradeoffs.length).toBeGreaterThan(0)
-    expect(record.risks.length).toBeGreaterThan(0)
-    expect(record.notSuitableWhen.length).toBeGreaterThan(0)
+    const pending = getReplicationState(replicationVisualization.replication, false)
+    const synced = getReplicationState(replicationVisualization.replication, true)
+
+    expect(pending.replicaCount).toBe(1)
+    expect(pending.warehouseVersion).toBeNull()
+    expect(synced.replicaCount).toBe(2)
+    expect(synced.warehouseVersion).toBe('business_date=2026-09-30')
+    expect(synced.responsibilities).toHaveLength(3)
   })
 
-  it('snapshot commit 会确定性地完成 schema evolution', () => {
+  it('Atomic Commit 在失败时不发布半批文件，成功后整体可见', () => {
+    expect(getAtomicCommitState(10, 6, 'failed')).toMatchObject({
+      status: 'failed',
+      visibleFileCount: 0,
+      message: '第 6 个文件写入失败；前 5 个文件保持待发布，读者继续看到旧 Snapshot。',
+    })
+    expect(getAtomicCommitState(10, 6, 'committed')).toMatchObject({
+      status: 'committed',
+      visibleFileCount: 10,
+    })
+  })
+
+  it('Schema Evolution 会生成 v2，而 Time Travel 保留 v1', () => {
     const committed = commitSnapshot(
-      lakehouseVisualization.snapshots,
-      lakehouseVisualization.evolutionCommit,
+      tableLayerVisualization.snapshots,
+      tableLayerVisualization.evolutionCommit,
     )
     const nextSnapshot = committed[1]
 
     expect(committed).toHaveLength(2)
     expect(nextSnapshot).toMatchObject({ version: 2, id: 'snapshot-2' })
-    expect(nextSnapshot.columns).toEqual(['event_id', 'order_id', 'event_type', 'device_type'])
-    expect(nextSnapshot.rows).toEqual([
-      { event_id: 'E001', order_id: 'O1001', event_type: 'click', device_type: null },
-      { event_id: 'E002', order_id: 'O1001', event_type: 'view', device_type: null },
-      { event_id: 'E003', order_id: 'O1002', event_type: 'click', device_type: 'mobile' },
+    expect(nextSnapshot?.columns).toEqual([
+      'event_id',
+      'customer_id',
+      'event_type',
+      'event_time',
+      'channel',
     ])
-    expect(initialSnapshot.columns).toEqual(['event_id', 'order_id', 'event_type'])
-  })
-
-  it('time travel 能还原 v1，普通 schema 演进不会覆盖历史', () => {
-    const evolved = evolveSnapshotSchema(initialSnapshot, [
-      { name: 'device_type', label: '设备类型', defaultValue: null },
-    ])
-    const committed = commitSnapshot(
-      lakehouseVisualization.snapshots,
-      lakehouseVisualization.evolutionCommit,
-    )
-
-    expect(evolved.columns).toContain('device_type')
-    expect(evolved.rows[0]?.device_type).toBeNull()
+    expect(
+      evolveSnapshotSchema(initialSnapshot, [
+        { name: 'channel', label: '访问渠道', defaultValue: null },
+      ]).rows[0]?.channel,
+    ).toBeNull()
     expect(timeTravelTo(committed, 1)).toEqual(initialSnapshot)
-    expect(timeTravelTo(committed, 1)?.columns).not.toContain('device_type')
-    expect(timeTravelTo(committed, 2)?.columns).toContain('device_type')
+    expect(timeTravelTo(committed, 1)?.columns).not.toContain('channel')
+    expect(timeTravelTo(committed, 2)?.columns).toContain('channel')
   })
+})
 
-  it('为性能章节暴露存储、计算、布局、workload 和数据量状态', () => {
-    expect(getArchitectureState('lakehouse', 'ml', 'large')).toEqual({
-      architecture: 'lakehouse',
-      storageType: '对象存储 + 开放表格式',
-      computeSeparation: 'separated',
-      partitionFileLayoutHint: '开放表管理分区与文件布局；仍需治理小文件、压缩和元数据成本。',
-      workload: 'ml',
-      dataVolumeCategory: 'large',
-    })
+describe('湖仓一体的共享基础能力', () => {
+  it('逐项对照异构与共享形态，而不是返回架构评分', () => {
+    if (unityVisualization.focus !== 'unity') {
+      throw new Error('需要 unity visualization')
+    }
+
+    const heterogeneous = getLakehouseUnityState(unityVisualization.unity, 'heterogeneous')
+    const sharedTable = getLakehouseUnityState(unityVisualization.unity, 'shared-table')
+
+    expect(heterogeneous.replicaCount).toBe(2)
+    expect(sharedTable.replicaCount).toBe(1)
+    expect(heterogeneous.dimensions).toHaveLength(7)
+    expect(sharedTable.dimensions.find((dimension) => dimension.id === 'compute')?.value).toContain(
+      '仍可不同',
+    )
+    expect(sharedTable.responsibilities).toHaveLength(3)
   })
 })

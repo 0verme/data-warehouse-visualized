@@ -506,10 +506,9 @@ describe('课程数据与导航', () => {
     expect(getAdjacentLessons(lessons, 'data-lineage-impact').next?.slug).toBe(
       'data-lineage-evidence',
     )
-    expect(getAdjacentLessons(lessons, 'data-lineage-evidence').next?.slug).toBe('data-governance')
-    expect(getAdjacentLessons(lessons, 'data-governance').previous?.slug).toBe(
-      'data-lineage-evidence',
-    )
+    expect(getAdjacentLessons(lessons, 'data-lineage-evidence').next?.slug).toBe('data-service')
+    expect(getAdjacentLessons(lessons, 'data-service').next?.slug).toBe('data-governance')
+    expect(getAdjacentLessons(lessons, 'data-governance').previous?.slug).toBe('data-service')
   })
 
   it('首尾课程不会产生越界导航', () => {

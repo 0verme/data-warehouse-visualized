@@ -21,7 +21,12 @@ import { dataLineageInvestigationContent } from './data-lineage-investigation'
 import { dataModelingContent } from './data-modeling'
 import { factTableTypesContent } from './fact-table-types'
 import { grainContent } from './grain'
-import { lakehouseContent } from './lakehouse'
+import {
+  lakehouseContent,
+  lakehouseReplicationContent,
+  lakehouseTableLayerContent,
+  lakehouseUnityContent,
+} from './lakehouse'
 import { metricSystemContent } from './metric-system'
 import { depositMetricDefinitionContent } from './deposit-metric-definition'
 import { depositMetricDerivationsContent } from './deposit-metric-derivations'
@@ -74,6 +79,9 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'star-schema-and-grain': starSchemaAndGrainContent,
   'slowly-changing-dimension': slowlyChangingDimensionContent,
   lakehouse: lakehouseContent,
+  'lakehouse-replication': lakehouseReplicationContent,
+  'lakehouse-table-layer': lakehouseTableLayerContent,
+  'lakehouse-unity': lakehouseUnityContent,
   'scheduling-system': schedulingBusinessDateContent,
   'scheduling-readiness': schedulingReadinessContent,
   'scheduling-failure': schedulingFailureContent,

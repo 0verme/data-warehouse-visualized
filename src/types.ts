@@ -660,21 +660,15 @@ export interface BankingMetricDerivationVisualization {
 
 export type LakehouseArchitecture = 'warehouse' | 'lake' | 'lakehouse'
 export type LakehouseWorkload = 'bi' | 'exploration' | 'ml' | 'streaming'
-export type LakehouseConstraint =
-  'schema-change' | 'concurrent-writes' | 'history' | 'cost-sensitive' | 'governance'
-export type LakehouseCapability =
-  | 'flexible-storage'
-  | 'schema-management'
-  | 'transactions'
-  | 'version-history'
-  | 'stable-query'
-  | 'ad-hoc-analysis'
-  | 'ml-access'
-  | 'streaming-writes'
-  | 'governance'
-  | 'compute-separation'
-export type LakehouseCapabilityLevel = 'strong' | 'partial' | 'limited'
 export type LakehouseDataVolumeCategory = 'small' | 'medium' | 'large'
+export type LakehouseLessonFocus = 'lake-first' | 'replication' | 'table-layer' | 'unity'
+export type LakehouseDemandId =
+  'high-frequency-bi' | 'low-frequency-history' | 'detail-retention' | 'sla-query'
+export type LakehouseReplicaStatus = 'lake-only' | 'lake-and-warehouse'
+export type LakehouseAtomicCommitStatus = 'idle' | 'failed' | 'committed'
+export type LakehouseUnityMode = 'heterogeneous' | 'shared-table'
+export type LakehouseUnityDimensionId =
+  'storage' | 'data-copy' | 'table-semantics' | 'metadata' | 'catalog' | 'compute' | 'governance'
 export type LakehouseCell = string | number | boolean | null
 export type LakehouseRow = Record<string, LakehouseCell>
 
@@ -708,42 +702,128 @@ export interface LakehouseSnapshotCommit {
   rows?: LakehouseRow[]
 }
 
-export interface LakehouseScenario {
-  id: string
+export interface LakehouseLakeFirstDemand {
+  id: LakehouseDemandId
   label: string
   description: string
-  workload: LakehouseWorkload
-  constraints: LakehouseConstraint[]
-  dataVolumeCategory: LakehouseDataVolumeCategory
+  accessFrequency: string
+  querySla: string
+  queryComplexity: string
+  consumer: string
+  warehouseSourceIds: string[]
+  warehouseReason: string
+  lakeOnlyReason: string
 }
 
-export interface LakehouseVisualization {
+export interface LakehouseLakeFirstVisualization {
+  demands: LakehouseLakeFirstDemand[]
+  defaultDemandId: LakehouseDemandId
+}
+
+export interface LakehouseLakeFirstAssessmentItem {
+  sourceId: string
+  status: LakehouseReplicaStatus
+  reason: string
+}
+
+export interface LakehouseLakeFirstAssessment {
+  demand: LakehouseLakeFirstDemand
+  items: LakehouseLakeFirstAssessmentItem[]
+  warehouseCount: number
+  summary: string
+}
+
+export interface LakehouseReplicationDataset {
+  id: string
+  label: string
+  identity: string
+  grain: string
+  rowCount: number
+  version: string
+  schema: string[]
+}
+
+export interface LakehouseReplicationConfig {
+  dataset: LakehouseReplicationDataset
+  syncDuration: string
+  syncedAt: string
+  warehouseVersion: string
+  warehouseSchema: string[]
+  responsibilities: string[]
+}
+
+export interface LakehouseReplicationState {
+  syncStatus: 'pending' | 'synced'
+  replicaCount: number
+  lakeVersion: string
+  warehouseVersion: string | null
+  lakeSchema: string[]
+  warehouseSchema: string[] | null
+  syncDelay: string
+  responsibilities: string[]
+}
+
+export interface LakehouseTableLayerConfig {
+  tableName: string
+  fileCount: number
+  failureAt: number
+  openTableFormats: string[]
+  evolutionSummary: string
+}
+
+export interface LakehouseAtomicCommitState {
+  status: LakehouseAtomicCommitStatus
+  fileCount: number
+  failureAt: number
+  visibleFileCount: number
+  message: string
+}
+
+export interface LakehouseUnityDimension {
+  id: LakehouseUnityDimensionId
+  label: string
+  heterogeneous: string
+  sharedTable: string
+}
+
+export interface LakehouseUnityConfig {
+  defaultMode: LakehouseUnityMode
+  dimensions: LakehouseUnityDimension[]
+  responsibilities: Record<LakehouseUnityMode, string[]>
+}
+
+export interface LakehouseUnityState {
+  mode: LakehouseUnityMode
+  modeLabel: string
+  replicaCount: number
+  dimensions: Array<LakehouseUnityDimension & { value: string }>
+  responsibilities: string[]
+}
+
+interface LakehouseVisualizationBase {
   kind: 'lakehouse'
   dataSources: LakehouseDataSource[]
-  scenarios: LakehouseScenario[]
   snapshots: LakehouseSnapshot[]
   evolutionCommit: LakehouseSnapshotCommit
 }
 
-export type LakehouseFlowStageId =
-  'ingestion' | 'storage' | 'table-layer' | 'compute' | 'governance'
-
-export interface LakehouseFlowStage {
-  id: LakehouseFlowStageId
-  label: string
-  status: LakehouseCapabilityLevel
-  title: string
-  detail: string
-}
-
-export type LakehouseConsumerId = 'bi' | 'ad-hoc' | 'ml'
-
-export interface LakehouseConsumerState {
-  id: LakehouseConsumerId
-  label: string
-  status: LakehouseCapabilityLevel
-  detail: string
-}
+export type LakehouseVisualization =
+  | (LakehouseVisualizationBase & {
+      focus: 'lake-first'
+      lakeFirst: LakehouseLakeFirstVisualization
+    })
+  | (LakehouseVisualizationBase & {
+      focus: 'replication'
+      replication: LakehouseReplicationConfig
+    })
+  | (LakehouseVisualizationBase & {
+      focus: 'table-layer'
+      tableLayer: LakehouseTableLayerConfig
+    })
+  | (LakehouseVisualizationBase & {
+      focus: 'unity'
+      unity: LakehouseUnityConfig
+    })
 
 export interface LakehouseArchitectureState {
   architecture: LakehouseArchitecture
@@ -752,29 +832,6 @@ export interface LakehouseArchitectureState {
   partitionFileLayoutHint: string
   workload: LakehouseWorkload
   dataVolumeCategory: LakehouseDataVolumeCategory
-}
-
-export type LakehouseCapabilityMatrix = Record<LakehouseCapability, LakehouseCapabilityLevel>
-
-export interface LakehouseDecisionEvidence {
-  kind: 'fit' | 'tradeoff' | 'risk'
-  text: string
-}
-
-export interface LakehouseDecision {
-  scores: Record<LakehouseArchitecture, number>
-  recommendedArchitecture: LakehouseArchitecture
-  evidence: LakehouseDecisionEvidence[]
-}
-
-export interface LakehouseDecisionRecord {
-  workload: LakehouseWorkload
-  constraints: LakehouseConstraint[]
-  chosenArchitecture: LakehouseArchitecture
-  benefits: string[]
-  tradeoffs: string[]
-  risks: string[]
-  notSuitableWhen: string[]
 }
 
 export type GovernanceAssetType = 'table' | 'view' | 'dataset'
