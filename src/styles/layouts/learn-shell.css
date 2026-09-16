@@ -8,13 +8,15 @@
   color: var(--blue);
 }
 
-.learn-main .learn-footer {
-  margin-top: 52px;
-}
-
 /* Learning shell */
 .learn-app {
-  min-height: 100vh;
+  --learn-sidebar-width: 308px;
+  display: flex;
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--canvas);
 }
 
@@ -23,7 +25,9 @@
   z-index: 20;
   top: 0;
   display: flex;
+  flex: 0 0 68px;
   align-items: center;
+  height: 68px;
   min-height: 68px;
   padding: 0 30px;
   border-bottom: 1px solid var(--line);
@@ -123,19 +127,25 @@
 
 .learn-layout {
   display: grid;
-  grid-template-columns: 308px minmax(0, 1fr);
+  flex: 1 1 0;
+  grid-template-columns: var(--learn-sidebar-width, 308px) minmax(0, 1fr);
+  width: 100%;
   max-width: 1600px;
-  min-height: calc(100vh - 68px);
+  min-height: 0;
+  height: 100%;
   margin: 0 auto;
 }
 
 .course-sidebar {
-  position: sticky;
-  top: 68px;
-  align-self: start;
-  width: 308px;
-  height: calc(100vh - 68px);
+  position: relative;
+  align-self: stretch;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 24px 12px 36px 14px;
   border-right: 1px solid var(--line);
   box-sizing: border-box;
@@ -345,9 +355,36 @@
 }
 
 .learn-main {
+  display: flex;
   width: min(100%, 1000px);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
   margin: 0 auto;
-  padding: 30px clamp(24px, 3.5vw, 44px) 70px;
+  overflow: hidden;
+}
+
+.learn-main__scroll {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 30px clamp(24px, 3.5vw, 44px) 32px;
+  scrollbar-gutter: stable;
+}
+
+.learn-main > .lesson-nav {
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  padding: 12px clamp(24px, 3.5vw, 44px) 14px;
+  border-top: 1px solid var(--line);
+  background: var(--canvas);
 }
 
 .learn-main__crumbs {
@@ -638,7 +675,7 @@
 }
 
 @media (max-width: 1120px) {
-  .learn-main {
+  .learn-main__scroll {
     padding-inline: 36px;
   }
 }
@@ -665,9 +702,10 @@
     position: fixed;
     z-index: 30;
     top: 68px;
+    bottom: 0;
     left: 0;
     width: min(320px, calc(100vw - 42px));
-    height: calc(100vh - 68px);
+    height: auto;
     border-right: 1px solid var(--line);
     background: var(--canvas);
     box-shadow: 12px 0 30px rgb(28 51 84 / 12%);
@@ -691,12 +729,21 @@
   .learn-main {
     width: min(100%, 840px);
     margin: 0 auto;
+  }
+
+  .learn-main__scroll {
+    padding-inline: 30px;
+  }
+
+  .learn-main > .lesson-nav {
     padding-inline: 30px;
   }
 }
 
 @media (max-width: 680px) {
   .learn-topbar {
+    flex-basis: 60px;
+    height: 60px;
     min-height: 60px;
     padding-inline: 13px;
   }
@@ -723,7 +770,8 @@
 
   .course-sidebar {
     top: 60px;
-    height: calc(100vh - 60px);
+    bottom: 0;
+    height: auto;
     padding: 24px 14px 32px 16px;
   }
 
@@ -762,8 +810,13 @@
     inset: 60px 0 0;
   }
 
-  .learn-main {
-    padding: 21px 16px 48px;
+  .learn-main__scroll {
+    padding: 21px 16px 30px;
+  }
+
+  .learn-main > .lesson-nav {
+    padding: 10px 16px 14px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
   }
 
   .learn-main__crumbs {

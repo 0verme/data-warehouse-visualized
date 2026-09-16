@@ -31,7 +31,6 @@ import {
   LessonNavigation,
   ProgressIndicator,
 } from '../lesson'
-import { SiteFooter } from '../SiteFooter'
 
 interface LearnShellProps {
   lessons: Lesson[]
@@ -335,7 +334,12 @@ export function LearnShell({
     }
 
     shouldResetMainScrollRef.current = false
-    window.scrollTo({ behavior: 'instant', left: 0, top: 0 })
+    const mainScroll = document.querySelector<HTMLElement>('.learn-main__scroll')
+    if (mainScroll) {
+      mainScroll.scrollTo({ behavior: 'instant', left: 0, top: 0 })
+    } else {
+      window.scrollTo({ behavior: 'instant', left: 0, top: 0 })
+    }
   }, [pathname])
   const activeContent =
     activeLesson.id === initialLesson.id ? initialContent : getLessonContent(activeLesson)
@@ -510,25 +514,27 @@ export function LearnShell({
         )}
 
         <main className="learn-main">
-          <div className="learn-main__crumbs">
-            <a href={getRoute('/')}>{getMessage('home', locale)}</a>
-            <span aria-hidden="true">/</span>
-            <span>{getMessage('courseLearning', locale)}</span>
-            <span aria-hidden="true">/</span>
-            <span>{activeLesson.title}</span>
+          <div className="learn-main__scroll">
+            <div className="learn-main__crumbs">
+              <a href={getRoute('/')}>{getMessage('home', locale)}</a>
+              <span aria-hidden="true">/</span>
+              <span>{getMessage('courseLearning', locale)}</span>
+              <span aria-hidden="true">/</span>
+              <span>{activeLesson.title}</span>
+            </div>
+            <LessonHeader
+              lesson={activeLesson}
+              lessons={lessons}
+              content={activeContent}
+              locale={locale}
+            />
+            <LessonBody
+              lesson={activeLesson}
+              content={activeContent}
+              codeHighlights={codeHighlights}
+              locale={locale}
+            />
           </div>
-          <LessonHeader
-            lesson={activeLesson}
-            lessons={lessons}
-            content={activeContent}
-            locale={locale}
-          />
-          <LessonBody
-            lesson={activeLesson}
-            content={activeContent}
-            codeHighlights={codeHighlights}
-            locale={locale}
-          />
           <LessonNavigation
             previous={adjacentLessons.previous}
             next={adjacentLessons.next}
@@ -537,7 +543,6 @@ export function LearnShell({
             onToggleComplete={toggleActiveLesson}
             locale={locale}
           />
-          <SiteFooter variant="learn" />
         </main>
       </div>
       <script data-astro-rerun>{progressBootstrapScript}</script>
