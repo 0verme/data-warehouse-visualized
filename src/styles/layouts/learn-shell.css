@@ -184,10 +184,10 @@
   flex: 1 1 0;
   grid-template-columns: var(--learn-sidebar-width, 308px) minmax(0, 1fr);
   width: 100%;
-  max-width: 1600px;
+  max-width: none;
   min-height: 0;
   height: 100%;
-  margin: 0 auto;
+  margin: 0;
   transition: grid-template-columns 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -430,12 +430,13 @@
 
 .learn-main {
   display: flex;
-  width: min(100%, 1000px);
+  width: 100%;
+  max-width: none;
   min-width: 0;
   min-height: 0;
   height: 100%;
   flex-direction: column;
-  margin: 0 auto;
+  margin: 0;
   overflow: hidden;
 }
 
@@ -805,8 +806,9 @@
   }
 
   .learn-main {
-    width: min(100%, 840px);
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
   }
 
   .learn-main__scroll {
