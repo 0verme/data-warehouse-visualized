@@ -52,7 +52,7 @@ export const depositBalanceScopeVisualization: BankingMetricScopeVisualization =
 }
 
 export const metricSystemContent: LessonContent = {
-  eyebrow: '第 04 章 · 指标口径',
+  eyebrow: '第 03 章 · 指标口径',
   subtitle: '同一个“存款余额”出现不同数字时，先检查统计集合和时间语义，再判断是不是数据错了。',
   opening: {
     eyebrow: '同一个问题，三个答案',

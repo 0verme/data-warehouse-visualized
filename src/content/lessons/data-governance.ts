@@ -91,7 +91,7 @@ const governanceAssets: GovernanceAsset[] = [
       status: 'current',
     },
     qualityStatus: 'pass',
-    qualityNote: '第 07 章已经提供通过状态；本节只消费这个结果。',
+    qualityNote: '第 06 章已经提供通过状态；本节只消费这个结果。',
     sensitivity: 'restricted',
     fields: accountBalanceFields,
     businessDefinition: {
@@ -104,7 +104,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'dwd-account-balance-detail',
-      note: '第 08 章已经登记 Account.product_type 到该明细资产的影响关系。',
+      note: '第 07 章已经登记 Account.product_type 到该明细资产的影响关系。',
     },
   },
   {
@@ -124,7 +124,7 @@ const governanceAssets: GovernanceAsset[] = [
       status: 'current',
     },
     qualityStatus: 'pass',
-    qualityNote: '第 07 章已经确认昨天业务日的 Quality；本节不重新运行检查。',
+    qualityNote: '第 06 章已经确认昨天业务日的 Quality；本节不重新运行检查。',
     sensitivity: 'internal',
     fields: dwsFields,
     businessDefinition: {
@@ -137,7 +137,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'dws-deposit-balance-daily',
-      note: '第 08 章已经登记该日汇总受 Account.product_type 变化影响。',
+      note: '第 07 章已经登记该日汇总受 Account.product_type 变化影响。',
     },
   },
   {
@@ -156,7 +156,7 @@ const governanceAssets: GovernanceAsset[] = [
       status: 'current',
     },
     qualityStatus: 'pass',
-    qualityNote: '第 07 章已确认发布结果状态；仍需核对它是否回答当前问题。',
+    qualityNote: '第 06 章已确认发布结果状态；仍需核对它是否回答当前问题。',
     sensitivity: 'internal',
     fields: dwsFields,
     businessDefinition: {
@@ -169,7 +169,7 @@ const governanceAssets: GovernanceAsset[] = [
     lineageEvidence: {
       status: 'linked',
       nodeId: 'ads-deposit-balance',
-      note: '第 08 章已经登记该应用结果受日汇总语义变化影响。',
+      note: '第 07 章已经登记该应用结果受日汇总语义变化影响。',
     },
   },
   {
@@ -201,7 +201,7 @@ const governanceAssets: GovernanceAsset[] = [
     definitionCompleteness: 'complete',
     lineageEvidence: {
       status: 'partial',
-      note: '第 08 章影响结果只保留迁移提示，不能把旧资产当作新的默认来源。',
+      note: '第 07 章影响结果只保留迁移提示，不能把旧资产当作新的默认来源。',
     },
   },
 ]
@@ -262,7 +262,7 @@ const bankingLineageEdges: LineageEdge[] = [
     confidence: 'confirmed',
     evidence: {
       source: 'manual_metadata',
-      detail: '第 08 章已确认字段进入账户余额明细。',
+      detail: '第 07 章已确认字段进入账户余额明细。',
     },
   },
   {
@@ -272,7 +272,7 @@ const bankingLineageEdges: LineageEdge[] = [
     confidence: 'confirmed',
     evidence: {
       source: 'manual_metadata',
-      detail: '第 08 章已确认账户明细参与机构产品日汇总。',
+      detail: '第 07 章已确认账户明细参与机构产品日汇总。',
     },
   },
   {
@@ -282,7 +282,7 @@ const bankingLineageEdges: LineageEdge[] = [
     confidence: 'confirmed',
     evidence: {
       source: 'manual_metadata',
-      detail: '第 08 章已确认日汇总进入应用结果。',
+      detail: '第 07 章已确认日汇总进入应用结果。',
     },
   },
   {
@@ -292,13 +292,13 @@ const bankingLineageEdges: LineageEdge[] = [
     confidence: 'confirmed',
     evidence: {
       source: 'manual_metadata',
-      detail: '第 08 章已确认应用结果服务存款产品结构分析。',
+      detail: '第 07 章已确认应用结果服务存款产品结构分析。',
     },
   },
 ]
 
 const productTypeChangeImpact: GovernanceChangeImpact = {
-  evidenceLabel: '第 08 章已经完成的影响分析结果',
+  evidenceLabel: '第 07 章已经完成的影响分析结果',
   changedField: 'Account.product_type',
   path: [
     'Account.product_type',
@@ -355,13 +355,13 @@ const productTypeChangeEvent: GovernanceLifecycleEvent = {
   assetId: 'dwd-account-balance-detail',
   eventType: 'field-change',
   label: 'Account.product_type 语义变化',
-  description: '产品分类规则发生调整；第 08 章已经给出受影响资产，本节只分配处理责任。',
+  description: '产品分类规则发生调整；第 07 章已经给出受影响资产，本节只分配处理责任。',
   sourceEntityId: 'field-account-product-type',
   fieldName: 'product_type',
   semanticChange: '活期、定期的分类边界需要重新确认。',
   evidence: {
     source: 'manual_metadata',
-    detail: '消费第 08 章已完成的字段影响分析。',
+    detail: '消费第 07 章已完成的字段影响分析。',
   },
 }
 
@@ -392,7 +392,7 @@ export const governanceVisualizations = {
         qualityStatus: 'pass',
         freshnessLabel: '昨天',
         freshnessStatus: 'current',
-        evidence: ['第 07 章 Quality status：PASS', '检查目标覆盖昨天业务日分区'],
+        evidence: ['第 06 章 Quality status：PASS', '检查目标覆盖昨天业务日分区'],
       },
       {
         id: 'quality-case-b',
@@ -403,7 +403,7 @@ export const governanceVisualizations = {
         qualityStatus: 'pass',
         freshnessLabel: '7 天前',
         freshnessStatus: 'delayed',
-        evidence: ['第 07 章 Quality status：PASS', 'Freshness 已超过当前业务日需求'],
+        evidence: ['第 06 章 Quality status：PASS', 'Freshness 已超过当前业务日需求'],
       },
       {
         id: 'quality-case-c',
@@ -450,7 +450,7 @@ const sharedOpeningCards = [
 ]
 
 export const dataGovernanceContent: LessonContent = {
-  eyebrow: '第 09 章 · 选对资产',
+  eyebrow: '第 08 章 · 选对资产',
   subtitle: '搜索到相关资产以后，先读懂它的一行含义，再决定它是否回答当前问题。',
   quickSummary: '名称相似的资产可能有不同 Grain、范围和排除项；当前需求决定哪一份更合适。',
   opening: {
@@ -463,7 +463,7 @@ export const dataGovernanceContent: LessonContent = {
   concept: {
     term: '搜索到了 ≠ 适合使用',
     definition:
-      '用业务定义、已有 Grain、范围和排除项对照当前需求。Grain 在第 03 章已经学过，本节只消费它来判断一行是否回答当前问题。',
+      '用业务定义、已有 Grain、范围和排除项对照当前需求。Grain 在第 02 章已经学过，本节只消费它来判断一行是否回答当前问题。',
   },
   sections: [
     {
@@ -481,7 +481,7 @@ export const dataGovernanceContent: LessonContent = {
     },
     {
       kind: 'visualization',
-      eyebrow: '09-1 · 资产发现',
+      eyebrow: '08-1 · 资产发现',
       title: '对比候选定义，再做一次选择',
       description: '输入“存款余额”，打开候选资产的定义卡，选择真正匹配机构经营分析的那一份。',
       visualization: governanceVisualization,
@@ -504,7 +504,7 @@ export const dataGovernanceContent: LessonContent = {
 }
 
 export const governanceEvidenceContent: LessonContent = {
-  eyebrow: '第 09 章 · 使用前核对证据',
+  eyebrow: '第 08 章 · 使用前核对证据',
   subtitle: '语义匹配以后，再看 Quality status 和 Freshness 是否满足昨天业务日的需求。',
   quickSummary:
     '当前是否适合使用，要同时看定义、Grain、Quality 和 Freshness，结论必须带证据和原因。',
@@ -522,7 +522,7 @@ export const governanceEvidenceContent: LessonContent = {
   concept: {
     term: '使用判断需要证据',
     definition:
-      'Quality status 和 Freshness 是第 07 章已经提供的判断输入。本节不重新运行检查，只把它们与当前业务日期放在一起比较。',
+      'Quality status 和 Freshness 是第 06 章已经提供的判断输入。本节不重新运行检查，只把它们与当前业务日期放在一起比较。',
   },
   sections: [
     {
@@ -539,7 +539,7 @@ export const governanceEvidenceContent: LessonContent = {
     },
     {
       kind: 'visualization',
-      eyebrow: '09-2 · 证据对比',
+      eyebrow: '08-2 · 证据对比',
       title: '把“能不能用”说成一组证据',
       description: '依次查看三份候选，观察结论如何随 Quality status 和 Freshness 改变。',
       visualization: governanceEvidenceVisualization,
@@ -553,13 +553,13 @@ export const governanceEvidenceContent: LessonContent = {
     {
       kind: 'pitfall',
       title: '本节不重新讲质量检查',
-      text: '完整性、唯一性、一致性和及时性如何检查属于第 07 章。本节只读取 Quality status 和 Freshness，判断当前业务目的是否有足够证据。',
+      text: '完整性、唯一性、一致性和及时性如何检查属于第 06 章。本节只读取 Quality status 和 Freshness，判断当前业务目的是否有足够证据。',
     },
   ],
 }
 
 export const governanceFieldAccessContent: LessonContent = {
-  eyebrow: '第 09 章 · 字段级使用',
+  eyebrow: '第 08 章 · 字段级使用',
   subtitle: '资产可以使用，不代表其中的每个字段都应该直接暴露。',
   quickSummary: '同一个经营分析人员换一个用途，必要字段和字段处理方式也可能改变。',
   opening: {
@@ -594,7 +594,7 @@ export const governanceFieldAccessContent: LessonContent = {
     },
     {
       kind: 'visualization',
-      eyebrow: '09-3 · 字段选择',
+      eyebrow: '08-3 · 字段选择',
       title: '勾选字段，再切换业务用途',
       description: '选择最小字段集合，查看同一个经营分析人员在两个用途下得到的字段级使用结果。',
       visualization: governanceFieldAccessVisualization,
@@ -614,7 +614,7 @@ export const governanceFieldAccessContent: LessonContent = {
 }
 
 export const governanceLifecycleContent: LessonContent = {
-  eyebrow: '第 09 章 · 生命周期判断',
+  eyebrow: '第 08 章 · 生命周期判断',
   subtitle: '能搜索、能查询、有数据，不代表资产仍然适合建立新的依赖。',
   quickSummary: '看到 deprecated 后，停止把旧资产当默认来源，找到替代资产并完成迁移判断。',
   opening: {
@@ -650,7 +650,7 @@ export const governanceLifecycleContent: LessonContent = {
     },
     {
       kind: 'visualization',
-      eyebrow: '09-4 · 生命周期',
+      eyebrow: '08-4 · 生命周期',
       title: '看到 deprecated，切换到替代资产',
       description: '搜索旧版资产，查看状态和替代关系，再切换到当前推荐的应用结果。',
       visualization: governanceLifecycleVisualization,
@@ -663,21 +663,21 @@ export const governanceLifecycleContent: LessonContent = {
     },
     {
       kind: 'pitfall',
-      title: '不要把 9-4 和 9-5 混在一起',
+      title: '不要把 08-4 和 08-5 混在一起',
       text: '本节处理旧资产迁移。字段语义变化后的责任分配属于下一节，两者的学习目标不同。',
     },
   ],
 }
 
 export const governanceChangeResponsibilityContent: LessonContent = {
-  eyebrow: '第 09 章 · 变化后的责任',
-  subtitle: '第 08 章已经告诉我们谁会受影响；现在要把影响结果交给对应 Owner 处理。',
+  eyebrow: '第 08 章 · 变化后的责任',
+  subtitle: '第 07 章已经告诉我们谁会受影响；现在要把影响结果交给对应 Owner 处理。',
   quickSummary: '读取已有影响分析，展开受影响资产，映射 Owner，形成一份可以执行的变更责任清单。',
   opening: {
     eyebrow: 'Account.product_type 的分类语义发生了调整',
     title: '字段变了以后，谁需要处理？',
     intro:
-      '影响路径已经由第 08 章整理好。治理判断不再重新跑血缘，而是把路径上的处理动作交给正确的人。',
+      '影响路径已经由第 07 章整理好。治理判断不再重新跑血缘，而是把路径上的处理动作交给正确的人。',
     cards: [
       { label: '变化', value: 'Account.product_type', detail: '产品分类语义调整' },
       { label: '影响', value: 'DWD → DWS → ADS', detail: '下游分析结果也可能变化' },
@@ -693,16 +693,16 @@ export const governanceChangeResponsibilityContent: LessonContent = {
   sections: [
     {
       kind: 'narrative',
-      title: '第 08 章的影响结果在这里变成动作',
+      title: '第 07 章的影响结果在这里变成动作',
       paragraphs: [
-        'Account.product_type 从活期、定期的分类规则开始变化。第 08 章已经确认它会沿 dwd_account_balance_detail、dws_deposit_balance_daily 和 ads_deposit_balance 影响存款产品结构分析。',
-        '第 09 章不重复计算这条路径。现在要回答的是：源字段谁确认新语义，日汇总谁确认加工逻辑，应用结果和消费者谁确认展示与分析结论。',
+        'Account.product_type 从活期、定期的分类规则开始变化。第 07 章已经确认它会沿 dwd_account_balance_detail、dws_deposit_balance_daily 和 ads_deposit_balance 影响存款产品结构分析。',
+        '第 08 章不重复计算这条路径。现在要回答的是：源字段谁确认新语义，日汇总谁确认加工逻辑，应用结果和消费者谁确认展示与分析结论。',
       ],
       bullets: ['先读取已有影响结果。', '再展开受影响资产。', '最后把每个动作交给对应 Owner。'],
     },
     {
       kind: 'visualization',
-      eyebrow: '09-5 · 责任清单',
+      eyebrow: '08-5 · 责任清单',
       title: '沿已有影响结果找到处理人',
       description: '展开 Account.product_type 的影响路径，查看每个资产 Owner 需要确认的具体动作。',
       visualization: governanceChangeResponsibilityVisualization,
@@ -720,7 +720,7 @@ export const governanceChangeResponsibilityContent: LessonContent = {
     {
       kind: 'pitfall',
       title: '责任清单要写到具体动作',
-      text: '本节消费第 08 章的影响结果，列出每个 Owner 需要确认的动作；实际组织流程由真实工作环境承接。',
+      text: '本节消费第 07 章的影响结果，列出每个 Owner 需要确认的动作；实际组织流程由真实工作环境承接。',
     },
   ],
 }

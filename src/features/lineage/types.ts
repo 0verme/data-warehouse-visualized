@@ -11,8 +11,8 @@ import type {
 } from '../../types'
 
 /**
- * 调查入口是教学层对外的事件语义；它不复制第 07 章的质量领域模型。
- * `quality-event` 由 adapter 接入，具体 QualityEvent 仍由第 07 章拥有。
+ * 调查入口是教学层对外的事件语义；它不复制第 06 章的质量领域模型。
+ * `quality-event` 由 adapter 接入，具体 QualityEvent 仍由第 06 章拥有。
  */
 export type LineageInvestigationEntryPoint =
   'field-semantic-change' | 'schema-change' | 'task-failure' | 'quality-event'

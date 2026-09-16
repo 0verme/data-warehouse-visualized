@@ -19,12 +19,12 @@ export const sqlTransformationVisualization: SqlTransformationVisualization = {
 }
 
 export const sqlAndTransformationContent: LessonContent = {
-  eyebrow: '第 05 章 · 从指标卡到加工计划',
+  eyebrow: '第 04 章 · 从指标卡到加工计划',
   opening: {
     eyebrow: '指标卡已经写清楚，数据库为什么还不能直接给答案？',
     title: '口径已经说清楚，为什么还不能直接算？',
     intro:
-      '第 04 章的指标卡已经写下“杭州分行、小微、人民币、定期、截至 2026-09-30 的存款余额”。接下来要做的是把这句话翻译成输入表、字段和加工顺序。',
+      '第 03 章的指标卡已经写下“杭州分行、小微、人民币、定期、截至 2026-09-30 的存款余额”。接下来要做的是把这句话翻译成输入表、字段和加工顺序。',
     cards: [
       { label: '统计对象', value: '存款余额', detail: '度量字段是 balance' },
       { label: '业务范围', value: '杭州分行 · 小微', detail: '需要 Branch 与 Customer' },

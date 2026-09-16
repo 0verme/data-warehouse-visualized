@@ -2,7 +2,7 @@ import type { LessonContent } from '../types'
 import { createBankingSchedulerVisualization } from '../../features/scheduler/banking'
 
 export const schedulingReadinessContent: LessonContent = {
-  eyebrow: '第 06 章 · 运行条件与 DAG',
+  eyebrow: '第 05 章 · 运行条件与 DAG',
   opening: {
     eyebrow: '已经两点了，任务为什么还不能开始？',
     title: '一个任务，到底什么时候才可以开始？',

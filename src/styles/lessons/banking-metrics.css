@@ -1,4 +1,4 @@
-/* Chapter 04 banking metric labs. Each lesson uses a different interaction shape. */
+/* Chapter 03 banking metric labs. Each lesson uses a different interaction shape. */
 
 .banking-metric-lab {
   color: var(--text-primary);
@@ -57,7 +57,7 @@
   font-weight: 700;
 }
 
-/* 4-1: multiple answers and scope differences */
+/* 3-1: multiple answers and scope differences */
 .banking-metric-scope__chooser,
 .banking-metric-scope__selected,
 .banking-metric-time__chooser,
@@ -181,7 +181,7 @@
   line-height: 1.5;
 }
 
-/* 4-2: staged definition card */
+/* 3-2: staged definition card */
 .banking-metric-definition__stage-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -315,7 +315,7 @@
   font-style: italic;
 }
 
-/* 4-3: point versus period */
+/* 3-3: point versus period */
 .banking-metric-time__chooser {
   margin-top: 29px;
 }
@@ -502,7 +502,7 @@
   line-height: 1.6;
 }
 
-/* 4-4: compact metric derivation selector */
+/* 3-4: compact metric derivation selector */
 .banking-metric-derivation__workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(250px, 0.75fr);

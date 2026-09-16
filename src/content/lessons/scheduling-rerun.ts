@@ -2,7 +2,7 @@ import type { LessonContent } from '../types'
 import { createBankingSchedulerVisualization } from '../../features/scheduler/banking'
 
 export const schedulingRerunContent: LessonContent = {
-  eyebrow: '第 06 章 · 重跑范围与幂等',
+  eyebrow: '第 05 章 · 重跑范围与幂等',
   opening: {
     eyebrow: '“再跑一次”有三种完全不同的意思',
     title: '同样是“再跑一次”，到底有什么不同？',

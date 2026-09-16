@@ -11,7 +11,7 @@ const visualization: SqlTransformationVisualization = {
 }
 
 export const sqlTransformationContractContent: LessonContent = {
-  eyebrow: '第 05 章 · 交付加工边界',
+  eyebrow: '第 04 章 · 交付加工边界',
   opening: {
     eyebrow: '同样的输入，同一个业务日期，再执行一次会得到什么？',
     title: '这段加工怎样交给下一环节？',

@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const starSchemaAndGrainContent: LessonContent = {
-  eyebrow: '第 03 章 · 事实、维度与星型模型',
+  eyebrow: '第 02 章 · 事实、维度与星型模型',
   subtitle: '一笔账户交易记录发生了什么，又应该从哪些角度观察？从问题出发推导事实表和维度表。',
   quickSummary:
     '使用 Transaction、Customer、Account、Branch 和 Product 的最小账户交易样本，先归位字段，再逐步形成以 fact_transaction 为中心的星型模型。',

@@ -29,7 +29,7 @@ describe('维度历史与拉链表', () => {
   it('课程元数据和客户历史可视化已注册', () => {
     expect(getLessonBySlug('slowly-changing-dimension')).toMatchObject({
       title: '维度为什么要保存历史？——拉链表',
-      chapter: '03',
+      chapter: '02',
       order: 500,
       demo: 'banking-customer-history',
     })

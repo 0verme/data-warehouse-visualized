@@ -138,8 +138,8 @@ function getQualityRecommendationFactor(asset: GovernanceAsset): GovernanceRecom
     tone: status === 'pass' ? 'positive' : 'caution',
     detail:
       status === 'pass'
-        ? (asset.qualityNote ?? '第 07 章已确认当前质量状态。')
-        : (asset.qualityNote ?? '第 07 章没有可消费的通过证据，不能把 UNKNOWN 当作 PASS。'),
+        ? (asset.qualityNote ?? '第 06 章已确认当前质量状态。')
+        : (asset.qualityNote ?? '第 06 章没有可消费的通过证据，不能把 UNKNOWN 当作 PASS。'),
   }
 }
 
@@ -430,7 +430,7 @@ export function getGovernanceLineageImpact(
       notificationTargets: [],
       suggestedOrder: [],
       riskLevel: 'standard',
-      riskReason: '没有找到第 08 章提供的影响分析源节点。',
+      riskReason: '没有找到第 07 章提供的影响分析源节点。',
     }
   }
 
@@ -463,7 +463,7 @@ export function getGovernanceLineageImpact(
     notificationTargets,
     suggestedOrder: consumers,
     riskLevel: sourceAsset?.qualityStatus === 'unknown' ? 'elevated' : 'standard',
-    riskReason: '这里消费第 08 章已经完成的影响结果；本节不重新遍历血缘。',
+    riskReason: '这里消费第 07 章已经完成的影响结果；本节不重新遍历血缘。',
   }
 }
 
@@ -548,7 +548,7 @@ export function createGovernanceDecisionRecord({
       ? [`Quality ${asset.qualityStatus}`]
       : ['Quality UNKNOWN'],
     lineageEvidenceUsed: asset.lineageEvidence.nodeId
-      ? [`第 08 章影响结果：${asset.lineageEvidence.nodeId}`]
+      ? [`第 07 章影响结果：${asset.lineageEvidence.nodeId}`]
       : [],
     impactEventId: event?.id,
     directImpact: impact?.directImpacts.map((object) => object.label) ?? [],

@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const lakehouseContent: LessonContent = {
-  eyebrow: '第 10 课 · 一个问题，三条架构路径',
+  eyebrow: '第 09 章 · 一个问题，三条架构路径',
   opening: {
     eyebrow: '同一份数据，不同的边界',
     title: '订单表之外的日志，应该放在哪里？',

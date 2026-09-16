@@ -110,7 +110,7 @@ function createProjection({
   const failedSampleCount = countFailedSamples(evidence)
 
   return {
-    source: 'chapter-07',
+    source: 'chapter-06',
     status,
     ...(severity ? { severity } : {}),
     ...(eventId ? { eventId } : {}),

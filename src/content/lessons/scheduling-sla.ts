@@ -2,7 +2,7 @@ import type { LessonContent } from '../types'
 import { createBankingSchedulerVisualization } from '../../features/scheduler/banking'
 
 export const schedulingSlaContent: LessonContent = {
-  eyebrow: '第 06 章 · 迟到与业务交付',
+  eyebrow: '第 05 章 · 迟到与业务交付',
   opening: {
     eyebrow: '所有任务都成功了，为什么经营分析还是没等到？',
     title: '任务都成功了，为什么数据还是可能迟到？',

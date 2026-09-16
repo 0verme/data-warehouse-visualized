@@ -11,7 +11,7 @@ const visualization: SqlTransformationVisualization = {
 }
 
 export const sqlTransformationCleaningContent: LessonContent = {
-  eyebrow: '第 05 章 · 可信明细',
+  eyebrow: '第 04 章 · 可信明细',
   opening: {
     eyebrow: '原始快照多一行，指标就可能多算一笔余额',
     title: '原始输入怎样变成可信明细？',

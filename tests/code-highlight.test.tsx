@@ -12,9 +12,9 @@ import { getCodeHighlightKey } from '../src/utils/code-highlight'
 import { HERO_METRIC_SQL, HERO_METRIC_SQL_EXAMPLE } from '../src/data/code-examples'
 import { TRANSFORMATION_STEPS } from '../src/utils/sql-transformation'
 
-const warehouseLayersLesson = lessons.find((lesson) => lesson.slug === 'warehouse-layers')
+const codeExampleLesson = lessons.find((lesson) => lesson.slug === 'data-lineage-fields')
 
-if (!warehouseLayersLesson) {
+if (!codeExampleLesson) {
   throw new Error('Expected code example lesson is missing')
 }
 
@@ -25,22 +25,19 @@ describe('build-time code highlighting', () => {
     codeHighlights = await buildLessonCodeHighlightMap(lessons)
   })
 
-  it('renders the warehouse SQL example with Shiki token markup', () => {
-    const content = getLessonContent(warehouseLayersLesson)
+  it('renders the field lineage SQL example with Shiki token markup', () => {
+    const content = getLessonContent(codeExampleLesson)
     const code = content.code
 
     expect(code).toBeDefined()
 
     const highlightedCode = codeHighlights[getCodeHighlightKey(code!.language, code!.code)]
     expect(highlightedCode).toContain('<pre class="shiki nord"')
-    expect(highlightedCode).toMatch(/<span style="color:[^"]+">INSERT INTO<\/span>/)
     expect(highlightedCode).toMatch(/<span style="color:[^"]+">SELECT<\/span>/)
-    expect(highlightedCode).toMatch(/<span style="color:[^"]+">\s*SUM<\/span>/)
     expect(highlightedCode).toMatch(/<span style="color:[^"]+">FROM<\/span>/)
-    expect(highlightedCode).toMatch(/<span style="color:[^"]+">GROUP BY<\/span>/)
-    expect(highlightedCode).toMatch(/<span style="color:[^"]+">AS<\/span>/)
+    expect(highlightedCode).toMatch(/<span style="color:[^"]+">WHERE<\/span>/)
     expect(highlightedCode).toContain('\n<span class="line">')
-    expect(highlightedCode).toContain('  paid_date')
+    expect(highlightedCode).toContain('lineage_field_dependencies')
   })
 
   it('collects and highlights all five SQL workbench steps at build time', () => {
@@ -110,7 +107,7 @@ WHERE customer_id < 'C002'`
   })
 
   it('uses the highlighted HTML without changing the code block contract', () => {
-    const content = getLessonContent(warehouseLayersLesson)
+    const content = getLessonContent(codeExampleLesson)
     const code = content.code!
     const highlightedCode = codeHighlights[getCodeHighlightKey(code.language, code.code)]
     const html = renderToStaticMarkup(
@@ -119,15 +116,15 @@ WHERE customer_id < 'C002'`
         language={code.language}
         code={code.code}
         highlightedCode={highlightedCode}
-        headingId="warehouse-code-title"
+        headingId="lineage-code-title"
       />,
     )
 
     expect(html).toContain('class="code-block"')
-    expect(html).toContain('aria-labelledby="warehouse-code-title"')
-    expect(html).toContain('一段加工关系')
+    expect(html).toContain('aria-labelledby="lineage-code-title"')
+    expect(html).toContain('一个需要字段血缘的问题')
     expect(html).toContain('class="shiki nord"')
-    expect(html).toContain('INSERT INTO')
-    expect(html).toContain('SUM')
+    expect(html).toContain('SELECT')
+    expect(html).toContain('FROM')
   })
 })

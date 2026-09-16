@@ -6,6 +6,9 @@ export type LessonDifficulty = 'beginner' | 'intermediate' | 'advanced'
 export type LessonDemo =
   | 'systems'
   | 'layers'
+  | 'layer-evolution'
+  | 'report-metric-journey'
+  | 'warehouse-terms'
   | 'lineage'
   | 'modeling-intro'
   | 'loan-business-process'
@@ -90,22 +93,40 @@ export const lessonDefinitions = [
     chapter: '01',
     order: 100,
     difficulty: 'beginner',
-    estimatedMinutes: 8,
+    estimatedMinutes: 10,
     demo: 'systems',
   },
   {
     id: 'lesson-02',
     slug: 'warehouse-layers',
-    chapter: '02',
-    order: 100,
+    chapter: '01',
+    order: 200,
+    difficulty: 'beginner',
+    estimatedMinutes: 12,
+    demo: 'layer-evolution',
+  },
+  {
+    id: 'lesson-01-report-journey',
+    slug: 'report-metric-journey',
+    chapter: '01',
+    order: 300,
     difficulty: 'beginner',
     estimatedMinutes: 10,
-    demo: 'layers',
+    demo: 'report-metric-journey',
+  },
+  {
+    id: 'lesson-01-terms',
+    slug: 'warehouse-terms',
+    chapter: '01',
+    order: 400,
+    difficulty: 'beginner',
+    estimatedMinutes: 12,
+    demo: 'warehouse-terms',
   },
   {
     id: 'lesson-03',
     slug: 'data-modeling',
-    chapter: '03',
+    chapter: '02',
     order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
@@ -114,7 +135,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-grain',
     slug: 'grain',
-    chapter: '03',
+    chapter: '02',
     order: 200,
     difficulty: 'beginner',
     estimatedMinutes: 12,
@@ -123,7 +144,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-04',
     slug: 'metric-system',
-    chapter: '04',
+    chapter: '03',
     order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
@@ -132,7 +153,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-metric-definition',
     slug: 'deposit-metric-definition',
-    chapter: '04',
+    chapter: '03',
     order: 200,
     difficulty: 'beginner',
     estimatedMinutes: 10,
@@ -141,7 +162,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-metric-time',
     slug: 'deposit-metric-time',
-    chapter: '04',
+    chapter: '03',
     order: 300,
     difficulty: 'beginner',
     estimatedMinutes: 10,
@@ -150,7 +171,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-metric-derivations',
     slug: 'deposit-metric-derivations',
-    chapter: '04',
+    chapter: '03',
     order: 400,
     difficulty: 'beginner',
     estimatedMinutes: 12,
@@ -159,7 +180,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-05',
     slug: 'sql-and-transformation',
-    chapter: '05',
+    chapter: '04',
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -168,7 +189,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-05-cleaning',
     slug: 'sql-transformation-cleaning',
-    chapter: '05',
+    chapter: '04',
     order: 200,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -177,7 +198,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-05-join',
     slug: 'sql-transformation-join',
-    chapter: '05',
+    chapter: '04',
     order: 300,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -186,7 +207,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-05-layers',
     slug: 'sql-transformation-layers',
-    chapter: '05',
+    chapter: '04',
     order: 400,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -195,7 +216,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-05-contract',
     slug: 'sql-transformation-contract',
-    chapter: '05',
+    chapter: '04',
     order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -204,7 +225,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-06',
     slug: 'scheduling-system',
-    chapter: '06',
+    chapter: '05',
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -213,7 +234,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-scheduling-readiness',
     slug: 'scheduling-readiness',
-    chapter: '06',
+    chapter: '05',
     order: 200,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -222,7 +243,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-scheduling-failure',
     slug: 'scheduling-failure',
-    chapter: '06',
+    chapter: '05',
     order: 300,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -231,7 +252,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-scheduling-rerun',
     slug: 'scheduling-rerun',
-    chapter: '06',
+    chapter: '05',
     order: 400,
     difficulty: 'intermediate',
     estimatedMinutes: 14,
@@ -240,7 +261,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-scheduling-sla',
     slug: 'scheduling-sla',
-    chapter: '06',
+    chapter: '05',
     order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -249,7 +270,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-07',
     slug: 'data-quality',
-    chapter: '07',
+    chapter: '06',
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 8,
@@ -258,7 +279,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-07-rules',
     slug: 'data-quality-rules',
-    chapter: '07',
+    chapter: '06',
     order: 200,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -267,7 +288,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-07-dataset',
     slug: 'data-quality-dataset',
-    chapter: '07',
+    chapter: '06',
     order: 300,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -276,7 +297,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-07-evidence',
     slug: 'data-quality-evidence',
-    chapter: '07',
+    chapter: '06',
     order: 400,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -285,7 +306,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-07-release',
     slug: 'data-quality-release',
-    chapter: '07',
+    chapter: '06',
     order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -294,7 +315,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-08',
     slug: 'data-lineage',
-    chapter: '08',
+    chapter: '07',
     order: 100,
     difficulty: 'beginner',
     estimatedMinutes: 10,
@@ -303,7 +324,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-08-fields',
     slug: 'data-lineage-fields',
-    chapter: '08',
+    chapter: '07',
     order: 200,
     difficulty: 'beginner',
     estimatedMinutes: 10,
@@ -312,7 +333,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-08-investigation',
     slug: 'data-lineage-investigation',
-    chapter: '08',
+    chapter: '07',
     order: 300,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -321,7 +342,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-08-impact',
     slug: 'data-lineage-impact',
-    chapter: '08',
+    chapter: '07',
     order: 400,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -330,7 +351,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-08-evidence',
     slug: 'data-lineage-evidence',
-    chapter: '08',
+    chapter: '07',
     order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -339,7 +360,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-star-schema-grain',
     slug: 'star-schema-and-grain',
-    chapter: '03',
+    chapter: '02',
     order: 300,
     difficulty: 'beginner',
     estimatedMinutes: 14,
@@ -348,7 +369,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-fact-table-types',
     slug: 'fact-table-types',
-    chapter: '03',
+    chapter: '02',
     order: 400,
     difficulty: 'beginner',
     estimatedMinutes: 14,
@@ -357,7 +378,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-scd-type-2',
     slug: 'slowly-changing-dimension',
-    chapter: '03',
+    chapter: '02',
     order: 500,
     difficulty: 'beginner',
     estimatedMinutes: 14,
@@ -366,7 +387,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-1',
     slug: 'data-governance',
-    chapter: '09',
+    chapter: '08',
     order: 100,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -375,7 +396,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-2',
     slug: 'data-governance-evidence',
-    chapter: '09',
+    chapter: '08',
     order: 200,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -384,7 +405,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-3',
     slug: 'data-governance-field-access',
-    chapter: '09',
+    chapter: '08',
     order: 300,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -393,7 +414,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-4',
     slug: 'data-governance-lifecycle',
-    chapter: '09',
+    chapter: '08',
     order: 400,
     difficulty: 'intermediate',
     estimatedMinutes: 10,
@@ -402,7 +423,7 @@ export const lessonDefinitions = [
   {
     id: 'lesson-09-5',
     slug: 'data-governance-change-responsibility',
-    chapter: '09',
+    chapter: '08',
     order: 500,
     difficulty: 'intermediate',
     estimatedMinutes: 12,
@@ -411,11 +432,20 @@ export const lessonDefinitions = [
   {
     id: 'lesson-10',
     slug: 'lakehouse',
-    chapter: '10',
+    chapter: '09',
     order: 100,
     difficulty: 'advanced',
     estimatedMinutes: 18,
     demo: 'lakehouse',
+  },
+  {
+    id: 'lesson-data-service',
+    slug: 'data-service',
+    chapter: '10',
+    order: 100,
+    difficulty: 'advanced',
+    estimatedMinutes: 12,
+    demo: 'coming-soon',
   },
   {
     id: 'lesson-11',
@@ -442,16 +472,16 @@ export type LessonId = (typeof lessonDefinitions)[number]['id']
 /** Only zh-CN is maintained for now; add another locale here when its copy exists. */
 export const chapterTranslations: Partial<Record<Locale, Record<ChapterId, ChapterTranslation>>> = {
   'zh-CN': {
-    '01': { title: '数据仓库是什么' },
-    '02': { title: '数据仓库分层' },
-    '03': { title: '数据建模' },
-    '04': { title: '指标体系' },
-    '05': { title: 'SQL 与数据加工' },
-    '06': { title: '调度系统' },
-    '07': { title: '数据质量' },
-    '08': { title: '数据血缘' },
-    '09': { title: '数据治理' },
-    '10': { title: '湖仓' },
+    '01': { title: '认识数据仓库' },
+    '02': { title: '数据建模' },
+    '03': { title: '指标体系' },
+    '04': { title: 'SQL 与数据加工' },
+    '05': { title: '调度系统' },
+    '06': { title: '数据质量' },
+    '07': { title: '数据血缘' },
+    '08': { title: '数据治理' },
+    '09': { title: '湖仓' },
+    '10': { title: '数据服务' },
     '11': { title: '性能与工程实践' },
     '12': { title: '从 0 搭一套数据仓库' },
   },
@@ -460,14 +490,25 @@ export const chapterTranslations: Partial<Record<Locale, Record<ChapterId, Chapt
 export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonTranslation>>> = {
   'zh-CN': {
     'lesson-01': {
-      title: '为什么需要数据仓库？',
-      summary: '从订单、用户、商品和支付四本业务账开始，理解分析系统为何需要独立的数据空间。',
-      tags: ['基础概念', 'OLTP', 'OLAP'],
+      title: '为什么有业务系统，还需要数据仓库？',
+      summary: '用核心系统与信贷系统的存贷比案例，理解跨系统经营分析为什么需要数据仓库。',
+      tags: ['跨系统分析', '数据仓库', '存贷比'],
     },
     'lesson-02': {
-      title: '数据仓库为什么需要分层？',
-      summary: '观察一条订单数据如何经过 ODS、DWD、DWS，最后服务于 ADS。',
-      tags: ['分层', '数据流', '加工'],
+      title: '为什么数据要分层？',
+      summary: '从一个存贷比报表扩展到日报、驾驶舱和 API，观察公共加工如何减少重复处理。',
+      tags: ['数据职责', '公共复用', '变化影响'],
+    },
+    'lesson-01-report-journey': {
+      title: '一个报表数字是怎么来的？',
+      summary: '沿杭州分行存贷比的七个步骤，完整回看源系统、数据仓库和经营报表之间的链路。',
+      tags: ['数据链路', '存贷比', '报表'],
+    },
+    'lesson-01-terms': {
+      title: '这些数仓术语到底在说什么？',
+      summary:
+        '把 OLTP、OLAP、ETL、ELT 和 Data Warehouse 放回前面的业务场景，理解它们各自描述什么。',
+      tags: ['OLTP', 'OLAP', 'ETL / ELT'],
     },
     'lesson-03': {
       title: '业务过程：到底要记录哪件事？',
@@ -637,7 +678,7 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-09-5': {
       title: '字段变了以后，谁需要处理？',
-      summary: '读取第 08 章已有影响分析，映射受影响资产 Owner，形成变更责任清单。',
+      summary: '读取第 07 章已有影响分析，映射受影响资产 Owner，形成变更责任清单。',
       tags: ['治理', 'Owner', '变更责任'],
     },
     'lesson-10': {
@@ -645,6 +686,11 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '同一份订单、事件和 JSON 文件面对稳定报表、探索分析和 ML 时，比较三种架构的能力与代价。',
       tags: ['湖仓', '架构切换', '版本'],
+    },
+    'lesson-data-service': {
+      title: '数据服务：数据最终怎么被使用？',
+      summary: '规划中的数据交付章节，比较报表、文件和 API 等数据消费方式。',
+      tags: ['数据服务', '数据交付'],
     },
     'lesson-11': {
       title: '性能与工程实践',

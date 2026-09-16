@@ -13,13 +13,16 @@ import type {
   BankingMetricDerivationVisualization,
   BankingMetricScopeVisualization,
   BankingMetricTimeVisualization,
+  LayerEvolutionVisualization,
   LoanBusinessProcessVisualization,
   LoanGrainVisualization,
   ModelingIntroVisualization,
   PipelineStage,
+  ReportMetricJourneyVisualization,
   ScdVisualization,
   SourceSystem,
   StarSchemaVisualization,
+  WarehouseTermsVisualization,
 } from '../types'
 import type {
   LineageInvestigationEventDefinition,
@@ -125,6 +128,9 @@ export type LessonVisualization =
       kind: 'pipeline'
       stages: PipelineStage[]
     }
+  | LayerEvolutionVisualization
+  | ReportMetricJourneyVisualization
+  | WarehouseTermsVisualization
   | {
       kind: 'lineage'
       nodes: LineageNode[]

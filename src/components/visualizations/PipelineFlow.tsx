@@ -85,11 +85,11 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
     <div className="pipeline-flow">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">分层加工实验</span>
+          <span className="visualization-toolbar__label">数据职责加工实验</span>
           <p aria-live="polite">
             {currentStage
               ? `${currentStage.layer}：${currentStage.work} → ${currentStage.output}`
-              : '点击开始，让一条订单数据依次经过四层'}
+              : '点击开始，让一批业务数据依次经过不同职责的处理环节'}
           </p>
         </div>
         <div className="visualization-toolbar__actions">
@@ -106,7 +106,7 @@ export function PipelineFlow({ stages }: PipelineFlowProps) {
         </div>
       </div>
 
-      <div className="pipeline-flow__track" aria-label="ODS 到 ADS 的数据加工过程">
+      <div className="pipeline-flow__track" aria-label="从业务系统到下游使用的数据加工过程">
         {stages.map((stage, index) => {
           const status = getStageStatus(index)
           return (

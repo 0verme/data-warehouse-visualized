@@ -20,30 +20,30 @@ import {
   getBankingMetricDefinition,
 } from '../src/utils/banking-metrics'
 
-describe('第 04 章银行指标课程', () => {
+describe('第 03 章银行指标课程', () => {
   it('保留旧 metric-system slug，并注册四节银行指标课程', () => {
     expect(getLessonBySlug('metric-system')).toMatchObject({
       id: 'lesson-04',
       title: '同一个“存款余额”，为什么会有不同答案？',
-      chapter: '04',
+      chapter: '03',
       order: 100,
       demo: 'banking-metric-scope',
     })
     expect(getLessonBySlug('deposit-metric-definition')).toMatchObject({
       title: '一个指标到底由什么组成？',
-      chapter: '04',
+      chapter: '03',
       order: 200,
       demo: 'banking-metric-definition',
     })
     expect(getLessonBySlug('deposit-metric-time')).toMatchObject({
       title: '“截至某天”和“一段时间”有什么区别？',
-      chapter: '04',
+      chapter: '03',
       order: 300,
       demo: 'banking-metric-time',
     })
     expect(getLessonBySlug('deposit-metric-derivations')).toMatchObject({
       title: '一个“存款余额”为什么能派生出这么多指标？',
-      chapter: '04',
+      chapter: '03',
       order: 400,
       demo: 'banking-metric-derivations',
     })
@@ -121,7 +121,7 @@ describe('第 04 章银行指标课程', () => {
     expect(definition.name).toBe('杭州分行小微口径人民币定期存款余额')
   })
 
-  it('第 04 章不引入日均存款或额外银行经营规则', () => {
+  it('第 03 章不引入日均存款或额外银行经营规则', () => {
     const chapterContent = JSON.stringify([
       metricSystemContent,
       getLessonContent(getLessonBySlug('deposit-metric-definition')!),

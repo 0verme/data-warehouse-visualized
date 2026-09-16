@@ -62,8 +62,8 @@ function getVisualizationModes() {
   })
 }
 
-describe('第 08 课数据血缘', () => {
-  it('拆分为 8-1 到 8-5，并统一使用银行存款余额链路', () => {
+describe('第 07 章数据血缘', () => {
+  it('拆分为 7-1 到 7-5，并统一使用银行存款余额链路', () => {
     expect(
       lineageContents.map((content) => content.sections.map((section) => section.kind)),
     ).toEqual([
@@ -178,7 +178,7 @@ describe('第 08 课数据血缘', () => {
     expect(getLineageTableNodeId('dws_deposit_balance_daily')).toBe(BANKING_LINEAGE_NODE_IDS.dws)
   })
 
-  it('把第 07 章 QualityEvent 适配为近到远调查入口', () => {
+  it('把第 06 章 QualityEvent 适配为近到远调查入口', () => {
     expect(depositBalanceQualityEvent).toMatchObject({
       ruleId: QUALITY_RULE_IDS.reconciliation,
       status: 'fail',

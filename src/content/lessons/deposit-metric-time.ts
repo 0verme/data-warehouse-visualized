@@ -43,7 +43,7 @@ export const depositMetricTimeVisualization: BankingMetricTimeVisualization = {
 }
 
 export const depositMetricTimeContent: LessonContent = {
-  eyebrow: '第 04 章 · 时间语义',
+  eyebrow: '第 03 章 · 时间语义',
   subtitle:
     '“截至某天”描述一个时间点的状态，“一段时间”描述期间内发生的事件；两个问题不能共用同一条时间条件。',
   quickSummary:
@@ -59,7 +59,7 @@ export const depositMetricTimeContent: LessonContent = {
       title: '“截至 9 月 30 日”问的是状态',
       paragraphs: [
         '2026-09-30 的账户余额快照里，A101 是 720 元，A102 是 480 元。把这两行相加，回答的是“9 月 30 日这个时间点，账户状态合计还有多少钱”。',
-        '这对应第 03 章见过的 Periodic Snapshot Fact：一行代表一个账户在固定周期末的状态，即使当天没有新交易，也可以有一行快照。',
+        '这对应第 02 章见过的 Periodic Snapshot Fact：一行代表一个账户在固定周期末的状态，即使当天没有新交易，也可以有一行快照。',
       ],
     },
     {

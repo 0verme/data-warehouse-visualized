@@ -1,7 +1,7 @@
 import type { LessonContent } from '../types'
 
 export const factTableTypesContent: LessonContent = {
-  eyebrow: '第 03 章 · 事实表类型',
+  eyebrow: '第 02 章 · 事实表类型',
   subtitle: '事件、某个时间点的状态和一条业务生命周期，需要三种不同的事实表形态来记录。',
   quickSummary:
     '用账户交易流水、账户日终余额和 LoanNote 生命周期做三组对照，理解 Transaction Fact、Periodic Snapshot Fact 和 Accumulating Snapshot Fact 各自回答什么问题。',

@@ -16,9 +16,9 @@ describe('轻量 i18n API', () => {
     const lesson = getLessonBySlug('why-data-warehouse')
 
     expect(lesson).toMatchObject({
-      title: '为什么需要数据仓库？',
-      summary: '从订单、用户、商品和支付四本业务账开始，理解分析系统为何需要独立的数据空间。',
-      tags: ['基础概念', 'OLTP', 'OLAP'],
+      title: '为什么有业务系统，还需要数据仓库？',
+      summary: '用核心系统与信贷系统的存贷比案例，理解跨系统经营分析为什么需要数据仓库。',
+      tags: ['跨系统分析', '数据仓库', '存贷比'],
       order: 100,
       slug: 'why-data-warehouse',
     })
@@ -29,8 +29,8 @@ describe('轻量 i18n API', () => {
     expect(getLessons(DEFAULT_LOCALE).map((lesson) => lesson.slug)).toEqual(
       lessons.map((lesson) => lesson.slug),
     )
-    expect(getChapters(DEFAULT_LOCALE)[2]).toMatchObject({
-      id: '03',
+    expect(getChapters(DEFAULT_LOCALE)[1]).toMatchObject({
+      id: '02',
       title: '数据建模',
       lessons: [
         expect.objectContaining({ slug: 'data-modeling', title: '业务过程：到底要记录哪件事？' }),
@@ -46,7 +46,7 @@ describe('轻量 i18n API', () => {
         }),
       ],
     })
-    expect(getChapterTitle('03')).toBe('数据建模')
+    expect(getChapterTitle('02')).toBe('数据建模')
   })
 
   it('没有对应翻译时回退到 zh-CN，且稳定 identity 不变', () => {
@@ -55,7 +55,7 @@ describe('轻量 i18n API', () => {
     expect(lesson).toMatchObject({
       id: 'lesson-01',
       slug: 'why-data-warehouse',
-      title: '为什么需要数据仓库？',
+      title: '为什么有业务系统，还需要数据仓库？',
     })
   })
 

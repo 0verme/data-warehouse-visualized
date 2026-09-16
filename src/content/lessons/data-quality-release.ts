@@ -9,7 +9,7 @@ export const dataQualityReleaseVisualization = createDataQualityVisualization(
 )
 
 export const dataQualityReleaseContent: LessonContent = {
-  eyebrow: '第 07 章 · 7-5 发布判断',
+  eyebrow: '第 06 章 · 6-5 发布判断',
   opening: {
     eyebrow: '发现问题以后，这份数据还能发布吗？',
     title: '发现问题以后，这份数据还能发布吗？',

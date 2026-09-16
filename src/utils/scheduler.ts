@@ -96,7 +96,7 @@ function createTaskContract(
   }
 }
 
-/** 将第 05 章的存款余额加工契约接入第 06 章的时间轴 DAG。 */
+/** 将第 04 章的存款余额加工契约接入第 05 章的时间轴 DAG。 */
 export function createSchedulerTasks(
   taskContract: TransformationTaskContract,
 ): SchedulerTaskDefinition[] {

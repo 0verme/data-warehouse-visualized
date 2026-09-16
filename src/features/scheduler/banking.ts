@@ -169,7 +169,7 @@ export function createBankingSchedulerTasks(
     taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
     label: 'DWD 存款余额明细',
     layer: 'dwd',
-    description: '把五份当天所需输入对齐到账户余额明细，沿用第 05 章已经确定的加工结果。',
+    description: '把五份当天所需输入对齐到账户余额明细，沿用第 04 章已经确定的加工结果。',
     dependsOn: sourceTasks.map((task) => task.taskId),
     contract: createTaskContract(
       BANKING_SCHEDULER_TASK_IDS.dwd,

@@ -15,7 +15,7 @@ export const depositMetricDerivationVisualization: BankingMetricDerivationVisual
 }
 
 export const depositMetricDerivationsContent: LessonContent = {
-  eyebrow: '第 04 章 · 指标派生',
+  eyebrow: '第 03 章 · 指标派生',
   subtitle:
     '基础度量保持不变，客户、产品、机构、币种和日期范围一换，就会得到一族不同但可解释的指标。',
   quickSummary:
@@ -63,8 +63,8 @@ export const depositMetricDerivationsContent: LessonContent = {
     },
     {
       kind: 'engineering-note',
-      title: '把定义交给第 05 章加工',
-      text: '第 04 章把统计对象、时间、度量和过滤条件说清楚；第 05 章再决定怎样从分层数据中去重、关联、聚合并产出这个数字。加工逻辑必须回到这里确认口径，而不是重新猜一遍业务含义。',
+      title: '把定义交给第 04 章加工',
+      text: '第 03 章把统计对象、时间、度量和过滤条件说清楚；第 04 章再决定怎样从分层数据中去重、关联、聚合并产出这个数字。加工逻辑必须回到这里确认口径，而不是重新猜一遍业务含义。',
     },
   ],
 }

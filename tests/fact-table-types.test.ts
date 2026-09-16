@@ -21,7 +21,7 @@ describe('事实表不只有一种课程数据', () => {
   it('注册三类 Fact Table，并使用各自的银行样本', () => {
     expect(getLessonBySlug('fact-table-types')).toMatchObject({
       title: '事实表不只有一种',
-      chapter: '03',
+      chapter: '02',
       order: 400,
       demo: 'banking-fact-types',
     })

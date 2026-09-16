@@ -50,7 +50,7 @@ const accountMedia: readonly AccountMedium[] = [
   { mediumId: 'M005', accountId: 'A003', mediumType: 'CARD' },
 ]
 
-/** 第 05 章使用的小样本：异常足够少，且每一条都能在表快照中被指出。 */
+/** 第 04 章使用的小样本：异常足够少，且每一条都能在表快照中被指出。 */
 export const depositBalanceDataset: TransformationDataset = {
   targetDate: DEPOSIT_BALANCE_TARGET_DATE,
   accountBalanceSnapshots: [
@@ -102,7 +102,7 @@ export const depositBalanceDataset: TransformationDataset = {
   accountMedia,
 }
 
-/** 只供第 06 章调度实验注入；第 05 章不展示到达时刻或重跑过程。 */
+/** 只供第 05 章调度实验注入；第 04 章不展示到达时刻或重跑过程。 */
 export const depositLateBalanceSnapshot: AccountBalanceSnapshot = {
   snapshotDate: DEPOSIT_BALANCE_TARGET_DATE,
   accountId: 'A005',
@@ -136,7 +136,7 @@ export const depositBalanceTaskContract: TransformationTaskContract = {
     'dim_branch',
   ],
   repeatExecution: '同样的输入和业务日期再次执行，目标分区结果应保持一致，不重复累加余额。',
-  // 这些字段由第 06 章的调度实验消费，05 的展示只保留上面的加工边界。
+  // 这些字段由第 05 章的调度实验消费，04 的展示只保留上面的加工边界。
   isIdempotent: true,
   supportsPartialRerun: true,
   rerunHint: `按业务日期重算 ${DEPOSIT_BALANCE_TARGET_DATE} 分区。`,

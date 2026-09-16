@@ -17,7 +17,7 @@ export const qualitySchedulerRun = createQualitySchedulerRun(
 )
 export const qualityTeachingModel = createQualityTeachingModel()
 
-/** 7-1 keeps the existing slug and introduces the three independent states. */
+/** 6-1 keeps the existing slug and introduces the three independent states. */
 export const dataQualityVisualization: DataQualityVisualization = createDataQualityVisualization(
   qualitySchedulerRun,
   'status',
@@ -25,7 +25,7 @@ export const dataQualityVisualization: DataQualityVisualization = createDataQual
 )
 
 export const dataQualityContent: LessonContent = {
-  eyebrow: '第 07 章 · 7-1 数据质量状态',
+  eyebrow: '第 06 章 · 6-1 数据质量状态',
   opening: {
     eyebrow: '任务成功了，数据就可信了吗？',
     title: '任务成功了，数据就可信了吗？',
@@ -39,7 +39,7 @@ export const dataQualityContent: LessonContent = {
     ],
     question: '任务已经成功且按时完成，为什么存款余额仍然不能发布？',
   },
-  subtitle: '从第 06 章交接来的 SUCCESS 和 SLA MET，只是质量判断的起点。',
+  subtitle: '从第 05 章交接来的 SUCCESS 和 SLA MET，只是质量判断的起点。',
   quickSummary:
     '运行完成、数据通过质量检查、允许发布是三个独立判断。质量失败时，要留下证据，并在关键结果上阻断发布。',
   concept: {
@@ -66,7 +66,7 @@ export const dataQualityContent: LessonContent = {
       eyebrow: 'STATUS FLOW · 三个状态分开看',
       title: 'SUCCESS → Quality FAILED → Release BLOCKED',
       description:
-        '点击查看本次对账失败留下的事实证据。这里不重新演示等待、重试或补数；那些判断属于第 06 章。',
+        '点击查看本次对账失败留下的事实证据。这里不重新演示等待、重试或补数；那些判断属于第 05 章。',
       visualization: dataQualityVisualization,
     },
     {
@@ -77,9 +77,9 @@ export const dataQualityContent: LessonContent = {
         '本章后面会把问题拆开：先看一行余额记录是否合理，再看整批数据和加工链，最后保存能交给调查流程继续使用的质量事实。',
       ],
       bullets: [
-        '第 06 章说明任务何时运行、依赖是否放行。',
-        '第 07 章说明产出内容是否满足规则。',
-        '第 08 章再沿质量事实查可能的来源和影响。',
+        '第 05 章说明任务何时运行、依赖是否放行。',
+        '第 06 章说明产出内容是否满足规则。',
+        '第 07 章再沿质量事实查可能的来源和影响。',
       ],
     },
     {

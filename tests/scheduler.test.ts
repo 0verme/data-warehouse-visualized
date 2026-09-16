@@ -55,8 +55,8 @@ function runToTerminal(scenario: SchedulerScenario, overrides: Partial<Scheduler
   return state
 }
 
-describe('第六章存款余额调度课程', () => {
-  it('使用统一银行教学域和第 05 章交接事实', () => {
+describe('第五章存款余额调度课程', () => {
+  it('使用统一银行教学域和第 04 章交接事实', () => {
     expect(bankingSchedulerVisualization.taskContract).toBe(bankingDepositBalanceTaskContract)
     expect(bankingDepositBalanceTaskContract).toMatchObject({
       inputTables: ['AccountBalanceSnapshot', 'Account', 'Customer', 'Product', 'Branch'],
@@ -73,7 +73,7 @@ describe('第六章存款余额调度课程', () => {
     })
   })
 
-  it('保留第 07、08 章继续使用的旧订单调度事实', () => {
+  it('保留旧订单调度事实，避免影响兼容入口', () => {
     expect(legacySchedulerVisualization.taskContract).toBe(sqlTransformationTaskContract)
     expect(legacySchedulerVisualization.tasks).toHaveLength(8)
     expect(legacySchedulerVisualization.tasks.at(-1)?.contract.outputTable).toBe(

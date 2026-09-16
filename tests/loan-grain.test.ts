@@ -25,7 +25,7 @@ describe('Grain：一行究竟代表什么课程数据', () => {
   it('注册合同、借据和还款三种 Grain', () => {
     expect(getLessonBySlug('grain')).toMatchObject({
       title: 'Grain：一行究竟代表什么？',
-      chapter: '03',
+      chapter: '02',
       order: 200,
       demo: 'loan-grain',
     })
