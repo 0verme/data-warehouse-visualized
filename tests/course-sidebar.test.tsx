@@ -62,4 +62,17 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-metric-time"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-metric-derivations"')
   })
+
+  it('SSR 展开第 08 章时显示五节数据血缘课程', () => {
+    const markup = renderSidebarForLesson('data-lineage')
+    const chapterMarkup = getChapterMarkup(markup, '08')
+
+    expect(chapterMarkup).toContain('aria-expanded="true"')
+    expect(chapterMarkup).toContain('>0/5</span>')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-fields"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-investigation"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-impact"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-08-evidence"')
+  })
 })

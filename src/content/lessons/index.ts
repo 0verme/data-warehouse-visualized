@@ -14,6 +14,10 @@ import { dataQualityReleaseContent } from './data-quality-release'
 import { dataQualityRulesContent } from './data-quality-rules'
 import { dataQualityContent } from './data-quality'
 import { dataLineageContent } from './data-lineage'
+import { dataLineageEvidenceContent } from './data-lineage-evidence'
+import { dataLineageFieldsContent } from './data-lineage-fields'
+import { dataLineageImpactContent } from './data-lineage-impact'
+import { dataLineageInvestigationContent } from './data-lineage-investigation'
 import { dataModelingContent } from './data-modeling'
 import { factTableTypesContent } from './fact-table-types'
 import { grainContent } from './grain'
@@ -52,6 +56,10 @@ const lessonContentBySlug: Record<string, LessonContent> = {
   'why-data-warehouse': whyDataWarehouseContent,
   'warehouse-layers': warehouseLayersContent,
   'data-lineage': dataLineageContent,
+  'data-lineage-fields': dataLineageFieldsContent,
+  'data-lineage-investigation': dataLineageInvestigationContent,
+  'data-lineage-impact': dataLineageImpactContent,
+  'data-lineage-evidence': dataLineageEvidenceContent,
   'data-modeling': dataModelingContent,
   'fact-table-types': factTableTypesContent,
   grain: grainContent,
