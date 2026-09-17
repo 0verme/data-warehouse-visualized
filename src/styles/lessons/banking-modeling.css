@@ -2472,6 +2472,27 @@
     grid-template-columns: 1fr;
   }
 
+  .loan-grain__error-result {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .loan-grain__error-result > div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .loan-grain__error-result > div span {
+    white-space: normal;
+  }
+
+  .loan-grain__error-result > p {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
   .loan-process__detail-grid dd {
     margin-bottom: 10px;
   }

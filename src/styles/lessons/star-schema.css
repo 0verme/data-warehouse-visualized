@@ -1298,11 +1298,24 @@
   }
 
   .error-demo__result {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .error-demo__result > div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .error-demo__result > div span {
+    white-space: normal;
   }
 
   .error-demo__result p {
-    grid-column: 1 / -1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 }
 
@@ -2230,10 +2243,23 @@
   }
 
   .star-error__result {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .star-error__result > div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  .star-error__result > div span {
+    white-space: normal;
   }
 
   .star-error__result p {
-    grid-column: 1 / -1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 }
