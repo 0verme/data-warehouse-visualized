@@ -26,9 +26,9 @@
 .eyebrow-pill {
   gap: 7px;
   padding: 6px 10px;
-  border: 1px solid #cfeae5;
+  border: 1px solid var(--success-border);
   border-radius: 100px;
-  background: #f2fbfa;
+  background: var(--success-bg);
   letter-spacing: 0.05em;
 }
 

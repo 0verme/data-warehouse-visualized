@@ -57,7 +57,7 @@
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #fbfcfe;
+  background: var(--panel-bg);
 }
 
 .governance-panel:first-of-type {
@@ -136,8 +136,8 @@
 .governance-result-card:hover,
 .governance-evidence-choice:hover,
 .governance-responsibility-card:hover {
-  border-color: #a8c3e5;
-  background: #f8fbff;
+  border-color: var(--info-border);
+  background: var(--info-bg);
   transform: translateY(-1px);
 }
 
@@ -221,22 +221,22 @@
 
 .governance-badge--active,
 .governance-badge--recommended {
-  border-color: #acd9d3;
-  background: var(--teal-soft);
-  color: #087d75;
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .governance-badge--deprecated,
 .governance-badge--not-recommended {
-  border-color: #eed39a;
-  background: var(--amber-soft);
-  color: #9b6818;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .governance-badge--retiring {
-  border-color: #e8bebe;
-  background: #fff1f1;
-  color: var(--danger);
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .governance-detail-column {
@@ -321,8 +321,8 @@
   gap: 12px;
   align-items: center;
   justify-content: space-between;
-  border-color: #c8e2dd;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .governance-decision-card strong,
@@ -346,8 +346,8 @@
 .governance-live-message {
   margin: 0;
   padding: 9px 10px;
-  border-left: 3px solid var(--teal);
-  background: #f4fbfa;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
   color: var(--ink-soft);
   font-size: 10px;
   line-height: 1.55;
@@ -399,13 +399,13 @@
 
 .governance-evidence-result {
   margin-top: 13px;
-  border-color: #acd9d3;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .governance-evidence-result.is-not-recommended {
-  border-color: #eed39a;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .governance-evidence-result__header h4 {
@@ -585,18 +585,18 @@
 }
 
 .governance-access-result {
-  border-color: #acd9d3;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .governance-access-result.is-masked {
-  border-color: #b8d0ef;
-  background: #f6f9ff;
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .governance-access-result.is-unavailable {
-  border-color: #eed39a;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .governance-access-result h4 {
@@ -650,8 +650,8 @@
 }
 
 .governance-lifecycle-callout.is-deprecated {
-  border-color: #eed39a;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .governance-lifecycle-callout strong,
@@ -681,9 +681,9 @@
   display: grid;
   gap: 5px;
   padding: 11px;
-  border: 1px solid #c8e2dd;
+  border: 1px solid var(--success-border);
   border-radius: 8px;
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .governance-change-field strong {
@@ -780,8 +780,8 @@
 .governance-checklist-action {
   align-items: center;
   margin-top: 14px;
-  border-color: #c8e2dd;
-  background: #f9fdfc;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .governance-checklist-action strong,

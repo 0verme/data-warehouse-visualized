@@ -16,9 +16,9 @@
 .metric-lab__result-panel {
   min-width: 0;
   padding: 16px;
-  border: 1px solid #dce6f0;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .metric-lab__section-heading {
@@ -91,14 +91,14 @@
 }
 
 .metric-lab__choice:hover {
-  border-color: #a9c4e7;
-  background: #f8fbff;
+  border-color: var(--info-border);
+  background: var(--info-bg);
   transform: translateY(-1px);
 }
 
 .metric-lab__choice.is-selected {
-  border-color: #9fc1e9;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
   color: var(--blue-deep);
 }
 
@@ -118,7 +118,7 @@
 .metric-lab__choice.is-selected .metric-lab__choice-indicator {
   border-color: var(--blue);
   background: var(--blue);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .metric-lab__choice strong,
@@ -144,9 +144,9 @@
 
 .metric-lab__result-card {
   padding: 16px;
-  border: 1px solid #c8e5e1;
+  border: 1px solid var(--success-border);
   border-radius: 9px;
-  background: #f4fbfa;
+  background: var(--success-bg);
   text-align: center;
 }
 
@@ -309,11 +309,11 @@
 }
 
 .metric-lab__orders-table tr.is-included {
-  background: #f7fcfb;
+  background: var(--success-bg);
 }
 
 .metric-lab__orders-table tr.is-excluded {
-  background: #fafbfd;
+  background: var(--surface-2);
 }
 
 .metric-lab__orders-table tr.is-excluded th,
@@ -348,7 +348,7 @@
 }
 
 .is-included .metric-lab__row-status i {
-  border-color: #9bd9d1;
+  border-color: var(--success-border);
   background: var(--teal-soft);
   color: var(--teal);
 }
@@ -360,14 +360,14 @@
   justify-content: space-between;
   margin-bottom: 12px;
   padding: 13px 14px;
-  border-left: 3px solid var(--teal);
+  border-left: 3px solid var(--success-border);
   border-radius: 7px;
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .metric-lab__grain-callout.is-warning {
-  border-left-color: var(--danger);
-  background: #fff7f7;
+  border-left-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .metric-lab__grain-callout span,

@@ -803,7 +803,7 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   place-items: center;
   border-radius: 7px;
   background: var(--navy);
-  color: #fff;
+  color: var(--on-primary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
 }
@@ -845,9 +845,9 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 .quick-summary {
   display: block;
   padding: 17px 19px;
-  border: 1px solid var(--border-teal);
+  border: 1px solid var(--success-border);
   border-radius: var(--radius-sm);
-  background: var(--surface-teal);
+  background: var(--success-bg);
 }
 
 .quick-summary p {
@@ -864,9 +864,9 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 .lesson-opening {
   margin-bottom: 28px;
   padding: 22px 24px 20px;
-  border: 1px solid var(--border-warning);
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius-md);
-  background: var(--surface-warning);
+  background: var(--warning-bg);
 }
 
 .lesson-opening__heading {
@@ -898,9 +898,9 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   min-width: 0;
   flex-direction: column;
   padding: 13px 14px;
-  border: 1px solid var(--border-warning);
+  border: 1px solid var(--warning-border);
   border-radius: 9px;
-  background: var(--surface);
+  background: var(--surface-1);
 }
 
 .lesson-opening__card > span {
@@ -926,7 +926,7 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 .lesson-opening__question {
   margin: 16px 0 0;
   padding-top: 13px;
-  border-top: 1px solid var(--border-warning);
+  border-top: 1px solid var(--warning-border);
   color: var(--amber);
   font-size: 12px;
   font-weight: 650;
@@ -938,9 +938,9 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   gap: 30px;
   align-items: center;
   padding: 23px 25px;
-  border: 1px solid var(--border-blue);
+  border: 1px solid var(--info-border);
   border-radius: var(--radius-md);
-  background: var(--surface-blue);
+  background: var(--info-bg);
 }
 
 .concept-card__label {

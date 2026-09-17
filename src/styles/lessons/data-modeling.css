@@ -76,7 +76,7 @@
 }
 
 .modeling-intro__table th {
-  background: #e8f0fc;
+  background: var(--info-bg);
   color: var(--blue-deep);
   font-size: 9px;
   font-weight: 750;
@@ -87,7 +87,7 @@
 }
 
 .modeling-intro__table tbody tr:nth-child(2) td {
-  background: #f8fbff;
+  background: var(--info-bg);
 }
 
 .modeling-intro__steps {
@@ -104,7 +104,7 @@
   border: 1px solid var(--line);
   border-top: 3px solid var(--teal);
   border-radius: 9px;
-  background: #f8fcfb;
+  background: var(--success-bg);
 }
 
 .modeling-intro__step-number {
@@ -219,8 +219,8 @@
 }
 
 .modeling-lab__stage:hover {
-  border-color: #a8c4e7;
-  background: #f8fbff;
+  border-color: var(--info-border);
+  background: var(--info-bg);
   color: var(--text-primary);
   transform: translateY(-1px);
 }
@@ -263,9 +263,9 @@
 .modeling-lab__stage-panel {
   min-width: 0;
   padding: 17px;
-  border: 1px solid #dce6f0;
+  border: 1px solid var(--border);
   border-radius: var(--radius-section);
-  background: #fbfcfe;
+  background: var(--panel-bg);
   animation: lesson-block-reveal var(--motion-standard) ease both;
 }
 
@@ -361,7 +361,7 @@
 
 .modeling-lab__table th.is-blue,
 .modeling-lab__table td.is-blue {
-  background: #f2f7ff;
+  background: var(--info-bg);
 }
 
 .modeling-lab__table th.is-blue {
@@ -370,7 +370,7 @@
 
 .modeling-lab__table th.is-teal,
 .modeling-lab__table td.is-teal {
-  background: #effaf8;
+  background: var(--success-bg);
 }
 
 .modeling-lab__table th.is-teal {
@@ -379,7 +379,7 @@
 
 .modeling-lab__table th.is-violet,
 .modeling-lab__table td.is-violet {
-  background: #f7f3fb;
+  background: var(--surface-3);
 }
 
 .modeling-lab__table th.is-violet {
@@ -388,7 +388,7 @@
 
 .modeling-lab__table th.is-amber,
 .modeling-lab__table td.is-amber {
-  background: #fff9ed;
+  background: var(--warning-bg);
 }
 
 .modeling-lab__table th.is-amber {
@@ -397,7 +397,7 @@
 
 .modeling-lab__table th.is-navy,
 .modeling-lab__table td.is-navy {
-  background: #f0f4f9;
+  background: var(--surface-2);
 }
 
 .modeling-lab__table th.is-navy {
@@ -649,7 +649,7 @@
 }
 
 .modeling-lab__source-fields .is-blue {
-  background: #e7effc;
+  background: var(--info-bg);
   color: var(--blue-deep);
 }
 
@@ -659,8 +659,8 @@
 }
 
 .modeling-lab__source-fields .is-violet {
-  background: #eee9f7;
-  color: #72569e;
+  background: var(--surface-3);
+  color: var(--text-secondary);
 }
 
 .modeling-lab__source-fields .is-amber {
@@ -669,7 +669,7 @@
 }
 
 .modeling-lab__source-fields .is-navy {
-  background: #e5edf7;
+  background: var(--surface-2);
   color: var(--navy);
 }
 
@@ -729,8 +729,8 @@
 }
 
 .modeling-lab__output--dimension {
-  border-color: #c8e2dd;
-  background: #f7fcfb;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .modeling-lab__output-heading {
@@ -772,7 +772,7 @@
 .modeling-lab__output-fields code {
   padding: 3px 4px;
   border-radius: 3px;
-  background: rgb(255 255 255 / 65%);
+  background: var(--surface-1);
   color: var(--text-secondary);
   font-size: 8px;
 }

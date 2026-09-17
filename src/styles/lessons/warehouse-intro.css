@@ -177,8 +177,8 @@
 }
 
 .layer-evolution__stage {
-  border-left: 3px solid var(--teal);
-  background: #f7fcfb;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
 }
 
 .layer-evolution__stage > div {
@@ -218,8 +218,8 @@
 }
 
 .layer-evolution__consumer.is-shared {
-  border-left: 3px solid var(--teal);
-  background: #f7fcfb;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
 }
 
 .layer-evolution__consumer small {
@@ -231,14 +231,14 @@
 
 .layer-evolution__work {
   padding: 13px 15px;
-  border: 1px solid #ead9b2;
+  border: 1px solid var(--warning-border);
   border-radius: 9px;
-  background: #fffaf0;
+  background: var(--warning-bg);
 }
 
 .layer-evolution__work.is-shared {
-  border-color: #b9ded8;
-  background: #f5fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .layer-evolution__work-label {
@@ -318,8 +318,8 @@
 
 .report-journey__step:hover,
 .report-journey__step.is-selected {
-  border-color: #8bcfc4;
-  background: #f1fbf9;
+  border-color: var(--success-border);
+  background: var(--success-bg);
   transform: translateY(-2px);
 }
 
@@ -356,9 +356,9 @@
   align-items: start;
   margin-top: 14px;
   padding: 15px 16px;
-  border: 1px solid #c3e1dc;
+  border: 1px solid var(--success-border);
   border-radius: 10px;
-  background: #f7fcfb;
+  background: var(--success-bg);
 }
 
 .report-journey__detail-kicker {
@@ -580,7 +580,7 @@
 .warehouse-terms__answer code {
   padding: 3px 6px;
   border-radius: 4px;
-  background: rgb(255 255 255 / 72%);
+  background: var(--surface-1);
   color: var(--blue-deep);
   font-size: 9px;
 }

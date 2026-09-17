@@ -5,9 +5,9 @@
   container-type: inline-size;
   margin: 4px 0 39px;
   padding: 28px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background: var(--panel-bg);
   box-shadow: var(--shadow-sm);
 }
 
@@ -78,9 +78,9 @@
   gap: 10px;
   align-items: center;
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--card-border);
   border-radius: 9px;
-  background: var(--surface);
+  background: var(--card-bg);
   cursor: pointer;
   text-align: left;
   transition:
@@ -91,8 +91,8 @@
 
 .system-node:hover,
 .system-node.is-selected {
-  border-color: #a5c0e5;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
   transform: translateX(2px);
 }
 
@@ -110,7 +110,7 @@
 }
 
 .system-node.is-selected .system-node__icon {
-  background: #d8e7fb;
+  background: var(--info-bg);
 }
 
 .system-node strong,
@@ -190,7 +190,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 18px;
-  border: 1px solid #aac7ec;
+  border: 1px solid var(--info-border);
   border-radius: 12px;
   background: var(--surface-blue);
   text-align: center;
@@ -220,14 +220,14 @@
   margin-top: 13px;
   padding: 3px 7px;
   border-radius: 4px;
-  background: #d7eee9;
+  background: var(--success-bg);
   color: var(--teal);
   font-size: 9px;
 }
 
 .business-flow--phase-3 .warehouse-node {
-  border-color: #8bcfc4;
-  background: #eefaf8;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .business-flow__outputs {
@@ -237,10 +237,10 @@
 
 .output-node {
   padding: 10px 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--card-border);
   border-left: 3px solid var(--teal);
   border-radius: 8px;
-  background: var(--surface);
+  background: var(--card-bg);
 }
 
 .output-node strong,
@@ -261,8 +261,8 @@
 }
 
 .business-flow--phase-3 .output-node {
-  border-color: #bee3dc;
-  background: #f7fcfb;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .business-flow__packet {
@@ -315,7 +315,7 @@
   flex: 0 0 auto;
   padding: 3px 7px;
   border-radius: 4px;
-  background: var(--amber-soft);
+  background: var(--warning-bg);
   color: var(--amber);
   font-size: 10px;
   font-weight: 700;
@@ -350,10 +350,10 @@
   width: calc(100% - 16px);
   min-height: 206px;
   padding: 15px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--card-border);
   border-top: 3px solid var(--line-strong);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--card-bg);
   transition:
     border-color 200ms ease,
     background-color 200ms ease,
@@ -362,17 +362,17 @@
 }
 
 .pipeline-stage--processing {
-  border-color: #8ab5ef;
+  border-color: var(--info-border);
   border-top-color: var(--blue);
-  background: var(--surface-blue);
+  background: var(--info-bg);
   box-shadow: 0 8px 19px rgb(45 108 223 / 11%);
   transform: translateY(-3px);
 }
 
 .pipeline-stage--done {
-  border-color: #a4d9d1;
+  border-color: var(--success-border);
   border-top-color: var(--teal);
-  background: #f5fbfa;
+  background: var(--success-bg);
 }
 
 .pipeline-stage__topline {
@@ -532,9 +532,9 @@
 
 .compare-card__column {
   padding: 19px 21px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--card-border);
   border-radius: 10px;
-  background: var(--surface);
+  background: var(--card-bg);
 }
 
 .compare-card__label {
@@ -654,14 +654,14 @@
   min-height: 0;
   padding: 10px 14px;
   border: 0;
-  border-left: 3px solid var(--accent-info);
+  border-left: 3px solid var(--callout-info-border);
   border-radius: 0;
   background: transparent;
 }
 
 .insight-card--amber,
 .teaching-aside--pitfall {
-  border-left-color: var(--accent-warning);
+  border-left-color: var(--callout-warning-border);
 }
 
 .insight-card__label,
@@ -670,7 +670,7 @@
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  color: var(--accent-info);
+  color: var(--info-text);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
@@ -678,7 +678,7 @@
 
 .insight-card--amber .insight-card__label,
 .teaching-aside--pitfall .teaching-aside__label {
-  color: var(--accent-warning);
+  color: var(--warning-text);
 }
 
 .insight-card__icon,
@@ -1102,9 +1102,9 @@
   gap: 13px;
   margin: 31px 0 38px;
   padding: 16px 18px;
-  border: 1px solid #c8e5e1;
+  border: 1px solid var(--takeaway-border);
   border-radius: var(--radius-section);
-  background: #f4fbfa;
+  background: var(--takeaway-bg);
 }
 
 .takeaway__mark {
@@ -1113,8 +1113,8 @@
   height: 27px;
   place-items: center;
   border-radius: 50%;
-  background: var(--accent-info);
-  color: #fff;
+  background: var(--takeaway-title);
+  color: var(--on-accent);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 14px;
   line-height: 1;
@@ -1122,7 +1122,7 @@
 
 .takeaway h2 {
   margin: 5px 0 4px;
-  color: var(--text-primary);
+  color: var(--takeaway-title);
   font-size: 17px;
   letter-spacing: -0.025em;
 }
@@ -1147,7 +1147,7 @@
 
 .takeaway__list li::before {
   margin-right: 7px;
-  color: var(--accent-info);
+  color: var(--takeaway-title);
   content: '✓';
   font-weight: 700;
 }

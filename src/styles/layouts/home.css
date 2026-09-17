@@ -2,19 +2,19 @@
 
 /* Homepage V2: engineer notebook / interactive data flow */
 .home-page {
-  --home-canvas: #f7f9f8;
-  --home-surface: #ffffff;
-  --home-ink: #162235;
-  --home-ink-soft: #43536a;
-  --home-ink-muted: #788699;
-  --home-line: #d8e0e7;
-  --home-line-strong: #b9c8d5;
-  --home-blue: #2d6cdf;
-  --home-blue-soft: #eef5ff;
-  --home-teal: #168f86;
-  --home-teal-soft: #e8f6f3;
-  --home-amber: #a66d16;
-  --home-amber-soft: #fff6e5;
+  --home-canvas: var(--bg);
+  --home-surface: var(--surface-1);
+  --home-ink: var(--text-primary);
+  --home-ink-soft: var(--text-secondary);
+  --home-ink-muted: var(--text-muted);
+  --home-line: var(--border);
+  --home-line-strong: var(--border-strong);
+  --home-blue: var(--interactive);
+  --home-blue-soft: var(--info-bg);
+  --home-teal: var(--accent);
+  --home-teal-soft: var(--success-bg);
+  --home-amber: var(--warning-text);
+  --home-amber-soft: var(--warning-bg);
   position: relative;
   isolation: isolate;
   background-color: var(--home-canvas);
@@ -109,11 +109,11 @@
 
 .home-page .button--primary {
   background: var(--home-ink);
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .home-page .button--primary:hover {
-  background: #234466;
+  background: var(--interactive);
 }
 
 .home-page .button--nav {
@@ -274,7 +274,7 @@
   overflow: hidden;
   border: 1px solid var(--home-line-strong);
   border-radius: 11px;
-  background: rgb(255 255 255 / 89%);
+  background: var(--home-surface);
 }
 
 .hero-demo__toolbar {
@@ -431,14 +431,14 @@
 }
 
 .hero-demo__stage--current {
-  border-color: #8eb4eb;
-  background: #f6f9ff;
+  border-color: var(--info-border);
+  background: var(--home-blue-soft);
   opacity: 1;
 }
 
 .hero-demo__stage--done {
-  border-color: #a5d6cf;
-  background: #f7fcfb;
+  border-color: var(--success-border);
+  background: var(--home-teal-soft);
   opacity: 1;
 }
 
@@ -580,7 +580,7 @@
 
 .hero-demo__order-table th,
 .hero-demo__mini-table th {
-  background: #f0f3f5;
+  background: var(--surface-2);
   color: var(--home-ink-soft);
   font-weight: 750;
 }
@@ -592,7 +592,7 @@
 
 .hero-demo__order-table tbody tr:nth-child(2) td,
 .hero-demo__mini-table tbody tr:nth-child(2) td {
-  background: #fbfcfd;
+  background: var(--surface-2);
 }
 
 .hero-demo__order-table tr.is-filtered td,
@@ -748,7 +748,7 @@
   gap: 4px;
   padding: 9px 8px;
   border: 1px solid var(--home-line);
-  background: #f0f3f5;
+  background: var(--surface-2);
   color: var(--home-ink-soft);
   font-size: 8px;
   line-height: 1.35;
@@ -1173,7 +1173,7 @@
 
 .home-course-row:hover {
   padding-inline: 9px;
-  background: rgb(255 255 255 / 75%);
+  background: var(--home-surface);
 }
 
 .home-course-row.is-ready {

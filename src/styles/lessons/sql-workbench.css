@@ -17,7 +17,7 @@
 
 .sql-workbench__toolbar {
   padding: 15px 20px;
-  background: linear-gradient(110deg, #f7fbff, #fff);
+  background: var(--surface-2);
 }
 
 .sql-workbench__toolbar-label {
@@ -43,24 +43,21 @@
   padding: 22px;
 }
 
-.sql-workbench__focus--plan {
-  background: linear-gradient(135deg, #f5f9ff 0%, #fff 44%);
+.sql-workbench__focus--plan,
+.sql-workbench__focus--contract {
+  background: var(--info-bg);
 }
 
 .sql-workbench__focus--cleaning {
-  background: linear-gradient(135deg, #f4fbf9 0%, #fff 44%);
+  background: var(--success-bg);
 }
 
 .sql-workbench__focus--join {
-  background: linear-gradient(135deg, #fff8f3 0%, #fff 42%);
+  background: var(--warning-bg);
 }
 
 .sql-workbench__focus--layers {
-  background: linear-gradient(135deg, #f7f6ff 0%, #fff 42%);
-}
-
-.sql-workbench__focus--contract {
-  background: linear-gradient(135deg, #f7fbff 0%, #fff 42%);
+  background: var(--surface-2);
 }
 
 .sql-workbench__focus-intro,
@@ -113,7 +110,7 @@
   padding: 12px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 11px;
-  background: #fff;
+  background: var(--surface-1);
   text-align: left;
   cursor: pointer;
   transition:
@@ -159,9 +156,9 @@
   align-content: start;
   gap: 5px;
   padding: 14px;
-  border: 1px solid rgb(45 108 223 / 22%);
+  border: 1px solid var(--info-border);
   border-radius: 11px;
-  background: rgb(255 255 255 / 75%);
+  background: var(--info-bg);
 }
 
 .sql-workbench__plan-detail > strong {
@@ -212,11 +209,11 @@
   padding: 16px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 13px;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__code-panel {
-  background: #f9fbfe;
+  background: var(--surface-2);
 }
 
 .sql-workbench__code-panel .sql-workbench__section-heading > span {
@@ -266,7 +263,7 @@
 
 .sql-workbench__table-card {
   overflow: hidden;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .sql-workbench__table-card-heading {
@@ -311,7 +308,7 @@
   overflow-x: auto;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__table {
@@ -344,7 +341,7 @@
 
 .sql-workbench__table thead th {
   color: var(--ink-muted, #75839a);
-  background: #f4f7fb;
+  background: var(--surface-2);
   font-size: 9px;
   font-weight: 700;
 }
@@ -366,28 +363,28 @@
 
 .sql-workbench__table tbody tr.is-duplicated th,
 .sql-workbench__table tbody tr.is-duplicated td {
-  background: #fff1ec;
+  background: var(--danger-bg);
 }
 
 .sql-workbench__table tbody tr.is-merged th,
 .sql-workbench__table tbody tr.is-merged td {
-  background: #eefaf7;
+  background: var(--success-bg);
 }
 
 .sql-workbench__table tbody tr.is-added th,
 .sql-workbench__table tbody tr.is-added td {
-  background: #edf7ff;
+  background: var(--info-bg);
 }
 
 .sql-workbench__table tbody tr.is-removed th,
 .sql-workbench__table tbody tr.is-removed td {
-  color: var(--danger, #c55252);
-  background: #fff5f5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
 }
 
 .sql-workbench__table tbody tr.is-updated th,
 .sql-workbench__table tbody tr.is-updated td {
-  background: #fff9e9;
+  background: var(--warning-bg);
 }
 
 .sql-workbench__change-column {
@@ -434,7 +431,7 @@
   padding: 11px 12px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__metric > span,
@@ -484,9 +481,9 @@
 .sql-workbench__signal-panel {
   min-width: 0;
   padding: 14px;
-  border: 1px solid rgb(21 156 147 / 22%);
+  border: 1px solid var(--success-border);
   border-radius: 12px;
-  background: rgb(255 255 255 / 78%);
+  background: var(--success-bg);
 }
 
 .sql-workbench__signal-panel h4 {
@@ -506,7 +503,7 @@
   padding: 9px 10px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface-1);
   text-align: left;
   cursor: pointer;
 }
@@ -565,8 +562,8 @@
 }
 
 .sql-workbench__join-facts .is-danger {
-  border-color: rgb(197 82 82 / 32%);
-  background: #fff7f4;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .sql-workbench__join-facts .is-danger strong {
@@ -574,8 +571,8 @@
 }
 
 .sql-workbench__join-facts .is-safe {
-  border-color: rgb(21 156 147 / 32%);
-  background: #f1fbf9;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .sql-workbench__join-facts .is-safe strong {
@@ -589,7 +586,7 @@
   padding: 4px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 9px;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__join-mode button,
@@ -644,16 +641,16 @@
 
 .sql-workbench__match-table tr.is-danger th,
 .sql-workbench__match-table tr.is-danger td {
-  color: var(--danger, #c55252);
-  background: #fff5f2;
+  color: var(--danger-text);
+  background: var(--danger-bg);
 }
 
 .sql-workbench__join-reason {
   display: grid;
   align-content: start;
   gap: 6px;
-  border-color: rgb(184 121 24 / 28%);
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .sql-workbench__join-reason strong {
@@ -670,7 +667,7 @@
 }
 
 .sql-workbench__join-output {
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__layer-flow {
@@ -700,7 +697,7 @@
   padding: 10px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface-1);
   text-align: left;
   cursor: pointer;
 }
@@ -741,7 +738,7 @@
 .sql-workbench__layer-panel {
   display: grid;
   gap: 12px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .sql-workbench__layer-panel .sql-workbench__section-heading > p {
@@ -778,9 +775,9 @@
 .sql-workbench__layer-observation,
 .sql-workbench__handoff-note {
   padding: 12px 14px;
-  border-left: 3px solid var(--teal, #159c93);
+  border-left: 3px solid var(--success-border);
   color: var(--ink-soft, #40516b);
-  background: var(--teal-soft, #dff5f1);
+  background: var(--success-bg);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -801,7 +798,7 @@
 }
 
 .sql-workbench__contract-card {
-  background: rgb(255 255 255 / 80%);
+  background: var(--surface-1);
 }
 
 .sql-workbench__contract-card .sql-workbench__section-heading > code {
@@ -823,7 +820,7 @@
   padding: 11px 12px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 9px;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__contract-grid dt {
@@ -862,7 +859,7 @@
 }
 
 .sql-workbench__evidence {
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .sql-workbench__evidence-list {
@@ -873,9 +870,9 @@
 
 .sql-workbench__evidence-item {
   padding: 11px 12px;
-  border: 1px solid #dce7f1;
+  border: 1px solid var(--info-border);
   border-radius: 9px;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .sql-workbench__evidence-item > div:first-child {
