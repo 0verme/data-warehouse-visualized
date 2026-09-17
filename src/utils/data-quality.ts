@@ -1017,7 +1017,7 @@ export function evaluateDataQuality(
   visualization: DataQualityVisualization,
   options: QualityEvaluationOptions = {},
 ): QualityEvaluation {
-  const scenario = options.scenario ?? options.injection ?? visualization.defaultScenario
+  const scenario = options.scenario ?? visualization.defaultScenario
   const action: QualityAction =
     options.action ?? (scenario === 'telemetry-invalid-records' ? 'quarantine' : 'block')
   const schedulerRun = visualization.schedulerRun
@@ -1044,7 +1044,6 @@ export function evaluateDataQuality(
   return {
     schedulerRun,
     scenario,
-    injection: scenario,
     action,
     rows,
     checks,

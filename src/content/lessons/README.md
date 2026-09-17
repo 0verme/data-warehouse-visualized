@@ -38,7 +38,7 @@
 - `scheduling-failure.ts`：失败传播、Attempt 与 Retry
 - `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
 - `scheduling-sla.ts`：迟到数据传播与业务 SLA
-- `scheduling-system.ts`：复用存款余额任务契约的时间轴 DAG Run 模拟，并保留旧调度事实导出入口
+- `scheduling-system.ts`：复用存款余额任务契约的时间轴 DAG Run 模拟
 - `data-quality.ts`：6-1 运行状态、质量状态与发布状态
 - `data-quality-rules.ts`：6-2 从 Grain 推出记录级质量规则
 - `data-quality-dataset.ts`：6-3 应到集合、Freshness 与跨层对账

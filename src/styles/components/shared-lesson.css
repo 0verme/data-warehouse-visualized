@@ -11,6 +11,22 @@
   box-shadow: var(--shadow-sm);
 }
 
+.section-heading h2 {
+  margin: 10px 0 11px;
+  color: var(--ink);
+  font-size: clamp(24px, 3vw, 35px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.28;
+}
+
+.section-heading p {
+  max-width: 640px;
+  margin-bottom: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
 .section-heading--compact {
   margin-bottom: 20px;
 }
@@ -518,63 +534,6 @@
   line-height: 1.2;
 }
 
-.compare-card {
-  margin: 37px 0;
-  padding: 25px 0 0;
-  border-top: 1px solid var(--line);
-}
-
-.compare-card__grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.compare-card__column {
-  padding: 19px 21px;
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  background: var(--card-bg);
-}
-
-.compare-card__label {
-  display: inline-block;
-  margin-bottom: 11px;
-  color: var(--blue);
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 11px;
-  font-weight: 750;
-}
-
-.compare-card__column:nth-child(2) .compare-card__label {
-  color: var(--teal);
-}
-
-.compare-card__column h3 {
-  margin-bottom: 12px;
-  font-size: 15px;
-}
-
-.compare-card__column li {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  margin-top: 8px;
-  color: var(--ink-muted);
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-.compare-card__column li::before {
-  width: 5px;
-  height: 5px;
-  flex: 0 0 auto;
-  margin-top: 7px;
-  border-radius: 50%;
-  background: var(--line-strong);
-  content: '';
-}
-
 .code-block {
   margin: 37px 0;
   overflow: hidden;
@@ -644,8 +603,6 @@
   margin: 32px 0 42px;
 }
 
-/* InsightCard remains as a compatibility wrapper; new lessons use semantic asides. */
-.insight-card,
 .teaching-aside {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -659,12 +616,10 @@
   background: transparent;
 }
 
-.insight-card--amber,
 .teaching-aside--pitfall {
   border-left-color: var(--callout-warning-border);
 }
 
-.insight-card__label,
 .teaching-aside__label {
   grid-row: 1 / span 2;
   display: inline-flex;
@@ -676,12 +631,10 @@
   white-space: nowrap;
 }
 
-.insight-card--amber .insight-card__label,
 .teaching-aside--pitfall .teaching-aside__label {
   color: var(--warning-text);
 }
 
-.insight-card__icon,
 .teaching-aside__icon {
   display: inline-grid;
   width: 16px;
@@ -695,7 +648,6 @@
   font-weight: 700;
 }
 
-.insight-card h3,
 .teaching-aside__title {
   margin: 0;
   color: var(--text-primary);
@@ -704,7 +656,6 @@
   line-height: 1.45;
 }
 
-.insight-card p,
 .teaching-aside p {
   margin: 0;
   color: var(--text-secondary);
@@ -991,7 +942,6 @@
     flex-wrap: wrap;
   }
 
-  .compare-card__grid,
   .lesson-insights {
     grid-template-columns: 1fr;
   }
@@ -1191,19 +1141,16 @@
     font-size: 12px;
   }
 
-  .teaching-aside,
-  .insight-card {
+  .teaching-aside {
     display: block;
     padding: 9px 12px;
   }
 
-  .teaching-aside__title,
-  .insight-card h3 {
+  .teaching-aside__title {
     margin-top: 4px;
   }
 
-  .teaching-aside p,
-  .insight-card p {
+  .teaching-aside p {
     margin-top: 3px;
     font-size: 13px;
   }
