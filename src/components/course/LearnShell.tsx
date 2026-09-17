@@ -20,10 +20,10 @@ import {
   toggleExpandedChapter,
 } from '../../utils/lesson'
 import { getRoute } from '../../utils/routes'
-import { DEFAULT_LOCALE, getStoredLocale, saveLocale, type Locale } from '../../i18n/locale'
+import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
-import { LocaleSwitcher } from './LocaleSwitcher'
-import { ThemeToggle } from './ThemeToggle'
+import { getLocaleSnapshot, subscribeToLocaleChanges } from '../../utils/locale'
+import { GlobalHeaderActions } from '../GlobalHeaderActions'
 import { CourseSidebar, type SidebarRevealRequest } from './CourseSidebar'
 import { LessonViewport } from './LessonViewport'
 import {
@@ -228,19 +228,6 @@ export function LearnShell({
     }
   }
 
-  function handleLocaleChange(nextLocale: Locale) {
-    if (typeof window !== 'undefined') {
-      try {
-        saveLocale(window.localStorage, nextLocale)
-      } catch {
-        // localStorage 受限时仍然在当前页面切换语言。
-      }
-    }
-
-    document.documentElement.lang = nextLocale
-    document.dispatchEvent(new Event('dwv:locale-change'))
-  }
-
   return (
     <div
       className={`learn-app${isSidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}
@@ -326,9 +313,7 @@ export function LearnShell({
           />
         </div>
 
-        <div className="learn-topbar__actions">
-          <LocaleSwitcher locale={activeLocale} onLocaleChange={handleLocaleChange} />
-          <ThemeToggle locale={activeLocale} />
+        <GlobalHeaderActions locale={activeLocale}>
           <button
             className="sidebar-toggle"
             type="button"
@@ -354,7 +339,7 @@ export function LearnShell({
               {getMessage('courseDirectory', activeLocale)}
             </span>
           </button>
-        </div>
+        </GlobalHeaderActions>
       </header>
 
       <div className="learn-layout">
@@ -405,22 +390,4 @@ function subscribeToRouteChanges(onChange: () => void): () => void {
 
 function getCurrentPathname(): string {
   return window.location.pathname
-}
-
-function subscribeToLocaleChanges(onChange: () => void): () => void {
-  document.addEventListener('dwv:locale-change', onChange)
-
-  return () => document.removeEventListener('dwv:locale-change', onChange)
-}
-
-function getLocaleSnapshot(fallback: Locale): Locale {
-  if (typeof window === 'undefined') {
-    return fallback
-  }
-
-  try {
-    return getStoredLocale(window.localStorage, fallback)
-  } catch {
-    return fallback
-  }
 }
