@@ -15,6 +15,8 @@
   --home-teal-soft: var(--success-bg);
   --home-amber: var(--warning-text);
   --home-amber-soft: var(--warning-bg);
+  --home-primary-bg: var(--home-ink);
+  --home-primary-hover-bg: var(--interactive);
   position: relative;
   isolation: isolate;
   background-color: var(--home-canvas);
@@ -108,12 +110,12 @@
 }
 
 .home-page .button--primary {
-  background: var(--home-ink);
-  color: var(--on-primary);
+  background: var(--home-primary-bg);
+  color: var(--button-primary-text);
 }
 
 .home-page .button--primary:hover {
-  background: var(--interactive);
+  background: var(--home-primary-hover-bg);
 }
 
 .home-page .button--nav {
