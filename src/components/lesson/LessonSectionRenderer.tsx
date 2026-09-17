@@ -1,3 +1,4 @@
+import { Component, lazy, Suspense, type ReactNode } from 'react'
 import type {
   LessonCodeExample,
   LessonComparison,
@@ -8,40 +9,93 @@ import type { Lesson } from '../../data/course'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
+import { BankingCustomerHistoryLab } from '../visualizations/BankingCustomerHistoryLab'
+import { BankingFactTypesLab } from '../visualizations/BankingFactTypesLab'
 import {
-  BankingCustomerHistoryLab,
-  BankingFactTypesLab,
   BankingMetricDefinitionLab,
   BankingMetricDerivationLab,
   BankingMetricScopeLab,
   BankingMetricTimeLab,
-  BankingStarSchemaLab,
-  BusinessSystemFlow,
-  CapstoneWorkbench,
-  DataQualityWorkbench,
-  DataServiceWorkbench,
-  GovernanceWorkbench,
-  LakehouseArchitectureLab,
-  LayerEvolutionLab,
-  LineageGraph,
-  LoanBusinessProcessLab,
-  LoanGrainLab,
-  MetricDefinitionLab,
-  ModelingIntro,
-  PerformanceLab,
-  PipelineFlow,
-  ReportMetricJourney,
-  SchedulerRunSimulator,
-  SlowlyChangingDimension,
-  SqlTransformationWorkbench,
-  StarSchemaFlow,
-  WarehouseTermsLab,
-} from '../visualizations'
+} from '../visualizations/BankingMetricLabs'
+import { BankingStarSchemaLab } from '../visualizations/BankingStarSchemaLab'
+import { BusinessSystemFlow } from '../visualizations/BusinessSystemFlow'
+import { DataQualityWorkbench } from '../visualizations/DataQualityWorkbench'
+import { DataServiceWorkbench } from '../visualizations/DataServiceWorkbench'
+import { GovernanceWorkbench } from '../visualizations/GovernanceWorkbench'
+import { LakehouseArchitectureLab } from '../visualizations/LakehouseArchitectureLab'
+import { LayerEvolutionLab } from '../visualizations/LayerEvolutionLab'
+import { LineageGraph } from '../visualizations/LineageGraph'
+import { LoanBusinessProcessLab } from '../visualizations/LoanBusinessProcessLab'
+import { LoanGrainLab } from '../visualizations/LoanGrainLab'
+import { MetricDefinitionLab } from '../visualizations/MetricDefinitionLab'
+import { ModelingIntro } from '../visualizations/ModelingIntro'
+import { PerformanceLab } from '../visualizations/PerformanceLab'
+import { PipelineFlow } from '../visualizations/PipelineFlow'
+import { ReportMetricJourney } from '../visualizations/ReportMetricJourney'
+import { SlowlyChangingDimension } from '../visualizations/SlowlyChangingDimension'
+import { SqlTransformationWorkbench } from '../visualizations/SqlTransformationWorkbench'
+import { StarSchemaFlow } from '../visualizations/StarSchemaFlow'
+import { WarehouseTermsLab } from '../visualizations/WarehouseTermsLab'
 import { CodeBlock } from './CodeBlock'
 import { CompareSplit } from './CompareSplit'
 import { EngineeringNote } from './EngineeringNote'
 import { Pitfall } from './Pitfall'
 import { Takeaway } from './Takeaway'
+
+const LazySchedulerRunSimulator = lazy(() =>
+  import('../visualizations/SchedulerRunSimulator').then(({ SchedulerRunSimulator }) => ({
+    default: SchedulerRunSimulator,
+  })),
+)
+
+const LazyCapstoneWorkbench = lazy(() =>
+  import('../visualizations/CapstoneWorkbench').then(({ CapstoneWorkbench }) => ({
+    default: CapstoneWorkbench,
+  })),
+)
+
+type LazyVisualizationKind = 'scheduler' | 'capstone'
+
+function VisualizationLoading() {
+  return (
+    <div
+      className="visualization-loading"
+      role="status"
+      aria-live="polite"
+      style={{ minHeight: '12rem', display: 'grid', placeItems: 'center' }}
+    >
+      正在加载交互实验…
+    </div>
+  )
+}
+
+class VisualizationLoadBoundary extends Component<
+  { kind: LazyVisualizationKind; children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="visualization-load-error"
+          data-visualization-kind={this.props.kind}
+          role="alert"
+          style={{ minHeight: '12rem', display: 'grid', placeItems: 'center' }}
+        >
+          交互实验暂时无法加载，课程正文仍可继续阅读。请刷新页面后重试。
+        </div>
+      )
+    }
+
+    return <Suspense fallback={<VisualizationLoading />}>{this.props.children}</Suspense>
+  }
+}
 
 interface LessonSectionRendererProps {
   lesson: Lesson
@@ -92,9 +146,11 @@ function NarrativeSection({
 }
 
 function VisualizationBody({
+  lessonId,
   visualization,
   codeHighlights,
 }: {
+  lessonId: string
   visualization: LessonVisualization
   codeHighlights?: CodeHighlightMap
 }) {
@@ -166,9 +222,17 @@ function VisualizationBody({
     case 'performance-lab':
       return <PerformanceLab visualization={visualization} />
     case 'scheduler':
-      return <SchedulerRunSimulator visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="scheduler">
+          <LazySchedulerRunSimulator visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'capstone':
-      return <CapstoneWorkbench visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="capstone">
+          <LazyCapstoneWorkbench visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
   }
 }
 
@@ -190,7 +254,11 @@ function VisualizationBlock({
         <h2 id={headingId}>{title}</h2>
         <p>{description}</p>
       </div>
-      <VisualizationBody visualization={visualization} codeHighlights={codeHighlights} />
+      <VisualizationBody
+        lessonId={lessonId}
+        visualization={visualization}
+        codeHighlights={codeHighlights}
+      />
     </section>
   )
 }
