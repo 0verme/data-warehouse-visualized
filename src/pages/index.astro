@@ -1,4 +1,5 @@
 ---
+import { GlobalHeaderActions } from '../components/GlobalHeaderActions'
 import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
 import { SiteFooter } from '../components/SiteFooter'
 import BaseLayout from '../layouts/BaseLayout.astro'
@@ -33,13 +34,7 @@ const baseUrl = import.meta.env.BASE_URL
           <code>sql.sb</code>
         </span>
       </a>
-      <nav class="site-header__nav" aria-label="主导航">
-        <a href="#data-lesson">一行数据</a>
-        <a href="#principles">学习方式</a>
-        <a class="button button--nav" href={`${baseUrl}learn/`}>
-          开始学习 <span aria-hidden="true">→</span>
-        </a>
-      </nav>
+      <GlobalHeaderActions client:load />
     </header>
 
     <main class="home-main">
