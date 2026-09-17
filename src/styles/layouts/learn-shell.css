@@ -12,6 +12,9 @@
 .learn-app {
   --learn-sidebar-width: 308px;
   --learn-topbar-height: 64px;
+  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
+  --scrollbar-thumb-active: rgba(15, 23, 42, 0.46);
   display: flex;
   min-height: 0;
   height: 100vh;
@@ -19,6 +22,21 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--canvas);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .learn-app {
+    --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+    --scrollbar-thumb-active: rgba(255, 255, 255, 0.5);
+  }
+}
+
+[data-theme='dark'] .learn-app,
+.dark .learn-app {
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+  --scrollbar-thumb-active: rgba(255, 255, 255, 0.5);
 }
 
 .learn-topbar {
@@ -631,6 +649,61 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   overscroll-behavior: contain;
   padding: 30px clamp(24px, 3.5vw, 44px) 32px;
   scrollbar-gutter: stable;
+}
+
+/* Subtle, slim scrollbar for course sidebar and main scroll area */
+.course-sidebar::-webkit-scrollbar,
+.learn-main__scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.course-sidebar::-webkit-scrollbar-track,
+.learn-main__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.course-sidebar::-webkit-scrollbar-thumb,
+.learn-main__scroll::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  transition: background-color 150ms ease;
+}
+
+.course-sidebar::-webkit-scrollbar-thumb:hover,
+.learn-main__scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+.course-sidebar::-webkit-scrollbar-thumb:active,
+.learn-main__scroll::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+.course-sidebar::-webkit-scrollbar-button,
+.learn-main__scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.course-sidebar::-webkit-scrollbar-corner,
+.learn-main__scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox standard scrollbar fallback */
+@supports not selector(::-webkit-scrollbar) {
+  .course-sidebar,
+  .learn-main__scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  .course-sidebar:hover,
+  .learn-main__scroll:hover {
+    scrollbar-color: var(--scrollbar-thumb-hover) transparent;
+  }
 }
 
 .learn-main > .lesson-nav {
