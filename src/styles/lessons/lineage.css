@@ -5,9 +5,9 @@
   width: 100%;
   aspect-ratio: 760 / 450;
   min-height: 360px;
-  border: 1px solid #e2e9f1;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #fbfcfe;
+  background: var(--panel-bg);
 }
 
 .lineage-canvas__svg,
@@ -70,7 +70,7 @@
 }
 
 .lineage-node.is-related {
-  border-color: #8dcfc6;
+  border-color: var(--success-border);
 }
 
 .lineage-node.is-selected {
@@ -81,13 +81,13 @@
 }
 
 .lineage-node.is-deleted {
-  border-color: var(--danger);
-  background: #fff3f3;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .lineage-node.is-affected {
-  border-color: var(--amber);
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .lineage-node__layer {
@@ -209,8 +209,8 @@
 }
 
 .impact-timeline li.is-visible {
-  border-color: #c8e2dd;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
   opacity: 1;
 }
 
@@ -274,7 +274,7 @@
     min-width: 0;
     padding-top: 10px;
     padding-left: 0;
-    border-top: 1px solid #c8e2dd;
+    border-top: 1px solid var(--success-border);
     border-left: 0;
   }
 
@@ -443,9 +443,9 @@
 
 .lineage-search-result {
   padding: 4px 7px;
-  border: 1px solid #c8e2dd;
+  border: 1px solid var(--success-border);
   border-radius: 5px;
-  background: #f4fbfa;
+  background: var(--success-bg);
   color: var(--teal);
   cursor: pointer;
   font: inherit;
@@ -467,9 +467,9 @@
   align-items: center;
   margin: 15px 0 17px;
   padding: 16px;
-  border: 1px solid #c8e2dd;
+  border: 1px solid var(--success-border);
   border-radius: 10px;
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .lineage-investigation__copy h3 {
@@ -495,7 +495,7 @@
 .lineage-investigation__summary {
   min-width: 215px;
   padding-left: 15px;
-  border-left: 1px solid #c8e2dd;
+  border-left: 1px solid var(--success-border);
 }
 
 .lineage-investigation__summary-grid {
@@ -672,9 +672,9 @@
   flex-direction: column;
   gap: 3px;
   padding: 7px 8px;
-  border: 1px solid #c8e2dd;
+  border: 1px solid var(--success-border);
   border-radius: 6px;
-  background: rgb(255 255 255 / 55%);
+  background: var(--surface-1);
   cursor: pointer;
   text-align: left;
 }
@@ -796,8 +796,8 @@
 
 .lineage-evidence__edge:hover,
 .lineage-evidence__edge.is-selected {
-  border-color: var(--teal);
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lineage-evidence__edge strong,
@@ -831,9 +831,9 @@
   align-items: center;
   margin-top: 10px;
   padding: 12px;
-  border: 1px solid #c8e2dd;
+  border: 1px solid var(--success-border);
   border-radius: 8px;
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .lineage-evidence__detail strong,
@@ -922,7 +922,7 @@
     min-width: 0;
     padding-top: 10px;
     padding-left: 0;
-    border-top: 1px solid #c8e2dd;
+    border-top: 1px solid var(--success-border);
     border-left: 0;
   }
 

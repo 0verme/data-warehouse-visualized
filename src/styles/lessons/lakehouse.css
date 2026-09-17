@@ -89,16 +89,16 @@
 
 .lakehouse-flow-node.is-emphasis,
 .lakehouse-replication-node.is-lake {
-  border-color: #b8dfd8;
+  border-color: var(--success-border);
   border-top-color: var(--teal);
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .lakehouse-flow-node.is-sync,
 .lakehouse-replication-node.is-sync {
-  border-color: #ead7b1;
+  border-color: var(--warning-border);
   border-top-color: var(--amber);
-  background: #fffaf0;
+  background: var(--warning-bg);
 }
 
 .lakehouse-flow-node > span,
@@ -157,18 +157,18 @@
 }
 
 .lakehouse-source-card.is-table {
-  border-color: #cbdaf0;
-  background: #f8fbff;
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .lakehouse-source-card.is-event-log {
-  border-color: #b8dfd8;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lakehouse-source-card.is-json-file {
-  border-color: #ead7b1;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .lakehouse-source-card__type,
@@ -236,8 +236,8 @@
 .lakehouse-demand-option.is-selected,
 .lakehouse-unity-options button:hover,
 .lakehouse-unity-options button.is-selected {
-  border-color: #9ebfea;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
   transform: translateY(-1px);
 }
 
@@ -268,9 +268,9 @@
   gap: 8px;
   margin-top: 12px;
   padding: 12px 13px;
-  border: 1px solid #cbdaf0;
+  border: 1px solid var(--info-border);
   border-radius: 9px;
-  background: #f8fbff;
+  background: var(--info-bg);
 }
 
 .lakehouse-demand-facts div {
@@ -313,9 +313,9 @@
 }
 
 .lakehouse-placement-card.is-warehouse {
-  border-color: #b8dfd8;
+  border-color: var(--success-border);
   border-left-color: var(--teal);
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .lakehouse-placement-card__heading,
@@ -390,15 +390,15 @@
 }
 
 .lakehouse-replication-node.is-warehouse {
-  border-color: #cbdaf0;
+  border-color: var(--info-border);
   border-top-color: var(--blue);
-  background: #f8fbff;
+  background: var(--info-bg);
 }
 
 .lakehouse-replication-node.is-warehouse.is-ready {
-  border-color: #b8dfd8;
+  border-color: var(--success-border);
   border-top-color: var(--teal);
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .lakehouse-replication-panel {
@@ -435,18 +435,18 @@
 }
 
 .lakehouse-replica-card.is-lake {
-  border-color: #b8dfd8;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lakehouse-replica-card.is-warehouse {
-  border-color: #cbdaf0;
-  background: #f8fbff;
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .lakehouse-replica-card.is-warehouse.is-ready {
-  border-color: #b8dfd8;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lakehouse-replica-card > div {
@@ -573,8 +573,8 @@
 }
 
 .lakehouse-schema-versions .lakehouse-schema-list:last-child {
-  border-color: #b8dfd8;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lakehouse-schema-arrow {
@@ -664,13 +664,13 @@
 }
 
 .lakehouse-file-item.is-held {
-  border-color: #ead7b1;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .lakehouse-file-item.is-failed {
-  border-color: #e2a4a4;
-  background: #fff0f0;
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .lakehouse-file-item.is-failed span,
@@ -679,8 +679,8 @@
 }
 
 .lakehouse-file-item.is-committed {
-  border-color: #b8dfd8;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lakehouse-file-item.is-committed span,
@@ -699,13 +699,13 @@
 }
 
 .lakehouse-commit-message.is-failed {
-  border-left-color: var(--danger);
-  background: #fff8f8;
+  border-left-color: var(--danger-border);
+  background: var(--danger-bg);
 }
 
 .lakehouse-commit-message.is-committed {
-  border-left-color: var(--teal);
-  background: var(--teal-soft);
+  border-left-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .lakehouse-version-panel {
@@ -825,9 +825,9 @@
   gap: 14px;
   margin-top: 22px;
   padding: 13px;
-  border: 1px dashed #b9cee5;
+  border: 1px dashed var(--info-border);
   border-radius: 8px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .lakehouse-open-format-note strong {
@@ -863,18 +863,18 @@
 }
 
 .lakehouse-unity-flow.is-shared .lakehouse-flow-node.is-shared-table {
-  border-color: #b8dfd8;
+  border-color: var(--success-border);
   border-top-color: var(--teal);
-  background: #f4fbfa;
+  background: var(--success-bg);
 }
 
 .lakehouse-compute-branch {
   min-width: 220px;
   flex: 1.5 1 0;
   padding: 12px;
-  border: 1px solid #cbdaf0;
+  border: 1px solid var(--info-border);
   border-radius: 9px;
-  background: #f8fbff;
+  background: var(--info-bg);
 }
 
 .lakehouse-compute-branch > span {

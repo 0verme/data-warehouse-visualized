@@ -74,7 +74,7 @@
 }
 
 .data-service__asset-facts dd.is-published {
-  color: #087d75;
+  color: var(--success-text);
   font-weight: 700;
 }
 
@@ -86,7 +86,7 @@
   padding: 17px;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: #fbfcfe;
+  background: var(--panel-bg);
 }
 
 .data-service__flow-stage,
@@ -106,8 +106,8 @@
 }
 
 .data-service__flow-stage--published {
-  border-color: #a8d9d2;
-  background: #f3fbf9;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .data-service__flow-label {
@@ -169,8 +169,8 @@
 
 .data-service__consumer:hover,
 .data-service__consumer.is-selected {
-  border-color: #9ebfea;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
   transform: translateY(-1px);
 }
 
@@ -205,8 +205,8 @@
 
 .data-service__consumer-detail {
   margin-top: 13px;
-  border-left: 3px solid var(--teal);
-  background: #f4fbfa;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
 }
 
 .data-service__consumer-detail h4 {
@@ -374,7 +374,7 @@
   cursor: pointer;
   text-align: left;
   text-decoration: underline;
-  text-decoration-color: #a8c3e5;
+  text-decoration-color: var(--info-border);
   text-underline-offset: 3px;
 }
 
@@ -387,7 +387,7 @@
 
 .data-service__table .is-positive,
 .data-service__trend-heading .is-positive {
-  color: #087d75;
+  color: var(--success-text);
   font-weight: 700;
 }
 
@@ -518,8 +518,8 @@
 
 .data-service__file-timeline li.is-current button,
 .data-service__file-timeline li.is-complete button {
-  border-color: #9ecfc7;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .data-service__file-timeline button > span {
@@ -572,8 +572,8 @@
 }
 
 .data-service__file-status.is-ready {
-  background: var(--teal-soft);
-  color: #087d75;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .data-service__file-list {
@@ -595,8 +595,8 @@
 
 .data-service__file-row.is-visible {
   border-style: solid;
-  border-color: #a8d9d2;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .data-service__file-row code {
@@ -614,7 +614,7 @@
 }
 
 .data-service__file-row.is-visible span {
-  color: #087d75;
+  color: var(--success-text);
 }
 
 .data-service__file-status-text {
@@ -629,7 +629,7 @@
   gap: 10px;
   align-items: center;
   margin-top: 13px;
-  color: #087d75;
+  color: var(--success-text);
   font-size: 10px;
 }
 
@@ -708,8 +708,8 @@
 }
 
 .data-service__api-step--response {
-  border-color: #a8d9d2;
-  background: #f4fbfa;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .data-service__api-step pre {

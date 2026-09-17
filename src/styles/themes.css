@@ -82,16 +82,26 @@ html[data-theme='dark'] .learn-app .data-quality-release-decision {
 }
 
 html[data-theme='dark'] .learn-app .data-quality-status-flow li.is-warn,
+html[data-theme='dark'] .learn-app .data-quality-release-rule--quarantine {
+  background: var(--warning-bg);
+}
+
 html[data-theme='dark'] .learn-app .data-quality-grain-callout,
-html[data-theme='dark'] .learn-app .data-quality-scope-line,
-html[data-theme='dark'] .learn-app .data-quality-release-rule {
-  background: var(--surface-warning);
+html[data-theme='dark'] .learn-app .data-quality-release-rule--released {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+html[data-theme='dark'] .learn-app .data-quality-scope-line {
+  border-color: var(--info-border);
+  background: var(--surface-1);
 }
 
 html[data-theme='dark'] .learn-app .data-quality-status-flow li.is-fail,
 html[data-theme='dark'] .learn-app .data-quality-decision--block,
-html[data-theme='dark'] .learn-app .data-quality-decision--fail {
-  background: var(--surface-danger);
+html[data-theme='dark'] .learn-app .data-quality-decision--fail,
+html[data-theme='dark'] .learn-app .data-quality-release-rule {
+  background: var(--danger-bg);
 }
 
 html[data-theme='dark'] .learn-app .data-quality-scenario:hover,

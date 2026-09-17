@@ -20,9 +20,9 @@
 .performance-lab__note {
   margin: 0 0 21px;
   padding: 11px 13px;
-  border: 1px solid #ead7b1;
+  border: 1px solid var(--warning-border);
   border-radius: 8px;
-  background: #fffaf0;
+  background: var(--warning-bg);
   color: var(--ink-soft);
   font-size: 11px;
   line-height: 1.6;
@@ -168,8 +168,8 @@
 
 .performance-choice:hover,
 .performance-choice.is-selected {
-  border-color: #9ebfea;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .performance-choice strong {
@@ -237,7 +237,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-diagnosis__case span,
@@ -314,8 +314,8 @@
 
 .performance-stage:hover,
 .performance-stage.is-selected {
-  border-color: #9ebfea;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .performance-stage__number {
@@ -376,7 +376,7 @@
   padding: 19px;
   border: 1px dashed var(--line-strong);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-empty-state span,
@@ -415,8 +415,8 @@
 }
 
 .performance-verdict.is-positive {
-  background: var(--teal-soft);
-  color: #087d75;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .performance-evidence-grid {
@@ -459,8 +459,8 @@
 .performance-skew__conclusion {
   margin: 13px 0 0;
   padding: 11px 13px;
-  border-left: 3px solid var(--teal);
-  background: #f1fbf9;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
   color: var(--ink-soft);
   font-size: 11px;
   line-height: 1.6;
@@ -482,7 +482,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-scan__range > div {
@@ -529,7 +529,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-file-stack {
@@ -613,7 +613,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-partition-detail__bar {
@@ -675,7 +675,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-skew__description > div {
@@ -740,7 +740,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-worker-row {
@@ -807,7 +807,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-partition-contrast span,
@@ -889,7 +889,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-state__old-flow > div {
@@ -964,9 +964,9 @@
   display: grid;
   gap: 7px;
   padding: 14px;
-  border: 1px solid #9ed5cd;
+  border: 1px solid var(--success-border);
   border-radius: 9px;
-  background: #f1fbf9;
+  background: var(--success-bg);
 }
 
 .performance-state__selected-relation strong {
@@ -985,7 +985,7 @@
 }
 
 .performance-state__selected-relation b.is-new {
-  color: #087d75;
+  color: var(--success-text);
 }
 
 .performance-state__selected-relation b.is-known {
@@ -1070,16 +1070,16 @@
 }
 
 .performance-state__row-button:hover {
-  border-color: #9ebfea;
-  background: var(--surface-blue);
+  border-color: var(--info-border);
+  background: var(--info-bg);
 }
 
 .performance-state__commit-result {
   margin: 12px 0 0;
   padding: 10px 12px;
-  border-left: 3px solid var(--teal);
-  background: #f1fbf9;
-  color: #087d75;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -1099,7 +1099,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-state__grain-grid span,
@@ -1147,7 +1147,7 @@
 }
 
 .performance-tradeoff__table td.is-after {
-  color: #087d75;
+  color: var(--success-text);
   font-weight: 700;
 }
 
@@ -1172,8 +1172,8 @@
 }
 
 .performance-check-list li.is-checked {
-  border-color: #9ed5cd;
-  background: #f1fbf9;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .performance-check-list label {
@@ -1217,17 +1217,17 @@
 .performance-tradeoff__decision {
   margin: 12px 0 0;
   padding: 11px 13px;
-  border-left: 3px solid var(--amber);
-  background: #fffaf0;
+  border-left: 3px solid var(--warning-border);
+  background: var(--warning-bg);
   color: var(--ink-soft);
   font-size: 11px;
   line-height: 1.55;
 }
 
 .performance-tradeoff__decision.is-ready {
-  border-left-color: var(--teal);
-  background: #f1fbf9;
-  color: #087d75;
+  border-left-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .performance-late-data__event {
@@ -1242,7 +1242,7 @@
   padding: 11px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .performance-late-data__event span,
@@ -1268,8 +1268,8 @@
 .performance-late-data__result {
   margin-top: 13px;
   padding: 12px 14px;
-  border-left: 3px solid var(--amber);
-  background: #fffaf0;
+  border-left: 3px solid var(--warning-border);
+  background: var(--warning-bg);
   color: var(--ink-soft);
   font-size: 11px;
   line-height: 1.6;
@@ -1303,13 +1303,13 @@
 }
 
 .performance-choice-card.is-worth-it {
-  border-color: #9ed5cd;
-  background: #f1fbf9;
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .performance-choice-card.is-not-worth-it {
-  border-color: #ead7b1;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .performance-choice-card > span,

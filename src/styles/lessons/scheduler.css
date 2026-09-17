@@ -23,7 +23,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(390px, 1.15fr);
   gap: 22px;
   padding: 18px 20px;
-  background: linear-gradient(115deg, #f4f9ff, #fff 72%);
+  background: var(--info-bg);
 }
 
 .scheduler-toolbar__label,
@@ -172,7 +172,7 @@
 }
 
 .scheduler-status-summary__item.is-queued {
-  --status-color: #8a6a14;
+  --status-color: var(--warning-text);
 }
 
 .scheduler-status-summary__item.is-running {
@@ -180,16 +180,16 @@
 }
 
 .scheduler-status-summary__item.is-success {
-  --status-color: #16806d;
+  --status-color: var(--success-text);
 }
 
 .scheduler-status-summary__item.is-retry {
-  --status-color: #a45c16;
+  --status-color: var(--warning-text);
 }
 
 .scheduler-status-summary__item.is-failed,
 .scheduler-status-summary__item.is-skipped {
-  --status-color: #bd4a55;
+  --status-color: var(--danger-text);
 }
 
 .scheduler-dag,
@@ -249,26 +249,26 @@
   padding: 11px;
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 12px;
-  background: #fbfcfe;
+  background: var(--surface-2);
 }
 
 .scheduler-dag__layer--ods {
-  background: linear-gradient(160deg, #f5f9ff, #fff);
+  background: var(--info-bg);
 }
 
 .scheduler-dag__layer--dwd {
-  border-color: rgb(35 145 133 / 27%);
-  background: linear-gradient(160deg, #f2fbf8, #fff);
+  border-color: var(--success-border);
+  background: var(--success-bg);
 }
 
 .scheduler-dag__layer--dws {
-  border-color: rgb(209 146 42 / 30%);
-  background: linear-gradient(160deg, #fffbf1, #fff);
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
 }
 
 .scheduler-dag__layer--ads {
-  border-color: rgb(112 79 180 / 26%);
-  background: linear-gradient(160deg, #f8f5ff, #fff);
+  border-color: var(--border-strong);
+  background: var(--surface-3);
 }
 
 .scheduler-dag__layer-heading {
@@ -340,7 +340,7 @@
 .scheduler-task-node:hover,
 .scheduler-task-node.is-selected {
   border-color: var(--node-color, var(--blue));
-  background: #fff;
+  background: var(--surface-1);
   box-shadow: 0 5px 14px rgb(28 51 84 / 9%);
   transform: translateY(-1px);
 }
@@ -402,7 +402,7 @@
 }
 
 .scheduler-task-node.is-queued {
-  --node-color: #9b7a1b;
+  --node-color: var(--warning-text);
 }
 
 .scheduler-task-node.is-running {
@@ -411,17 +411,17 @@
 }
 
 .scheduler-task-node.is-success {
-  --node-color: #16806d;
+  --node-color: var(--success-text);
 }
 
 .scheduler-task-node.is-retry {
-  --node-color: #b5681b;
-  background: #fff8ed;
+  --node-color: var(--warning-text);
+  background: var(--warning-bg);
 }
 
 .scheduler-task-node.is-failed,
 .scheduler-task-node.is-skipped {
-  --node-color: #bd4a55;
+  --node-color: var(--danger-text);
 }
 
 .scheduler-task-node.is-skipped {
@@ -484,29 +484,29 @@
 }
 
 .scheduler-state-badge.is-queued {
-  --state-color: #977516;
-  --state-bg: #fffaf0;
+  --state-color: var(--warning-text);
+  --state-bg: var(--warning-bg);
 }
 
 .scheduler-state-badge.is-running {
-  --state-color: var(--blue, #2d6cdf);
-  --state-bg: #f0f6ff;
+  --state-color: var(--interactive);
+  --state-bg: var(--info-bg);
 }
 
 .scheduler-state-badge.is-success {
-  --state-color: #16806d;
-  --state-bg: #effaf7;
+  --state-color: var(--success-text);
+  --state-bg: var(--success-bg);
 }
 
 .scheduler-state-badge.is-retry {
-  --state-color: #a45c16;
-  --state-bg: #fff6e8;
+  --state-color: var(--warning-text);
+  --state-bg: var(--warning-bg);
 }
 
 .scheduler-state-badge.is-failed,
 .scheduler-state-badge.is-skipped {
-  --state-color: #bd4a55;
-  --state-bg: #fff1f2;
+  --state-color: var(--danger-text);
+  --state-bg: var(--danger-bg);
 }
 
 .scheduler-run-facts {
@@ -556,26 +556,26 @@
 
 .scheduler-run-facts dd.is-at-risk,
 .scheduler-run-facts dd.is-breached {
-  color: #b34f32;
+  color: var(--danger-text);
   font-weight: 750;
 }
 
 .scheduler-run-facts dd.is-on-time {
-  color: #16806d;
+  color: var(--success-text);
   font-weight: 750;
 }
 
 .scheduler-run-facts dd.is-available {
-  color: #16806d;
+  color: var(--success-text);
   font-weight: 750;
 }
 
 .scheduler-task-detail__failure {
   margin: 12px 0 0;
   padding: 9px 11px;
-  border-left: 3px solid #bd4a55;
-  background: #fff3f3;
-  color: #873740;
+  border-left: 3px solid var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
   font-size: 11px;
   line-height: 1.55;
 }
@@ -933,8 +933,8 @@
 
 .scheduler-rerun__reason {
   padding: 9px 11px;
-  border-left: 3px solid var(--teal, #239181);
-  background: #f1faf8;
+  border-left: 3px solid var(--success-border);
+  background: var(--success-bg);
 }
 
 .scheduler-rerun > .button {
@@ -958,19 +958,19 @@
   display: grid;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--output-color, #aebdce);
+  border: 1px solid var(--output-color, var(--border-strong));
   border-radius: 10px;
-  background: var(--output-bg, #fbfcfe);
+  background: var(--output-bg, var(--surface-2));
 }
 
 .scheduler-output-card.is-available {
-  --output-color: #6ab8a7;
-  --output-bg: #f3fbf8;
+  --output-color: var(--success-border);
+  --output-bg: var(--success-bg);
 }
 
 .scheduler-output-card.is-duplicate {
-  --output-color: #d28b77;
-  --output-bg: #fff7f4;
+  --output-color: var(--danger-border);
+  --output-bg: var(--danger-bg);
 }
 
 .scheduler-output-card > div {
@@ -984,11 +984,11 @@
 }
 
 .scheduler-output-card.is-available > div strong {
-  --output-heading: #16806d;
+  --output-heading: var(--success-text);
 }
 
 .scheduler-output-card.is-duplicate > div strong {
-  --output-heading: #b34f32;
+  --output-heading: var(--danger-text);
 }
 
 .scheduler-output-card dl {
@@ -1101,7 +1101,7 @@
   gap: 18px;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(115deg, #f4f9ff, #fff 72%);
+  background: var(--info-bg);
 }
 
 .scheduler-focused-controls > div:first-child {
@@ -1188,11 +1188,11 @@
 }
 
 .scheduler-time-semantics__timeline li.is-business {
-  background: #eef8f6;
+  background: var(--success-bg);
 }
 
 .scheduler-time-semantics__timeline li.is-arrival {
-  background: #fff8ed;
+  background: var(--warning-bg);
 }
 
 .scheduler-time-semantics__index {
@@ -1229,9 +1229,9 @@
   align-items: baseline;
   margin-top: 13px;
   padding: 12px 13px;
-  border-left: 3px solid var(--teal, #239181);
+  border-left: 3px solid var(--success-border);
   border-radius: 7px;
-  background: #f1faf8;
+  background: var(--success-bg);
 }
 
 .scheduler-answer-card > span {
@@ -1258,9 +1258,9 @@
   gap: 14px;
   margin-top: 13px;
   padding: 12px 13px;
-  border: 1px solid #d8e9e5;
+  border: 1px solid var(--success-border);
   border-radius: 9px;
-  background: #f7fcfb;
+  background: var(--success-bg);
 }
 
 .scheduler-result-summary > div {
@@ -1425,9 +1425,9 @@
   justify-content: space-between;
   margin-top: 15px;
   padding: 13px;
-  border-left: 3px solid #b5681b;
+  border-left: 3px solid var(--warning-border);
   border-radius: 8px;
-  background: #fff8ed;
+  background: var(--warning-bg);
 }
 
 .scheduler-retry-action > div {
@@ -1448,7 +1448,7 @@
 }
 
 .scheduler-sla-timeline {
-  background: linear-gradient(115deg, #f4f9ff, #fff 72%);
+  background: var(--info-bg);
 }
 
 .scheduler-arrival-slider {
@@ -1493,11 +1493,11 @@
 }
 
 .scheduler-sla-timeline__events li.is-on-time {
-  background: #effaf7;
+  background: var(--success-bg);
 }
 
 .scheduler-sla-timeline__events li.is-breached {
-  background: #fff1f2;
+  background: var(--danger-bg);
 }
 
 .scheduler-sla-timeline__events strong {
@@ -1514,12 +1514,12 @@
 }
 
 .scheduler-sla-timeline__events li.is-on-time small {
-  color: #16806d;
+  color: var(--success-text);
   font-weight: 750;
 }
 
 .scheduler-sla-timeline__events li.is-breached small {
-  color: #bd4a55;
+  color: var(--danger-text);
   font-weight: 750;
 }
 
