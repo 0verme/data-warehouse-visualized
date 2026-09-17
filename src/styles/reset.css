@@ -54,6 +54,12 @@ p {
   color: var(--ink-soft);
 }
 
+@media (max-width: 680px) {
+  body {
+    font-size: 14px;
+  }
+}
+
 ul,
 ol {
   padding: 0;

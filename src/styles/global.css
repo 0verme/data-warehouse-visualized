@@ -3,7 +3,6 @@
 @import './reset.css';
 @import './base.css';
 @import './utilities.css';
-@import './layouts/home-legacy.css';
 @import './layouts/learn-shell.css';
 @import './components/shared-lesson.css';
 @import './lessons/warehouse-intro.css';

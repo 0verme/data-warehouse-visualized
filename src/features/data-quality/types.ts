@@ -236,8 +236,6 @@ export interface DataQualityVisualization {
 }
 
 export interface QualityEvaluationOptions {
-  /** `injection` remains as a small compatibility name for existing lesson consumers. */
-  injection?: QualityScenario
   scenario?: QualityScenario
   action?: QualityAction
   thresholdOverrides?: Readonly<Record<string, number>>
@@ -246,7 +244,6 @@ export interface QualityEvaluationOptions {
 export interface QualityEvaluation {
   schedulerRun: SchedulerRunState
   scenario: QualityScenario
-  injection: QualityScenario
   action: QualityAction
   rows: readonly QualityBalanceRow[]
   checks: readonly QualityCheckResult[]
