@@ -67,16 +67,13 @@ interface VisualizationBlockProps {
 
 function NarrativeSection({
   section,
-  index,
   composed,
 }: {
   section: Extract<LessonSection, { title: string; paragraphs: string[] }>
-  index: number
   composed?: boolean
 }) {
   return (
     <article className={`lesson-section${composed ? ' lesson-section--composed' : ''}`}>
-      <div className="lesson-section__index">{String(index + 1).padStart(2, '0')}</div>
       <div>
         <h2>{section.title}</h2>
         {section.paragraphs.map((paragraph, paragraphIndex) => (
@@ -398,17 +395,13 @@ function renderSection(
     case 'pitfall':
       return <Pitfall text={section.text} title={section.title} key={`pitfall-${index}`} />
     case 'narrative':
-      return (
-        <NarrativeSection section={section} index={index} composed key={`narrative-${index}`} />
-      )
+      return <NarrativeSection section={section} composed key={`narrative-${index}`} />
     default:
       if (!isNarrativeSection(section)) {
         return null
       }
 
-      return (
-        <NarrativeSection section={section} index={index} composed key={`narrative-${index}`} />
-      )
+      return <NarrativeSection section={section} composed key={`narrative-${index}`} />
   }
 }
 
@@ -431,7 +424,7 @@ export function LessonSectionRenderer({
       <>
         <section className="lesson-sections" aria-label={getMessage('lessonBody', locale)}>
           {legacySections.map((section, index) => (
-            <NarrativeSection section={section} index={index} key={`${section.title}-${index}`} />
+            <NarrativeSection section={section} key={`${section.title}-${index}`} />
           ))}
         </section>
         <LegacyBlocks

@@ -843,26 +843,11 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 }
 
 .quick-summary {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
+  display: block;
   padding: 17px 19px;
   border: 1px solid var(--border-teal);
   border-radius: var(--radius-sm);
   background: var(--surface-teal);
-}
-
-.quick-summary__mark {
-  display: grid;
-  width: 27px;
-  height: 27px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--teal);
-  color: var(--on-accent);
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 9px;
 }
 
 .quick-summary p {
@@ -993,18 +978,8 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 }
 
 .lesson-section {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 18px;
+  display: block;
   padding: 0 0 30px;
-}
-
-.lesson-section__index {
-  padding-top: 5px;
-  color: var(--teal);
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
 }
 
 .lesson-section h2 {
@@ -1240,7 +1215,6 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   }
 
   .quick-summary {
-    gap: 10px;
     padding: 14px;
   }
 
@@ -1314,8 +1288,6 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   }
 
   .lesson-section {
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 9px;
     padding-bottom: 22px;
   }
 

@@ -36,6 +36,15 @@ describe('学习页 Learning Shell 布局', () => {
     expect(markup).not.toContain('learn-footer')
   })
 
+  it('移除速览与正文小节的装饰性编号，并保留原有内容', () => {
+    const markup = renderLearnShell()
+
+    expect(markup).toContain('class="quick-summary"')
+    expect(markup).toContain('一句话速览')
+    expect(markup).not.toContain('quick-summary__mark')
+    expect(markup).not.toContain('lesson-section__index')
+  })
+
   it('保留首页 Footer 的使用入口', () => {
     const homepage = readFileSync(new URL('../src/pages/index.astro', import.meta.url), 'utf8')
 
