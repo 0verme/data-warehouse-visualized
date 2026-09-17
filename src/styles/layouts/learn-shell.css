@@ -271,13 +271,6 @@
   flex: 0 0 auto;
 }
 
-.locale-switcher__label {
-  margin-left: 4px;
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 10px;
-  font-weight: 700;
-}
-
 .locale-switcher__menu {
   position: absolute;
   z-index: 50;
@@ -1106,7 +1099,6 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
     min-height: 34px;
   }
 
-  .locale-switcher__label,
   .sidebar-toggle__label {
     display: none;
   }

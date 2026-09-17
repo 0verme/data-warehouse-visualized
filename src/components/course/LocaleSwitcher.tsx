@@ -68,7 +68,6 @@ export function LocaleSwitcher({ locale, onLocaleChange }: LocaleSwitcherProps) 
           <circle cx="12" cy="12" r="9.5" />
           <path d="M2.5 12h19M12 2.5a15 15 0 0 1 0 19M12 2.5a15 15 0 0 0 0 19" />
         </svg>
-        <span className="locale-switcher__label">{locale === 'zh-CN' ? '中' : 'EN'}</span>
       </button>
       <div
         className="locale-switcher__menu"

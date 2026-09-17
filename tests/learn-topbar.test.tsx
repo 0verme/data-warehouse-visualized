@@ -28,13 +28,16 @@ describe('学习页顶部工具栏', () => {
     expect(markup).toContain('class="progress-indicator__track"')
   })
 
-  it('渲染可访问的语言 Preview 入口与主题按钮', () => {
+  it('渲染仅含地球图标且可访问的语言 Preview 入口与主题按钮', () => {
     const markup = renderLearnShell()
 
     expect(markup).toContain('class="locale-switcher__trigger"')
     expect(markup).toContain('aria-haspopup="menu"')
     expect(markup).toContain('aria-expanded="false"')
     expect(markup).toContain('aria-label="切换语言"')
+    expect(markup).toContain('title="切换语言"')
+    expect(markup).toContain('<svg class="locale-switcher__globe"')
+    expect(markup).not.toContain('locale-switcher__label')
     expect(markup).toContain('role="menuitemradio" aria-checked="true"')
     expect(markup).toContain('>简体中文</span>')
     expect(markup).toContain('>English · Preview</span>')
