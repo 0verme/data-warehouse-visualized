@@ -10,12 +10,74 @@ html[data-theme='dark'] .home-page {
   --home-line-strong: var(--line-strong);
   --home-blue: var(--blue);
   --home-blue-soft: var(--surface-blue);
+  --home-primary-bg: var(--button-primary-bg);
+  --home-primary-hover-bg: var(--button-primary-hover-bg);
   --home-teal: var(--teal);
   --home-teal-soft: var(--teal-soft);
   --home-amber: var(--amber);
   --home-amber-soft: var(--amber-soft);
   background-color: var(--home-canvas);
   color: var(--home-ink);
+}
+
+/* Dark controls stay on the surface scale instead of falling back to light-theme button paint. */
+html[data-theme='dark'] .button--primary:active:not(:disabled),
+html[data-theme='dark'] .button--nav:active:not(:disabled) {
+  background: var(--button-primary-active-bg);
+  transform: none;
+}
+
+html[data-theme='dark'] .button--quiet:active:not(:disabled) {
+  border-color: var(--button-secondary-hover-border);
+  background: var(--button-secondary-active-bg);
+  transform: none;
+}
+
+html[data-theme='dark'] .button--ghost:active:not(:disabled) {
+  background: var(--button-ghost-active-bg);
+  transform: none;
+}
+
+html[data-theme='dark'] .button:disabled,
+html[data-theme='dark'] .button:disabled:hover,
+html[data-theme='dark'] .button:disabled:active {
+  border-color: var(--button-disabled-border);
+  background: var(--button-disabled-bg);
+  color: var(--button-disabled-text);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+html[data-theme='dark'] .banking-history__mode:disabled,
+html[data-theme='dark'] .scd__mode-tab:disabled,
+html[data-theme='dark'] .lineage-teaching-impact-choice:disabled,
+html[data-theme='dark'] .capstone-primary-button:disabled {
+  border-color: var(--button-disabled-border);
+  background: var(--button-disabled-bg);
+  color: var(--button-disabled-text);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+html[data-theme='dark'] .banking-history__mode:disabled > span,
+html[data-theme='dark'] .banking-history__mode:disabled small,
+html[data-theme='dark'] .scd__mode-tab:disabled > span,
+html[data-theme='dark'] .scd__mode-tab:disabled small,
+html[data-theme='dark'] .lineage-teaching-impact-choice:disabled strong,
+html[data-theme='dark'] .lineage-teaching-impact-choice:disabled small {
+  color: var(--button-disabled-text);
+}
+
+html[data-theme='dark'] .sidebar-collapse-toggle:active,
+html[data-theme='dark'] .sidebar-toggle:active,
+html[data-theme='dark'] .locale-switcher__trigger:active,
+html[data-theme='dark'] .theme-toggle:active {
+  border-color: var(--button-secondary-hover-border);
+  background: var(--button-icon-active-bg);
 }
 
 html[data-theme='dark'] .learn-app .visualization-section,
