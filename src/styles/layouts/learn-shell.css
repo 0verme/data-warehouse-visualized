@@ -146,10 +146,59 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: min(420px, calc(100vw - 430px));
   min-width: 220px;
   margin: 0;
   transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.learn-topbar__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.learn-topbar__chapter {
+  flex: 0 1 auto;
+  max-width: 40%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.learn-topbar__separator {
+  flex: 0 0 auto;
+  margin: 0 6px;
+  color: var(--line-strong, #c5d2e0);
+  font-size: 11px;
+  opacity: 0.6;
+  user-select: none;
+}
+
+.learn-topbar__lesson {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .progress-indicator {
@@ -195,9 +244,10 @@
 
 .progress-indicator--compact {
   display: flex;
+  flex-wrap: nowrap;
   width: 100%;
   min-width: 0;
-  gap: 9px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -216,6 +266,7 @@
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .progress-indicator--compact .progress-indicator__track {
@@ -1070,6 +1121,18 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   }
 }
 
+@media (max-width: 768px) {
+  .learn-topbar__nav {
+    display: none;
+  }
+
+  .learn-topbar__progress {
+    width: min(160px, calc(100vw - 256px));
+    min-width: 96px;
+    gap: 0;
+  }
+}
+
 @media (max-width: 680px) {
   .learn-app {
     --learn-topbar-height: 60px;
@@ -1084,11 +1147,6 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 
   .brand--learn .brand__text small {
     display: none;
-  }
-
-  .learn-topbar__progress {
-    width: clamp(105px, calc(100vw - 180px), 230px);
-    min-width: 105px;
   }
 
   .locale-switcher__trigger,
@@ -1280,8 +1338,8 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   }
 
   .learn-topbar__progress {
-    width: clamp(72px, calc(100vw - 248px), 220px);
-    min-width: 72px;
+    width: min(150px, calc(100vw - 266px));
+    min-width: 90px;
   }
 }
 

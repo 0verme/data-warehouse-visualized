@@ -23,6 +23,12 @@ describe('学习页顶部工具栏', () => {
 
     expect(markup).toContain('class="learn-topbar"')
     expect(markup).toContain('class="learn-topbar__progress"')
+    expect(markup).toContain('class="learn-topbar__nav"')
+    expect(markup).toContain('class="learn-topbar__chapter"')
+    expect(markup).toContain('认识数据仓库')
+    expect(markup).toContain('class="learn-topbar__separator"')
+    expect(markup).toContain('class="learn-topbar__lesson"')
+    expect(markup).toContain('为什么有业务系统，还需要数据仓库？')
     expect(markup).toContain('data-progress-count="true">0 <small>/')
     expect(markup).toContain(`aria-valuemax="${lessons.length}"`)
     expect(markup).toContain('class="progress-indicator__track"')

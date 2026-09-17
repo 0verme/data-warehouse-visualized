@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Lesson } from '../../data/course'
-import { getChapters } from '../../data/course'
+import { getChapters, getChapterTitle, getLessonBySlug } from '../../data/course'
 import type { LessonContent } from '../../content/types'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
 import { getLessonContent } from '../../content/lessons'
@@ -202,6 +202,9 @@ export function LearnShell({
   const adjacentLessons = getAdjacentLessons(lessons, activeLesson.slug)
   const completedCount = getCompletedCount(progress)
   const isActiveLessonCompleted = progress.completedLessonIds.includes(activeLesson.id)
+  const currentChapterTitle = getChapterTitle(activeLesson.chapter, activeLocale)
+  const currentLessonTitle =
+    getLessonBySlug(activeLesson.slug, activeLocale)?.title ?? activeLesson.title
 
   function updateProgress(nextProgress: ProgressState) {
     setProgress(nextProgress)
@@ -304,6 +307,17 @@ export function LearnShell({
         </a>
 
         <div className="learn-topbar__progress">
+          <div className="learn-topbar__nav">
+            <span className="learn-topbar__chapter" title={currentChapterTitle}>
+              {currentChapterTitle}
+            </span>
+            <span className="learn-topbar__separator" aria-hidden="true">
+              /
+            </span>
+            <span className="learn-topbar__lesson" title={currentLessonTitle}>
+              {currentLessonTitle}
+            </span>
+          </div>
           <ProgressIndicator
             completedCount={completedCount}
             totalLessons={lessons.length}
