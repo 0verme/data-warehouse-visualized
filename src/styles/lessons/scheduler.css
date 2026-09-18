@@ -6,34 +6,21 @@
   color: var(--ink, #152238);
 }
 
-.scheduler-toolbar,
 .scheduler-dag,
 .scheduler-task-detail,
 .scheduler-event-log,
-.scheduler-rerun,
-.scheduler-output-preview {
+.scheduler-rerun {
   border: 1px solid var(--line, #dfe6ef);
   border-radius: 16px;
   background: var(--surface, #fff);
   box-shadow: var(--shadow-sm, 0 2px 10px rgb(28 51 84 / 5%));
 }
 
-.scheduler-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(390px, 1.15fr);
-  gap: 22px;
-  padding: 18px 20px;
-  background: var(--info-bg);
-}
-
 .scheduler-toolbar__label,
-.scheduler-run-strip span,
-.scheduler-status-summary__item span,
 .scheduler-dag__layer-heading small,
 .scheduler-task-node__status,
 .scheduler-rerun__plan span,
 .scheduler-output-card > div span,
-.scheduler-output-preview__metric span,
 .scheduler-contract-grid > div > span,
 .scheduler-subheading p {
   color: var(--ink-muted, #75839a);
@@ -43,18 +30,10 @@
   text-transform: uppercase;
 }
 
-.scheduler-toolbar__heading {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .scheduler-toolbar__label {
   color: var(--navy, #173b68);
 }
 
-.scheduler-toolbar__heading h3,
 .scheduler-panel-heading h3,
 .scheduler-subheading h4 {
   margin: 5px 0 0;
@@ -64,25 +43,15 @@
   line-height: 1.3;
 }
 
-.scheduler-toolbar__heading p,
 .scheduler-panel-heading p,
 .scheduler-task-detail__description,
-.scheduler-rerun__reason,
-.scheduler-output-preview__note {
+.scheduler-rerun__reason {
   margin: 7px 0 0;
   color: var(--ink-muted, #75839a);
   font-size: 12px;
   line-height: 1.65;
 }
 
-.scheduler-toolbar__controls {
-  display: grid;
-  grid-template-columns: minmax(145px, 0.9fr) minmax(145px, 0.9fr);
-  gap: 10px;
-  align-items: end;
-}
-
-.scheduler-toolbar__controls label,
 .scheduler-rerun__target {
   display: grid;
   gap: 6px;
@@ -91,7 +60,6 @@
   font-weight: 750;
 }
 
-.scheduler-toolbar select,
 .scheduler-rerun select {
   width: 100%;
   min-height: 36px;
@@ -104,7 +72,6 @@
   font-size: 12px;
 }
 
-.scheduler-toolbar select:focus-visible,
 .scheduler-rerun select:focus-visible {
   outline: 3px solid rgb(45 108 223 / 22%);
   outline-offset: 1px;
@@ -121,82 +88,10 @@
   flex: 1 1 auto;
 }
 
-.scheduler-run-strip {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) repeat(4, minmax(90px, 0.7fr));
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--line, #dfe6ef);
-  border-radius: 11px;
-  background: var(--line, #dfe6ef);
-}
-
-.scheduler-run-strip > div {
-  display: grid;
-  min-width: 0;
-  gap: 4px;
-  padding: 11px 13px;
-  background: var(--surface, #fff);
-}
-
-.scheduler-run-strip strong {
-  overflow: hidden;
-  color: var(--navy, #173b68);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.scheduler-status-summary {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 7px;
-}
-
-.scheduler-status-summary__item {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  padding: 9px 10px;
-  border: 1px solid var(--line, #dfe6ef);
-  border-radius: 9px;
-  background: var(--surface, #fff);
-}
-
-.scheduler-status-summary__item strong {
-  color: var(--status-color, var(--ink));
-  font-size: 21px;
-  line-height: 1;
-}
-
-.scheduler-status-summary__item.is-queued {
-  --status-color: var(--warning-text);
-}
-
-.scheduler-status-summary__item.is-running {
-  --status-color: var(--blue, #2d6cdf);
-}
-
-.scheduler-status-summary__item.is-success {
-  --status-color: var(--success-text);
-}
-
-.scheduler-status-summary__item.is-retry {
-  --status-color: var(--warning-text);
-}
-
-.scheduler-status-summary__item.is-failed,
-.scheduler-status-summary__item.is-skipped {
-  --status-color: var(--danger-text);
-}
-
 .scheduler-dag,
 .scheduler-task-detail,
 .scheduler-event-log,
-.scheduler-rerun,
-.scheduler-output-preview {
+.scheduler-rerun {
   padding: 18px;
 }
 
@@ -454,8 +349,7 @@
 
 .scheduler-dag__edge-note code,
 .scheduler-run-facts code,
-.scheduler-contract-grid code,
-.scheduler-output-preview__note code {
+.scheduler-contract-grid code {
   color: var(--navy, #173b68);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 0.93em;
@@ -1029,47 +923,6 @@
   line-height: 1.5;
 }
 
-.scheduler-output-preview__metric {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 32px minmax(0, 1fr);
-  gap: 12px;
-  align-items: center;
-  margin-top: 16px;
-}
-
-.scheduler-output-preview__metric > div {
-  display: grid;
-  gap: 5px;
-  padding: 13px;
-  border: 1px solid var(--line, #dfe6ef);
-  border-radius: 9px;
-  background: var(--surface-muted, #f5f7fb);
-}
-
-.scheduler-output-preview__metric strong {
-  color: var(--navy, #173b68);
-  font-size: 24px;
-  letter-spacing: -0.04em;
-}
-
-.scheduler-output-preview__metric small {
-  color: var(--ink-muted, #75839a);
-  font-size: 10px;
-}
-
-.scheduler-output-preview__metric > b {
-  color: var(--teal, #239181);
-  font-size: 23px;
-  text-align: center;
-}
-
-.scheduler-output-preview__note {
-  margin-top: 11px;
-  padding: 9px 11px;
-  border-radius: 8px;
-  background: var(--surface-muted, #f5f7fb);
-}
-
 .scheduler-run-simulator--focused {
   gap: 14px;
 }
@@ -1538,10 +1391,6 @@
 }
 
 @container visualization (max-width: 900px) {
-  .scheduler-toolbar {
-    grid-template-columns: 1fr;
-  }
-
   .scheduler-dag__track {
     grid-template-columns:
       minmax(0, 1.4fr) 26px minmax(135px, 0.85fr) 26px minmax(135px, 0.85fr)
@@ -1554,14 +1403,6 @@
 }
 
 @container visualization (max-width: 700px) {
-  .scheduler-run-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .scheduler-status-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .scheduler-time-semantics__timeline {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1614,12 +1455,10 @@
     padding: 15px;
   }
 
-  .scheduler-toolbar,
   .scheduler-dag,
   .scheduler-task-detail,
   .scheduler-event-log,
-  .scheduler-rerun,
-  .scheduler-output-preview {
+  .scheduler-rerun {
     padding: 15px;
   }
 
@@ -1635,7 +1474,6 @@
     text-align: left;
   }
 
-  .scheduler-toolbar__controls,
   .scheduler-rerun__controls,
   .scheduler-contract-grid,
   .scheduler-readiness__modes,
@@ -1685,8 +1523,6 @@
     flex: 1 1 45%;
   }
 
-  .scheduler-run-strip,
-  .scheduler-status-summary,
   .scheduler-run-facts,
   .scheduler-rerun__plan,
   .scheduler-choice-group,
@@ -1694,7 +1530,6 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .scheduler-run-strip > div:first-child,
   .scheduler-rerun__plan > div:last-child,
   .scheduler-output-comparison__grid,
   .scheduler-choice-group {
@@ -1712,15 +1547,6 @@
 
   .scheduler-output-card dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .scheduler-output-preview__metric {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
-  .scheduler-output-preview__metric > b {
-    transform: rotate(90deg);
   }
 
   .scheduler-event {

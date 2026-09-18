@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { OverviewQuestion } from '../src/components/visualizations/LineageTeachingLab'
 import { depositBalanceQualityEvent } from '../src/content/lessons/data-quality'
-import { legacyLineageVisualization } from '../src/content/lessons/legacy-lineage-data'
 import {
   BANKING_LINEAGE_NODE_IDS,
   BANKING_LINEAGE_TASK_NODE_IDS,
@@ -16,7 +15,7 @@ import {
 } from '../src/features/lineage/banking'
 import { qualityEventToLineageInvestigation } from '../src/features/lineage/quality-adapter'
 import { getLineageTaskNodeId, getLineageTableNodeId } from '../src/features/lineage/mapping'
-import { LEGACY_SCHEDULER_TASK_IDS, SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
+import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
 import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 import { QUALITY_RULE_IDS } from '../src/utils/data-quality'
 import { dataLineageContent } from '../src/content/lessons/data-lineage'
@@ -135,7 +134,7 @@ describe('第 07 章数据血缘', () => {
     })
   })
 
-  it('能够切换旧 LineageGraph 的表级视图，并保留跨实体爆炸半径算法', () => {
+  it('能够切换银行 LineageGraph 的表级视图，并保留跨实体爆炸半径算法', () => {
     const tableView = getLineageView(nodes, edges, 'table')
     const blastRadius = getBlastRadius(nodes, edges, BANKING_LINEAGE_NODE_IDS.dwd, {
       includeCrossEntity: true,
@@ -259,11 +258,12 @@ describe('第 07 章数据血缘', () => {
     expect(result.rootCauseCandidates).toHaveLength(3)
   })
 
-  it('保留旧电商血缘、任务和表名兼容别名', () => {
-    expect(legacyLineageVisualization.nodes.map((node) => node.label)).toContain('DWD.ORDER_DETAIL')
-    expect(getLineageTaskNodeId(LEGACY_SCHEDULER_TASK_IDS.dwd)).toBe('task-build-order-detail')
-    expect(getLineageTableNodeId('dwd_order_item')).toBe('dwd-order-detail')
+  it('使用当前 Scheduler identity 映射到银行血缘节点', () => {
     expect(getLineageTaskNodeId(SCHEDULER_TASK_IDS.dwd)).toBe(BANKING_LINEAGE_TASK_NODE_IDS.dwd)
+    expect(getLineageTaskNodeId(BANKING_SCHEDULER_TASK_IDS.dwd)).toBe(
+      BANKING_LINEAGE_TASK_NODE_IDS.dwd,
+    )
+    expect(getLineageTableNodeId('dws_deposit_balance_daily')).toBe(BANKING_LINEAGE_NODE_IDS.dws)
   })
 
   it('提供近到远调查分支，并让每条边带证据来源和确认状态', () => {

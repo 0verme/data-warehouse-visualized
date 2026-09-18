@@ -6,8 +6,6 @@ import {
   createBankingSchedulerTasks,
 } from '../src/features/scheduler/banking'
 import type { SchedulerRunOptions, SchedulerScenario } from '../src/features/scheduler/types'
-import { legacySchedulerVisualization } from '../src/content/lessons/legacy-scheduling-system'
-import { sqlTransformationTaskContract } from '../src/content/lessons/sql-and-transformation'
 import {
   advanceSchedulerRun,
   compareRerunOutputs,
@@ -71,14 +69,6 @@ describe('第五章存款余额调度课程', () => {
       afterLateRows: 1,
       afterLateAmount: 1_200_000,
     })
-  })
-
-  it('保留旧订单调度事实，避免影响兼容入口', () => {
-    expect(legacySchedulerVisualization.taskContract).toBe(sqlTransformationTaskContract)
-    expect(legacySchedulerVisualization.tasks).toHaveLength(8)
-    expect(legacySchedulerVisualization.tasks.at(-1)?.contract.outputTable).toBe(
-      'ads_yesterday_sales',
-    )
   })
 
   it('按拓扑顺序排列五份输入、DWD、DWS 和 ADS', () => {

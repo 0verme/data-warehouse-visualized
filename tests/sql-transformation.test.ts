@@ -148,18 +148,16 @@ describe('SQL 与数据加工实验', () => {
   })
 
   it('迟到余额仍写回原业务日期，重复注入不会重复数据', () => {
-    const legacyLateResult = getTransformationStepResult(dataset, 'order', 'late-data')
     const lateDataset = appendLateBalanceSnapshot(dataset, depositLateBalanceSnapshot)
     const appendedAgain = appendLateBalanceSnapshot(lateDataset, depositLateBalanceSnapshot)
     const lateAds = getLayerSnapshots(lateDataset).find((snapshot) => snapshot.layer === 'ads')
 
-    expect(legacyLateResult.outputMetrics.targetAmount).toBe(340000)
-    expect(lateDataset.accountBalanceSnapshots).toHaveLength(6)
-    expect(appendedAgain.accountBalanceSnapshots).toHaveLength(6)
     expect(lateAds?.tables[0]?.rows[0]).toMatchObject({
       snapshot_date: '2026-09-30',
       balance: 340000,
     })
+    expect(lateDataset.accountBalanceSnapshots).toHaveLength(6)
+    expect(appendedAgain.accountBalanceSnapshots).toHaveLength(6)
   })
 
   it('五个加工步骤按计划、清洗、Join、聚合、契约顺序执行', () => {

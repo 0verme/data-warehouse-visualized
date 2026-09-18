@@ -24,14 +24,12 @@ import {
   BANKING_SCHEDULER_TASK_IDS,
 } from '../../features/scheduler/banking'
 import {
-  SCHEDULER_TASK_IDS,
   addSchedulerMinutes,
   advanceSchedulerRun,
   compareRerunOutputs,
   createInitialSchedulerRun,
   createPartitionRerunPlan,
   getOutputStateLabel,
-  getTaskStatusCounts,
   transitionSchedulerRun,
 } from '../../utils/scheduler'
 import '../../styles/lessons/scheduler.css'
@@ -99,69 +97,19 @@ const EVENT_LABELS: Record<SchedulerEventType, string> = {
   recovery: '人工 recovery',
 }
 
-const SCENARIO_OPTIONS: readonly {
-  value: SchedulerScenario
-  label: string
-  detail: string
-  moment: StoryMoment
-}[] = [
-  {
-    value: 'happy-path',
-    label: '正常日批',
-    detail: '所有 ODS 输入在 06:00 前就绪，DAG 顺序完成。',
-    moment: 'terminal',
-  },
-  {
-    value: 'upstream-late',
-    label: '上游迟到',
-    detail: '支付批次 06:20 才到，DWD 在此之前只能等待。',
-    moment: 'upstream-late',
-  },
-  {
-    value: 'dwd-retry',
-    label: 'DWD 失败后恢复',
-    detail: 'DWD 第一次失败，retry 后由 attempt 2 成功。',
-    moment: 'failure',
-  },
-  {
-    value: 'dwd-blocked',
-    label: '失败阻断下游',
-    detail: 'DWD 重试耗尽，DWS / ADS 传播为 skipped。',
-    moment: 'failure',
-  },
-]
-
-const STATUS_ORDER: readonly SchedulerTaskRunRecord['status'][] = [
-  'queued',
-  'running',
-  'success',
-  'retry',
-  'failed',
-  'skipped',
-]
-
 function getTask(tasks: readonly SchedulerTaskDefinition[], taskId: string) {
   return tasks.find((task) => task.taskId === taskId)
 }
 
 function getTaskReferences(visualization: SchedulerVisualization): SchedulerTaskReferences {
   return (
-    visualization.taskReferences ??
-    (visualization.lessonFocus
-      ? {
-          dwd: BANKING_SCHEDULER_TASK_IDS.dwd,
-          dws: BANKING_SCHEDULER_TASK_IDS.dws,
-          ads: BANKING_SCHEDULER_TASK_IDS.ads,
-          lateInput: BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot,
-          failure: BANKING_SCHEDULER_TASK_IDS.dwd,
-        }
-      : {
-          dwd: SCHEDULER_TASK_IDS.dwd,
-          dws: SCHEDULER_TASK_IDS.dws,
-          ads: SCHEDULER_TASK_IDS.ads,
-          lateInput: SCHEDULER_TASK_IDS.odsPayments,
-          failure: SCHEDULER_TASK_IDS.dwd,
-        })
+    visualization.taskReferences ?? {
+      dwd: BANKING_SCHEDULER_TASK_IDS.dwd,
+      dws: BANKING_SCHEDULER_TASK_IDS.dws,
+      ads: BANKING_SCHEDULER_TASK_IDS.ads,
+      lateInput: BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot,
+      failure: BANKING_SCHEDULER_TASK_IDS.dwd,
+    }
   )
 }
 
@@ -207,28 +155,6 @@ function formatRuntime(value: number | null): string {
 
 function formatDateForRun(date: string): string {
   return date.replace(/-/gu, '')
-}
-
-function getPreviousBusinessDate(date: string): string {
-  return addSchedulerMinutes(`${date} 00:00`, -24 * 60).slice(0, 10)
-}
-
-function getStoryMomentLabel(scenario: SchedulerScenario): string {
-  const option = SCENARIO_OPTIONS.find((candidate) => candidate.value === scenario)
-  if (!option) {
-    return '跳到关键时刻'
-  }
-
-  return option.moment === 'terminal' ? '跑到完成' : '跳到故障时刻'
-}
-
-function getRunStatusLabel(status: SchedulerRunState['status']): string {
-  return {
-    queued: 'queued · 等待调度',
-    running: 'running · 时间轴推进中',
-    success: 'success · DAG Run 完成',
-    failed: 'failed · DAG Run 被阻断',
-  }[status]
 }
 
 function getTaskDependencyText(task: SchedulerTaskDefinition): string {
@@ -338,108 +264,6 @@ function DagCanvas({
           {tasks.filter((task) => task.layer === 'ods').length} 个输入任务都成功后，才会放行 DWD；
           DWD success 后才放行 DWS，最后由 ADS 发布结果。
         </p>
-      </div>
-    </section>
-  )
-}
-
-function StatusSummary({ state }: { state: SchedulerRunState }) {
-  const counts = getTaskStatusCounts(state)
-
-  return (
-    <div className="scheduler-status-summary" aria-label="任务状态统计">
-      {STATUS_ORDER.map((status) => (
-        <div className={`scheduler-status-summary__item is-${status}`} key={status}>
-          <span>{STATUS_SHORT_LABELS[status]}</span>
-          <strong>{counts[status]}</strong>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function SimulationToolbar({
-  state,
-  onScenarioChange,
-  onBusinessDateChange,
-  isPlaying,
-  onPlay,
-  onStep,
-  onJump,
-  onReset,
-}: {
-  state: SchedulerRunState
-  onScenarioChange: (scenario: SchedulerScenario) => void
-  onBusinessDateChange: (businessDate: string) => void
-  isPlaying: boolean
-  onPlay: () => void
-  onStep: () => void
-  onJump: () => void
-  onReset: () => void
-}) {
-  const scenario = SCENARIO_OPTIONS.find((option) => option.value === state.scenario)!
-  const businessDateOptions = [
-    state.businessDate,
-    getPreviousBusinessDate(state.businessDate),
-  ].filter((date, index, dates) => dates.indexOf(date) === index)
-
-  return (
-    <section className="scheduler-toolbar" aria-labelledby="scheduler-toolbar-title">
-      <div className="scheduler-toolbar__heading">
-        <span className="scheduler-toolbar__label">SCHEDULER LAB · 运行时间线</span>
-        <h3 id="scheduler-toolbar-title">时间轴：{state.clock}</h3>
-        <p aria-live="polite">
-          {getRunStatusLabel(state.status)} · {scenario.detail} · 当前分区 {state.partition.column}{' '}
-          = {state.businessDate}
-        </p>
-      </div>
-      <div className="scheduler-toolbar__controls">
-        <label>
-          <span>故障场景</span>
-          <select
-            value={state.scenario}
-            aria-label="选择调度运行场景"
-            onChange={(event) => onScenarioChange(event.target.value as SchedulerScenario)}
-          >
-            {SCENARIO_OPTIONS.map((option) => (
-              <option value={option.value} key={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>business date</span>
-          <select
-            value={state.businessDate}
-            aria-label="选择业务日期分区"
-            onChange={(event) => onBusinessDateChange(event.target.value)}
-          >
-            {businessDateOptions.map((date) => (
-              <option value={date} key={date}>
-                dt = {date}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="scheduler-toolbar__buttons">
-          <button className="button button--primary button--small" type="button" onClick={onPlay}>
-            {isPlaying
-              ? '暂停时间轴'
-              : state.status === 'success' || state.status === 'failed'
-                ? '重新播放'
-                : '播放时间轴'}
-          </button>
-          <button className="button button--quiet button--small" type="button" onClick={onStep}>
-            单步推进
-          </button>
-          <button className="button button--quiet button--small" type="button" onClick={onJump}>
-            {getStoryMomentLabel(state.scenario)}
-          </button>
-          <button className="button button--quiet button--small" type="button" onClick={onReset}>
-            重置 Run
-          </button>
-        </div>
       </div>
     </section>
   )
@@ -867,39 +691,6 @@ function OutputComparisonCard({
       </dl>
       <p>{comparison.explanation}</p>
     </article>
-  )
-}
-
-function OutputPreview({ visualization }: { visualization: SchedulerVisualization }) {
-  return (
-    <section className="scheduler-output-preview" aria-labelledby="scheduler-output-preview-title">
-      <div className="scheduler-panel-heading">
-        <div>
-          <span className="eyebrow eyebrow--small">业务分区与迟到数据</span>
-          <h3 id="scheduler-output-preview-title">同一个业务分区，迟到数据会改变结果</h3>
-        </div>
-        <p>订单明细加工完成后，迟到到达的数据必须通过补数重新计算该业务分区。</p>
-      </div>
-      <div className="scheduler-output-preview__metric">
-        <div>
-          <span>迟到前 · {visualization.lateBusinessDate}</span>
-          <strong>{visualization.outputPreview.beforeLateAmount} 元</strong>
-          <small>{visualization.outputPreview.beforeLateRows} 行 ADS 输出</small>
-        </div>
-        <b aria-hidden="true">→</b>
-        <div>
-          <span>迟到后 · 仍是同一分区</span>
-          <strong>{visualization.outputPreview.afterLateAmount} 元</strong>
-          <small>
-            {visualization.outputPreview.afterLateRows} 行 · 到达 {visualization.lateDataArrivalAt}
-          </small>
-        </div>
-      </div>
-      <p className="scheduler-output-preview__note">
-        任务 <code>{visualization.taskContract.taskId}</code>：
-        {visualization.taskContract.rerunHint}
-      </p>
-    </section>
   )
 }
 
@@ -1879,198 +1670,8 @@ function getRunAtStoryMoment(state: SchedulerRunState, moment: StoryMoment): Sch
   return next
 }
 
-function LegacySchedulerRunSimulator({ visualization }: SchedulerRunSimulatorProps) {
-  const [state, setState] = useState<SchedulerRunState>(() =>
-    createInitialSchedulerRun(visualization.tasks, {
-      businessDate: visualization.targetDate,
-      scenario: 'happy-path',
-    }),
-  )
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [selectedTaskId, setSelectedTaskId] = useState<string>(SCHEDULER_TASK_IDS.ads)
-  const [rerunMode, setRerunMode] = useState<SchedulerRerunMode>('partial')
-  const [rerunTargetTaskId, setRerunTargetTaskId] = useState<string>(SCHEDULER_TASK_IDS.ads)
-
-  const selectedTask = getTask(visualization.tasks, selectedTaskId) ?? visualization.tasks[0]!
-  const rerunPlan = useMemo(
-    () =>
-      createPartitionRerunPlan(
-        visualization.tasks,
-        state.businessDate,
-        rerunMode,
-        rerunTargetTaskId,
-      ),
-    [rerunMode, rerunTargetTaskId, state.businessDate, visualization.tasks],
-  )
-  const rerunComparison = useMemo(
-    () => compareRerunOutputs(visualization.taskContract),
-    [visualization.taskContract],
-  )
-
-  useEffect(() => {
-    if (!isPlaying) {
-      return
-    }
-
-    if (state.status === 'success' || state.status === 'failed') {
-      return
-    }
-
-    const timerId = window.setTimeout(() => {
-      setState((current) => advanceSchedulerRun(current))
-    }, 650)
-
-    return () => window.clearTimeout(timerId)
-  }, [isPlaying, state])
-
-  function createRun(
-    scenario: SchedulerScenario,
-    businessDate: string,
-    trigger: SchedulerRunState['trigger'] = 'schedule',
-    rerunPlan?: SchedulerRerunPlan,
-    runId?: string,
-  ) {
-    return createInitialSchedulerRun(visualization.tasks, {
-      businessDate,
-      scenario,
-      trigger,
-      rerunPlan,
-      runId,
-    })
-  }
-
-  function resetRun() {
-    setIsPlaying(false)
-    setState(createRun(state.scenario, state.businessDate))
-  }
-
-  function changeScenario(scenario: SchedulerScenario) {
-    setIsPlaying(false)
-    setState(createRun(scenario, state.businessDate))
-  }
-
-  function changeBusinessDate(businessDate: string) {
-    setIsPlaying(false)
-    setState(createRun(state.scenario, businessDate))
-  }
-
-  function advanceOneStep() {
-    setIsPlaying(false)
-    setState((current) => advanceSchedulerRun(current))
-  }
-
-  function playTimeline() {
-    if (state.status === 'success' || state.status === 'failed') {
-      setIsPlaying(false)
-      setState(createRun(state.scenario, state.businessDate))
-      return
-    }
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setState((current) => getRunAtStoryMoment(current, 'terminal'))
-      setIsPlaying(false)
-      return
-    }
-
-    setIsPlaying((playing) => !playing)
-  }
-
-  function jumpToStoryMoment() {
-    setIsPlaying(false)
-    const moment =
-      SCENARIO_OPTIONS.find((option) => option.value === state.scenario)?.moment ?? 'terminal'
-    setState((current) => getRunAtStoryMoment(current, moment))
-  }
-
-  function applyRerunPlan() {
-    setIsPlaying(false)
-    const trigger = rerunMode === 'partial' ? 'partition-rerun' : 'full-rerun'
-    const runId = `run.sales.daily.${formatDateForRun(state.businessDate)}.${rerunMode}.002`
-    setState(createRun('happy-path', state.businessDate, trigger, rerunPlan, runId))
-  }
-
-  function recoverTask(taskId: string) {
-    setIsPlaying(false)
-    setState((current) => transitionSchedulerRun(current, { type: 'recover-task', taskId }))
-  }
-
-  return (
-    <div className="scheduler-run-simulator">
-      <SimulationToolbar
-        state={state}
-        onScenarioChange={changeScenario}
-        onBusinessDateChange={changeBusinessDate}
-        isPlaying={isPlaying && state.status !== 'success' && state.status !== 'failed'}
-        onPlay={playTimeline}
-        onStep={advanceOneStep}
-        onJump={jumpToStoryMoment}
-        onReset={resetRun}
-      />
-
-      <div className="scheduler-run-strip" aria-live="polite">
-        <div>
-          <span>RUN</span>
-          <strong>{state.runId}</strong>
-        </div>
-        <div>
-          <span>partition</span>
-          <strong>
-            {state.partition.column} = {state.partition.value}
-          </strong>
-        </div>
-        <div>
-          <span>trigger</span>
-          <strong>{state.trigger}</strong>
-        </div>
-        <div>
-          <span>并发上限</span>
-          <strong>{state.maxConcurrentTasks} tasks</strong>
-        </div>
-        <div>
-          <span>事件</span>
-          <strong>{state.events.length}</strong>
-        </div>
-      </div>
-
-      <StatusSummary state={state} />
-      <DagCanvas
-        tasks={visualization.tasks}
-        taskRuns={state.taskRuns}
-        selectedTaskId={selectedTask.taskId}
-        onSelectTask={setSelectedTaskId}
-      />
-
-      <div className="scheduler-inspector-grid">
-        <TaskDetail state={state} task={selectedTask} onRecover={recoverTask} />
-        <EventLog state={state} />
-      </div>
-
-      <RerunPlanner
-        state={state}
-        visualization={visualization}
-        mode={rerunMode}
-        targetTaskId={rerunTargetTaskId}
-        plan={rerunPlan}
-        comparison={rerunComparison}
-        onModeChange={setRerunMode}
-        onTargetChange={setRerunTargetTaskId}
-        onApply={applyRerunPlan}
-      />
-      <OutputPreview visualization={visualization} />
-      <p className="visualization-note">
-        <span aria-hidden="true">↳</span>
-        每个场景都沿同一条任务依赖和时间线推进；切换场景，比较迟到、失败、重试与补数如何改变最终输出。
-      </p>
-    </div>
-  )
-}
-
 export function SchedulerRunSimulator({ visualization }: SchedulerRunSimulatorProps) {
-  return visualization.lessonFocus ? (
-    <FocusedSchedulerLab visualization={visualization} />
-  ) : (
-    <LegacySchedulerRunSimulator visualization={visualization} />
-  )
+  return <FocusedSchedulerLab visualization={visualization} />
 }
 
 export type { SchedulerRunSimulatorProps }
