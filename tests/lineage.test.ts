@@ -1,8 +1,11 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { LineageGraph } from '../src/components/visualizations/LineageGraph'
-import { OverviewQuestion } from '../src/components/visualizations/LineageTeachingLab'
+import { LegacyLineageGraph } from '../src/components/visualizations/LegacyLineageGraph'
+import {
+  LineageTeachingLab,
+  OverviewQuestion,
+} from '../src/components/visualizations/LineageTeachingLab'
 import { depositBalanceQualityEvent } from '../src/content/lessons/data-quality'
 import {
   BANKING_LINEAGE_NODE_IDS,
@@ -91,7 +94,7 @@ describe('Pilot B lineage visual grammar', () => {
   })
 
   it('keeps base relation data while exposing direct path focus in legacy SVG markup', () => {
-    const markup = renderToStaticMarkup(React.createElement(LineageGraph, { nodes, edges }))
+    const markup = renderToStaticMarkup(React.createElement(LegacyLineageGraph, { nodes, edges }))
 
     expect(markup).toContain('data-diagram-type="dependency"')
     expect(markup).toContain('data-relation="transform"')
@@ -110,21 +113,22 @@ describe('Pilot B lineage visual grammar', () => {
       (visualization) => visualization.teaching?.mode === 'impact',
     )
 
-    expect(evidenceVisualization?.teaching).toBeDefined()
-    expect(impactVisualization?.teaching).toBeDefined()
+    if (!evidenceVisualization?.teaching || !impactVisualization?.teaching) {
+      throw new Error('Expected evidence and impact teaching configurations')
+    }
 
     const evidenceMarkup = renderToStaticMarkup(
-      React.createElement(LineageGraph, {
+      React.createElement(LineageTeachingLab, {
         nodes,
         edges,
-        teaching: evidenceVisualization?.teaching,
+        teaching: evidenceVisualization.teaching,
       }),
     )
     const impactMarkup = renderToStaticMarkup(
-      React.createElement(LineageGraph, {
+      React.createElement(LineageTeachingLab, {
         nodes,
         edges,
-        teaching: impactVisualization?.teaching,
+        teaching: impactVisualization.teaching,
       }),
     )
 
@@ -150,7 +154,7 @@ describe('Pilot B lineage visual grammar', () => {
     }
 
     const markup = renderToStaticMarkup(
-      React.createElement(LineageGraph, { nodes, edges, teaching: typeTeaching }),
+      React.createElement(LineageTeachingLab, { nodes, edges, teaching: typeTeaching }),
     )
 
     expect(markup).toContain('data-node-type="table"')

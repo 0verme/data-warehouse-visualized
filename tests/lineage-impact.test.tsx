@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { LineageGraph } from '../src/components/visualizations/LineageGraph'
+import { LineageTeachingLab } from '../src/components/visualizations/LineageTeachingLab'
 import { dataLineageImpactContent } from '../src/content/lessons/data-lineage-impact'
 import { bankingLineageEdges, bankingLineageNodes } from '../src/features/lineage/banking'
 import {
@@ -128,7 +128,7 @@ describe('Lineage Impact reveal · Headless Player', () => {
 describe('Lineage Impact reveal · SSR 初始状态', () => {
   it('首屏保留 Prediction，但不提前展开任何下游影响', () => {
     const markup = renderToStaticMarkup(
-      <LineageGraph
+      <LineageTeachingLab
         nodes={bankingLineageNodes}
         edges={bankingLineageEdges}
         teaching={impactTeaching}

@@ -15,13 +15,11 @@ export { JoinFanoutSimulator } from './JoinFanoutSimulator'
 export { LayerEvolutionLab } from './LayerEvolutionLab'
 export { GovernanceWorkbench } from './GovernanceWorkbench'
 export { LakehouseArchitectureLab } from './LakehouseArchitectureLab'
-export { LineageGraph } from './LineageGraph'
+export { LegacyLineageGraph } from './LegacyLineageGraph'
 export { LineageTeachingLab } from './LineageTeachingLab'
 export { LoanBusinessProcessLab } from './LoanBusinessProcessLab'
 export { LoanGrainLab } from './LoanGrainLab'
 export { MetricDefinitionLab } from './MetricDefinitionLab'
-export { ModelingIntro } from './ModelingIntro'
-export { PipelineFlow } from './PipelineFlow'
 export {
   PerformanceDiagnosisLab,
   PerformanceLab,
@@ -31,7 +29,6 @@ export {
   PerformanceTradeoffLab,
 } from './PerformanceLab'
 export { ReportMetricJourney } from './ReportMetricJourney'
-export { SlowlyChangingDimension } from './SlowlyChangingDimension'
 export { StarSchemaFlow } from './StarSchemaFlow'
 export { SchedulerRunSimulator } from './SchedulerRunSimulator'
 export { SqlTransformationWorkbench } from './SqlTransformationWorkbench'

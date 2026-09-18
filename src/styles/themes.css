@@ -51,7 +51,6 @@ html[data-theme='dark'] .button:disabled:active {
 }
 
 html[data-theme='dark'] .banking-history__mode:disabled,
-html[data-theme='dark'] .scd__mode-tab:disabled,
 html[data-theme='dark'] .lineage-teaching-impact-choice:disabled,
 html[data-theme='dark'] .capstone-primary-button:disabled {
   border-color: var(--button-disabled-border);
@@ -65,8 +64,6 @@ html[data-theme='dark'] .capstone-primary-button:disabled {
 
 html[data-theme='dark'] .banking-history__mode:disabled > span,
 html[data-theme='dark'] .banking-history__mode:disabled small,
-html[data-theme='dark'] .scd__mode-tab:disabled > span,
-html[data-theme='dark'] .scd__mode-tab:disabled small,
 html[data-theme='dark'] .lineage-teaching-impact-choice:disabled strong,
 html[data-theme='dark'] .lineage-teaching-impact-choice:disabled small {
   color: var(--button-disabled-text);
@@ -83,22 +80,15 @@ html[data-theme='dark'] .theme-toggle:active {
 html[data-theme='dark'] .learn-app .visualization-section,
 html[data-theme='dark'] .learn-app .compare-split__column,
 html[data-theme='dark'] .learn-app .lesson-nav__link,
-html[data-theme='dark'] .learn-app .lesson-opening__card,
-html[data-theme='dark'] .learn-app .pipeline-stage {
+html[data-theme='dark'] .learn-app .lesson-opening__card {
   border-color: var(--line);
   background: var(--surface);
   color: var(--ink);
 }
 
-html[data-theme='dark'] .learn-app .concept-card,
-html[data-theme='dark'] .learn-app .pipeline-stage--processing {
+html[data-theme='dark'] .learn-app .concept-card {
   border-color: var(--border-blue);
   background: var(--surface-blue);
-}
-
-html[data-theme='dark'] .learn-app .pipeline-stage--done {
-  border-color: var(--border-teal);
-  background: var(--surface-teal-subtle);
 }
 
 html[data-theme='dark'] .learn-app table {

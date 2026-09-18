@@ -103,12 +103,18 @@ button.lineage-teaching-flow__node:focus-visible,
   text-transform: uppercase;
 }
 
-.lineage-teaching-flow__layer .lineage-node__type-marker {
+/* Shared node type marker: lessons load teaching CSS only, so the legacy
+   lineage.css base rule cannot be relied on here. */
+.lineage-teaching-lab .lineage-node__type-marker {
+  display: inline-grid;
   width: 13px;
   height: 13px;
+  flex: 0 0 auto;
+  place-items: center;
   border: 1px solid currentColor;
   border-radius: 3px;
   color: var(--diagram-connection);
+  font-family: inherit;
   font-size: 8px;
   line-height: 1;
 }

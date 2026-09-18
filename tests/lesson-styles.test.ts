@@ -45,14 +45,10 @@ describe('课程 CSS ownership', () => {
     expect(lessonStyleSheets('warehouse-terms')).toEqual(['warehouse-intro.css'])
     expect(lessonStyleSheets('scheduling-system')).toEqual(['scheduler.css'])
     expect(lessonStyleSheets('data-quality')).toEqual(['data-quality.css'])
-    expect(lessonStyleSheets('data-lineage')).toEqual(['lineage.css', 'lineage-teaching.css'])
+    expect(lessonStyleSheets('data-lineage')).toEqual(['lineage-teaching.css'])
     expect(lessonStyleSheets('lakehouse')).toEqual(['lakehouse.css'])
     expect(lessonStyleSheets('performance-and-practice')).toEqual(['performance.css'])
-    expect(lessonStyleSheets('build-a-warehouse')).toEqual([
-      'capstone.css',
-      'lineage.css',
-      'lineage-teaching.css',
-    ])
+    expect(lessonStyleSheets('build-a-warehouse')).toEqual(['capstone.css', 'lineage.css'])
   })
 
   it('普通课程不会带上其它章节 / visualization CSS', () => {
@@ -69,9 +65,7 @@ describe('课程 CSS ownership', () => {
       'banking-modeling.css',
       'banking-metrics.css',
       'star-schema.css',
-      'scd.css',
       'metric.css',
-      'data-modeling.css',
       'warehouse-intro.css',
     ]
 
@@ -93,14 +87,8 @@ describe('课程 CSS ownership', () => {
     }
   })
 
-  it('legacy visualization kind 仍保留自己的 CSS 归属', () => {
-    const legacyKinds: LessonVisualizationKind[] = [
-      'star-schema',
-      'scd',
-      'metric-definition',
-      'modeling-intro',
-      'pipeline',
-    ]
+  it('legacy lab kind 仍保留自己的 CSS 归属', () => {
+    const legacyKinds: LessonVisualizationKind[] = ['star-schema', 'metric-definition']
     for (const kind of legacyKinds) {
       expect(getVisualizationStyleSheets(kind), kind).toBeDefined()
     }

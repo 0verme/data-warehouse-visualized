@@ -18,15 +18,6 @@ export interface FlowOutput {
   detail: string
 }
 
-export interface PipelineStage {
-  id: string
-  layer: string
-  title: string
-  description: string
-  work: string
-  output: string
-}
-
 export interface LayerEvolutionSource {
   id: string
   label: string
@@ -242,41 +233,6 @@ export interface StarSchemaVisualization {
   errorDemo: GrainErrorDemo
 }
 
-export type ModelingFieldRole = 'process-key' | 'dimension' | 'fact'
-export type ModelingFieldTone = 'blue' | 'teal' | 'amber' | 'violet' | 'navy'
-
-export interface ModelingFieldGroup {
-  id: string
-  label: string
-  role: ModelingFieldRole
-  tone: ModelingFieldTone
-  fields: string[]
-  explanation: string
-}
-
-export interface ModelingOutputTable {
-  id: string
-  name: string
-  type: 'fact' | 'dimension'
-  rowMeaning: string
-  fields: string[]
-}
-
-export interface ModelingIntroStep {
-  id: string
-  title: string
-  description: string
-  example: string
-}
-
-export interface ModelingIntroVisualization {
-  kind: 'modeling-intro'
-  rawTable: StarSchemaTableData
-  steps: ModelingIntroStep[]
-  fieldGroups: ModelingFieldGroup[]
-  outputTables: ModelingOutputTable[]
-}
-
 export type LoanProcessStepId = 'contract' | 'disbursement' | 'repayment' | 'settlement'
 
 export interface LoanProcessStep {
@@ -474,36 +430,6 @@ export interface BankingCustomerHistoryVisualization {
   change: BankingCustomerHistoryChange
   loanNote: BankingCustomerLoanNote
   timeline: BankingCustomerTimelinePoint[]
-}
-
-export interface ScdDimensionVersion {
-  userId: string
-  city: string
-  memberLevel: string
-  effectiveFrom: string
-  effectiveTo: string
-  isCurrent: boolean
-}
-
-export type ScdAttributeUpdate = Partial<Pick<ScdDimensionVersion, 'city' | 'memberLevel'>>
-
-export interface ScdDimensionChange extends ScdAttributeUpdate {
-  effectiveFrom: string
-}
-
-export interface ScdOrder {
-  id: string
-  label: string
-  orderTime: string
-  amount: number
-}
-
-export interface ScdVisualization {
-  kind: 'scd'
-  initialVersion: ScdDimensionVersion
-  change: ScdDimensionChange
-  orders: ScdOrder[]
-  timelineLabels?: string[]
 }
 
 export type MetricStatusRule = 'all' | 'paid'

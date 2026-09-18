@@ -6,8 +6,6 @@ import bankingModelingStylesUrl from '../styles/lessons/banking-modeling.css?url
 import bankingMetricsStylesUrl from '../styles/lessons/banking-metrics.css?url'
 import starSchemaStylesUrl from '../styles/lessons/star-schema.css?url'
 import metricStylesUrl from '../styles/lessons/metric.css?url'
-import scdStylesUrl from '../styles/lessons/scd.css?url'
-import dataModelingStylesUrl from '../styles/lessons/data-modeling.css?url'
 import sqlWorkbenchStylesUrl from '../styles/lessons/sql-workbench.css?url'
 import joinFanoutStylesUrl from '../styles/lessons/join-fanout.css?url'
 import schedulerStylesUrl from '../styles/lessons/scheduler.css?url'
@@ -34,8 +32,6 @@ const lessonStyleUrls = {
   'banking-metrics.css': bankingMetricsStylesUrl,
   'star-schema.css': starSchemaStylesUrl,
   'metric.css': metricStylesUrl,
-  'scd.css': scdStylesUrl,
-  'data-modeling.css': dataModelingStylesUrl,
   'sql-workbench.css': sqlWorkbenchStylesUrl,
   'join-fanout.css': joinFanoutStylesUrl,
   'scheduler.css': schedulerStylesUrl,
@@ -73,19 +69,16 @@ export const visualizationStyleSheets: Record<
   readonly LessonStyleSheet[]
 > = {
   systems: [],
-  pipeline: [],
   'layer-evolution': ['warehouse-intro.css'],
   'report-metric-journey': ['warehouse-intro.css'],
   'warehouse-terms': ['warehouse-intro.css'],
-  lineage: ['lineage.css', 'lineage-teaching.css'],
-  'modeling-intro': ['data-modeling.css'],
+  lineage: ['lineage-teaching.css'],
   'loan-business-process': ['banking-modeling.css'],
   'loan-grain': ['banking-modeling.css'],
   'banking-star-schema': ['banking-modeling.css'],
   'banking-fact-types': ['banking-modeling.css'],
   'banking-customer-history': ['banking-modeling.css'],
   'star-schema': ['star-schema.css'],
-  scd: ['scd.css'],
   'metric-definition': ['metric.css'],
   'banking-metric-scope': ['banking-metrics.css'],
   'banking-metric-definition': ['banking-metrics.css'],
@@ -99,9 +92,8 @@ export const visualizationStyleSheets: Record<
   scheduler: ['scheduler.css'],
   'data-quality': ['data-quality.css'],
   'data-service': ['data-service.css'],
-  // Capstone composes the lineage teaching graph, so its stylesheet closure
-  // includes the lineage styles in addition to the capstone workbench styles.
-  capstone: ['capstone.css', 'lineage.css', 'lineage-teaching.css'],
+  // Capstone renders the frozen legacy lineage graph, so it only needs the legacy lineage CSS.
+  capstone: ['capstone.css', 'lineage.css'],
 }
 
 export function getVisualizationStyleSheets(
