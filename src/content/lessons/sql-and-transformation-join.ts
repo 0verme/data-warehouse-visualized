@@ -1,14 +1,4 @@
 import type { LessonContent } from '../types'
-import { depositBalanceDataset, depositBalanceTaskContract } from '../../data/deposit-balance'
-import type { SqlTransformationVisualization } from '../../features/sql-transformation/types'
-
-const visualization: SqlTransformationVisualization = {
-  kind: 'sql-transformation',
-  focus: 'join',
-  targetDate: depositBalanceDataset.targetDate,
-  dataset: depositBalanceDataset,
-  taskContract: depositBalanceTaskContract,
-}
 
 export const sqlTransformationJoinContent: LessonContent = {
   eyebrow: '第 04 章 · Join 与数据粒度',
@@ -46,14 +36,6 @@ export const sqlTransformationJoinContent: LessonContent = {
         '右表：1 行 = 账户 × 账户介质，A001 有 3 行。',
         'Join 后：A001 的 1 行 × 3 行介质 = 3 行；直接 SUM(balance) 会得到 300,000，但 A001 只应计一次 100,000。',
       ],
-    },
-    {
-      kind: 'visualization',
-      eyebrow: '1:N 对照 · 先看匹配关系再看金额',
-      title: '一对多匹配怎样改变结果？',
-      description:
-        '点击“错误 Join”查看余额复制后的表；再切换“保持账户日粒度”，理解当前指标为什么不需要把账户介质接进来。',
-      visualization,
     },
     {
       kind: 'visualization',

@@ -129,12 +129,16 @@ describe('课程数据与导航', () => {
         const visualization = getLessonContent(lesson).sections.find(
           (section) => section.kind === 'visualization',
         )
-        return visualization?.kind === 'visualization' &&
-          visualization.visualization.kind === 'sql-transformation'
+        if (visualization?.kind !== 'visualization') {
+          return undefined
+        }
+
+        // join lesson 已改用 join-fanout 分步实验；其余课程仍以 sql-transformation focus 标识。
+        return visualization.visualization.kind === 'sql-transformation'
           ? visualization.visualization.focus
-          : undefined
+          : visualization.visualization.kind
       }),
-    ).toEqual(['plan', 'cleaning', 'join', 'layers', 'contract'])
+    ).toEqual(['plan', 'cleaning', 'join-fanout', 'layers', 'contract'])
   })
 
   it('第五章拆成五节不同学习目标的调度实验', () => {
