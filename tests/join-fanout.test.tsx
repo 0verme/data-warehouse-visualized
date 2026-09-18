@@ -143,7 +143,7 @@ describe('JOIN 膨胀 Golden Sample · SSR 首屏与接线', () => {
     expect(markup).toContain('当前查看')
   })
 
-  it('join-fanout 接入现有 lesson，且保留原 sql-transformation 实验', () => {
+  it('join-fanout 是 join lesson 唯一的核心交互实验', () => {
     const lesson = getLessonBySlug('sql-transformation-join')
     expect(lesson).toBeDefined()
 
@@ -152,6 +152,14 @@ describe('JOIN 膨胀 Golden Sample · SSR 首屏与接线', () => {
       .filter((section) => section.kind === 'visualization')
       .map((section) => section.visualization.kind)
 
-    expect(kinds).toEqual(['sql-transformation', 'join-fanout'])
+    expect(kinds).toEqual(['join-fanout'])
+    expect(
+      content.sections.some(
+        (section) =>
+          section.kind === 'visualization' &&
+          section.visualization.kind === 'sql-transformation' &&
+          section.visualization.focus === 'join',
+      ),
+    ).toBe(false)
   })
 })
