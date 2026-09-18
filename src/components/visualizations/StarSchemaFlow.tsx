@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import type {
   GrainErrorDemo,
   GrainId,
@@ -9,7 +9,21 @@ import type {
   StarSchemaTableType,
   StarSchemaVisualization,
 } from '../../types'
-import { calculateGrainErrorResult, getGrainOption } from '../../utils/star-schema'
+import {
+  createGrainErrorKernel,
+  type GrainErrorStep,
+  type GrainErrorStepSpecs,
+} from '../../features/grain-error/steps'
+import {
+  calculateGrainErrorResult,
+  getGrainOption,
+  type GrainErrorResult,
+} from '../../utils/star-schema'
+import {
+  applyVisualizationPlayerAction,
+  createVisualizationPlayer,
+  getCurrentVisualizationStep,
+} from '../../utils/visualization-steps'
 
 interface StarSchemaFlowProps {
   visualization: StarSchemaVisualization
@@ -39,6 +53,17 @@ const errorStepLabels: Record<ErrorStep, string> = {
   calculated: 'SUM 已经暴露重复计算',
   fixed: '字段和粒度已经对齐',
 }
+
+const errorStepSpecs = [
+  { id: 'wrong', title: '错误模型', description: errorStepLabels.wrong, risk: true },
+  {
+    id: 'calculated',
+    title: '执行 SUM 暴露重复',
+    description: errorStepLabels.calculated,
+    risk: true,
+  },
+  { id: 'fixed', title: '修复到明细粒度', description: errorStepLabels.fixed, risk: false },
+] as const satisfies GrainErrorStepSpecs<ErrorStep>
 
 function getTableById(tables: readonly StarSchemaTable[], tableId: string) {
   for (const table of tables) {
@@ -389,27 +414,33 @@ function GrainLab({
 
 function GrainErrorLab({
   demo,
-  step,
-  result,
-  onStepChange,
+  currentStep,
+  onNext,
+  onReset,
 }: {
   demo: GrainErrorDemo
-  step: ErrorStep
-  result: ReturnType<typeof calculateGrainErrorResult>
-  onStepChange: (step: ErrorStep) => void
+  currentStep: GrainErrorStep<ErrorStep, GrainErrorResult>
+  onNext: () => void
+  onReset: () => void
 }) {
+  const step = currentStep.state.step
+  const result = currentStep.state.result
   const isCalculated = step !== 'wrong'
   const isFixed = step === 'fixed'
   const displayedTotal = isFixed ? result.fixedTotal : result.wrongTotal
 
   return (
-    <section className="star-error" aria-labelledby="star-error-title">
+    <section
+      className="star-error"
+      aria-labelledby="star-error-title"
+      data-step-id={currentStep.id}
+    >
       <div className="star-error__heading">
         <div>
           <span className="eyebrow">GRAIN CHECK · 错误暴露</span>
           <h3 id="star-error-title">让重复金额自己暴露</h3>
         </div>
-        <p aria-live="polite">{errorStepLabels[step]}</p>
+        <p aria-live="polite">{currentStep.description}</p>
       </div>
       <div className="star-error__scenario">
         <strong>订单 1001</strong>
@@ -461,7 +492,7 @@ function GrainErrorLab({
           className="button button--primary button--small"
           type="button"
           disabled={isCalculated}
-          onClick={() => onStepChange('calculated')}
+          onClick={onNext}
         >
           执行 {demo.wrongSql}
         </button>
@@ -469,15 +500,11 @@ function GrainErrorLab({
           className="button button--quiet button--small"
           type="button"
           disabled={!isCalculated || isFixed}
-          onClick={() => onStepChange('fixed')}
+          onClick={onNext}
         >
           修复模型
         </button>
-        <button
-          className="button button--quiet button--small"
-          type="button"
-          onClick={() => onStepChange('wrong')}
-        >
+        <button className="button button--quiet button--small" type="button" onClick={onReset}>
           重置演示
         </button>
       </div>
@@ -515,16 +542,22 @@ export function StarSchemaFlow({ visualization }: StarSchemaFlowProps) {
     factTable?.id ?? visualization.tables[0]?.id ?? '',
   )
   const [selectedGrainId, setSelectedGrainId] = useState<GrainId>(recommendedGrainId)
-  const [errorStep, setErrorStep] = useState<ErrorStep>('wrong')
-  const errorResult = useMemo(
-    () => calculateGrainErrorResult(visualization.errorDemo),
+  const errorKernel = useMemo(
+    () =>
+      createGrainErrorKernel(calculateGrainErrorResult(visualization.errorDemo), errorStepSpecs),
     [visualization.errorDemo],
   )
+  const [errorPlayer, errorDispatch] = useReducer(
+    applyVisualizationPlayerAction,
+    errorKernel.size,
+    createVisualizationPlayer,
+  )
+  const currentErrorStep = getCurrentVisualizationStep(errorPlayer, errorKernel)
 
   function resetLesson() {
     setSelectedTableId(factTable?.id ?? visualization.tables[0]?.id ?? '')
     setSelectedGrainId(recommendedGrainId)
-    setErrorStep('wrong')
+    errorDispatch('reset')
   }
 
   return (
@@ -550,9 +583,9 @@ export function StarSchemaFlow({ visualization }: StarSchemaFlowProps) {
       />
       <GrainErrorLab
         demo={visualization.errorDemo}
-        step={errorStep}
-        result={errorResult}
-        onStepChange={setErrorStep}
+        currentStep={currentErrorStep}
+        onNext={() => errorDispatch('next')}
+        onReset={() => errorDispatch('reset')}
       />
     </div>
   )
