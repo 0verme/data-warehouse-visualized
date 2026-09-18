@@ -70,7 +70,7 @@ export function ThemeToggle({ locale = DEFAULT_LOCALE }: ThemeToggleProps) {
 
   return (
     <button
-      className="theme-toggle"
+      className="topbar-control theme-toggle"
       type="button"
       aria-label={getMessage('toggleTheme', locale)}
       title={getMessage('toggleTheme', locale)}

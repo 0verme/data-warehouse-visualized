@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { LearnShell } from '../src/components/course/LearnShell'
@@ -15,6 +16,18 @@ function renderLearnShell(): string {
       initialContent={getLessonContent(initialLesson)}
     />,
   )
+}
+
+function getTopbarMarkup(): string {
+  const markup = renderLearnShell()
+  const headerStart = markup.indexOf('<header class="learn-topbar">')
+  const headerEnd = markup.indexOf('</header>', headerStart)
+
+  if (headerStart < 0 || headerEnd < 0) {
+    throw new Error('Learn topbar not found')
+  }
+
+  return markup.slice(headerStart, headerEnd)
 }
 
 describe('学习页顶部工具栏', () => {
@@ -37,7 +50,7 @@ describe('学习页顶部工具栏', () => {
   it('渲染仅含地球图标且可访问的语言 Preview 入口与主题按钮', () => {
     const markup = renderLearnShell()
 
-    expect(markup).toContain('class="locale-switcher__trigger"')
+    expect(markup).toContain('class="topbar-control locale-switcher__trigger"')
     expect(markup).toContain('aria-haspopup="menu"')
     expect(markup).toContain('aria-expanded="false"')
     expect(markup).toContain('aria-label="切换语言"')
@@ -47,7 +60,7 @@ describe('学习页顶部工具栏', () => {
     expect(markup).toContain('role="menuitemradio" aria-checked="true"')
     expect(markup).toContain('>简体中文</span>')
     expect(markup).toContain('>English · Preview</span>')
-    expect(markup).toContain('class="theme-toggle"')
+    expect(markup).toContain('class="topbar-control theme-toggle"')
     expect(markup).toContain('aria-label="切换浅色 / 深色主题"')
     expect(markup).toContain('title="切换浅色 / 深色主题"')
   })
@@ -60,5 +73,48 @@ describe('学习页顶部工具栏', () => {
     expect(markup).toContain('data-progress-count="true">5 <small>/ 53</small>')
     expect(markup).toContain('<small>/ 53</small>')
     expect(markup).toContain('aria-valuenow="5"')
+  })
+
+  it('按 品牌 → 侧边栏控制 → 进度 → 语言/主题 的顺序组织同一套顶栏', () => {
+    const topbar = getTopbarMarkup()
+    const order = [
+      'class="brand brand--learn"',
+      'class="topbar-control sidebar-collapse-toggle"',
+      'class="topbar-control sidebar-toggle"',
+      'class="learn-topbar__progress"',
+      'class="learn-topbar__actions"',
+    ]
+    const indexes = order.map((token) => topbar.indexOf(token))
+
+    expect(indexes.every((index) => index >= 0)).toBe(true)
+    expect(indexes).toEqual([...indexes].sort((a, b) => a - b))
+  })
+
+  it('把移动端目录按钮放在左侧品牌控制区，不占用右侧语言/主题操作区', () => {
+    const topbar = getTopbarMarkup()
+    const actionsStart = topbar.indexOf('class="learn-topbar__actions"')
+    const actions = topbar.slice(actionsStart)
+
+    expect(topbar).toContain('class="topbar-control sidebar-toggle"')
+    expect(topbar).toContain('aria-controls="course-sidebar"')
+    expect(topbar).toContain('aria-label="课程目录"')
+    expect(topbar).toContain('title="课程目录"')
+    expect(actions).not.toContain('class="topbar-control sidebar-toggle"')
+    expect(topbar).not.toContain('sidebar-toggle__label')
+  })
+
+  it('目录按钮使用标准 hamburger 图标，并与语言/主题按钮共用控件规格', () => {
+    const topbar = getTopbarMarkup()
+    const stylesheet = readFileSync(
+      new URL('../src/styles/components/header-actions.css', import.meta.url),
+      'utf8',
+    )
+
+    expect(topbar).toContain('<path d="M4 7h16M4 12h16M4 17h16"></path>')
+    expect((topbar.match(/topbar-control/g) ?? []).length).toBe(4)
+    expect(stylesheet).toContain('.topbar-control {')
+    expect(stylesheet).toContain('justify-content: center;')
+    expect(stylesheet).toContain('border-radius: 9px;')
+    expect(stylesheet).toContain('height: 40px;')
   })
 })

@@ -166,15 +166,15 @@ describe('课程 Sidebar Accordion', () => {
     expect(chapterMarkup).toContain('>跑快了，就算优化成功了吗？</span>')
   })
 
-  it('桌面端在 Logo 左侧渲染图标折叠按钮，支持无障碍属性和双图标状态', () => {
+  it('桌面端把图标折叠按钮渲染在品牌区域右侧，支持无障碍属性和双图标状态', () => {
     const markup = renderSidebarForLesson('why-data-warehouse')
 
-    const buttonIndex = markup.indexOf('class="sidebar-collapse-toggle"')
+    const buttonIndex = markup.indexOf('class="topbar-control sidebar-collapse-toggle"')
     const brandIndex = markup.indexOf('class="brand brand--learn"')
 
     expect(buttonIndex).toBeGreaterThan(-1)
     expect(brandIndex).toBeGreaterThan(-1)
-    expect(buttonIndex).toBeLessThan(brandIndex)
+    expect(brandIndex).toBeLessThan(buttonIndex)
 
     expect(markup).toContain('aria-controls="course-sidebar"')
     expect(markup).toContain('aria-expanded="true"')

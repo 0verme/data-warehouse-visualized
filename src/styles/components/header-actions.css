@@ -8,18 +8,19 @@
   margin-left: auto;
 }
 
-.locale-switcher {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.locale-switcher__trigger,
-.theme-toggle {
-  display: inline-flex;
+/*
+ * Single visual spec for every header control button: locale, theme, and the learn
+ * shell sidebar controls. `display` is intentionally left to the owning component
+ * because visibility (desktop collapse vs. mobile drawer) is decided by the learn
+ * shell responsive layout.
+ */
+.topbar-control {
   width: 36px;
   height: 36px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   padding: 0;
   border: 1px solid var(--topbar-border);
   border-radius: 9px;
@@ -29,16 +30,25 @@
   transition:
     background-color var(--motion-fast) ease,
     border-color var(--motion-fast) ease,
-    color var(--motion-fast) ease;
+    color var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
 }
 
-.locale-switcher__trigger:hover,
-.locale-switcher__trigger:focus-visible,
-.theme-toggle:hover,
-.theme-toggle:focus-visible {
+.locale-switcher__trigger,
+.theme-toggle {
+  display: inline-flex;
+}
+
+.topbar-control:hover,
+.topbar-control:focus-visible {
   border-color: var(--line-strong);
   background: var(--surface-muted);
   color: var(--ink);
+}
+
+.locale-switcher {
+  position: relative;
+  flex: 0 0 auto;
 }
 
 .locale-switcher__globe,
@@ -124,18 +134,20 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
   display: none;
 }
 
-@media (max-width: 680px) {
-  .locale-switcher__trigger,
-  .theme-toggle {
-    width: 34px;
-    height: 34px;
-    min-height: 34px;
+/*
+ * Touch targets stay at ~40x40px once the learn shell switches to its mobile
+ * header layout, for every control button in the row.
+ */
+@media (max-width: 900px) {
+  .topbar-control {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .locale-switcher__trigger,
-  .theme-toggle,
+  .topbar-control,
   .locale-switcher__menu {
     transition: none !important;
   }
