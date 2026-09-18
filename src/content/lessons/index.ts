@@ -61,7 +61,7 @@ import { warehouseTermsContent } from './warehouse-terms'
 import { whyDataWarehouseContent } from './why-data-warehouse'
 import { reportMetricJourneyContent } from './report-metric-journey'
 
-const lessonContentBySlug: Record<string, LessonContent> = {
+export const lessonContentBySlug: Record<string, LessonContent> = {
   'build-a-warehouse': capstoneContent,
   'data-governance': dataGovernanceContent,
   'data-governance-evidence': governanceEvidenceContent,
