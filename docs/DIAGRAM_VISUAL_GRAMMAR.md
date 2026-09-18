@@ -1,8 +1,8 @@
 # 数仓图解视觉语法
 
-> Issue #95 · Phase 1 Audit / Specification
+> Issue #95 · Phase 1 Audit / Specification + Phase 2 Pilot Findings / Closeout
 >
-> 本文是设计审计与规范，不是实现说明。Phase 1 不修改业务代码、CSS、课程内容、交互行为，也不实现 Pilot。
+> 本文是设计规范与审计记录，不是实现说明。Phase 1（PR [#99](https://github.com/0verme/data-warehouse-visualized/pull/99)）完成盘点与规范；Phase 2 由三个独立 Pilot PR（A [#107](https://github.com/0verme/data-warehouse-visualized/pull/107)、B [#112](https://github.com/0verme/data-warehouse-visualized/pull/112)、C [#114](https://github.com/0verme/data-warehouse-visualized/pull/114)）实现，并在第 2 节回填复盘。本文自身为 docs-only 收口，不修改业务代码、CSS、课程内容或交互行为。
 
 ## 1. 结论摘要
 
@@ -16,11 +16,237 @@ sql.sb 目前已经有一套内容丰富的交互式教学实验，但“图解�
 6. **Overview → Detail 是复杂实验的默认拆解方式。** `LineageGraph`、`SchedulerRunSimulator`、`CapstoneWorkbench` 不应通过缩小字体维持一张高密度总图。
 7. **Pilot 选取三个差异明显的候选：** `BusinessSystemFlow`、`LineageGraph`（包含 teaching 与 legacy 分支）、`LakehouseArchitectureLab`。在 Pilot 前不抽取共享 primitive。
 
-## 2. 审计范围与证据
+Phase 2（三个 Pilot 已完成）的五条收口结论：
 
-### 2.1 盘点范围
+8. **base relation 不被 overlay 改写。** 三个 Pilot 都验证了「基础技术关系 + focus / state 叠加」：选中、当前影响、当前执行阶段只增加权重，不改变数据 / 控制 / 交付 / 版本关系的类型。
+9. **Focus 与 State 正交。** Focus 是教学关注点，State 是真实业务 / 系统状态；selected 不再等于 warning / success，层与节点类型不再承担状态色。
+10. **现有 7 个 `--diagram-*` token 够用。** A / B / C 均未出现需要新增 diagram 同义 token 的用例；`success / warning / danger / text / muted` 继续复用全局语义 token。
+11. **container-first responsive 与 Overview → Detail 已被验证。** 三个 Pilot 都选择重排、局部滚动或 Detail，而不是把 Node / 字体无限缩小；页面级横向滚动视为缺陷。
+12. **明确不抽象。** 播放 rail、SVG canvas、Zone / architecture comparison 属不同教学隐喻；不建立 `DiagramEngine`、`UniversalDiagram`、`UniversalNode`、`UniversalConnector`、`GraphLayout`、自动 routing、通用 SVG runtime 或大一统 visualization framework。
 
-基于 `origin/main`（commit `8d5f9f5a9124f36c2814683c3238e1e8d5b85a86`）及 Issue #95 工作树审计：
+详细复盘见第 2 节；Phase 3 采用 Incremental Migration，见第 14 节。
+
+## 2. Phase 2 Pilot Findings（A / B / C 复盘）
+
+### 2.1 Pilot 记录
+
+| Pilot | 组件                                  | Issue | PR                                                                   | 合并      | 交付范围                                                                                                                                                                       |
+| ----- | ------------------------------------- | ----- | -------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A     | `BusinessSystemFlow`                  | #100  | [#107](https://github.com/0verme/data-warehouse-visualized/pull/107) | `f147d18` | Node role、两条 connector relation、Focus / State 分离、7 个 diagram token、container-first responsive、reduced motion                                                         |
+| B     | `LineageGraph` + `LineageTeachingLab` | #101  | [#112](https://github.com/0verme/data-warehouse-visualized/pull/112) | `5b91551` | relation → marker / 线型、base edge 与 impact overlay 分离、SVG 端点裁剪 / 选择性 label / pending 标注、Focus / State 正交、canvas 局部滚动 + Selected Node Detail、token 迁移 |
+| C     | `LakehouseArchitectureLab`            | #102  | [#114](https://github.com/0verme/data-warehouse-visualized/pull/114) | `1b802d3` | Zone、4 类 relation + 图例、Overview → Detail 分区、container-first responsive、Light / Dark 收敛、Focus / State 正交                                                          |
+
+- Phase 1 规范 PR：[#99](https://github.com/0verme/data-warehouse-visualized/pull/99)（合并 `1d030df`）。
+- 三个 Pilot 都是独立 PR，均未抽取共享 primitive、未新增同义 token、未改变课程 slug / 内容 / 交互。
+- 本节结论基于三个已合并实现与 focused tests（`tests/warehouse-intro.test.tsx`、`tests/lineage.test.ts`、`tests/lakehouse.test.ts`），不是基于设计意图。
+
+### 2.2 已验证的共同语义（Verified）
+
+| 语义维度           | Pilot A                                                                                         | Pilot B                                                                                                                          | Pilot C                                                                                            | 规范结论                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Node role          | `data-node-role="source / processing / consumer"`                                               | `data-node-type="table / field / task / metric"`                                                                                 | `data-node-role="source / lake / warehouse / shared-table / compute / transform"`                  | Node 必须有稳定、可用一句话说明的角色，并以文字或图例出现在图面；角色不由颜色单独承担           |
+| Zone               | 无显式 Zone（阶段列 + 文案表达边界）                                                            | 无 Zone                                                                                                                          | `data-zone="source / lake / warehouse / shared-storage / compute"`                                 | Zone 只在存在真实所有权 / 运行环境 / 数据管理 / 消费边界时使用；线性 Flow 不为了“有 Zone”补边界 |
+| Connector relation | `data-transform`、`delivery-publish-consume`                                                    | `transform / derives / depends_on / consumes` → kind `data-transform / field-derivation / control-dependency / delivery-consume` | `data-transform`、`sync-copy`、`shared-foundation`、`version-causality`                            | relation 有稳定标识 + 线型 / marker / 方向；三者都提供图例或可读 label                          |
+| Focus              | `data-focus="primary / none"` + `aria-pressed`                                                  | `data-focus="primary / path / context"`、`data-impact-focus`                                                                     | `data-focus="primary / none"` + `aria-pressed`                                                     | Focus 只提升权重（粗细、对比、背景），不删除、不替换基础关系                                    |
+| State              | `data-state="waiting / collecting / processing / ready"`，连接 `inactive / current / completed` | `data-state="deleted / affected / normal"`；teaching 用 `data-impact-level` + `data-verification-status`                         | `data-state="pending / synced / ready / failed / held / committed / idle / current / time-travel"` | State 由稳定文字承担，颜色只作辅助；状态不改变基础 relation                                     |
+| Overview → Detail  | phase rail + flow inspector                                                                     | Selected Node Detail + evidence drawer + 先直接后传递的影响预测                                                                  | `data-section="overview / detail"` 分区 + 表格 Detail                                              | 复杂实验默认拆 Overview → Detail，Detail 不改变 Overview 的关系含义                             |
+| Light / Dark       | 定义 7 个 `--diagram-*`，删除组件 dark 特例                                                     | 复用 A 的 token，移除 `#cbd7e4` / `#8261b2` 等 literal，SVG marker 用 `context-stroke`                                           | 复用 A 的 token，移除 `#b9cee5` 与未映射 `--navy / --blue-deep / --teal-soft`                      | Light / Dark 只在语义 token 层切换，组件不维护第二套颜色                                        |
+| Responsive         | `@container visualization` 660，窄容器纵向重排                                                  | canvas 局部横向滚动 + Selected Detail，teaching 保持纵向流                                                                       | `@container visualization` 660 / 480，Overview → Detail 堆叠                                       | 优先 container query；局部滚动 / Detail 可接受，页面级横向滚动是缺陷                            |
+| Reduced motion     | JS `matchMedia` 直接进入 Phase 3；timer 可清理                                                  | JS `matchMedia` 一次性显示影响；保留 direct / transitive 文字                                                                    | 本身无 timer / RAF，静态即最终状态                                                                 | reduced-motion 下静态语义必须完整，颜色不能成为唯一入口                                         |
+| Accessibility      | 文字状态 + `aria-live` + `aria-pressed`                                                         | SVG `role="img"` + `<title>`、图面标注“可局部横向滚动”、大量 `aria-live`                                                         | Zone `aria-labelledby`、connector `aria-label`、`aria-live` 状态文字                               | 状态、方向、焦点和结果必须有文字入口，不依赖颜色、移动或闪烁                                    |
+
+**已验证共同规则（一句话版）：**
+
+> 一张图里，Node role 与 Connector relation 给出稳定的技术事实；Focus 和 State 只在这套事实上叠加权重与文字，不重写事实。
+
+规范分级（本文件其余部分按此阅读）：
+
+| 级别                    | 含义                                | 例子                                                                                                |
+| ----------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 已验证规范（Verified）  | 三个 Pilot 已验证，后续组件默认遵守 | base relation + overlay；Focus / State 正交；7 个 diagram token；container-first responsive         |
+| 推荐实践（Recommended） | 方向明确，但样本不足或需要组件判断  | `optional / asynchronous` 的线型；Connector label 的极简策略；具体断点数值；Motion 的具体时长与缓动 |
+| 组件自行决定（Local）   | 规范只要求声明，不要求统一          | 布局与教学隐喻；播放 / 切换节奏；Detail 内容与位置；`data-*` 属性命名（见 2.8）                     |
+| Non-goals               | 明确不做                            | `DiagramEngine` / `UniversalDiagram` / `GraphLayout` / 自动 routing / 统一 SVG runtime（见 2.7）    |
+| Phase 3 策略            | 渐进迁移，不设“全部迁移完成”标准    | 见 2.10                                                                                             |
+
+### 2.3 Focus 与 State 正交（Verified rule）
+
+```text
+Focus = 当前教学关注点（primary / path / context / muted）
+State = 真实业务 / 系统状态（waiting、processing、ready、failed、held、committed、pending、synced、deleted、affected …）
+```
+
+明确禁止（三个 Pilot 都已消除或避免的反例）：
+
+- selected = warning，highlighted = success；
+- Layer / Node 类型 = 状态色（如 DWD / DWS / ADS 或 table / metric 各分一色）；
+- 当前传播路径改写原有 relation 类型（例如把 transitive impact 画成另一种虚线）；
+- 选中节点因为同时“受影响 / 已删除”而被状态色覆盖：B 用 `:not(.is-selected)` 限定状态背景，Focus 决定边框 / 背景权重，State 只出现在状态文字与独立标记上；
+- 业务成功色（success）复用为普通选中态：A / C 已移除；A 的“当前查看”从 warning 改为 accent。
+
+组件自行决定：由哪个属性名承载 Focus / State、选中时是否同时展示状态文字、Focus 是否附 `aria-pressed`（见 2.7、2.8）。
+
+### 2.4 Diagram Semantic Token 收口（Verified）
+
+Phase 2 实际只落地 7 个 token，一次定义在 `src/styles/tokens.css` 的 `:root`；dark theme 通过 foundation token 自动切换，组件不再维护 diagram 专用 dark 值：
+
+| Token                        | Phase 2 实现值          | 用途                                       |
+| ---------------------------- | ----------------------- | ------------------------------------------ |
+| `--diagram-bg`               | `var(--demo-bg)`        | 图面 / canvas 背景                         |
+| `--diagram-surface`          | `var(--surface-1)`      | Node / Zone / Detail 表面                  |
+| `--diagram-border`           | `var(--border-strong)`  | 普通边界、Zone 边界、canvas 外框           |
+| `--diagram-connection`       | `var(--text-secondary)` | 默认连接（含 SVG marker `context-stroke`） |
+| `--diagram-connection-muted` | `var(--text-muted)`     | 非焦点连接、装饰性分隔                     |
+| `--diagram-accent`           | `var(--interactive)`    | 当前 Focus（选中 / 当前阶段 / 当前路径）   |
+| `--diagram-accent-soft`      | `var(--info-bg)`        | Focus 背景、选中态浅色 surface             |
+
+继续复用全局语义 token，不新增 diagram 同义角色：`text-primary` / `text-secondary` / `text-muted`、`success-*` / `warning-*` / `danger-*`（以及 `info-*`）。
+
+Phase 1 §8.2 曾列出 `--diagram-surface-subtle`、`--diagram-border-strong`、`--diagram-text`、`--diagram-muted`、`--diagram-success`、`--diagram-warning`、`--diagram-danger` 等候选。A / B / C 均未出现“现有 7 个 token + 全局语义 token 无法表达”的用例，因此这些角色**不创建**。未来只有出现无法用现有角色 + 文字表达的稳定新语义时才重新评估，不在 Phase 3 预置。
+
+### 2.5 Connector Grammar 验证结果
+
+三个 Pilot 实际使用的 relation：
+
+| Relation（规范名）                 | A `BusinessSystemFlow`        | B `LineageGraph`                            | C `LakehouseArchitectureLab`       | 线型 / marker 结论                                                        |
+| ---------------------------------- | ----------------------------- | ------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------- |
+| `data / transform`（数据 / 加工）  | ✅ `data-transform`           | ✅ `transform` → kind `data-transform`      | ✅ `data-transform`                | 实线 + 实心箭头；方向 = 生产者 → 派生数据                                 |
+| `delivery / publish-consume`       | ✅ `delivery-publish-consume` | ✅ `consumes` → kind `delivery-consume`     | —（跨边界交付由 `sync-copy` 承担） | 实线 + 独立端点（B 用菱形）；方向 = 已发布资产 → 受控消费者               |
+| `field derivation`（字段派生）     | —                             | ✅ `derives` → kind `field-derivation`      | —                                  | 实线 + 开放箭头；只在字段 Detail 内使用                                   |
+| `control / dependency`（控制依赖） | —                             | ✅ `depends_on` → kind `control-dependency` | —                                  | 长虚线 + 开放箭头；与数据实线可区分                                       |
+| `sync / copy`（复制 / 同步）       | —                             | —                                           | ✅ `sync-copy`                     | 虚线 + 实心箭头；跨数据管理 / 计算边界，与 publish / consume 不是同一契约 |
+| `shared foundation`（共享基础）    | —                             | —                                           | ✅ `shared-foundation`             | 点线 + 菱形端点；表达架构关系而非数据流                                   |
+| `version causality`（版本 / 因果） | —                             | —                                           | ✅ `version-causality`             | 细实线 + 开放箭头；表达提交 / 快照 / 时间旅行因果                         |
+| `optional / asynchronous`          | 未使用                        | 未使用                                      | 未使用                             | Phase 1 规范保留，Phase 2 无实现证据                                      |
+| `evidence association`             | —                             | ✅ 但实现为标注而非线型                     | —                                  | 证据（`data-verification-status`、`○ 待确认`）附着在边上，不引入新线型    |
+
+已验证的规则：
+
+- relation 决定线型 / marker / 端点；Focus 只改 `stroke-width`、对比度或背景权重；State 不改变基础 relation。
+- 箭头方向遵守真实数据 / 控制方向（A 用 `data-from` → `data-to`；B 端点裁剪后方向不变；C 的 `sync-copy` 保持 Source → Lake → Warehouse）。
+- 不靠颜色单独表达语义：三者都有图例（B `lineage-grammar`、C `lakehouse-legend`）或可读 label / `aria-label`（A）。
+- label 只在必要时出现：B 只给选中边或当前路径第一条边 label；C 每段关系给短 label；A 只给短状态文字。
+- 空间关系已经足够清楚时不画线：C 的 Zone 与 A 的阶段列承担部分关系，表格 / comparison 不产生装饰性连接线。
+- 同一种虚线只承担一种含义：B 移除 `.is-transitive { stroke-dasharray }`，传递影响不再伪装成另一种依赖。
+
+未验证 / 保留：
+
+- `optional / asynchronous` 无 Pilot 实现，保持规范候选；不因为“虚线已经存在”就把它算作已验证。
+- `evidence association` 在 B 中以状态标注表达，未产生独立连接类型；Phase 3 出现第二个真实用例时再决定是否需要线型。
+- 本地 relation 字面量尚未统一：A / C 在 DOM 上使用 kebab-case 完整名，B 的 `data-relation` 仍暴露数据模型关系 `transform / derives / depends_on / consumes`，`data-relation-kind` 才对齐规范名。这属于组件本地对齐，不是共享 primitive。
+
+### 2.6 Responsive 验证结果
+
+| 策略                                               | 验证组件                                                                                         | 结论                                                                              |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| 优先 container query（`@container visualization`） | A（`visualization-compact.css` 660）、B（lineage 660 / 480，teaching 680 / 480）、C（660 / 480） | 已验证：断点以 visualization container 为准，不再以 viewport media query 为主来源 |
+| 线性 Flow 纵向重排                                 | A（Source ↓ Warehouse ↓ Output，箭头随布局向下）                                                 | 已验证：主路径顺序、方向、状态文字保留                                            |
+| Dependency Graph 局部滚动 + Detail                 | B（canvas `width: max(100%, 760px)` + `overflow-x` + Selected Node Detail）                      | 已验证：不把 SVG Node 缩到 108px；页面本身不横向滚动                              |
+| Architecture Overview → Detail                     | C（`data-section="overview / detail"`，窄屏先堆叠 Zone 再给 Detail，表格只局部 `overflow-x`）    | 已验证                                                                            |
+| 不通过无限缩小 Node / 字号适配手机                 | A / B / C                                                                                        | 已验证：三者都选择重排、局部滚动或 Detail，而不是缩小主 Node                      |
+| 页面级横向滚动                                     | A / B / C（B 的固定 760px 画布曾是页面级风险）                                                   | 已验证方向：局部 canvas / table scroll 可接受，页面级 scroll 视为缺陷             |
+
+组件自行决定：具体断点数值（660 / 680 / 480 各组件不同）与每一屏展示多少 Detail。规范只要求声明“图形族 + 降级策略”。
+
+### 2.7 明确不抽象的内容（Non-abstractions）
+
+三个 Pilot 依赖不同的教学隐喻，Phase 2 明确不为它们建立共享抽象：
+
+| Pilot                        | 独有教学隐喻                                         | 明确不抽取                                                              |
+| ---------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| A `BusinessSystemFlow`       | Source 选择 + phase rail + 三点 packet 播放          | 播放控制器、packet rail、flow inspector                                 |
+| B `LineageGraph`             | 固定坐标 SVG canvas + 手工布局 + 证据抽屉 + 调查分支 | `GraphLayout`、自动 routing、碰撞检测、通用 SVG runtime、Lineage canvas |
+| C `LakehouseArchitectureLab` | Zone + architecture comparison + 四个 focus 实验     | `Zone` 组件、comparison matrix、sync 控制器                             |
+
+本规范明确不建立、也不为建立做铺垫：
+
+```text
+DiagramEngine        UniversalDiagram     UniversalNode
+UniversalConnector   GraphLayout          自动 routing / 碰撞检测
+通用 SVG runtime     大一统 visualization framework
+```
+
+三个 Pilot 的共用边界：
+
+- 重复只到语义词汇层（role / relation / focus / state / overview-detail），不到组件 API 层；
+- 实现形态不同（A 的 CSS flex connector、B 的 SVG marker、C 的 HTML Zone + connector），强行统一会先要求一套“关系视觉元数据”契约，而目前只有三个样本；
+- 各自的教学节奏（播放 / 传播 / 切换 focus）不可替代。
+
+### 2.8 记录但不实现的重复模式候选
+
+以下模式在 A / B / C 重复出现，但只记录，不在本轮抽象，也不新建强制迁移 Issue；后续出现第 4 个真实用例时再评估：
+
+| 候选                                                               | 重复证据                                                                                            | 为什么不在本轮抽象                                                               |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| relation 视觉元数据契约（kind / marker / linePattern / direction） | B 有纯数据 `LINEAGE_RELATION_VISUALS`；C 有 `LAKEHOUSE_RELATION_LABELS`；A 有 relation + state 映射 | 三者数据形状不同，抽象前先要确定 marker / 线型是否跨 HTML / SVG 通用             |
+| 统一 `data-node-role` / `data-node-type` 命名                      | A / C 用 `data-node-role`，B 用 `data-node-type`；A / B 有 `data-diagram-type`，C 未使用            | 属组件本地命名对齐，收益是测试与可读性一致性，不是新 primitive                   |
+| Focus / State 的 `data-*` 编码                                     | 三者都实现正交，但 B 的 teaching wrapper 用 `data-impact-level` 而非 `data-state`                   | 各组件状态族不同；先保证语义正交，再谈命名                                       |
+| Local Detail 面板                                                  | A inspector、B Selected Node Detail / evidence drawer、C Detail 分区                                | 三者内容与布局完全不同，只剩“选中后在别处看细节”一条抽象，价值不足以建 primitive |
+
+结论：Phase 2 未产生任何 shared primitive，也没有把上述候选升级为强制迁移项。
+
+### 2.9 三个 Pilot 的验收记录（回填 §13.4 模板）
+
+**Pilot A · `BusinessSystemFlow`**
+
+- 主类型 / 辅助类型：Flow（主）+ Architecture（辅助）——Pilot 后仍准确；`data-diagram-type="flow"`。
+- Node / Connector / Layer / Zone / State / Focus：source / processing / consumer；`data-transform` / `delivery-publish-consume`；Layer 由阶段列与文案承担；无显式 Zone；state = waiting / collecting / processing / ready；focus = primary / none。
+- 静态状态：两类关系的 inactive / current / completed 可分别读出，静态文字始终可见。
+- Light / Dark：7 个 `--diagram-*` 由 foundation 派生，无需组件 dark 特例（已删除 `themes.css` 中的 BusinessSystemFlow 覆盖）。
+- Responsive：660 container 内纵向重排；320 / 375 / 480 / 660 路径覆盖；无页面级横向滚动。
+- Reduced motion：直接进入 Phase 3 静态结果；timer 在 reset / 卸载时清理。
+- 交互回归：Source 选择、播放、reset、phase 文案与结果含义保留。
+- 出现至少两次的模式：base relation + overlay；container-first responsive。
+- 不应抽取：packet rail、phase controller、inspector。
+- 独立 PR：[#107](https://github.com/0verme/data-warehouse-visualized/pull/107)。
+
+**Pilot B · `LineageGraph` / `LineageTeachingLab`**
+
+- 主类型 / 辅助类型：Dependency（主）+ Evidence / State（辅助）。
+- relation → marker / 线型映射为纯数据；base edge 不被 direct / transitive overlay 改写。
+- Node 类型以稳定文字 + marker（`table ▣ / field ◇ / task ▶ / metric ●`）表达，不建立四色体系。
+- Focus = primary / path / context；State = deleted / affected / normal，节点内始终有稳定文字。
+- Evidence：`data-verification-status` + `○ 待确认`，pending 不改变 relation。
+- Responsive：canvas 局部横向滚动 + Selected Node Detail；teaching wrapper 保持纵向教学流。
+- Light / Dark：复用 A 的 token，移除 `#cbd7e4` / `#8261b2` 等 literal；SVG marker 用 `context-stroke`。
+- Reduced motion：影响传播直接进入最终步骤，保留 direct / transitive 文字。
+- 交互回归：view 切换、搜索、选择、evidence、impact、reset、investigation 保留。
+- 不应抽取：固定坐标 canvas、字段路径布局、候选根因卡片。
+- 独立 PR：[#112](https://github.com/0verme/data-warehouse-visualized/pull/112)。
+
+**Pilot C · `LakehouseArchitectureLab`**
+
+- 主类型 / 辅助类型：Architecture（主）+ Flow / Comparison / Timeline（按 focus）。
+- Zone：source / lake / warehouse / shared-storage / compute；标题 + 中性边界，不使用 success / teal / amber。
+- Relation：`data-transform` / `sync-copy` / `shared-foundation` / `version-causality`，带图例。
+- Focus：selected demand / mode / version 只用 accent；State 使用全局 success / warning / danger + 文字。
+- Overview → Detail：`data-section` 分区；表格只局部滚动。
+- Responsive：收敛 760 / 480 viewport 与 660 / 480 container 规则为 container-first；≤660 堆叠、≤480 单列。
+- Light / Dark：移除 `#b9cee5` 与未映射 `--navy / --blue-deep / --teal-soft`。
+- Reduced motion：无 timer / RAF，静态即最终状态。
+- 交互回归：四个 focus、sync / reset、文件失败、commit / Time Travel、Unity 切换保留。
+- 不应抽取：Zone 组件、comparison matrix、四个 focus 的编排。
+- 独立 PR：[#114](https://github.com/0verme/data-warehouse-visualized/pull/114)。
+
+### 2.10 Phase 3 策略：Incremental Migration
+
+Phase 3 不建立一次性 migration 项目、不做全仓重写、不要求 checklist：
+
+1. **新 visualization 默认遵守 Visual Grammar。** 新增 Lab 先在内容设计中声明主 Diagram Type、教学问题、Focus / State 分离和窄容器策略，再决定实现形态。
+2. **旧 visualization 只有在真实修改时顺手迁移。** 接触某组件时（修 bug、加课程内容、改交互）才评估是否对齐本规范。
+3. **只有明确可读性 / 主题 / 响应式收益才迁移。** 没有收益的稳定组件保持原样，是允许且推荐的结果。
+4. **不为 checklist 重写稳定组件。** 不批量迁移 token、不批量重命名 `data-*`、不批量改 layout。
+5. **不要求全仓一次性完成。** 不设“全部组件迁移完成”的完成标准；本规范的验收 = 三个 Pilot 已完成 + 后续组件按需遵循。
+6. **共享 primitive 的门槛不降低。** 只有出现稳定、重复、边界可用一句话说明且不是课程隐喻的新用例，才另开评估 Issue。
+7. **文档滞后时以代码事实为准。** 规范与已合并实现冲突时，先修文档或开 Issue，不为了让文档成立而改稳定组件。
+
+Phase 3 的跟踪方式：不再为本规范保留类似 #95 的长期总 Issue；后续以“新可视化是否遵守规范 + 迁移是否有收益”为普通 review 检查项。Issue #95 在本文与收口 PR 合并后关闭。
+
+## 3. 审计范围与证据
+
+### 3.1 盘点范围
+
+基于 `origin/main`（commit `8d5f9f5a9124f36c2814683c3238e1e8d5b85a86`）及 Issue #95 工作树审计（Phase 1 审计基线；Phase 2 Pilot 基于后续 `main` 实现）：
 
 - `src/components/visualizations/`：**33 个 TSX 文件**。
   - `LessonSectionRenderer` 当前直接装配 27 个课程组件名；其余包括 `LineageTeachingLab`、`ModelingPerspectiveSwitcher`、`PerformanceLabShared`、性能子实验等共享 / 分支辅助组件。
@@ -31,7 +257,7 @@ sql.sb 目前已经有一套内容丰富的交互式教学实验，但“图解�
 - 运行与装配：`src/content/types.ts`、`src/components/lesson/LessonSectionRenderer.tsx`、`src/content/lessons/index.ts`、`src/data/course.ts`、`src/components/visualizations/index.ts`。
 - 样式与主题：`src/styles/tokens.css`、`themes.css`、`components/shared-lesson.css`、`components/visualization-compact.css` 以及各 lesson stylesheet。
 
-### 2.2 现状判断
+### 3.2 现状判断
 
 当前系统已有值得保留的基础：
 
@@ -43,9 +269,9 @@ sql.sb 目前已经有一套内容丰富的交互式教学实验，但“图解�
 
 当前主要问题不是缺少视觉，而是**相同的技术概念在不同组件中由不同的颜色、箭头、卡片形状、虚线和动画表达**。审计结论不要求这些差异立即消失，只要求区分“概念语义”和“课程隐喻”。
 
-## 3. Diagram Type 选择规范
+## 4. Diagram Type 选择规范
 
-### 3.1 最小类型词汇
+### 4.1 最小类型词汇
 
 | 规范名称         | 包含的现有候选                          | 首要回答的问题                                         | 不应承担的问题                           |
 | ---------------- | --------------------------------------- | ------------------------------------------------------ | ---------------------------------------- |
@@ -62,7 +288,7 @@ sql.sb 目前已经有一套内容丰富的交互式教学实验，但“图解�
 
 **Composite 不是第九种类型。** `CapstoneWorkbench` 是由多个 checkpoint 组成的教学编排：每个 checkpoint 仍应声明自己的 Flow、Schema、State、Dependency、Timeline 或 Comparison 角色。
 
-### 3.2 选型规则
+### 4.2 选型规则
 
 1. 先把教学问题写成一句话，例如“数据从哪里来？”、“DWD 失败会影响谁？”或“同一个 customer 在某个时间点是什么状态？”；这句话比组件名称优先。
 2. 选择一个主类型；只有当第二个视图解决不同且必要的问题时，才添加一个轻量辅助类型。
@@ -72,9 +298,9 @@ sql.sb 目前已经有一套内容丰富的交互式教学实验，但“图解�
 6. 当主图超过可读复杂度时，先拆 `Overview → Detail`，再考虑隐藏次要信息；不通过缩小字号或降低连接对比度来“容纳”更多对象。
 7. 空间邻接已经清楚表达的顺序不重复画线。线只表达空间本身无法表达的关系。
 
-## 4. 最小 Visual Grammar
+## 5. 最小 Visual Grammar
 
-### 4.1 Node
+### 5.1 Node
 
 Node 是一个可被学习者单独理解、定位、选择或比较的概念，不是所有装饰性文字都要做成节点。
 
@@ -88,7 +314,7 @@ Node 是一个可被学习者单独理解、定位、选择或比较的概念，
 
 Node 默认至少包含：名称、角色 / 类型、与当前教学问题相关的一条说明。数字、箭头标签、caption、legend 和操作提示不自动升级为 Node。
 
-### 4.2 Layer
+### 5.2 Layer
 
 Layer 表示有顺序的抽象或职责，不表示固定颜色或固定缩写。推荐使用“职责 + 可选本课名称”的方式：
 
@@ -101,7 +327,7 @@ Layer 表示有顺序的抽象或职责，不表示固定颜色或固定缩写�
 
 课程可以继续使用 `ODS / DWD / DWS / ADS`、`Lake / Warehouse`、`Task / Metric` 等领域名称，但必须在文字中说明本课语义。不要因为 Layer 需要区分而给每层分配一套色相；层的主要编码是顺序、标题、边界和职责。
 
-### 4.3 Zone
+### 5.3 Zone
 
 Zone 是有真实边界的范围，至少要满足以下一个条件：所有权、运行环境、数据管理 / 计算边界或消费边界发生变化。典型 Zone：
 
@@ -112,7 +338,7 @@ Zone 是有真实边界的范围，至少要满足以下一个条件：所有权
 
 普通的卡片网格、为了排版而加的容器或同一责任范围内的标题分组不称为 Zone。Zone 优先使用背景、边框、标题和留白表达，不能只靠一条跨越全图的颜色带暗示。
 
-### 4.4 State
+### 5.4 State
 
 State 必须用稳定文字或符号可读，颜色只作辅助。基础状态族：
 
@@ -125,7 +351,7 @@ State 必须用稳定文字或符号可读，颜色只作辅助。基础状态�
 
 状态转移要标明触发事件或条件，例如 `Quality FAILED → Release BLOCKED`；不要把 `teal = 完成` 当作全局规则，因为现有代码中 teal 也同时被用作连接、Layer、选中和说明色。
 
-### 4.5 Focus
+### 5.5 Focus
 
 一张图只保留一个主要 Focus，可有少量上下文 Focus：
 
@@ -136,9 +362,9 @@ State 必须用稳定文字或符号可读，颜色只作辅助。基础状态�
 
 Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连接上提升权重，而不是用另一种没有图例的线代表“影响”。页面应同时提供文字摘要、`aria-live` 或 Detail，使 Focus 不依赖颜色、移动或闪烁才能被理解。
 
-## 5. Connector Grammar
+## 6. Connector Grammar
 
-### 5.1 最小关系集合
+### 6.1 最小关系集合
 
 | 关系                         | 视觉建议                                   | 方向                         | 标签要求                                             | 语义边界                                       |
 | ---------------------------- | ------------------------------------------ | ---------------------------- | ---------------------------------------------------- | ---------------------------------------------- |
@@ -152,7 +378,9 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 
 **重要区分：** `pending / inferred` 是证据状态，不等于 `optional / asynchronous`。待确认的边仍应保留其原关系类型，并附确认状态；不能因为状态 pending 就统一画成虚线。
 
-### 5.2 方向、几何和标签
+**Phase 2 验证结果（回填）：** `data / transform`、`delivery / publish-consume`、`field derivation`、`control / dependency` 已在 A / B 中实现；C 额外补充 `sync / copy`、`shared foundation`、`version causality`；`optional / asynchronous` 尚无实现证据；`evidence association` 在 B 中实现为边上的证据状态标注而非独立线型。完整映射与结论见 §2.5。
+
+### 6.2 方向、几何和标签
 
 - 数据方向始终遵循真实的生产 / 派生 / 消费方向；影响分析仍从变更起点向下游展示，不用反向箭头制造“影响来自下游”的错觉。
 - 控制依赖从前置条件指向被放行任务；如果教学要问“谁在等待”，用文字说明，不反转箭头。
@@ -162,7 +390,7 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 - 连接标签只在关系不能由方向、空间或图例唯一推断时出现。标签靠近关系中点并带不透明背景，不覆盖 Node、焦点环或另一条线。
 - 如果顺序、同一 Zone 内的列布局或表格行已经充分表达关系，则省略连接线；省略后必须仍能读出方向和边界。
 
-### 5.3 当前实现的连接问题
+### 6.3 当前实现的连接问题（Phase 1 审计；三个 Pilot 已修复各自相关项，见 §2.5）
 
 现有组件混用 `→ / ↓ / ↔` 字符、CSS 伪元素、HTML connector、SVG `<line>` 和 timeline rail。它们都可以保留，但后续实现应给连接加语义级数据 / class，而不只依据视觉位置：
 
@@ -172,9 +400,9 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 - `LayerEvolutionLab` 中“汇集”和“复用”是有业务含义的连接标签，不能退化成无意义的装饰箭头；
 - Lakehouse 的“复制 / 同步”和“共享基础能力”必须用不同关系和 Zone 边界表达。
 
-## 6. 信息密度与 Overview → Detail
+## 7. 信息密度与 Overview → Detail
 
-### 6.1 密度预算
+### 7.1 密度预算
 
 每个视图应先确定：
 
@@ -186,7 +414,7 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 
 下列内容不应同时争夺同一图面焦点：完整 SQL、全量字段表、所有统计数字、完整证据链、所有下游节点和操作说明。`LineageGraph` 和 `CapstoneWorkbench` 目前已经显露出组合内容需要拆分的边界；这是信息架构问题，不是继续缩小卡片的问题。
 
-### 6.2 Overview → Detail 规则
+### 7.2 Overview → Detail 规则
 
 1. Overview 只显示关系、方向、层 / Zone、当前状态和必要标签。
 2. 选择 Node / Stage / Edge 后显示 Detail：字段、SQL、证据、计数、时间或决策说明。
@@ -195,16 +423,16 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 5. 表格、时间轴和证据列表可作为 Detail，不必强行画入 Overview。
 6. 当可读 Node 数量、分支数或独立语义超过一个视图能复述的范围时，提供子视图选择器；不要仅使用 opacity 隐藏关键对象。
 
-### 6.3 现有重复模式
+### 7.3 现有重复模式
 
 - 多数 Lab 都使用“圆角卡片 + 选中边框 + 一段说明”，但卡片是否代表 Node、Choice、Evidence 或 Detail 由局部 class 猜测。
 - `is-selected`、`is-active`、`is-related`、`is-affected`、`is-done` 在不同 lesson 中有不同权重；后续应把“交互选中”和“业务状态”分开。
 - `LineageGraph` 的 direct / transitive 影响已经有清晰的教学拆分；teaching wrapper 则使用垂直 flow、候选卡和证据面板。两者应共享语义，不应被迫共享画布。
 - 表格和时间轴通常比全图更适合回答 Grain、Metric、SCD 和性能前后对照；这些实验不需要被改造成节点图。
 
-## 7. Diagram Semantic Tokens
+## 8. Diagram Semantic Tokens
 
-### 7.1 现有基础与问题
+### 8.1 现有基础与问题
 
 `src/styles/tokens.css` 已提供以下可复用层：foundation（surface、border、text）、info、success、warning、danger、interactive、focus、motion，以及兼容别名 `--surface`、`--line`、`--blue`、`--teal`、`--amber`。dark theme 也已有对应语义值。
 
@@ -216,30 +444,38 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 - `star-schema.css`、`banking-modeling.css`、`scd.css`、`sql-workbench.css` 等仍有局部 hex / rgb 或 fallback literal；部分 ADS / metric 标签使用历史紫色；
 - `success-bg` / `success-border` 常被用于“选中”或“架构强调”，这不一定代表业务成功。
 
-Phase 1 不修改 `tokens.css`，只提出下面的语义层供 Pilot 验证。
+Phase 1 未修改 `tokens.css`，只提出语义层供 Pilot 验证；Phase 2 的落地结果见 §8.2。
 
-### 7.2 建议的 Diagram 角色
+### 8.2 Diagram 角色（Phase 2 收口结果）
 
-| 建议角色                     | Phase 2 初始映射建议                          | 使用范围                 |
-| ---------------------------- | --------------------------------------------- | ------------------------ |
-| `--diagram-bg`               | `var(--demo-bg)` 或经验证的 `--canvas`        | 图面 / 实验工作区背景    |
-| `--diagram-surface`          | `var(--surface-1)` / `var(--surface)`         | Node、Detail、证据卡     |
-| `--diagram-surface-subtle`   | `var(--surface-2)` / `var(--surface-muted)`   | 非焦点区域、表头、辅助区 |
-| `--diagram-border`           | `var(--border)` / `var(--line)`               | 普通边界                 |
-| `--diagram-border-strong`    | `var(--border-strong)` / `var(--line-strong)` | 连接、分区、键边界       |
-| `--diagram-text`             | `var(--text-primary)` / `var(--ink)`          | Node 与主要说明          |
-| `--diagram-muted`            | `var(--text-muted)` / `var(--ink-muted)`      | 次要说明、等待状态       |
-| `--diagram-accent`           | `var(--interactive)` / `var(--blue)`          | 当前教学焦点、交互选择   |
-| `--diagram-accent-soft`      | `var(--info-bg)` / `var(--surface-blue)`      | Focus 背景和浅色选择态   |
-| `--diagram-connection`       | `var(--border-strong)`                        | 默认连接                 |
-| `--diagram-connection-muted` | `var(--border)`                               | 非焦点连接、上下文关系   |
-| `--diagram-success`          | `var(--success-text)` / `var(--teal)`         | 真实完成、可发布、已确认 |
-| `--diagram-warning`          | `var(--warning-text)` / `var(--amber)`        | 迟到、部分、风险、待处理 |
-| `--diagram-danger`           | `var(--danger-text)` / `var(--danger)`        | 失败、阻断、明确数据异常 |
+Phase 2 实际落地 7 个 diagram 角色，定义一次于 `src/styles/tokens.css` 的 `:root`（实现值见 §2.4）。Light / Dark 通过 foundation token 自动切换，组件不再维护 diagram 专用 dark 值：
 
-`--diagram-info`、`--diagram-focus-ring` 或按关系拆分的 connection token 只有在 Pilot 证明现有角色不足时才新增。Token 名称描述语义，不描述 blue / green / purple 等色相。
+| 已实现角色                   | 值                      | 使用范围                         |
+| ---------------------------- | ----------------------- | -------------------------------- |
+| `--diagram-bg`               | `var(--demo-bg)`        | 图面 / 实验工作区背景            |
+| `--diagram-surface`          | `var(--surface-1)`      | Node、Zone、Detail、证据卡       |
+| `--diagram-border`           | `var(--border-strong)`  | 普通边界、Zone 边界、canvas 外框 |
+| `--diagram-connection`       | `var(--text-secondary)` | 默认连接、SVG marker             |
+| `--diagram-connection-muted` | `var(--text-muted)`     | 非焦点连接、上下文关系           |
+| `--diagram-accent`           | `var(--interactive)`    | 当前教学焦点、交互选择           |
+| `--diagram-accent-soft`      | `var(--info-bg)`        | Focus 背景和浅色选择态           |
 
-### 7.3 Light / Dark 约定
+未创建的 Phase 1 候选角色：
+
+| 候选                                                                      | Phase 2 结论 | 替代                                                           |
+| ------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------- |
+| `--diagram-surface-subtle`                                                | 不创建       | `var(--surface-2)`                                             |
+| `--diagram-border-strong`                                                 | 不创建       | `--diagram-border` 已映射 `--border-strong`                    |
+| `--diagram-text`                                                          | 不创建       | `var(--text-primary)` / `var(--text-secondary)`                |
+| `--diagram-muted`                                                         | 不创建       | `var(--text-muted)`                                            |
+| `--diagram-success`                                                       | 不创建       | `var(--success-*)` + 状态文字                                  |
+| `--diagram-warning`                                                       | 不创建       | `var(--warning-*)` + 状态文字                                  |
+| `--diagram-danger`                                                        | 不创建       | `var(--danger-*)` + 状态文字                                   |
+| `--diagram-info` / `--diagram-focus-ring` / 按关系拆分的 connection token | 不创建       | `--diagram-accent`、`--diagram-connection-muted` 与文字 / 图例 |
+
+Token 名称描述语义，不描述 blue / green / purple 等色相。只有出现无法用现有角色 + 文字表达的稳定新语义时才重新评估（见 §2.4、§2.10）。
+
+### 8.3 Light / Dark 约定
 
 - Light / Dark 只在语义 token 层切换，lesson 不再为同一技术角色复制一套颜色。
 - Layer 不靠色相区分；用 Layer label、顺序、Zone 边界和 Node 说明区分。
@@ -248,9 +484,9 @@ Phase 1 不修改 `tokens.css`，只提出下面的语义层供 Pilot 验证。
 - 连接线在 dark theme 中不能直接复用浅色低对比 hex；必须验证普通、焦点和 disabled 关系的对比度。
 - 后续验收至少检查：普通文字 4.5:1、较大文字 3:1、非文字 UI / 关系边界 3:1；不能只在一个主题截图确认。
 
-### 7.4 后续迁移判断
+### 8.4 迁移与 primitive 门槛（Phase 2 结论）
 
-Pilot 前不做全仓 token 迁移。Pilot 后只有同时满足以下条件的角色才值得抽取 primitive：
+Phase 2 只做了三个 Pilot 的局部迁移，没有全仓 token 迁移。后续抽取共享角色仍不降低门槛，需要同时满足：
 
 - 在三个 Pilot 中都出现；
 - 名称和使用边界可以用一句话说明；
@@ -258,9 +494,11 @@ Pilot 前不做全仓 token 迁移。Pilot 后只有同时满足以下条件的�
 - 不会把课程独特隐喻误收敛成共享 API；
 - 能通过文字 / 图形保持可访问性，不依赖颜色。
 
-## 8. Motion Grammar
+Phase 2 结果是：7 个 diagram 角色全部通过上述门槛；其余候选角色没有任何一个同时满足，因此不新增。后续迁移节奏见 §2.10。
 
-### 8.1 动效的允许目的
+## 9. Motion Grammar
+
+### 9.1 动效的允许目的
 
 Motion 只在它帮助理解以下一种关系时使用：
 
@@ -271,7 +509,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 
 静态图必须已经包含完整语义；动画不能是唯一的箭头、状态或结果。纯装饰性的循环、弹跳、粒子或无因果数字滚动不进入共享规范。
 
-### 8.2 动效契约
+### 9.2 动效契约
 
 每个交互动画都应能回答：
 
@@ -283,15 +521,15 @@ Motion 只在它帮助理解以下一种关系时使用：
 
 当前代码中已经有可复用的行为样本：`BusinessSystemFlow` / `PipelineFlow` / `HeroDataFlow` / `SchedulerRunSimulator` / `LineageGraph` 使用定时器或 RAF 推进过程；多个 lesson CSS 使用 reveal / pulse；部分组件会清理 timer。后续规范应保留这些教学行为，但统一“状态先可读、动画后增强”的约束。
 
-### 8.3 Reduced motion
+### 9.3 Reduced motion
 
 - `reduce` 下跳到最终状态或逐步状态的静态结果，不隐藏节点、证据、方向或数值。
 - 影响传播可改为一次性显示完整路径，并保留“直接下游 / 传递影响”的文字。
 - 动画状态变化使用 `aria-live` 或稳定的当前状态文本；不要以颜色闪烁作为通知。
 - 所有 JS timer / RAF 都必须可取消；组件卸载、重置、切换场景时不能留下旧回调。
-- 当前 reduced-motion 覆盖分布在 shared / quality / service / governance / lineage / scheduler / SQL / performance 等样式与若干 JS 分支，仍有 lesson-specific reveal / pulse 没有一致的语义检查；Phase 2 需以 Pilot 建立最小测试清单。
+- 当前 reduced-motion 覆盖分布在 shared / quality / service / governance / lineage / scheduler / SQL / performance 等样式与若干 JS 分支。Phase 2 已在 A / B / C 验证：A / B 通过 JS `matchMedia` 直接进入最终或逐步静态结果并保留文字，C 本身无 timer / RAF（静态即最终状态，见 §2.6、§2.9）。其余 lesson-specific reveal / pulse 仍按本节的“状态先可读、动画后增强”约束在真实修改时对齐。
 
-## 9. Responsive Grammar
+## 10. Responsive Grammar
 
 响应式先按图形语义选择策略，再选择 breakpoint。优先使用 visualization container 宽度，不把课程壳层的 viewport 宽度当成唯一依据。
 
@@ -304,9 +542,9 @@ Motion 只在它帮助理解以下一种关系时使用：
 | Timeline                   | 保留顺序和时间点；时间点过多时局部滚动或滑块 + 当前 Detail           | 时间语义、当前点、事件 / 状态区别                    | 非当前点的长说明               |
 | Composite / Capstone       | 先显示 checkpoint / 子视图选择，再显示一个阶段的 Detail              | 当前 checkpoint、锁定 / 可用 / 完成 / 阻断、恢复入口 | 其他 checkpoint 的完整内部细节 |
 
-当前实现已经有 shared compact CSS 和多个 lesson container query，但也有 760 / 680 / 620 / 480 等 viewport breakpoint 与 lesson-specific query 并存。后续不要求统一所有数值，而要求每个组件声明自己的“图形族 + 降级策略”。
+当前实现已经有 shared compact CSS 和多个 lesson container query，但也有 760 / 680 / 620 / 480 等 viewport breakpoint 与 lesson-specific query 并存。Phase 2 已在 A / B / C 验证 container query、局部滚动和 Overview → Detail 三条策略（见 §2.6），但没有也不要求统一所有组件的断点数值；每个组件需要声明自己的“图形族 + 降级策略”。
 
-响应式验收条件：
+响应式验收条件（Phase 2 已在三个 Pilot 上逐项检查）：
 
 - 不产生页面级横向滚动；
 - 主关系、方向、状态和结果在最窄目标容器仍可读；
@@ -314,18 +552,18 @@ Motion 只在它帮助理解以下一种关系时使用：
 - 表格 / 时间轴的滚动范围局部可见；
 - 复杂实验在必要时拆 Detail，而不是让所有 Node 缩成无法阅读的卡片。
 
-## 10. 完整可视化盘点
+## 11. 完整可视化盘点
 
-### 10.1 盘点记法
+### 11.1 盘点记法
 
 下表覆盖 54 个 typed visualization sections。表中的语义字段是**规范映射**，不是要求当前代码立即改成统一 class。
 
 - `N` = Node；`C` = Connector；`L` = Layer；`Z` = Zone；`S` = State；`F` = Focus；`M` = Motion。
 - `T0` = 主要使用 foundation / 兼容别名（`surface / line / ink / blue / teal / amber`）；`T1` = 使用 info / success / warning / danger 等状态 token；`T2` = 存在局部 literal、历史 hue 或组件自有 token，需要 Pilot 后评估。
 - `R1` = 线性纵向重排；`R2` = 选择 Detail / 局部滚动；`R3` = 表格 / 时间轴局部滚动；`R4` = 复合实验按子视图拆分。
-- `P1` / `P2` / `P3` 是三个 Pilot 候选；`—` 表示不纳入 Pilot。
+- `P1` / `P2` / `P3` 是三个 Pilot 候选；`—` 表示不纳入 Pilot。三个 Pilot 已于 Phase 2 完成（见 §2.1、§2.9），本表仍保留 Phase 1 审计基线。
 
-### 10.2 Intro、Modeling、Metric 与 Transformation
+### 11.2 Intro、Modeling、Metric 与 Transformation
 
 |   # | Lesson / section · component                                     | 主类型 + 辅助类型                           | 教学问题                                               | N / C / L / Z / S / F / M                                                                                                                                                                                                                                              | R · 当前 token / 语义问题                                                                        | Pilot  |
 | --: | ---------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------ |
@@ -348,7 +586,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 |  17 | `sql-and-transformation-join` · `SqlTransformationWorkbench`     | Flow + Schema                               | 一对多 Join 如何改变结果行数和金额？                   | N=left row、right row、join result、measure；C=one-to-many / duplicated measure；L=source tables→join→result；Z=事实 / 维度 / 结果；S=before / after、duplicated；F=join key 与放大结果；M=快照切换                                                                    | R2+R3；T0+T1+T2。重复金额的危险色与选中色需分离；表格优先于全图。                                | —      |
 |  18 | `sql-and-transformation-layers` · `SqlTransformationWorkbench`   | Layer + Flow                                | 从 DWD 到 DWS / ADS，一行发生了什么变化？              | N=layer snapshot、row、field、output；C=层间 transform；L=detail→aggregate→serving；Z=DWD / DWS / ADS；S=selected layer；F=当前层与行变化；M=切层 / snapshot update                                                                                                    | R1+R3；T0+T1。层名和 Focus 颜色不能耦合；同一组件多个 focus 应共享一套语义。                     | —      |
 
-### 10.3 Scheduling、Quality 与 Lineage
+### 11.3 Scheduling、Quality 与 Lineage
 
 |   # | Lesson / section · component                                         | 主类型 + 辅助类型              | 教学问题                                                        | N / C / L / Z / S / F / M                                                                                                                                                                                                                                     | R · 当前 token / 语义问题                                                                                    | Pilot  |
 | --: | -------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------ |
@@ -369,7 +607,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 |  33 | `data-lineage-impact` · `LineageGraph` / `LineageTeachingLab`        | Dependency + State             | 变更的直接下游和传递 Blast Radius 分别是什么？                  | N=source、direct downstream、transitive node、metric；C=data impact path；L=DWD→DWS→ADS→Metric；Z=table impact scope；S=selected、submitted、revealed；F=direct prediction→blast radius；M=逐层 reveal propagation                                            | R1+R2；T0+T1。当前 `is-direct` / `is-transitive` 需要保留基础关系，不把 dashed 误读为另一种数据依赖。        | —      |
 |  34 | `data-lineage-evidence` · `LineageGraph` / `LineageTeachingLab`      | Evidence + Dependency          | 图上的箭头凭什么相信，确认状态与证据来源是什么？                | N=edge、source、target、evidence record、status；C=evidence association；L=relation→evidence→boundary；Z=lineage evidence drawer；S=confirmed / pending；F=selected edge / record；M=列表选择 / Detail                                                        | R2；T0+T1。pending 不能自动变成 optional dotted connector；证据和关系必须分层。                              | —      |
 
-### 10.4 Governance、Lakehouse 与 Data Service
+### 11.4 Governance、Lakehouse 与 Data Service
 
 |   # | Lesson / section · component                            | 主类型 + 辅助类型                | 教学问题                                                        | N / C / L / Z / S / F / M                                                                                                                                                                                                                                                         | R · 当前 token / 语义问题                                                                           | Pilot  |
 | --: | ------------------------------------------------------- | -------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------ |
@@ -388,7 +626,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 |  47 | `data-service` · `DataServiceWorkbench`（API）          | Flow + Architecture              | 请求参数如何得到一条受控 JSON 响应？                            | N=request、parameter、published asset、JSON response；C=request / response；L=app→service→published result；Z=app / service / asset；S=idle、requested、returned、invalid selection；F=参数与响应；M=发送请求 / response reveal                                                   | R1+R2；T0+T1。API 的 response success 不代表实时性，业务日期需单独标注。                            | —      |
 |  48 | `data-service` · `DataServiceWorkbench`（decision）     | Comparison + Decision            | 同一数据需求应选择报表、文件还是 API？                          | N=consumer scenario、option、reason、selection；C=requirement→delivery decision；L=need→delivery mode→contract；Z=human / batch system / app；S=selected、matched / mismatch；F=当前场景与选择；M=选择后解释更新                                                                  | R2；T0+T1。匹配结果是教学判断，不应使用 Release success 的视觉。                                    | —      |
 
-### 10.5 Performance 与 Capstone
+### 11.5 Performance 与 Capstone
 
 |   # | Lesson / section · component                                              | 主类型 + 辅助类型                                                               | 教学问题                                                                                 | N / C / L / Z / S / F / M                                                                                                                                                                                                                                                                                                                                                                             | R · 当前 token / 语义问题                                                                        | Pilot                      |
 | --: | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------- |
@@ -399,17 +637,19 @@ Motion 只在它帮助理解以下一种关系时使用：
 |  53 | `performance-tradeoffs` · `PerformanceLab` / `PerformanceTradeoffLab`     | Comparison + Evidence                                                           | Before / After 除运行时间外，正确性、SLA、成本和维护代价如何复测？                       | N=before、after、acceptance check、risk；C=compare / validation；L=runtime、scan、freshness、cost、maintainability；Z=job / business acceptance；S=accepted、risk、retest pending；F=acceptance checks；M=逐项检查                                                                                                                                                                                    | R2+R3；T0+T1。Before / After 需要中性对照，不应把 after 自动表示为 success。                     | —                          |
 |  54 | `capstone` · `CapstoneWorkbench`                                          | Composite（由 Flow / Schema / Dependency / State / Timeline / Comparison 组成） | 一条连续 Mission 如何保留 Grain、运行、事故、调查、交付、性能和 Launch Review 的决策链？ | N=checkpoint、source、decision、incident、product、review；C=checkpoint flow、dependency、impact、delivery；L=Mission→Design→Build→Operate→Incident→Investigate→Deliver→Scale→Review；Z=业务 Mission / 数据平台 / 消费者 / review；S=locked、available、completed、blocked、READY / BLOCKED / READY WITH RISK；F=active checkpoint 与最近 Decision Record；M=checkpoint transition / recovery / reset | R4+R3；T0+T1+T2（capstone 自有变量映射 foundation）。密度最高；不得在 Pilot 中直接抽成全局模板。 | 观察对象，不作为首轮 Pilot |
 
-## 11. 共享模式与应保留的课程差异
+## 12. 共享模式与应保留的课程差异
 
-### 11.1 值得在 Pilot 后验证的共享模式
+### 12.1 Pilot 已验证的共享模式
 
-- **Flow rail：** source / stage / consumer 的顺序、数据方向、当前阶段和最终结果；适合 `BusinessSystemFlow`，可能对 `PipelineFlow`、`ReportMetricJourney` 有启发。
-- **Focus / path overlay：** 保留基础连接，只提高当前节点、直接路径和传递路径；适合 `LineageGraph`，不要先抽通用 canvas。
-- **Zone boundary：** Lake / Warehouse、业务系统 / 平台 / 消费者、发布契约边界；适合 `LakehouseArchitectureLab` 和 `BusinessSystemFlow`。
-- **State badge + text：** 状态文字、图形、背景和连接权重的组合；成功、选中、影响、待确认必须能独立解释。
-- **Local Detail：** 选择 Node / Edge / Stage 后在图下方或侧方显示字段、证据、快照和决策；它比把所有信息塞回节点更稳定。
+- **Flow rail（已验证 · A）：** source / stage / consumer 的顺序、数据方向、当前阶段和最终结果；`BusinessSystemFlow` 已实现，可能对 `PipelineFlow`、`ReportMetricJourney` 有启发；播放 rail 本体不抽 primitive。
+- **Focus / path overlay（已验证 · A / B / C）：** 保留基础连接，只提高当前节点、直接路径和传递路径的权重；B 的 SVG marker 与 C 的 HTML connector 都能表达，不抽通用 canvas。
+- **Zone boundary（已验证 · C）：** Lake / Warehouse、业务系统 / 平台 / 消费者、发布契约边界；C 用 `data-zone` 验证；线性 Flow（A）不需要为了对称补 Zone。
+- **State badge + text（已验证 · A / B / C）：** 状态文字、图形、背景和连接权重的组合；成功、选中、影响、待确认可以独立解释；具体 badge 视觉由组件决定。
+- **Local Detail（已验证 · A / B / C）：** 选择 Node / Edge / Stage 后在图下方或侧方显示字段、证据、快照和决策；三者内容与布局不同，不抽共享 Detail 组件。
 
-### 11.2 不应在 Phase 1 收敛的差异
+### 12.2 不应收敛的课程差异
+
+Phase 2 确认了其中与 A / B / C 相关的差异（见 §2.7）；以下条目仍是对全仓的边界声明：
 
 - 银行课程的业务过程、Fact Type、Grain、SCD 和 Metric 口径需要各自的表格、时间轴和字段 Detail；它们不应被改造成同一张“数仓流程图”。
 - `LineageTeachingLab` 的垂直教学 flow 与 `LineageGraph` legacy SVG canvas 可以共享 Dependency / Evidence 语义，但不应强行统一布局。
@@ -418,9 +658,11 @@ Motion 只在它帮助理解以下一种关系时使用：
 - Performance 的 Stage / Worker / Before-After 主要是证据比较，不应为了“图解统一”增加装饰性连线。
 - Capstone 的 checkpoint 顺序是项目教学编排，不是新的通用 Diagram Type。
 
-## 12. Pilot 规范（Phase 2 输入）
+## 13. Pilot 规范与验收记录（Phase 2）
 
-### 12.1 Pilot A：`BusinessSystemFlow`
+本节是 Phase 2 启动时的 Pilot 输入。三个 Pilot 均已完成并合并，实际验收记录回填在第 2.9 节。
+
+### 13.1 Pilot A：`BusinessSystemFlow`（✅ 已完成，PR #107）
 
 **验证问题：** 多来源、主数据流、阶段播放和消费者输出能否在不改变现有布局的情况下使用统一的 Flow / Zone / Focus / State 语义？
 
@@ -432,7 +674,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 - 宽容器、窄容器和手机纵向重排后，主路径与输出仍可读；
 - 是否真的出现跨课可复用的 `FlowNode` / `FlowConnector` 形态，还是只有语义可复用。
 
-### 12.2 Pilot B：`LineageGraph`
+### 13.2 Pilot B：`LineageGraph`（✅ 已完成，PR #112）
 
 **验证问题：** Dependency Graph 的节点、关系、Focus path、direct / transitive impact 和 Evidence 是否能同时可读？
 
@@ -445,7 +687,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 - reduced motion 下影响传播是否一次性可读，且保留 direct / transitive 文字；
 - SVG canvas 窄容器是否应局部滚动、拆视图或改为 selected Detail，而不是继续把 Node 缩到 108px。
 
-### 12.3 Pilot C：`LakehouseArchitectureLab`
+### 13.3 Pilot C：`LakehouseArchitectureLab`（✅ 已完成，PR #114）
 
 **验证问题：** Architecture / Integration 的 Zone、复制、共享基础能力、Snapshot 和复杂响应式是否能共用语义而保留各自教学隐喻？
 
@@ -458,7 +700,7 @@ Motion 只在它帮助理解以下一种关系时使用：
 - Light / Dark 是否可以仅切换语义 token，而不依靠历史 local hue；
 - 现有切换、执行同步、失败提交、Time Travel、重置行为全部保留。
 
-### 12.4 Pilot 验收记录模板
+### 13.4 Pilot 验收记录模板
 
 每个 Pilot 后至少记录：
 
@@ -473,34 +715,49 @@ Motion 只在它帮助理解以下一种关系时使用：
 - 哪些差异明确不应抽取 primitive；
 - 是否产生独立 Phase 2 PR，而不是把 Pilot 继续扩大为全仓迁移。
 
-## 13. Phase 1 交付边界与后续动作
+## 14. 交付边界与后续动作
 
-### 本阶段完成
+### Phase 1 / Phase 2 完成
+
+Phase 1（PR [#99](https://github.com/0verme/data-warehouse-visualized/pull/99)）：
 
 - 54 个 typed visualization sections 的完整盘点；
 - 8 个最小 Diagram Type 及选型规则；
 - Node / Layer / Zone / State / Focus 最小词汇；
 - Connector Grammar（方向、线型、标签、连接点、交叉和省略规则）；
-- Diagram Semantic Token 角色、Light / Dark 映射建议及现有 token 关系；
+- Diagram Semantic Token 角色建议及 Light / Dark 映射；
 - 信息密度、Overview → Detail、Motion、Reduced Motion、Responsive 规范；
-- 2～3 个 Pilot 候选及独立验收输入；
-- 当前重复模式、语义冲突和不应收敛的课程差异记录。
+- 三个 Pilot 候选及独立验收输入；
+- 重复模式、语义冲突和不应收敛的课程差异记录。
+
+Phase 2（PR [#107](https://github.com/0verme/data-warehouse-visualized/pull/107) / [#112](https://github.com/0verme/data-warehouse-visualized/pull/112) / [#114](https://github.com/0verme/data-warehouse-visualized/pull/114)）：
+
+- 三个 Pilot 独立验证 Node role、Zone、Connector relation、Focus、State、Overview → Detail、Light / Dark、Responsive、Reduced motion、Accessibility（见 §2.2）；
+- base relation + focus / state overlay 与 Focus / State 正交成为已验证规则（见 §2.3）；
+- 7 个 `--diagram-*` token 收口，其余候选不创建（见 §2.4、§8.2）；
+- Connector Grammar 回填实际 relation 与未验证项（见 §2.5）；
+- 明确不抽象的内容与只记录的重复模式候选（见 §2.7、§2.8）；
+- Phase 3 采用 Incremental Migration（见 §2.10）。
 
 ### 明确不做
 
-- 不修改 `src/`、`src/styles/`、课程内容、Lesson Schema 或交互；
-- 不修改 `tokens.css`，不迁移旧颜色；
-- 不新增 Diagram Engine、通用布局引擎、自动寻路器或 Mermaid；
+本文档收口 PR 与三个 Pilot 共同遵守的边界：
+
+- 不修改 Pilot 之外的 `src/`、`src/styles/`、课程内容、Lesson Schema 或交互（Pilot 自身的实现已在各自 PR 内完成）；
+- 不新增 Diagram Engine、通用布局引擎、自动寻路器、Mermaid 或统一 SVG runtime；
 - 不把所有 Lab 改成 SVG、同一种布局或同一套卡片模板；
-- 不在本 Issue 实现 Pilot 或共享 primitive；
-- 不关闭 Issue #95，不把文档 PR 误报为 Pilot 已完成。
+- 不抽取共享 primitive，也不把 §2.8 的候选升级为强制迁移项；
+- 不建立一次性 migration 项目，不设“全部组件迁移完成”的完成标准；
+- 不把文档 PR 误报为 Pilot 已完成。
 
 ### 后续顺序
 
-1. 以本规范创建三个独立 Pilot 任务，先验证语义，再决定是否抽取 primitive。
-2. Pilot 之后再确定具体 token 值、对比度、连接 marker、focus ring 和组件 API。
-3. 只迁移存在明确教学收益的组件；旧组件按课程修改节奏渐进迁移。
-4. 新课程新增 visualization 时，先在内容设计中声明主 Diagram Type、教学问题和窄容器策略，再决定实现形态。
+Phase 3 = Incremental Migration（完整规则见 §2.10）：
+
+1. 新 visualization 默认遵守本规范：先声明主 Diagram Type、教学问题、Focus / State 分离和窄容器策略，再决定实现形态。
+2. 旧 visualization 只在真实修改时顺手迁移，且只在有可读性 / 主题 / 响应式收益时迁移。
+3. 不为了 checklist 重写稳定组件；现有课程独特的布局、表格、证据和教学节奏保持原样。
+4. #95 与本文收口后，不再保留长期总 Issue；后续按普通 review 检查项跟踪。
 
 ## 附录 A：审计参考路径
 
@@ -511,4 +768,6 @@ Motion 只在它帮助理解以下一种关系时使用：
 - `src/components/visualizations/PerformanceLab*.tsx`：性能子实验与共享辅助；
 - `src/styles/tokens.css`、`themes.css`：现有 foundation、状态和 dark theme；
 - `src/styles/components/shared-lesson.css`、`visualization-compact.css`：共享图形与 container query；
-- `src/styles/lessons/*.css`：各章节的图形、动画、响应式和局部颜色实现。
+- `src/styles/lessons/*.css`：各章节的图形、动画、响应式和局部颜色实现；
+- `src/utils/lineage.ts`：Pilot B 的 relation 视觉映射与 SVG 端点几何（纯数据 / 纯函数）；
+- `tests/warehouse-intro.test.tsx`、`tests/lineage.test.ts`、`tests/lakehouse.test.ts`：三个 Pilot 的视觉语法 focused tests。
