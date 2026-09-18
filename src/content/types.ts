@@ -34,6 +34,7 @@ import type { PerformanceVisualization } from '../features/performance/types'
 import type { DataQualityVisualization } from '../features/data-quality/types'
 import type { DataServiceVisualization } from '../features/data-service/types'
 import type { CapstoneVisualization } from '../features/capstone/types'
+import type { JoinFanoutVisualization } from '../features/join-fanout/types'
 
 export interface LessonOpening {
   eyebrow: string
@@ -157,6 +158,7 @@ export type LessonVisualization =
   | BankingMetricDerivationVisualization
   | LakehouseVisualization
   | SqlTransformationVisualization
+  | JoinFanoutVisualization
   | GovernanceVisualization
   | PerformanceVisualization
   | SchedulerVisualization
