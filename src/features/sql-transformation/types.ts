@@ -3,24 +3,10 @@ export type TransformationRow = Record<string, TransformationScalar>
 
 export type TransformationLayer = 'ods' | 'dwd' | 'dws' | 'ads'
 export type TransformationFocus = 'plan' | 'cleaning' | 'join' | 'layers' | 'contract'
-export type TransformationGrain =
-  'account-day' | 'business-scope-day' | 'order-item' | 'order' | 'day'
+export type TransformationGrain = 'account-day' | 'business-scope-day'
 
 export type TransformationStepId =
-  | 'plan'
-  | 'clean-detail'
-  | 'join-fanout'
-  | 'aggregate-layers'
-  | 'contract'
-  /** Legacy step IDs remain valid for lineage and external callers during migration. */
-  | 'deduplicate'
-  | 'join-users'
-  | 'wrong-join'
-  | 'fix-join'
-  | 'build-dws'
-  | 'wrong-group-by'
-  | 'build-ads'
-  | 'late-data'
+  'plan' | 'clean-detail' | 'join-fanout' | 'aggregate-layers' | 'contract'
 
 export type TransformationPrediction = 'increase' | 'decrease' | 'unchanged'
 export type TransformationRowChangeKind =
@@ -82,74 +68,6 @@ export interface TransformationDataset {
   products: readonly Product[]
   branches: readonly Branch[]
   accountMedia: readonly AccountMedium[]
-}
-
-/** Legacy e-commerce entities remain available to typed external callers during migration. */
-/** @deprecated Use AccountBalanceSnapshot for the banking teaching domain. */
-export interface OrderEvent {
-  eventId: string
-  orderId: string
-  userId: string
-  orderTime: string
-  status: 'PAID' | 'PENDING'
-  orderAmount: number
-  updatedAt: string
-  ingestedAt: string
-}
-
-/** @deprecated Use the banking dimension types instead. */
-export interface OrderItemEvent {
-  itemId: string
-  orderId: string
-  product: string
-  quantity: number
-  unitPrice: number
-  itemAmount: number
-}
-
-/** @deprecated Use Customer and the current governance catalog instead. */
-export interface UserRecord {
-  userId: string
-  userName: string
-  city: string
-}
-
-/** @deprecated Use AccountBalanceSnapshot for the banking teaching domain. */
-export interface PaymentEvent {
-  paymentId: string
-  orderId: string
-  transactionKey: string
-  paidAt: string | null
-  amount: number | null
-  status: 'SUCCESS' | 'PENDING'
-  updatedAt: string
-  ingestedAt: string
-}
-
-/** @deprecated Refund events are not part of the banking balance fixture. */
-export interface RefundEvent {
-  refundId: string
-  orderId: string
-  refundedAt: string
-  amount: number
-  status: 'SUCCESS' | 'VOID'
-}
-
-/** @deprecated Kept so old fixture adapters can be typed while they migrate. */
-export interface LateOrderBundle {
-  order: OrderEvent
-  item: OrderItemEvent
-  payment: PaymentEvent
-}
-
-export interface LegacyTransformationDataset {
-  targetDate: string
-  orders: readonly OrderEvent[]
-  orderItems: readonly OrderItemEvent[]
-  users: readonly UserRecord[]
-  payments: readonly PaymentEvent[]
-  refunds: readonly RefundEvent[]
-  lateOrder: LateOrderBundle
 }
 
 export interface TransformationTaskContract {

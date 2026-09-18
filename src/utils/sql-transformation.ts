@@ -2,11 +2,6 @@ import { depositLateBalanceSnapshot, DEPOSIT_BALANCE_SCOPE } from '../data/depos
 import type {
   AccountBalanceSnapshot,
   AccountMedium,
-  LegacyTransformationDataset,
-  OrderEvent,
-  OrderItemEvent,
-  PaymentEvent,
-  RefundEvent,
   TransformationDataset,
   TransformationEvidence,
   TransformationGrain,
@@ -22,7 +17,6 @@ import type {
   TransformationTableMetrics,
   TransformationTableSnapshot,
   TransformationWorkbenchState,
-  UserRecord,
 } from '../features/sql-transformation/types'
 
 export const TRANSFORMATION_STEPS: readonly TransformationStepDefinition[] = [
@@ -151,26 +145,10 @@ WHERE snapshot_date = :business_date;`,
 
 export const TRANSFORMATION_LAYER_ORDER = ['ods', 'dwd', 'dws', 'ads'] as const
 
-export const LEGACY_STEP_ALIASES: Partial<Record<TransformationStepId, TransformationStepId>> = {
-  deduplicate: 'clean-detail',
-  'join-users': 'clean-detail',
-  'wrong-join': 'join-fanout',
-  'fix-join': 'join-fanout',
-  'build-dws': 'aggregate-layers',
-  'wrong-group-by': 'aggregate-layers',
-  'build-ads': 'contract',
-  'late-data': 'contract',
-}
-
-export function getCanonicalStepId(stepId: TransformationStepId): TransformationStepId {
-  return LEGACY_STEP_ALIASES[stepId] ?? stepId
-}
-
 export function getTransformationStep(
   stepId: TransformationStepId,
 ): TransformationStepDefinition | undefined {
-  const canonicalStepId = getCanonicalStepId(stepId)
-  return TRANSFORMATION_STEPS.find((step) => step.id === canonicalStepId)
+  return TRANSFORMATION_STEPS.find((step) => step.id === stepId)
 }
 
 export function getDatePart(timestamp: string | null | undefined): string | null {
@@ -219,31 +197,6 @@ export function deduplicateBalanceSnapshots(
   return pickLatestByKey(snapshots, (snapshot) => `${snapshot.snapshotDate}|${snapshot.accountId}`)
 }
 
-/** @deprecated Use deduplicateBalanceSnapshots in the banking teaching domain. */
-export function deduplicateOrderEvents(orders: readonly OrderEvent[]): OrderEvent[] {
-  return pickLatestByKey(orders, (order) => order.orderId)
-}
-
-/** @deprecated Kept as a migration seam for former payment-event callers. */
-export function deduplicatePaymentEvents(payments: readonly PaymentEvent[]): PaymentEvent[] {
-  return pickLatestByKey(payments, (payment) => payment.transactionKey)
-}
-
-/** @deprecated Refund events are not used by the banking balance lesson. */
-export function getRefundTotals(refunds: readonly RefundEvent[]): Map<string, number> {
-  const totals = new Map<string, number>()
-
-  for (const refund of refunds) {
-    if (refund.status !== 'SUCCESS') {
-      continue
-    }
-
-    totals.set(refund.orderId, (totals.get(refund.orderId) ?? 0) + refund.amount)
-  }
-
-  return totals
-}
-
 export function getCanonicalBalanceSnapshots(
   dataset: TransformationDataset,
 ): AccountBalanceSnapshot[] {
@@ -284,149 +237,6 @@ export function getMissingDimensionGaps(
   }
 
   return gaps
-}
-
-function getLegacyOrderItemsByOrder(
-  items: readonly OrderItemEvent[],
-): Map<string, OrderItemEvent[]> {
-  const grouped = new Map<string, OrderItemEvent[]>()
-
-  for (const item of items) {
-    const current = grouped.get(item.orderId) ?? []
-    current.push(item)
-    grouped.set(item.orderId, current)
-  }
-
-  return grouped
-}
-
-function getLegacyUser(users: readonly UserRecord[], userId: string): UserRecord | undefined {
-  return users.find((user) => user.userId === userId)
-}
-
-function getLegacyPaymentsByOrder(payments: readonly PaymentEvent[]): Map<string, PaymentEvent> {
-  const paymentsByOrder = new Map<string, PaymentEvent>()
-
-  for (const payment of deduplicatePaymentEvents(payments)) {
-    const current = paymentsByOrder.get(payment.orderId)
-    if (!current || payment.updatedAt > current.updatedAt) {
-      paymentsByOrder.set(payment.orderId, payment)
-    }
-  }
-
-  return paymentsByOrder
-}
-
-function allocateLegacyRefunds(
-  items: readonly OrderItemEvent[],
-  refundTotal: number,
-): Map<string, number> {
-  const allocations = new Map<string, number>()
-  const itemTotal = items.reduce((total, item) => total + item.itemAmount, 0)
-
-  if (refundTotal === 0 || itemTotal === 0 || items.length === 0) {
-    items.forEach((item) => allocations.set(item.itemId, 0))
-    return allocations
-  }
-
-  let allocated = 0
-  items.forEach((item, index) => {
-    const amount =
-      index === items.length - 1
-        ? roundCurrency(refundTotal - allocated)
-        : roundCurrency((refundTotal * item.itemAmount) / itemTotal)
-    allocations.set(item.itemId, amount)
-    allocated += amount
-  })
-
-  return allocations
-}
-
-/** @deprecated Use buildDepositBalanceRows in the banking teaching domain. */
-export function buildOrderItemRows(
-  dataset: LegacyTransformationDataset | TransformationDataset,
-): TransformationRow[] {
-  if (!('orders' in dataset)) {
-    return buildDepositBalanceRows(dataset)
-  }
-
-  const canonicalOrders = getCanonicalOrders(dataset)
-  const itemsByOrder = getLegacyOrderItemsByOrder(dataset.orderItems)
-  const paymentsByOrder = getLegacyPaymentsByOrder(dataset.payments)
-  const refundTotals = getRefundTotals(dataset.refunds)
-  const rows: TransformationRow[] = []
-
-  for (const order of canonicalOrders) {
-    const items = itemsByOrder.get(order.orderId) ?? []
-    const payment = paymentsByOrder.get(order.orderId)
-    const user = getLegacyUser(dataset.users, order.userId)
-    const refundAllocation = allocateLegacyRefunds(items, refundTotals.get(order.orderId) ?? 0)
-
-    for (const item of items) {
-      const refundAmount = refundAllocation.get(item.itemId) ?? 0
-      rows.push({
-        order_id: order.orderId,
-        item_id: item.itemId,
-        user_id: order.userId,
-        user_name: user?.userName ?? null,
-        user_city: user?.city ?? null,
-        product: item.product,
-        order_time: order.orderTime,
-        paid_at: payment?.paidAt ?? null,
-        paid_date: getDatePart(payment?.paidAt),
-        payment_status: payment?.status === 'SUCCESS' ? 'PAID' : 'UNPAID',
-        item_amount: item.itemAmount,
-        refund_amount: refundAmount,
-        net_amount: roundCurrency(item.itemAmount - refundAmount),
-      })
-    }
-  }
-
-  return rows
-}
-
-/** @deprecated Use banking snapshots; this adapter only keeps old callers type-safe. */
-export function buildOrderRows(
-  dataset: LegacyTransformationDataset | TransformationDataset,
-): TransformationRow[] {
-  if (!('orders' in dataset)) {
-    return buildDepositBalanceRows(dataset)
-  }
-
-  const canonicalOrders = getCanonicalOrders(dataset)
-  const itemsByOrder = getLegacyOrderItemsByOrder(dataset.orderItems)
-  const paymentsByOrder = getLegacyPaymentsByOrder(dataset.payments)
-  const refundTotals = getRefundTotals(dataset.refunds)
-
-  return canonicalOrders.map((order) => {
-    const items = itemsByOrder.get(order.orderId) ?? []
-    const payment = paymentsByOrder.get(order.orderId)
-    const user = getLegacyUser(dataset.users, order.userId)
-    const grossAmount = items.reduce((total, item) => total + item.itemAmount, 0)
-    const refundAmount = refundTotals.get(order.orderId) ?? 0
-
-    return {
-      order_id: order.orderId,
-      user_id: order.userId,
-      user_name: user?.userName ?? null,
-      user_city: user?.city ?? null,
-      order_time: order.orderTime,
-      paid_at: payment?.paidAt ?? null,
-      paid_date: getDatePart(payment?.paidAt),
-      payment_status: payment?.status === 'SUCCESS' ? 'PAID' : 'UNPAID',
-      gross_amount: grossAmount,
-      refund_amount: refundAmount,
-      net_amount: roundCurrency(grossAmount - refundAmount),
-    }
-  })
-}
-
-export function getCanonicalOrders(dataset: LegacyTransformationDataset): OrderEvent[] {
-  return deduplicateOrderEvents(dataset.orders)
-}
-
-export function getCanonicalPayments(dataset: LegacyTransformationDataset): PaymentEvent[] {
-  return deduplicatePaymentEvents(dataset.payments)
 }
 
 export function buildDepositBalanceRows(dataset: TransformationDataset): TransformationRow[] {
@@ -895,46 +705,10 @@ export function appendLateBalanceSnapshot(
     : { ...dataset, accountBalanceSnapshots: [...dataset.accountBalanceSnapshots, snapshot] }
 }
 
-/** @deprecated Use appendLateBalanceSnapshot for the banking teaching domain. */
-export function appendLateData(dataset: TransformationDataset): TransformationDataset
-export function appendLateData(dataset: LegacyTransformationDataset): LegacyTransformationDataset
-export function appendLateData(
-  dataset: LegacyTransformationDataset | TransformationDataset,
-): LegacyTransformationDataset | TransformationDataset {
-  if (!('orders' in dataset)) {
-    return appendLateBalanceSnapshot(dataset)
-  }
-
-  if (dataset.orders.some((order) => order.orderId === dataset.lateOrder.order.orderId)) {
-    return dataset
-  }
-
-  return {
-    ...dataset,
-    orders: [...dataset.orders, dataset.lateOrder.order],
-    orderItems: [...dataset.orderItems, dataset.lateOrder.item],
-    payments: [...dataset.payments, dataset.lateOrder.payment],
-  }
-}
-
 export function getLayerSnapshots(
   dataset: TransformationDataset,
-  includeLateData?: boolean,
-): TransformationLayerSnapshot[]
-export function getLayerSnapshots(
-  dataset: TransformationDataset,
-  legacyGrain: TransformationGrain,
-  includeLateData?: boolean,
-): TransformationLayerSnapshot[]
-export function getLayerSnapshots(
-  dataset: TransformationDataset,
-  includeLateDataOrLegacyGrain: boolean | TransformationGrain = false,
-  legacyIncludeLateData = false,
+  includeLateData = false,
 ): TransformationLayerSnapshot[] {
-  const includeLateData =
-    typeof includeLateDataOrLegacyGrain === 'boolean'
-      ? includeLateDataOrLegacyGrain
-      : legacyIncludeLateData
   const effectiveDataset = includeLateData ? appendLateBalanceSnapshot(dataset) : dataset
 
   return [
@@ -1119,34 +893,21 @@ function createStepResult(
 export function getTransformationStepResult(
   dataset: TransformationDataset,
   stepId: TransformationStepId,
-): TransformationStepResult
-export function getTransformationStepResult(
-  dataset: TransformationDataset,
-  legacyGrain: TransformationGrain,
-  stepId: TransformationStepId,
-): TransformationStepResult
-export function getTransformationStepResult(
-  dataset: TransformationDataset,
-  stepIdOrLegacyGrain: TransformationStepId | TransformationGrain,
-  legacyStepId?: TransformationStepId,
 ): TransformationStepResult {
-  const stepId = legacyStepId ?? (stepIdOrLegacyGrain as TransformationStepId)
-  const canonicalStepId = getCanonicalStepId(stepId)
-  const effectiveDataset = stepId === 'late-data' ? appendLateBalanceSnapshot(dataset) : dataset
-  const odsSnapshots = [getOdsSnapshot(effectiveDataset)]
-  const snapshots = getLayerSnapshots(effectiveDataset)
+  const odsSnapshots = [getOdsSnapshot(dataset)]
+  const snapshots = getLayerSnapshots(dataset)
   const raw = getTable(odsSnapshots, 'ods-account-balance-snapshots')
   const dwd = getTable(snapshots, 'dwd-deposit-balance-detail')
   const wrongJoin = getTable(
-    [{ ...snapshots[1]!, tables: [getWrongJoinTable(effectiveDataset)] }],
+    [{ ...snapshots[1]!, tables: [getWrongJoinTable(dataset)] }],
     'wrong-account-medium-join',
   )
   const dws = getTable(snapshots, 'dws-deposit-balance-daily')
   const ads = getTable(snapshots, 'ads-deposit-balance-daily')
-  const definition = getMetricDefinitionTable(effectiveDataset)
-  const plan = getProcessingPlanTable(effectiveDataset)
+  const definition = getMetricDefinitionTable(dataset)
+  const plan = getProcessingPlanTable(dataset)
 
-  switch (canonicalStepId) {
+  switch (stepId) {
     case 'plan':
       return createStepResult(
         dataset,
@@ -1346,6 +1107,5 @@ export function executeTransformationStep(
 }
 
 export function getTransformationStepIndex(stepId: TransformationStepId): number {
-  const canonicalStepId = getCanonicalStepId(stepId)
-  return TRANSFORMATION_STEPS.findIndex((step) => step.id === canonicalStepId)
+  return TRANSFORMATION_STEPS.findIndex((step) => step.id === stepId)
 }
