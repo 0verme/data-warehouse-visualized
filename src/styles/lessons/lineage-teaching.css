@@ -62,7 +62,7 @@
 }
 
 .lineage-teaching-overline {
-  color: var(--teal);
+  color: var(--diagram-accent);
   text-transform: uppercase;
 }
 
@@ -86,9 +86,9 @@
   flex-direction: column;
   gap: 3px;
   padding: 12px 16px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--surface-muted);
+  background: var(--diagram-surface);
   text-align: left;
 }
 
@@ -100,16 +100,29 @@ button.lineage-teaching-flow__node {
 button.lineage-teaching-flow__node:hover,
 button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-flow__node.is-selected {
-  border-color: var(--blue);
-  background: var(--surface-blue);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   outline: none;
 }
 
 .lineage-teaching-flow__layer {
-  color: var(--teal);
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--diagram-connection);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
   text-transform: uppercase;
+}
+
+.lineage-teaching-flow__layer .lineage-node__type-marker {
+  width: 13px;
+  height: 13px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  color: var(--diagram-connection);
+  font-size: 8px;
+  line-height: 1;
 }
 
 .lineage-teaching-flow__node strong {
@@ -128,7 +141,7 @@ button.lineage-teaching-flow__node:focus-visible,
   display: grid;
   min-height: 25px;
   place-items: center;
-  color: var(--teal);
+  color: var(--diagram-connection);
   font-size: 17px;
   font-weight: 700;
 }
@@ -143,9 +156,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-selection > div {
   min-width: 0;
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 7px;
-  background: var(--surface-muted);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-selection strong {
@@ -160,7 +173,7 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-questions {
   padding-top: 18px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--diagram-border);
 }
 
 .lineage-teaching-question {
@@ -168,7 +181,7 @@ button.lineage-teaching-flow__node:focus-visible,
   margin: 0;
   padding: 12px 0 14px;
   border: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--diagram-border);
 }
 
 .lineage-teaching-question legend {
@@ -193,10 +206,10 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-candidate,
 .lineage-teaching-evidence-record,
 .lineage-teaching-impact-choice {
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 7px;
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--diagram-surface);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -216,17 +229,17 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-choice.is-selected {
-  border-color: var(--success-border);
-  background: var(--success-bg);
-  color: var(--teal);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+  color: var(--diagram-accent);
   outline: none;
 }
 
 .lineage-teaching-choice.is-correct {
   border-color: var(--success-border);
   background: var(--success-bg);
-  color: var(--teal);
-  box-shadow: inset 3px 0 0 var(--teal);
+  color: var(--success-text);
+  box-shadow: inset 3px 0 0 var(--success-text);
 }
 
 .lineage-teaching-choice.is-incorrect {
@@ -244,7 +257,7 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-feedback.is-success {
-  color: var(--teal);
+  color: var(--success-text);
   font-weight: 700;
 }
 
@@ -256,9 +269,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-contrast {
   margin-top: 25px;
   padding: 16px;
-  border: 1px solid var(--success-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--success-bg);
+  background: var(--diagram-bg);
 }
 
 .lineage-teaching-contrast-grid {
@@ -271,9 +284,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-contrast-grid > div {
   min-width: 0;
   padding: 11px;
-  border: 1px solid #d5ebe7;
+  border: 1px solid var(--diagram-border);
   border-radius: 7px;
-  background: var(--surface);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-mini-flow {
@@ -293,8 +306,16 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-mini-flow span {
   flex: 0 0 auto;
-  color: var(--teal);
+  color: var(--diagram-connection);
   font-weight: 700;
+}
+
+.lineage-teaching-mini-flow__arrow--dependency {
+  border-bottom: 1px dashed var(--diagram-connection);
+}
+
+.lineage-teaching-mini-flow__arrow--data {
+  border-bottom: 1px solid var(--diagram-connection);
 }
 
 .lineage-teaching-contrast-grid small {
@@ -311,8 +332,8 @@ button.lineage-teaching-flow__node:focus-visible,
   flex-wrap: wrap;
   margin: 18px 0 15px;
   padding: 12px;
-  border-left: 3px solid var(--teal);
-  background: var(--surface-muted);
+  border-left: 3px solid var(--diagram-connection);
+  background: var(--diagram-bg);
 }
 
 .lineage-teaching-table-hop code {
@@ -323,7 +344,7 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-table-hop > span:not(:last-child) {
-  color: var(--teal);
+  color: var(--diagram-connection);
   font-weight: 700;
 }
 
@@ -350,13 +371,13 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-field-tab:hover,
 .lineage-teaching-field-tab:focus-visible,
 .lineage-teaching-field-tab.is-selected {
-  border-color: var(--blue);
-  background: var(--surface-blue);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   outline: none;
 }
 
 .lineage-teaching-field-tab strong {
-  color: var(--blue);
+  color: var(--diagram-accent);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 11px;
 }
@@ -370,9 +391,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-field-detail {
   margin-top: 12px;
   padding: 15px;
-  border: 1px solid var(--success-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 8px;
-  background: var(--success-bg);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-field-detail__heading,
@@ -400,18 +421,36 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-badge {
   display: inline-flex;
   padding: 3px 6px;
-  border: 1px solid var(--success-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 4px;
-  background: var(--success-bg);
-  color: var(--teal);
+  background: var(--diagram-bg);
+  color: var(--text-secondary);
   font-size: 9px;
   font-weight: 700;
 }
 
-.lineage-teaching-badge--pending {
+.lineage-teaching-badge--status.lineage-teaching-badge--confirmed {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.lineage-teaching-badge--status.lineage-teaching-badge--pending {
   border-color: var(--warning-border);
   background: var(--warning-bg);
   color: var(--warning-text);
+}
+
+.lineage-teaching-relation {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--diagram-border);
+  border-radius: 4px;
+  background: var(--diagram-bg);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .lineage-teaching-field-path,
@@ -435,7 +474,7 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-field-path li:not(:last-child)::after,
 .lineage-teaching-candidate-path li:not(:last-child)::after {
-  color: var(--teal);
+  color: var(--diagram-connection);
   content: '→';
   font-weight: 700;
 }
@@ -443,18 +482,18 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-field-path code,
 .lineage-teaching-candidate-path code {
   padding: 5px 7px;
-  border: 1px solid #d4e8e4;
+  border: 1px solid var(--diagram-border);
   border-radius: 4px;
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--diagram-surface);
+  color: var(--text-primary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
 }
 
 .lineage-teaching-field-path code.is-operation {
-  border-color: var(--teal);
-  background: var(--teal-soft);
-  color: var(--teal);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+  color: var(--diagram-accent);
   font-weight: 700;
 }
 
@@ -472,7 +511,7 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-candidate-detail > small {
   display: block;
   margin-top: 8px;
-  color: var(--teal);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.6;
 }
@@ -499,16 +538,16 @@ button.lineage-teaching-flow__node:focus-visible,
   min-width: 0;
   align-items: center;
   padding: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 6px;
   color: var(--ink-muted);
   font-size: 10px;
 }
 
 .lineage-teaching-investigation-steps li.is-active {
-  border-color: var(--success-border);
-  background: var(--success-bg);
-  color: var(--teal);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+  color: var(--diagram-accent);
 }
 
 .lineage-teaching-investigation-steps li > span {
@@ -524,7 +563,8 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-investigation-steps li.is-active > span {
-  background: var(--teal-soft);
+  background: var(--diagram-accent);
+  color: var(--on-accent);
 }
 
 .lineage-teaching-quality-event {
@@ -565,9 +605,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-event-facts div {
   min-width: 0;
   padding: 8px;
-  border: 1px solid #f0d2d2;
+  border: 1px solid var(--danger-border);
   border-radius: 5px;
-  background: var(--surface);
+  background: var(--danger-bg);
 }
 
 .lineage-teaching-event-facts dd {
@@ -599,9 +639,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-investigation-branch {
   margin-top: 14px;
   padding: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 8px;
-  background: var(--surface-muted);
+  background: var(--diagram-bg);
 }
 
 .lineage-teaching-action-block .button {
@@ -626,8 +666,8 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-decision {
   padding: 10px 11px;
-  border-left: 3px solid var(--success-border);
-  background: var(--success-bg);
+  border-left: 3px solid var(--diagram-accent);
+  background: var(--diagram-accent-soft);
 }
 
 .lineage-teaching-decision.is-expand {
@@ -648,16 +688,16 @@ button.lineage-teaching-flow__node:focus-visible,
   min-width: 0;
   align-items: center;
   padding: 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 5px;
-  background: var(--surface);
+  background: var(--diagram-surface);
   color: var(--ink-muted);
   font-size: 10px;
 }
 
 .lineage-teaching-check-list input {
   flex: 0 0 auto;
-  accent-color: var(--teal);
+  accent-color: var(--diagram-accent);
 }
 
 .lineage-teaching-investigation-branch > small {
@@ -690,8 +730,8 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-candidate:hover,
 .lineage-teaching-candidate:focus-visible,
 .lineage-teaching-candidate.is-selected {
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   outline: none;
 }
 
@@ -705,13 +745,13 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-selected-source {
   margin-top: 10px !important;
-  color: var(--amber) !important;
+  color: var(--text-secondary) !important;
 }
 
 .lineage-teaching-candidates {
   margin-top: 17px;
   padding-top: 15px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--diagram-border);
 }
 
 .lineage-teaching-candidate-grid {
@@ -719,7 +759,7 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-candidate > span {
-  color: var(--amber);
+  color: var(--warning-text);
 }
 
 .lineage-teaching-candidate small {
@@ -760,9 +800,9 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-prediction {
   padding: 15px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 8px;
-  background: var(--surface-muted);
+  background: var(--diagram-bg);
 }
 
 .lineage-teaching-prediction h4 {
@@ -789,8 +829,8 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-impact-choice:hover,
 .lineage-teaching-impact-choice:focus-visible,
 .lineage-teaching-impact-choice.is-selected {
-  border-color: var(--blue);
-  background: var(--surface-blue);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   outline: none;
 }
 
@@ -814,9 +854,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-blast-radius {
   margin-top: 15px;
   padding: 15px;
-  border: 1px solid var(--success-border);
+  border: 1px solid var(--diagram-accent);
   border-radius: 8px;
-  background: var(--success-bg);
+  background: var(--diagram-accent-soft);
 }
 
 .lineage-teaching-impact-stats {
@@ -828,9 +868,9 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-impact-stats > div {
   padding: 9px;
-  border: 1px solid #d5ebe7;
+  border: 1px solid var(--diagram-border);
   border-radius: 5px;
-  background: var(--surface);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-impact-stats strong,
@@ -839,7 +879,7 @@ button.lineage-teaching-flow__node:focus-visible,
 }
 
 .lineage-teaching-impact-stats strong {
-  color: var(--navy);
+  color: var(--text-primary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 20px;
 }
@@ -863,33 +903,35 @@ button.lineage-teaching-flow__node:focus-visible,
   position: relative;
   min-width: 0;
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 6px;
-  background: var(--surface);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-impact-chain li + li::before {
   position: absolute;
   top: 50%;
   left: -8px;
-  color: var(--teal);
+  color: var(--diagram-connection);
   content: '→';
   font-weight: 700;
   transform: translateY(-50%);
 }
 
 .lineage-teaching-impact-chain li.is-source {
-  border-color: var(--blue);
-  background: var(--surface-blue);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
 }
 
 .lineage-teaching-impact-chain li.is-direct {
-  border-color: var(--success-border);
-  background: var(--success-bg);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
 }
 
+/* Direct / transitive are impact focus levels, not replacement relationship styles. */
 .lineage-teaching-impact-chain li.is-transitive {
-  border-style: dashed;
+  border-color: var(--info-border);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-impact-chain strong {
@@ -904,7 +946,7 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-final-impact {
   margin: 12px 0 0 !important;
-  color: var(--teal) !important;
+  color: var(--diagram-accent) !important;
   font-size: 11px !important;
 }
 
@@ -931,9 +973,13 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-evidence-record:hover,
 .lineage-teaching-evidence-record:focus-visible,
 .lineage-teaching-evidence-record.is-selected {
-  border-color: var(--success-border);
-  background: var(--success-bg);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   outline: none;
+}
+
+.lineage-teaching-evidence-record[data-verification-status='pending'] {
+  border-left: 3px solid var(--warning-border);
 }
 
 .lineage-teaching-evidence-record strong {
@@ -952,9 +998,9 @@ button.lineage-teaching-flow__node:focus-visible,
 .lineage-teaching-evidence-detail {
   min-width: 0;
   padding: 15px;
-  border: 1px solid var(--success-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 8px;
-  background: var(--success-bg);
+  background: var(--diagram-surface);
 }
 
 .lineage-teaching-evidence-detail h4 {
@@ -975,9 +1021,9 @@ button.lineage-teaching-flow__node:focus-visible,
 
 .lineage-teaching-evidence-detail dl > div {
   padding: 8px;
-  border: 1px solid #d5ebe7;
+  border: 1px solid var(--diagram-border);
   border-radius: 5px;
-  background: var(--surface);
+  background: var(--diagram-bg);
 }
 
 .lineage-teaching-evidence-detail dd {

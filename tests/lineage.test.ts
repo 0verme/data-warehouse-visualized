@@ -1,6 +1,7 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { LineageGraph } from '../src/components/visualizations/LineageGraph'
 import { OverviewQuestion } from '../src/components/visualizations/LineageTeachingLab'
 import { depositBalanceQualityEvent } from '../src/content/lessons/data-quality'
 import {
@@ -31,8 +32,11 @@ import {
   getLineageEdgeEvidence,
   getLineageEdgeEvidenceSource,
   getLineageEdgeVerificationStatus,
+  getLineageEdgeGeometry,
   getLineageImpactSummary,
   getLineagePath,
+  getLineageRelationVisual,
+  LINEAGE_RELATION_VISUALS,
   getLineageView,
   getDownstreamNodes,
   getUpstreamNodes,
@@ -62,6 +66,99 @@ function getVisualizationModes() {
     return section.visualization
   })
 }
+
+describe('Pilot B lineage visual grammar', () => {
+  it('maps each base relation without using impact focus as a replacement relation', () => {
+    expect(LINEAGE_RELATION_VISUALS).toMatchObject({
+      transform: { kind: 'data-transform', marker: 'filled-arrow', linePattern: 'solid' },
+      derives: { kind: 'field-derivation', marker: 'open-arrow', linePattern: 'solid' },
+      depends_on: { kind: 'control-dependency', marker: 'open-arrow', linePattern: 'long-dash' },
+      consumes: { kind: 'delivery-consume', marker: 'diamond', linePattern: 'solid' },
+    })
+    expect(getLineageRelationVisual('depends_on').direction).toContain('前置条件')
+    expect(getLineageRelationVisual('consumes').label).toContain('发布')
+  })
+
+  it('clips SVG connectors to the node boundary and keeps the real direction', () => {
+    const source = { x: 380, y: 180 }
+    const target = { x: 380, y: 280 }
+    const geometry = getLineageEdgeGeometry(source, target)
+
+    expect(geometry.sourcePoint).toEqual({ x: 380, y: 213.5 })
+    expect(geometry.targetPoint).toEqual({ x: 380, y: 246.5 })
+    expect(geometry.midpoint).toEqual({ x: 380, y: 230 })
+    expect(geometry.path).toContain('M 380 213.5 L 380 246.5')
+  })
+
+  it('keeps base relation data while exposing direct path focus in legacy SVG markup', () => {
+    const markup = renderToStaticMarkup(React.createElement(LineageGraph, { nodes, edges }))
+
+    expect(markup).toContain('data-diagram-type="dependency"')
+    expect(markup).toContain('data-relation="transform"')
+    expect(markup).toContain('data-relation-kind="data-transform"')
+    expect(markup).toContain('data-impact-focus="direct"')
+    expect(markup).toContain('lineage-edge--data-transform')
+    expect(markup).toContain('直接路径')
+    expect(markup).toContain('Node 类型')
+  })
+
+  it('keeps evidence source, verification, and teaching impact levels independent', () => {
+    const evidenceVisualization = getVisualizationModes().find(
+      (visualization) => visualization.teaching?.mode === 'evidence',
+    )
+    const impactVisualization = getVisualizationModes().find(
+      (visualization) => visualization.teaching?.mode === 'impact',
+    )
+
+    expect(evidenceVisualization?.teaching).toBeDefined()
+    expect(impactVisualization?.teaching).toBeDefined()
+
+    const evidenceMarkup = renderToStaticMarkup(
+      React.createElement(LineageGraph, {
+        nodes,
+        edges,
+        teaching: evidenceVisualization?.teaching,
+      }),
+    )
+    const impactMarkup = renderToStaticMarkup(
+      React.createElement(LineageGraph, {
+        nodes,
+        edges,
+        teaching: impactVisualization?.teaching,
+      }),
+    )
+
+    expect(evidenceMarkup).toContain('data-verification-status="pending"')
+    expect(evidenceMarkup).toContain('人工登记')
+    expect(evidenceMarkup).toContain('待确认')
+    expect(impactMarkup).toContain('data-focus="context"')
+    expect(impactMarkup).toContain('直接下游')
+    expect(impactMarkup).toContain('传递影响')
+  })
+
+  it('keeps all four node types readable in the teaching entrance', () => {
+    const teaching = getVisualizationModes()[0].teaching
+    if (!teaching) {
+      throw new Error('Expected overview teaching configuration')
+    }
+    const allNodeIds = nodes.map((node) => node.id)
+    const typeTeaching = {
+      ...teaching,
+      tableNodeIds: allNodeIds,
+      overviewNodeIds: allNodeIds,
+      initialNodeId: allNodeIds[0] ?? '',
+    }
+
+    const markup = renderToStaticMarkup(
+      React.createElement(LineageGraph, { nodes, edges, teaching: typeTeaching }),
+    )
+
+    expect(markup).toContain('data-node-type="table"')
+    expect(markup).toContain('data-node-type="metric"')
+    expect(markup).toContain('▣')
+    expect(markup).toContain('●')
+  })
+})
 
 describe('第 07 章数据血缘', () => {
   it('拆分为 7-1 到 7-5，并统一使用银行存款余额链路', () => {

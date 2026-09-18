@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type {
   LineageInvestigationEventDefinition,
   LineageTeachingConfig,
@@ -23,8 +23,12 @@ import {
   getLineageEdgeId,
   getLineageEdgeVerificationStatus,
   getLineageEdgeRelation,
+  getLineageEdgeGeometry,
   getLineageEntityType,
+  getLineageRelationVisual,
   getLineageView,
+  LINEAGE_CANVAS_HEIGHT,
+  LINEAGE_CANVAS_WIDTH,
   LINEAGE_ENTITY_TYPES,
 } from '../../utils/lineage'
 
@@ -45,12 +49,12 @@ const ENTITY_TYPE_LABELS: Record<LineageEntityType, string> = {
   metric: '指标',
 }
 
-const RELATION_LABELS = {
-  transform: '加工',
-  depends_on: '依赖',
-  derives: '派生',
-  consumes: '消费',
-} as const
+const ENTITY_TYPE_MARKERS: Record<LineageEntityType, string> = {
+  table: '▣',
+  field: '◇',
+  task: '▶',
+  metric: '●',
+}
 
 const EVIDENCE_LABELS = {
   sql_transformation: 'SQL 加工',
@@ -127,6 +131,13 @@ function LegacyLineageGraph({
   investigationEvent,
   investigationEvents,
 }: LineageGraphProps) {
+  const instanceId = useId().replace(/:/g, '')
+  const markerIds = {
+    transform: `${instanceId}-marker-transform`,
+    derives: `${instanceId}-marker-derives`,
+    depends_on: `${instanceId}-marker-depends-on`,
+    consumes: `${instanceId}-marker-consumes`,
+  }
   const [activeView, setActiveView] = useState<LineageEntityType>('table')
   const [selectedNodeId, setSelectedNodeId] = useState(() => getDefaultNodeId(nodes, 'table'))
   const [impactMode, setImpactMode] = useState<ImpactMode>('direct')
@@ -208,18 +219,15 @@ function LegacyLineageGraph({
 
     return visibleGraph.nodes.filter((node) => node.label.toLowerCase().includes(normalizedQuery))
   }, [searchQuery, visibleGraph.nodes])
-  const selectedRelatedIds = useMemo(() => {
-    const highlightedDownstream =
-      impactMode === 'direct' ? displayedImpact.directDownstream : displayedImpact.finalImpact
-
-    return new Set([activeSelectedNodeId, ...displayedImpact.upstream, ...highlightedDownstream])
-  }, [
-    activeSelectedNodeId,
-    displayedImpact.directDownstream,
-    displayedImpact.finalImpact,
-    displayedImpact.upstream,
-    impactMode,
-  ])
+  const highlightedImpactIds = useMemo(
+    () =>
+      impactMode === 'direct' ? displayedImpact.directDownstream : displayedImpact.finalImpact,
+    [displayedImpact.directDownstream, displayedImpact.finalImpact, impactMode],
+  )
+  const selectedRelatedIds = useMemo(
+    () => new Set([activeSelectedNodeId, ...displayedImpact.upstream, ...highlightedImpactIds]),
+    [activeSelectedNodeId, displayedImpact.upstream, highlightedImpactIds],
+  )
   const relatedEdges = useMemo(
     () =>
       visibleGraph.edges.filter(
@@ -244,6 +252,38 @@ function LegacyLineageGraph({
   const selectedEdge = selectedEdgeId
     ? edges.find((edge) => getLineageEdgeId(edge) === selectedEdgeId)
     : undefined
+  const impactNodeIds = useMemo(
+    () => new Set([activeSelectedNodeId, ...highlightedImpactIds]),
+    [activeSelectedNodeId, highlightedImpactIds],
+  )
+  const contextNodeIds = new Set(displayedImpact.upstream)
+  const activeEdgeLabelId = useMemo(() => {
+    const activeEdge = visibleGraph.edges.find((edge) => {
+      const isDirect =
+        edge.source === activeSelectedNodeId &&
+        displayedImpact.directDownstream.includes(edge.target)
+      const isTransitive =
+        impactMode === 'transitive' &&
+        impactNodeIds.has(edge.source) &&
+        impactNodeIds.has(edge.target)
+      return isDirect || isTransitive
+    })
+
+    return activeEdge ? getLineageEdgeId(activeEdge) : null
+  }, [
+    activeSelectedNodeId,
+    displayedImpact.directDownstream,
+    impactMode,
+    impactNodeIds,
+    visibleGraph.edges,
+  ])
+  const selectedNodeDownstreamIndex = propagationOrder.indexOf(activeSelectedNodeId)
+  const selectedNodeState =
+    impactStep >= 1
+      ? '已删除'
+      : selectedNodeDownstreamIndex >= 0 && impactStep >= selectedNodeDownstreamIndex + 2
+        ? '受影响'
+        : '未变更'
   const isSimulationFinished = impactStep >= propagationOrder.length + 1 && impactStep > 0
 
   function clearTimers() {
@@ -342,7 +382,7 @@ function LegacyLineageGraph({
   }, [])
 
   return (
-    <div className="lineage-graph">
+    <div className="lineage-graph" data-diagram-type="dependency">
       <div className="visualization-toolbar">
         <div>
           <span className="visualization-toolbar__label">Lineage Graph · 分层影响分析</span>
@@ -622,115 +662,313 @@ function LegacyLineageGraph({
         </div>
       </div>
 
-      <div
-        className="lineage-canvas"
-        aria-label={`${ENTITY_TYPE_LABELS[activeView]}数据血缘关系图`}
-      >
-        <svg
-          className="lineage-canvas__svg"
-          viewBox="0 0 760 450"
-          preserveAspectRatio="none"
-          role="img"
-          aria-labelledby="lineage-title"
+      <div className="lineage-grammar" aria-label="血缘关系视觉图例">
+        <div className="lineage-grammar__group">
+          <span className="lineage-control-label">关系图例</span>
+          <span className="lineage-grammar__item" data-relation="transform">
+            <span
+              className="lineage-grammar__sample lineage-grammar__sample--data"
+              aria-hidden="true"
+            />
+            数据加工 / transform
+          </span>
+          <span className="lineage-grammar__item" data-relation="derives">
+            <span
+              className="lineage-grammar__sample lineage-grammar__sample--derives"
+              aria-hidden="true"
+            />
+            字段派生 / derives
+          </span>
+          <span className="lineage-grammar__item" data-relation="depends_on">
+            <span
+              className="lineage-grammar__sample lineage-grammar__sample--dependency"
+              aria-hidden="true"
+            />
+            控制依赖 / depends_on
+          </span>
+          <span className="lineage-grammar__item" data-relation="consumes">
+            <span
+              className="lineage-grammar__sample lineage-grammar__sample--consume"
+              aria-hidden="true"
+            />
+            发布 / 消费 / consumes
+          </span>
+        </div>
+        <div className="lineage-grammar__group">
+          <span className="lineage-control-label">焦点与状态</span>
+          <span className="lineage-grammar__item">
+            <b className="lineage-grammar__marker lineage-grammar__marker--primary">当前选中</b>
+          </span>
+          <span className="lineage-grammar__item">
+            <b className="lineage-grammar__marker lineage-grammar__marker--direct">直接路径</b>
+          </span>
+          <span className="lineage-grammar__item">
+            <b className="lineage-grammar__marker lineage-grammar__marker--transitive">传递路径</b>
+          </span>
+          <span className="lineage-grammar__item">
+            <b className="lineage-grammar__marker lineage-grammar__marker--pending">○ 待确认</b>
+          </span>
+        </div>
+        <div className="lineage-grammar__group">
+          <span className="lineage-control-label">Node 类型</span>
+          {LINEAGE_ENTITY_TYPES.map((entityType) => (
+            <span className="lineage-grammar__item" data-node-type={entityType} key={entityType}>
+              <b className="lineage-node__type-marker" aria-hidden="true">
+                {ENTITY_TYPE_MARKERS[entityType]}
+              </b>
+              {ENTITY_TYPE_LABELS[entityType]}
+            </span>
+          ))}
+        </div>
+        <p className="lineage-grammar__note">
+          线型表达真实关系；焦点只增加权重。○ 待确认不会把关系变成可选关系。
+        </p>
+      </div>
+
+      <div className="lineage-canvas-shell">
+        <div
+          className="lineage-canvas"
+          aria-label={`${ENTITY_TYPE_LABELS[activeView]}数据血缘关系图，图面可局部横向滚动`}
         >
-          <title id="lineage-title">{ENTITY_TYPE_LABELS[activeView]}之间的上游和下游依赖关系</title>
-          <defs>
-            <marker
-              id="lineage-arrow"
-              markerWidth="8"
-              markerHeight="8"
-              refX="7"
-              refY="4"
-              orient="auto"
-            >
-              <path d="M0,0 L8,4 L0,8 Z" fill="currentColor" />
-            </marker>
-          </defs>
-          {visibleGraph.edges.map((edge) => {
-            const source = getNode(visibleGraph.nodes, edge.source)
-            const target = getNode(visibleGraph.nodes, edge.target)
-            if (!source || !target) {
-              return null
-            }
-
-            const edgeIsDirect =
-              edge.source === activeSelectedNodeId &&
-              displayedImpact.directDownstream.includes(edge.target)
-            const edgeIsInImpact =
-              selectedRelatedIds.has(edge.source) && selectedRelatedIds.has(edge.target)
-            const edgeIsActive = impactMode === 'direct' ? edgeIsDirect : edgeIsInImpact
-            const edgeIsTransitive = edgeIsActive && impactMode === 'transitive'
-            const edgeId = getLineageEdgeId(edge)
-            const relationLabel = RELATION_LABELS[getLineageEdgeRelation(edge)]
-
-            return (
-              <line
-                aria-label={`${source.label} 到 ${target.label}，${relationLabel}关系，点击查看证据`}
-                className={`lineage-edge${edgeIsActive ? ' is-active' : ''}${
-                  edgeIsDirect ? ' is-direct' : ''
-                }${edgeIsTransitive ? ' is-transitive' : ''}`}
-                key={edgeId}
-                role="button"
-                tabIndex={0}
-                x1={source.x}
-                y1={source.y}
-                x2={target.x}
-                y2={target.y}
-                markerEnd="url(#lineage-arrow)"
-                onClick={() => setSelectedEdgeId(edgeId)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    setSelectedEdgeId(edgeId)
-                  }
-                }}
-              />
-            )
-          })}
-        </svg>
-
-        <div className="lineage-canvas__nodes">
-          {visibleGraph.nodes.map((node) => {
-            const isSelected = node.id === activeSelectedNodeId
-            const isRelated = selectedRelatedIds.has(node.id)
-            const downstreamIndex = propagationOrder.indexOf(node.id)
-            const isDeleted = isSelected && impactStep >= 1
-            const isAffected = downstreamIndex >= 0 && impactStep >= downstreamIndex + 2
-            const nodeState = isDeleted ? '已删除' : isAffected ? '受影响' : node.role
-            const entityType = getLineageEntityType(node)
-
-            return (
-              <button
-                className={`lineage-node lineage-node--${entityType} lineage-node--${node.layer.toLowerCase()}${
-                  isSelected ? ' is-selected' : ''
-                }${isRelated ? ' is-related' : ''}${isDeleted ? ' is-deleted' : ''}${
-                  isAffected ? ' is-affected' : ''
-                }`}
-                key={node.id}
-                type="button"
-                aria-pressed={isSelected}
-                aria-label={`${node.label}，${ENTITY_TYPE_LABELS[entityType]}，${nodeState}`}
-                style={{ left: `${(node.x / 760) * 100}%`, top: `${(node.y / 450) * 100}%` }}
-                onClick={() => selectNode(node.id)}
+          <svg
+            className="lineage-canvas__svg"
+            viewBox={`0 0 ${LINEAGE_CANVAS_WIDTH} ${LINEAGE_CANVAS_HEIGHT}`}
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-labelledby={`${instanceId}-lineage-title`}
+          >
+            <title
+              id={`${instanceId}-lineage-title`}
+            >{`${ENTITY_TYPE_LABELS[activeView]}之间的上游和下游依赖关系`}</title>
+            <defs>
+              <marker
+                id={markerIds.transform}
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                markerUnits="userSpaceOnUse"
+                orient="auto"
               >
-                <span className="lineage-node__layer">{ENTITY_TYPE_LABELS[entityType]}</span>
-                <strong>{node.label}</strong>
-                <small>{nodeState}</small>
-              </button>
-            )
-          })}
+                <path d="M0 0 L10 5 L0 10 Z" fill="context-stroke" />
+              </marker>
+              <marker
+                id={markerIds.derives}
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                markerUnits="userSpaceOnUse"
+                orient="auto"
+              >
+                <path d="M1 1 L8 5 L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" />
+              </marker>
+              <marker
+                id={markerIds.depends_on}
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                markerUnits="userSpaceOnUse"
+                orient="auto"
+              >
+                <path d="M1 1 L8 5 L1 9" fill="none" stroke="context-stroke" strokeWidth="1.5" />
+              </marker>
+              <marker
+                id={markerIds.consumes}
+                markerWidth="10"
+                markerHeight="10"
+                refX="8"
+                refY="5"
+                markerUnits="userSpaceOnUse"
+                orient="auto"
+              >
+                <path d="M1 5 L5 1 L9 5 L5 9 Z" fill="context-stroke" />
+              </marker>
+            </defs>
+            {visibleGraph.edges.map((edge) => {
+              const source = getNode(visibleGraph.nodes, edge.source)
+              const target = getNode(visibleGraph.nodes, edge.target)
+              if (!source || !target) {
+                return null
+              }
+
+              const relation = getLineageEdgeRelation(edge)
+              const relationVisual = getLineageRelationVisual(relation)
+              const geometry = getLineageEdgeGeometry(source, target)
+              const edgeIsDirect =
+                edge.source === activeSelectedNodeId &&
+                displayedImpact.directDownstream.includes(edge.target)
+              const edgeIsTransitive =
+                impactMode === 'transitive' &&
+                !edgeIsDirect &&
+                impactNodeIds.has(edge.source) &&
+                impactNodeIds.has(edge.target)
+              const edgeIsActive = edgeIsDirect || edgeIsTransitive
+              const edgeIsContext =
+                !edgeIsActive &&
+                (contextNodeIds.has(edge.source) || contextNodeIds.has(edge.target))
+              const verificationStatus = getLineageEdgeVerificationStatus(edge)
+              const edgeId = getLineageEdgeId(edge)
+              const impactFocus = edgeIsDirect ? 'direct' : edgeIsTransitive ? 'transitive' : 'none'
+              const impactLabel = edgeIsDirect
+                ? ' · 直接路径'
+                : edgeIsTransitive
+                  ? ' · 传递路径'
+                  : ''
+              const edgeLabel = `${relationVisual.shortLabel}${impactLabel}${
+                verificationStatus === 'pending' ? ' · 待确认' : ''
+              }`
+              const showLabel = edgeId === selectedEdgeId || edgeId === activeEdgeLabelId
+              const labelOffsetX = Math.abs(target.x - source.x) < 12 ? 48 : 0
+              const labelWidth = Math.max(62, edgeLabel.length * 8 + 14)
+
+              return (
+                <g
+                  className={`lineage-edge-group lineage-edge-group--${relationVisual.kind}${
+                    edgeIsActive ? ' is-active' : ''
+                  }${edgeIsContext ? ' is-context' : ''}`}
+                  data-relation={relation}
+                  data-impact-focus={impactFocus}
+                  data-verification-status={verificationStatus}
+                  key={edgeId}
+                >
+                  <path
+                    aria-label={`${source.label} 到 ${target.label}，${relationVisual.label}关系（${relationVisual.direction}）${
+                      edgeIsDirect ? '，直接影响路径' : edgeIsTransitive ? '，传递影响路径' : ''
+                    }${
+                      verificationStatus === 'pending' ? '，证据待确认，关系仍保留' : ''
+                    }，点击查看证据`}
+                    className={`lineage-edge lineage-edge--${relationVisual.kind}${
+                      edgeIsActive ? ' is-active' : ''
+                    }${edgeIsDirect ? ' is-direct' : ''}${
+                      edgeIsTransitive ? ' is-transitive' : ''
+                    }${edgeIsContext ? ' is-context' : ''}${
+                      verificationStatus === 'pending' ? ' is-pending' : ''
+                    }`}
+                    d={geometry.path}
+                    data-relation={relation}
+                    data-relation-kind={relationVisual.kind}
+                    data-impact-focus={impactFocus}
+                    data-verification-status={verificationStatus}
+                    fill="none"
+                    key={`${edgeId}-path`}
+                    markerEnd={`url(#${markerIds[relation]})`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedEdgeId(edgeId)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setSelectedEdgeId(edgeId)
+                      }
+                    }}
+                  />
+                  {verificationStatus === 'pending' && (
+                    <circle
+                      className="lineage-edge__verification-marker"
+                      cx={geometry.midpoint.x}
+                      cy={geometry.midpoint.y}
+                      r="4"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {showLabel && (
+                    <g
+                      className="lineage-edge__label"
+                      aria-hidden="true"
+                      transform={`translate(${geometry.midpoint.x + labelOffsetX} ${geometry.midpoint.y})`}
+                    >
+                      <rect x={-labelWidth / 2} y="-10" width={labelWidth} height="18" rx="4" />
+                      <text y="3" textAnchor="middle">
+                        {edgeLabel}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              )
+            })}
+          </svg>
+
+          <div className="lineage-canvas__nodes">
+            {visibleGraph.nodes.map((node) => {
+              const isSelected = node.id === activeSelectedNodeId
+              const isRelated = selectedRelatedIds.has(node.id)
+              const downstreamIndex = propagationOrder.indexOf(node.id)
+              const isDeleted = isSelected && impactStep >= 1
+              const isAffected = downstreamIndex >= 0 && impactStep >= downstreamIndex + 2
+              const entityType = getLineageEntityType(node)
+              const focus = isSelected
+                ? 'primary'
+                : highlightedImpactIds.includes(node.id)
+                  ? 'path'
+                  : contextNodeIds.has(node.id)
+                    ? 'context'
+                    : 'none'
+              const state = isDeleted ? 'deleted' : isAffected ? 'affected' : 'normal'
+              const stateLabel = isDeleted ? '已删除' : isAffected ? '受影响' : '未变更'
+
+              return (
+                <button
+                  className={`lineage-node lineage-node--${entityType} lineage-node--${node.layer.toLowerCase()}${
+                    isSelected ? ' is-selected' : ''
+                  }${isRelated ? ' is-related' : ''}${focus === 'path' ? ' is-path' : ''}${
+                    focus === 'context' ? ' is-context' : ''
+                  }${isDeleted ? ' is-deleted' : ''}${isAffected ? ' is-affected' : ''}`}
+                  data-focus={focus}
+                  data-node-type={entityType}
+                  data-state={state}
+                  key={node.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  aria-label={`${node.label}，${ENTITY_TYPE_LABELS[entityType]}，${focus === 'primary' ? '当前选中，' : ''}${stateLabel}`}
+                  style={{
+                    left: `${(node.x / LINEAGE_CANVAS_WIDTH) * 100}%`,
+                    top: `${(node.y / LINEAGE_CANVAS_HEIGHT) * 100}%`,
+                  }}
+                  onClick={() => selectNode(node.id)}
+                >
+                  <span className="lineage-node__layer">
+                    <span className="lineage-node__type-marker" aria-hidden="true">
+                      {ENTITY_TYPE_MARKERS[entityType]}
+                    </span>
+                    {ENTITY_TYPE_LABELS[entityType]} · {node.layer}
+                  </span>
+                  <strong>{node.label}</strong>
+                  <small className="lineage-node__role">{node.role}</small>
+                  <span className={`lineage-node__state lineage-node__state--${state}`}>
+                    {stateLabel}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="lineage-selection" aria-live="polite">
+      <section className="lineage-selection" aria-live="polite" aria-label="当前选中对象详情">
         <div>
-          <span className="eyebrow eyebrow--small">
-            当前节点 · {getNodeTypeLabel(selectedNode)}
-          </span>
+          <span className="eyebrow eyebrow--small">Primary Focus · 当前节点</span>
           <strong>{selectedNode?.label ?? '未选择节点'}</strong>
         </div>
+        <dl className="lineage-selection__facts">
+          <div>
+            <dt>Node 类型</dt>
+            <dd>
+              {selectedNode ? ENTITY_TYPE_LABELS[getLineageEntityType(selectedNode)] : '对象'}
+            </dd>
+          </div>
+          <div>
+            <dt>Focus</dt>
+            <dd>当前选中</dd>
+          </div>
+          <div>
+            <dt>业务 State</dt>
+            <dd>{selectedNodeState}</dd>
+          </div>
+        </dl>
         <p>{selectedNode?.role ?? `请选择一张${ENTITY_TYPE_LABELS[activeView]}`}</p>
-      </div>
+      </section>
 
       <div className="impact-stats" aria-label="影响分析统计">
         <div>
@@ -806,6 +1044,8 @@ function LegacyLineageGraph({
               return (
                 <button
                   className={`lineage-evidence__edge${selectedEdgeId === edgeId ? ' is-selected' : ''}`}
+                  data-relation={getLineageEdgeRelation(edge)}
+                  data-verification-status={getLineageEdgeVerificationStatus(edge)}
                   key={edgeId}
                   type="button"
                   onClick={() => setSelectedEdgeId(edgeId)}
@@ -814,7 +1054,7 @@ function LegacyLineageGraph({
                     {source?.label ?? edge.source} → {target?.label ?? edge.target}
                   </strong>
                   <small>
-                    {RELATION_LABELS[getLineageEdgeRelation(edge)]} ·{' '}
+                    {getLineageRelationVisual(getLineageEdgeRelation(edge)).shortLabel} ·{' '}
                     {EVIDENCE_LABELS[getLineageEdgeEvidenceSource(edge)]} ·{' '}
                     {VERIFICATION_STATUS_LABELS[getLineageEdgeVerificationStatus(edge)]}
                   </small>
@@ -835,8 +1075,9 @@ function LegacyLineageGraph({
               </strong>
             </div>
             <p>{getLineageEdgeEvidence(selectedEdge).detail}</p>
-            <small>
-              关系：{RELATION_LABELS[getLineageEdgeRelation(selectedEdge)]} · 证据来源：
+            <small data-verification-status={getLineageEdgeVerificationStatus(selectedEdge)}>
+              关系：{getLineageRelationVisual(getLineageEdgeRelation(selectedEdge)).label} ·
+              证据来源：
               {EVIDENCE_LABELS[getLineageEdgeEvidenceSource(selectedEdge)]} · 确认状态：
               {VERIFICATION_STATUS_LABELS[getLineageEdgeVerificationStatus(selectedEdge)]}
             </small>
@@ -870,7 +1111,7 @@ function LegacyLineageGraph({
                   <strong>{node?.label ?? nodeId}</strong>
                   {edge && evidence && (
                     <small>
-                      {RELATION_LABELS[getLineageEdgeRelation(edge)]} ·{' '}
+                      {getLineageRelationVisual(getLineageEdgeRelation(edge)).shortLabel} ·{' '}
                       {EVIDENCE_LABELS[getLineageEdgeEvidenceSource(edge)]} ·{' '}
                       {VERIFICATION_STATUS_LABELS[getLineageEdgeVerificationStatus(edge)]}
                     </small>
