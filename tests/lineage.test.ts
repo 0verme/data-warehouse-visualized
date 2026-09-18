@@ -15,7 +15,6 @@ import {
 } from '../src/features/lineage/banking'
 import { qualityEventToLineageInvestigation } from '../src/features/lineage/quality-adapter'
 import { getLineageTaskNodeId, getLineageTableNodeId } from '../src/features/lineage/mapping'
-import { SCHEDULER_TASK_IDS } from '../src/utils/scheduler'
 import { BANKING_SCHEDULER_TASK_IDS } from '../src/features/scheduler/banking'
 import { QUALITY_RULE_IDS } from '../src/utils/data-quality'
 import { dataLineageContent } from '../src/content/lessons/data-lineage'
@@ -258,8 +257,7 @@ describe('第 07 章数据血缘', () => {
     expect(result.rootCauseCandidates).toHaveLength(3)
   })
 
-  it('使用当前 Scheduler identity 映射到银行血缘节点', () => {
-    expect(getLineageTaskNodeId(SCHEDULER_TASK_IDS.dwd)).toBe(BANKING_LINEAGE_TASK_NODE_IDS.dwd)
+  it('使用 Banking Teaching Domain Scheduler identity 映射到银行血缘节点', () => {
     expect(getLineageTaskNodeId(BANKING_SCHEDULER_TASK_IDS.dwd)).toBe(
       BANKING_LINEAGE_TASK_NODE_IDS.dwd,
     )

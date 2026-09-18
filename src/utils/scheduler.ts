@@ -17,51 +17,8 @@ import type {
   SchedulerTaskDefinition,
   SchedulerTaskRunRecord,
 } from '../features/scheduler/types'
+import { BANKING_SCHEDULER_TASK_IDS } from '../features/scheduler/banking'
 import type { TransformationTaskContract } from '../features/sql-transformation/types'
-
-export const SCHEDULER_TASK_IDS = {
-  accountBalanceSnapshot: 'ingest.account-balance.daily.v1',
-  account: 'ingest.account.snapshot.v1',
-  customer: 'ingest.customer.snapshot.v1',
-  product: 'ingest.product.snapshot.v1',
-  branch: 'ingest.branch.snapshot.v1',
-  dwd: 'transform.deposit-balance.detail.v1',
-  dws: 'transform.deposit-balance.topic.v1',
-  ads: 'transform.deposit-balance.daily.v1',
-  /** 旧调度测试和外部示例使用的别名，值仍指向银行存款任务，不再代表电商表。 */
-  odsOrders: 'ingest.account-balance.daily.v1',
-  odsOrderItems: 'ingest.account.snapshot.v1',
-  odsUsers: 'ingest.customer.snapshot.v1',
-  odsPayments: 'ingest.product.snapshot.v1',
-  odsRefunds: 'ingest.branch.snapshot.v1',
-} as const
-
-/** 原电商调度调用使用过的 task ID；新任务 identity 仍以 SCHEDULER_TASK_IDS 为准。 */
-export const LEGACY_SCHEDULER_TASK_IDS = {
-  odsOrders: 'ingest.orders.daily.v1',
-  odsOrderItems: 'ingest.order-items.daily.v1',
-  odsUsers: 'ingest.users.snapshot.v1',
-  odsPayments: 'ingest.payments.daily.v1',
-  odsRefunds: 'ingest.refunds.daily.v1',
-  dwd: 'transform.order-item.daily.v1',
-  dws: 'transform.sales.topic.daily.v1',
-  ads: 'transform.sales.daily.v1',
-} as const
-
-export const LEGACY_TASK_ID_ALIASES: Readonly<Record<string, string>> = {
-  [LEGACY_SCHEDULER_TASK_IDS.odsOrders]: SCHEDULER_TASK_IDS.accountBalanceSnapshot,
-  [LEGACY_SCHEDULER_TASK_IDS.odsOrderItems]: SCHEDULER_TASK_IDS.account,
-  [LEGACY_SCHEDULER_TASK_IDS.odsUsers]: SCHEDULER_TASK_IDS.customer,
-  [LEGACY_SCHEDULER_TASK_IDS.odsPayments]: SCHEDULER_TASK_IDS.product,
-  [LEGACY_SCHEDULER_TASK_IDS.odsRefunds]: SCHEDULER_TASK_IDS.branch,
-  [LEGACY_SCHEDULER_TASK_IDS.dwd]: SCHEDULER_TASK_IDS.dwd,
-  [LEGACY_SCHEDULER_TASK_IDS.dws]: SCHEDULER_TASK_IDS.dws,
-  [LEGACY_SCHEDULER_TASK_IDS.ads]: SCHEDULER_TASK_IDS.ads,
-}
-
-export function getCanonicalSchedulerTaskId(taskId: string): string {
-  return LEGACY_TASK_ID_ALIASES[taskId] ?? taskId
-}
 
 export const SCHEDULER_DEFAULT_SCHEDULED_AT = '2026-10-01 06:00'
 export const SCHEDULER_LATE_DATA_ARRIVAL_AT = '2026-10-01 06:20'
@@ -77,8 +34,7 @@ function getTaskOrThrow(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition {
-  const canonicalTaskId = getCanonicalSchedulerTaskId(taskId)
-  const task = tasks.find((candidate) => candidate.taskId === canonicalTaskId)
+  const task = tasks.find((candidate) => candidate.taskId === taskId)
   if (!task) {
     throw new Error(`未知的调度任务: ${taskId}`)
   }
@@ -90,8 +46,7 @@ export function getSchedulerTask(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition | undefined {
-  const canonicalTaskId = getCanonicalSchedulerTaskId(taskId)
-  return tasks.find((task) => task.taskId === canonicalTaskId)
+  return tasks.find((task) => task.taskId === taskId)
 }
 
 /** 使用 Kahn 算法返回稳定拓扑序；同层任务按定义顺序保持确定性。 */
@@ -149,9 +104,8 @@ export function getDownstreamTaskIds(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): string[] {
-  const canonicalTaskId = getCanonicalSchedulerTaskId(taskId)
-  getTaskOrThrow(tasks, canonicalTaskId)
-  const selected = new Set<string>([canonicalTaskId])
+  getTaskOrThrow(tasks, taskId)
+  const selected = new Set<string>([taskId])
   let changed = true
 
   while (changed) {
@@ -509,9 +463,9 @@ export function createInitialSchedulerRun(
   const defaultLateDataTaskId =
     tasks.find((task) =>
       task.contract.inputTables.some((table) => table === 'AccountBalanceSnapshot'),
-    )?.taskId ?? SCHEDULER_TASK_IDS.odsPayments
+    )?.taskId ?? BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot
   const defaultFailureTaskId =
-    tasks.find((task) => task.layer === 'dwd')?.taskId ?? SCHEDULER_TASK_IDS.dwd
+    tasks.find((task) => task.layer === 'dwd')?.taskId ?? BANKING_SCHEDULER_TASK_IDS.dwd
   const lateDataTaskId = options.lateDataTaskId ?? defaultLateDataTaskId
   const failureTaskId = options.failureTaskId ?? defaultFailureTaskId
   const lateDataAvailableAt = isLateDataScenario(scenario)
@@ -1004,20 +958,17 @@ export function transitionSchedulerRun(
   state: SchedulerRunState,
   action: SchedulerAction,
 ): SchedulerRunState {
-  const canonicalAction =
-    'taskId' in action ? { ...action, taskId: getCanonicalSchedulerTaskId(action.taskId) } : action
-
-  switch (canonicalAction.type) {
+  switch (action.type) {
     case 'advance':
       return advanceSchedulerRun(state)
     case 'start-task':
-      return startTask(state, canonicalAction.taskId)
+      return startTask(state, action.taskId)
     case 'complete-task':
-      return completeTask(state, canonicalAction.taskId)
+      return completeTask(state, action.taskId)
     case 'fail-task':
-      return failTask(state, canonicalAction.taskId, canonicalAction.reason)
+      return failTask(state, action.taskId, action.reason)
     case 'recover-task':
-      return recoverTask(state, canonicalAction.taskId)
+      return recoverTask(state, action.taskId)
     case 'mark-late-data':
       return markLateData(state)
   }
@@ -1052,9 +1003,8 @@ export function createPartitionRerunPlan(
     throw new Error('至少需要一个任务才能生成重跑计划')
   }
 
-  const resolvedTargetTaskId = getCanonicalSchedulerTaskId(requestedTargetTaskId)
-  const targetTask = getTaskOrThrow(tasks, resolvedTargetTaskId)
-  const taskIds = mode === 'full' ? allTaskIds : getDownstreamTaskIds(tasks, resolvedTargetTaskId)
+  const targetTask = getTaskOrThrow(tasks, requestedTargetTaskId)
+  const taskIds = mode === 'full' ? allTaskIds : getDownstreamTaskIds(tasks, requestedTargetTaskId)
   const unsupportedTask = taskIds
     .map((taskId) => getTaskOrThrow(tasks, taskId))
     .find((task) => !task.contract.supportsPartialRerun)
@@ -1073,7 +1023,7 @@ export function createPartitionRerunPlan(
       column: targetTask.contract.partition.column,
       value: businessDate,
     },
-    targetTaskId: resolvedTargetTaskId,
+    targetTaskId: requestedTargetTaskId,
     taskIds,
     reusedTaskIds,
     outputTables,
