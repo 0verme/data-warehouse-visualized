@@ -16,6 +16,63 @@ import type {
 
 export const LINEAGE_ENTITY_TYPES: LineageEntityType[] = ['table', 'field', 'task', 'metric']
 
+export type LineageRelationVisualKind =
+  'data-transform' | 'field-derivation' | 'control-dependency' | 'delivery-consume'
+
+export interface LineageRelationVisual {
+  kind: LineageRelationVisualKind
+  label: string
+  shortLabel: string
+  direction: string
+  marker: 'filled-arrow' | 'open-arrow' | 'diamond'
+  linePattern: 'solid' | 'long-dash'
+}
+
+/**
+ * Relation grammar for the lineage fixture. Focus and verification are deliberately not part of
+ * this mapping: an overlay must not rewrite the business relationship it is highlighting.
+ */
+export const LINEAGE_RELATION_VISUALS: Record<LineageRelationType, LineageRelationVisual> = {
+  transform: {
+    kind: 'data-transform',
+    label: '数据加工',
+    shortLabel: '加工',
+    direction: '生产者 → 派生数据',
+    marker: 'filled-arrow',
+    linePattern: 'solid',
+  },
+  derives: {
+    kind: 'field-derivation',
+    label: '字段派生',
+    shortLabel: '派生',
+    direction: '输入字段 → 输出字段',
+    marker: 'open-arrow',
+    linePattern: 'solid',
+  },
+  depends_on: {
+    kind: 'control-dependency',
+    label: '控制依赖',
+    shortLabel: '依赖',
+    direction: '前置条件 → 被放行任务',
+    marker: 'open-arrow',
+    linePattern: 'long-dash',
+  },
+  consumes: {
+    kind: 'delivery-consume',
+    label: '发布 / 消费',
+    shortLabel: '消费',
+    direction: '已发布资产 → 受控消费者',
+    marker: 'diamond',
+    linePattern: 'solid',
+  },
+}
+
+export function getLineageRelationVisual(
+  relation: LineageRelationType | undefined,
+): LineageRelationVisual {
+  return LINEAGE_RELATION_VISUALS[relation ?? 'transform']
+}
+
 const DEFAULT_LINEAGE_EVIDENCE: LineageEvidence = {
   source: 'manual_metadata',
   detail: '这条关系来自静态教学数据，暂未绑定 SQL 或任务运行记录。',
@@ -64,6 +121,84 @@ export interface BlastRadius {
 export interface LineagePath {
   nodeIds: string[]
   edges: LineageEdge[]
+}
+
+export const LINEAGE_CANVAS_WIDTH = 760
+export const LINEAGE_CANVAS_HEIGHT = 500
+export const LINEAGE_NODE_WIDTH = 138
+export const LINEAGE_NODE_HEIGHT = 67
+
+export interface LineagePoint {
+  x: number
+  y: number
+}
+
+export interface LineageEdgeGeometry {
+  sourcePoint: LineagePoint
+  targetPoint: LineagePoint
+  midpoint: LineagePoint
+  path: string
+}
+
+function getNodeBoundaryPoint(
+  center: LineagePoint,
+  direction: LineagePoint,
+  nodeWidth: number,
+  nodeHeight: number,
+): LineagePoint {
+  const halfWidth = nodeWidth / 2
+  const halfHeight = nodeHeight / 2
+  const scaleX = Math.abs(direction.x) > 0 ? halfWidth / Math.abs(direction.x) : Infinity
+  const scaleY = Math.abs(direction.y) > 0 ? halfHeight / Math.abs(direction.y) : Infinity
+  const scale = Math.min(scaleX, scaleY)
+
+  return {
+    x: center.x + direction.x * scale,
+    y: center.y + direction.y * scale,
+  }
+}
+
+/** Keep fixed-fixture SVG connectors outside node rectangles without introducing auto-layout. */
+export function getLineageEdgeGeometry(
+  source: Pick<LineageNode, 'x' | 'y'>,
+  target: Pick<LineageNode, 'x' | 'y'>,
+  nodeWidth = LINEAGE_NODE_WIDTH,
+  nodeHeight = LINEAGE_NODE_HEIGHT,
+): LineageEdgeGeometry {
+  const sourceCenter = { x: source.x, y: source.y }
+  const targetCenter = { x: target.x, y: target.y }
+  const delta = { x: target.x - source.x, y: target.y - source.y }
+  const length = Math.hypot(delta.x, delta.y)
+
+  if (length === 0) {
+    const path = `M ${source.x} ${source.y} L ${target.x} ${target.y}`
+    return {
+      sourcePoint: sourceCenter,
+      targetPoint: targetCenter,
+      midpoint: sourceCenter,
+      path,
+    }
+  }
+
+  const direction = { x: delta.x / length, y: delta.y / length }
+  const sourcePoint = getNodeBoundaryPoint(sourceCenter, direction, nodeWidth, nodeHeight)
+  const targetPoint = getNodeBoundaryPoint(
+    targetCenter,
+    { x: -direction.x, y: -direction.y },
+    nodeWidth,
+    nodeHeight,
+  )
+  const midpoint = {
+    x: (sourcePoint.x + targetPoint.x) / 2,
+    y: (sourcePoint.y + targetPoint.y) / 2,
+  }
+
+  return {
+    sourcePoint,
+    targetPoint,
+    midpoint,
+    path: `M ${sourcePoint.x} ${sourcePoint.y} L ${targetPoint.x} ${targetPoint.y}`,
+  }
 }
 
 export interface LineageInvestigationResult {
