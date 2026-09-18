@@ -1,22 +1,10 @@
-/* Global stylesheet aggregation. Import order preserves the existing cascade; feature responsive rules stay with their owner. */
+/* Global stylesheet: design tokens, reset, base chrome, shared utilities, and theme compatibility.
+   Page-owned stylesheets (home, learn shell, lesson/visualization styles) are linked by BaseLayout
+   so a page only downloads the CSS it renders. */
 @import './tokens.css';
 @import './reset.css';
 @import './base.css';
 @import './utilities.css';
-@import './layouts/learn-shell.css';
-@import './components/shared-lesson.css';
-@import './lessons/warehouse-intro.css';
-@import './lessons/data-modeling.css';
-@import './lessons/star-schema.css';
-@import './lessons/metric.css';
-@import './lessons/banking-metrics.css';
-@import './lessons/data-service.css';
-@import './lessons/scd.css';
-@import './lessons/banking-modeling.css';
+@import './components/header-actions.css';
 @import './motion.css';
-@import './layouts/home.css';
-@import './lessons/lakehouse.css';
-@import './lessons/performance.css';
-@import './lessons/capstone.css';
-@import './components/visualization-compact.css';
 @import './themes.css';

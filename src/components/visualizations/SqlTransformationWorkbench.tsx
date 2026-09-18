@@ -21,7 +21,6 @@ import {
   getTransformationStepResult,
 } from '../../utils/sql-transformation'
 import { CodeRenderer } from '../lesson/CodeRenderer'
-import '../../styles/lessons/sql-workbench.css'
 
 interface SqlTransformationWorkbenchProps {
   visualization: SqlTransformationVisualization

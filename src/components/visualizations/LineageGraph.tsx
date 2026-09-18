@@ -4,7 +4,6 @@ import type {
   LineageTeachingConfig,
 } from '../../features/lineage/types'
 import { LineageTeachingLab } from './LineageTeachingLab'
-import '../../styles/lessons/lineage.css'
 import type {
   LineageEdge,
   LineageEntityType,

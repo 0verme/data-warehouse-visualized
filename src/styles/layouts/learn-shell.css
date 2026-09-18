@@ -1,13 +1,5 @@
 /* LearnShell, sidebar, lesson header, and lesson content layout. */
 
-.site-footer__meta > * {
-  white-space: nowrap;
-}
-
-.site-footer__meta a:hover {
-  color: var(--blue);
-}
-
 /* Learning shell */
 .learn-app {
   --learn-sidebar-width: 308px;
@@ -272,130 +264,6 @@
 .progress-indicator--compact .progress-indicator__track {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.learn-topbar__actions {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 7px;
-  align-items: center;
-  margin-left: auto;
-}
-
-.locale-switcher {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.locale-switcher__trigger,
-.theme-toggle {
-  display: inline-flex;
-  width: 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid var(--topbar-border);
-  border-radius: 9px;
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-  transition:
-    background-color var(--motion-fast) ease,
-    border-color var(--motion-fast) ease,
-    color var(--motion-fast) ease;
-}
-
-.locale-switcher__trigger:hover,
-.locale-switcher__trigger:focus-visible,
-.theme-toggle:hover,
-.theme-toggle:focus-visible {
-  border-color: var(--line-strong);
-  background: var(--surface-muted);
-  color: var(--ink);
-}
-
-.locale-switcher__globe,
-.theme-toggle__icon {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 auto;
-}
-
-.locale-switcher__menu {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 8px);
-  right: 0;
-  display: grid;
-  width: 190px;
-  gap: 3px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: var(--shadow-md);
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
-  transition:
-    opacity var(--motion-fast) ease,
-    transform var(--motion-fast) ease;
-}
-
-.locale-switcher.is-open .locale-switcher__menu {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.locale-switcher__option {
-  display: flex;
-  width: 100%;
-  min-height: 34px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 7px 9px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-  font-size: 12px;
-  text-align: left;
-}
-
-.locale-switcher__option:hover,
-.locale-switcher__option:focus-visible,
-.locale-switcher__option.is-selected {
-  background: var(--surface-muted);
-  color: var(--ink);
-}
-
-.locale-switcher__option.is-selected {
-  font-weight: 700;
-}
-
-.locale-switcher__option svg {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 auto;
-  color: var(--teal);
-}
-
-.theme-toggle__icon--moon {
-  display: none;
-}
-
-html[data-theme='dark'] .theme-toggle__icon--moon {
-  display: block;
-}
-
-html[data-theme='dark'] .theme-toggle__icon--sun {
-  display: none;
 }
 
 .sidebar-toggle {
@@ -1124,8 +992,6 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
     display: none;
   }
 
-  .locale-switcher__trigger,
-  .theme-toggle,
   .sidebar-toggle {
     width: 34px;
     height: 34px;
@@ -1316,9 +1182,6 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .locale-switcher__trigger,
-  .theme-toggle,
-  .locale-switcher__menu,
   .progress-indicator__track span,
   .learn-layout,
   .course-sidebar,

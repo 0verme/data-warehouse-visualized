@@ -4,21 +4,25 @@ import { getLessonContent } from '../../content/lessons'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import { lessons } from '../../data/course'
 import { buildLessonCodeHighlightMap } from '../../utils/build-code-highlight'
+import { getLessonStyleUrls, learnSharedStyleUrls } from '../../utils/lesson-styles'
 
 const firstLesson = lessons[0]
+const firstLessonContent = getLessonContent(firstLesson)
 const codeHighlights = await buildLessonCodeHighlightMap(lessons)
+const styleUrls = [...learnSharedStyleUrls, ...getLessonStyleUrls(firstLessonContent)]
 ---
 
 <BaseLayout
   title="开始学习｜数据仓库图解"
   description="沿着数据流动的方向，交互式学习数据仓库的基础概念、分层与数据血缘。"
+  styleUrls={styleUrls}
 >
   <LearnShell
     client:load
     transition:persist="learn-shell"
     lessons={lessons}
     initialLesson={firstLesson}
-    initialContent={getLessonContent(firstLesson)}
+    initialContent={firstLessonContent}
     codeHighlights={codeHighlights}
     isIndex
   />

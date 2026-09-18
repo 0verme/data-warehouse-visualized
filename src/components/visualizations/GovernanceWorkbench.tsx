@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import '../../styles/lessons/governance.css'
 import type {
   GovernanceAsset,
   GovernanceField,
