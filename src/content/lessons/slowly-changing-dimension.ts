@@ -29,7 +29,7 @@ export const slowlyChangingDimensionContent: LessonContent = {
       eyebrow: '历史版本实验 · 时间点还原',
       title: '同一个 customer_id，保留两个时间版本',
       description:
-        '先写入客户等级和机构变更，再在覆盖更新与拉链表之间切换；拖动时间线到 N001 的放款日，查看两种策略命中的 Customer 状态。',
+        '先写入客户等级和机构变更，再在覆盖更新与拉链表之间切换；把业务日期游标停在 2026-03-31 与 2026-04-01，查看 [start_date, end_date) 区间如何决定 N001 命中的 Customer 版本。',
       visualization: {
         kind: 'banking-customer-history',
         initialVersion: {
@@ -111,7 +111,7 @@ export const slowlyChangingDimensionContent: LessonContent = {
       title: '两个 key，各自回答不同问题',
       paragraphs: [
         'customer_id 说明“是哪位客户”，是跨时间稳定的业务键；customer_sk 说明“这个客户的哪一个属性版本”。历史查询先用 customer_id 找到版本集合，再用 LoanNote 的 disbursedDate 判断落在哪个有效区间。',
-        '本例的两个版本可以写成：101 / C001 / 普通 / 杭州支行 / 2025-01-01 到 2026-03-31，以及 205 / C001 / VIP / 上海支行 / 2026-04-01 到 9999-12-31。变更日属于新版本，旧版本的结束时间不包含变更日。',
+        '本例的两个版本按 [start_date, end_date) 写成：101 / C001 / 普通 / 杭州支行 / [2025-01-01, 2026-04-01)，以及 205 / C001 / VIP / 上海支行 / [2026-04-01, 9999-12-31)。旧版本存下的 end_date 是 2026-04-01，但它不包含这一天，业务上等价于覆盖到 2026-03-31；变更日属于新版本。',
       ],
     },
     {
