@@ -67,7 +67,6 @@
   padding-top: 25px;
   border-top: 1px solid var(--border-subtle);
 }
-
 .banking-metric-scope__scenario-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -180,6 +179,188 @@
   color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.5;
+}
+
+/* Scope Set Delta (A1): 条件组合 + WHERE + 集合成员变化 */
+.banking-metric-scope-lab .visualization-toolbar p {
+  color: var(--text-secondary);
+}
+
+.banking-metric-scope__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(250px, 0.75fr);
+  gap: 12px;
+  align-items: start;
+  margin-top: 29px;
+}
+
+.banking-metric-scope__controls,
+.banking-metric-scope__where {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-section);
+  background: var(--surface-subtle);
+}
+
+.banking-metric-scope__where h3 {
+  margin: 7px 0 12px;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.banking-metric-scope__where figure {
+  margin: 0;
+}
+
+.banking-metric-scope__sql {
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.banking-metric-scope__where figcaption {
+  margin-top: 9px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.banking-metric-scope__delta {
+  margin-top: 29px;
+  padding-top: 25px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.banking-metric-scope__delta-body {
+  display: grid;
+  gap: 12px;
+}
+
+.banking-metric-scope__changes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+  padding: 13px 14px;
+  border-left: 3px solid var(--accent-info);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  background: var(--info-bg);
+}
+
+.banking-metric-scope__changes dt {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.banking-metric-scope__changes dd {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.banking-metric-scope__delta-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.banking-metric-scope__delta-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 9px 11px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.banking-metric-scope__delta-item code {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.banking-metric-scope__delta-item.is-entered {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+}
+
+.banking-metric-scope__delta-item.is-left {
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+
+.banking-metric-scope__delta-item.is-empty {
+  color: var(--text-secondary);
+}
+
+.banking-metric-scope__aggregate-move {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-control);
+  background: var(--success-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.banking-metric-scope__member-status {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.banking-metric-scope__member-status.is-entered {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+  color: var(--blue-deep);
+}
+
+.banking-metric-scope__member-status.is-left {
+  color: var(--text-secondary);
+}
+
+.banking-metric-scope__member-status.is-stayed {
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+.banking-metric__account-table tbody tr.is-entered {
+  background: var(--info-bg);
+}
+
+.banking-metric__account-table tbody tr.is-left td,
+.banking-metric__account-table tbody tr.is-left th {
+  color: var(--text-secondary);
+}
+
+.banking-metric-scope__table-note {
+  margin: 11px 0 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.6;
 }
 
 /* 3-2: staged definition card */
@@ -521,35 +702,41 @@
   background: var(--surface-subtle);
 }
 
-.banking-metric-derivation__controls .banking-metric__section-heading {
+.banking-metric-derivation__controls .banking-metric__section-heading,
+.banking-metric-scope__controls .banking-metric__section-heading {
   margin-bottom: 15px;
 }
 
-.banking-metric-derivation__choice-group {
+.banking-metric-derivation__choice-group,
+.banking-metric-scope__choice-group {
   margin: 0;
   padding: 12px 0 0;
   border: 0;
   border-top: 1px solid var(--border-subtle);
 }
 
-.banking-metric-derivation__choice-group + .banking-metric-derivation__choice-group {
+.banking-metric-derivation__choice-group + .banking-metric-derivation__choice-group,
+.banking-metric-scope__choice-group + .banking-metric-scope__choice-group {
   margin-top: 11px;
 }
 
-.banking-metric-derivation__choice-group legend {
+.banking-metric-derivation__choice-group legend,
+.banking-metric-scope__choice-group legend {
   margin-bottom: 7px;
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 750;
 }
 
-.banking-metric-derivation__choice-group > div {
+.banking-metric-derivation__choice-group > div,
+.banking-metric-scope__choice-group > div {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.banking-metric-derivation__choice {
+.banking-metric-derivation__choice,
+.banking-metric-scope__choice {
   min-width: 59px;
   padding: 7px 8px;
   border: 1px solid var(--border-subtle);
@@ -565,23 +752,29 @@
 }
 
 .banking-metric-derivation__choice:hover,
-.banking-metric-derivation__choice.is-selected {
+.banking-metric-derivation__choice.is-selected,
+.banking-metric-scope__choice:hover,
+.banking-metric-scope__choice.is-selected {
   border-color: var(--info-border);
   background: var(--surface-accent);
   color: var(--blue-deep);
 }
 
 .banking-metric-derivation__choice strong,
-.banking-metric-derivation__choice small {
+.banking-metric-derivation__choice small,
+.banking-metric-scope__choice strong,
+.banking-metric-scope__choice small {
   display: block;
 }
 
-.banking-metric-derivation__choice strong {
+.banking-metric-derivation__choice strong,
+.banking-metric-scope__choice strong {
   color: inherit;
   font-size: 10px;
 }
 
-.banking-metric-derivation__choice small {
+.banking-metric-derivation__choice small,
+.banking-metric-scope__choice small {
   margin-top: 3px;
   color: var(--text-muted);
   font-size: 8px;
@@ -678,6 +871,18 @@
 
   .banking-metric-derivation__result {
     margin-top: 10px;
+  }
+
+  .banking-metric-scope__workspace {
+    display: block;
+  }
+
+  .banking-metric-scope__where {
+    margin-top: 10px;
+  }
+
+  .banking-metric-scope__changes {
+    grid-template-columns: 1fr;
   }
 
   .banking-metric-definition__card dl {

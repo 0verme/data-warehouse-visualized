@@ -79,7 +79,7 @@ export const metricSystemContent: LessonContent = {
       title: '三个数字先不要急着判错',
       paragraphs: [
         '三组结果都使用 2026-09-30 的账户余额快照，差异来自统计集合：第一组把四类教学产品都算入，第二组排除保证金，第三组再排除协定存款。它们不是在争论 SUM 函数怎么写，而是在回答略有不同的问题。',
-        '这一节故意只展示少量条件。实际核对报表时，还要确认客户范围、机构范围、币种和统计日期是否一致。',
+        '实验里可以先只改一个条件，观察哪些 Account 快照进入或离开集合，再逐步组合客户范围、机构范围、币种和统计日期，核对集合边界是否一致。',
       ],
       bullets: [
         '活期、定期、协定、保证金可以形成不同的产品范围。',
@@ -90,9 +90,9 @@ export const metricSystemContent: LessonContent = {
     {
       kind: 'visualization',
       eyebrow: '口径对比实验 · 先看统计集合',
-      title: '同一份账户快照，逐步缩小统计范围',
+      title: '同一份账户快照，谁进入或离开统计集合',
       description:
-        '选择 A、B 或 C，查看当前口径、参与的账户快照和结果金额。实验只做业务集合对照，先不谈实现方式。',
+        '选择 A、B 或 C 快速对照，也可以组合客户、产品、币种、机构、日期和排除产品条件。每次变化都会标出哪些账户快照进入或离开集合，并同步显示当前口径等价的 WHERE 条件（教学表达，不执行真实 SQL）。',
       visualization: depositBalanceScopeVisualization,
     },
     {
