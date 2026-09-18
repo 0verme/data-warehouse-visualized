@@ -34,6 +34,9 @@ export interface MessageDictionary {
   toggleTheme: string
   collapseSidebar: string
   expandSidebar: string
+  lessonContentLoading: string
+  lessonContentLoadError: string
+  retry: string
 }
 
 export const messages: Partial<Record<Locale, MessageDictionary>> = {
@@ -71,6 +74,9 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     toggleTheme: '切换浅色 / 深色主题',
     collapseSidebar: '收起目录',
     expandSidebar: '展开目录',
+    lessonContentLoading: '正在加载课程内容…',
+    lessonContentLoadError: '课程内容暂时无法加载，请检查网络后重试。',
+    retry: '重试',
   },
   en: {
     siteName: 'Data Warehouse Visualized',
@@ -106,6 +112,10 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     toggleTheme: 'Switch light / dark theme',
     collapseSidebar: 'Collapse course directory',
     expandSidebar: 'Expand course directory',
+    lessonContentLoading: 'Loading lesson content…',
+    lessonContentLoadError:
+      'Lesson content failed to load. Please check your connection and retry.',
+    retry: 'Retry',
   },
 }
 

@@ -3,7 +3,6 @@ import type { Lesson } from '../../data/course'
 import { getChapters, getChapterTitle, getLessonBySlug } from '../../data/course'
 import type { LessonContent } from '../../content/types'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
-import { getLessonContent } from '../../content/lessons'
 import {
   createInitialProgress,
   getCompletedCount,
@@ -26,6 +25,7 @@ import { getLocaleSnapshot, subscribeToLocaleChanges } from '../../utils/locale'
 import { GlobalHeaderActions } from '../GlobalHeaderActions'
 import { CourseSidebar, type SidebarRevealRequest } from './CourseSidebar'
 import { LessonViewport } from './LessonViewport'
+import { useLessonContent } from './useLessonContent'
 import {
   createProgressBootstrapScript,
   getInitialProgress,
@@ -197,8 +197,12 @@ export function LearnShell({
     (isCourseIndex
       ? (lessons.find((lesson) => lesson.id === progress.currentLessonId) ?? initialLesson)
       : initialLesson)
-  const activeContent =
-    activeLesson.id === initialLesson.id ? initialContent : getLessonContent(activeLesson)
+  const { state: contentState, retryContent } = useLessonContent(
+    activeLesson,
+    initialLesson,
+    initialContent,
+  )
+  const activeContent = contentState.status === 'ready' ? contentState.content : null
   const adjacentLessons = getAdjacentLessons(lessons, activeLesson.slug)
   const completedCount = getCompletedCount(progress)
   const isActiveLessonCompleted = progress.completedLessonIds.includes(activeLesson.id)
@@ -367,6 +371,8 @@ export function LearnShell({
           activeLesson={activeLesson}
           lessons={lessons}
           content={activeContent}
+          contentStatus={contentState.status}
+          onRetryContent={retryContent}
           codeHighlights={codeHighlights}
           previous={adjacentLessons.previous}
           next={adjacentLessons.next}

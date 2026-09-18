@@ -6,12 +6,15 @@ import type { Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getRoute } from '../../utils/routes'
 import { resetLessonViewportScroll } from '../../utils/scroll'
+import type { LessonContentStatus } from './useLessonContent'
 import { LessonContent as LessonBody, LessonHeader, LessonNavigation } from '../lesson'
 
 interface LessonViewportProps {
   activeLesson: Lesson
   lessons: Lesson[]
-  content: LessonContent
+  content: LessonContent | null
+  contentStatus: LessonContentStatus
+  onRetryContent: () => void
   codeHighlights?: CodeHighlightMap
   previous?: Lesson
   next?: Lesson
@@ -28,6 +31,8 @@ export function LessonViewport({
   activeLesson,
   lessons,
   content,
+  contentStatus,
+  onRetryContent,
   codeHighlights,
   previous,
   next,
@@ -59,13 +64,46 @@ export function LessonViewport({
           <span aria-hidden="true">/</span>
           <span>{activeLesson.title}</span>
         </div>
-        <LessonHeader lesson={activeLesson} lessons={lessons} content={content} locale={locale} />
-        <LessonBody
-          lesson={activeLesson}
-          content={content}
-          codeHighlights={codeHighlights}
-          locale={locale}
-        />
+        {contentStatus === 'ready' && content ? (
+          <>
+            <LessonHeader
+              lesson={activeLesson}
+              lessons={lessons}
+              content={content}
+              locale={locale}
+            />
+            <LessonBody
+              lesson={activeLesson}
+              content={content}
+              codeHighlights={codeHighlights}
+              locale={locale}
+            />
+          </>
+        ) : contentStatus === 'error' ? (
+          <div
+            className="lesson-content-status"
+            data-status="error"
+            role="alert"
+            style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}
+          >
+            <div className="lesson-content-status__inner">
+              <p>{getMessage('lessonContentLoadError', locale)}</p>
+              <button type="button" onClick={onRetryContent}>
+                {getMessage('retry', locale)}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="lesson-content-status"
+            data-status="loading"
+            role="status"
+            aria-live="polite"
+            style={{ minHeight: '60vh', display: 'grid', placeItems: 'center' }}
+          >
+            <p>{getMessage('lessonContentLoading', locale)}</p>
+          </div>
+        )}
       </div>
       <LessonNavigation
         previous={previous}
