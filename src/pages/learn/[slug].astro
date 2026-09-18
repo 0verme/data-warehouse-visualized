@@ -32,7 +32,12 @@ const pageTitle = `${lesson.title}｜数据仓库图解`
 const styleUrls = [...learnSharedStyleUrls, ...getLessonStyleUrls(content)]
 ---
 
-<BaseLayout title={pageTitle} description={lesson.summary} styleUrls={styleUrls}>
+<BaseLayout
+  title={pageTitle}
+  description={lesson.summary}
+  styleUrls={styleUrls}
+  pageClass="learn-page"
+>
   <LearnShell
     client:load
     transition:persist="learn-shell"

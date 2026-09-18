@@ -46,17 +46,6 @@
   line-height: 1.4;
 }
 
-.modeling-intro__table caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .modeling-intro__table th,
 .modeling-intro__table td {
   padding: 9px 10px;
@@ -317,17 +306,6 @@
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   line-height: 1.4;
-}
-
-.modeling-lab__table caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .modeling-lab__table th,

@@ -8,9 +8,11 @@ interface Props {
   canonical?: string
   /** Page-owned stylesheets (home, learn shell, lesson/visualization styles). */
   styleUrls?: string[]
+  /** Optional page-state class on the root element, e.g. `learn-page`. */
+  pageClass?: string
 }
 
-const { title, description, canonical, styleUrls = [] } = Astro.props
+const { title, description, canonical, styleUrls = [], pageClass } = Astro.props
 const stylesheetUrls = [globalStylesUrl, ...styleUrls]
 const baseUrl = import.meta.env.BASE_URL
 const canonicalPath = Astro.url.pathname.startsWith(baseUrl)
@@ -22,7 +24,7 @@ const canonicalUrl =
 ---
 
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="light" class={pageClass}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />

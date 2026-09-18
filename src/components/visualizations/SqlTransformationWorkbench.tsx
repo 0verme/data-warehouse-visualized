@@ -136,7 +136,7 @@ function SnapshotTable({
   return (
     <div className="sql-workbench__table-wrap">
       <table className="sql-workbench__table">
-        <caption>{caption}</caption>
+        <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
             <th scope="col" className="sql-workbench__change-column">

@@ -570,7 +570,7 @@ function SnapshotTable({ snapshot }: { snapshot: LakehouseSnapshot }) {
   return (
     <div className="lakehouse-snapshot-table-wrap" data-detail-role="snapshot-table">
       <table className="lakehouse-snapshot-table">
-        <caption>
+        <caption className="sr-only">
           v{snapshot.version} · {snapshot.committedAt}
         </caption>
         <thead>
@@ -1096,7 +1096,7 @@ function UnityLab({
         </div>
         <div className="lakehouse-unity-table-wrap" data-detail-role="comparison">
           <table className="lakehouse-unity-table">
-            <caption>异构湖仓与共享基础能力形态的观察维度</caption>
+            <caption className="sr-only">异构湖仓与共享基础能力形态的观察维度</caption>
             <thead>
               <tr>
                 <th scope="col">观察维度</th>

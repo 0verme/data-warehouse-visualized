@@ -1,5 +1,27 @@
 /* Small shared UI utilities. */
 
+/* Visually hidden but still exposed to assistive technology.
+   The explicit top/left anchor is load-bearing: an absolutely positioned box
+   with auto offsets falls back to its static position, which can land far down
+   the document flow and inflate documentElement.scrollHeight even though the
+   1px box is clipped. Anchoring to the containing block origin keeps the box
+   inside its scroll container regardless of whether any ancestor is
+   positioned or transformed. */
+.sr-only {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .eyebrow,
 .eyebrow-pill {
   display: inline-flex;

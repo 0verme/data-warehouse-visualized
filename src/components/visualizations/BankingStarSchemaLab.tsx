@@ -51,7 +51,7 @@ function DataTable({ data, caption }: { data: TeachingTableData; caption: string
   return (
     <div className="banking-lab__table-wrap">
       <table className="banking-lab__table">
-        <caption>{caption}</caption>
+        <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
             {data.columns.map((column) => (

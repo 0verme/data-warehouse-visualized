@@ -598,6 +598,7 @@
   }
 
   .layer-evolution__connector {
+    position: relative;
     min-height: 32px;
     flex-direction: row;
   }

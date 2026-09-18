@@ -33,7 +33,7 @@ function AccountSnapshotTable({
   return (
     <div className="banking-lab__table-wrap">
       <table className="banking-lab__table banking-metric__account-table">
-        <caption>{caption}</caption>
+        <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
             <th scope="col">账户</th>
@@ -415,7 +415,7 @@ function TimeRowsTable({
     return (
       <div className="banking-lab__table-wrap">
         <table className="banking-lab__table banking-metric__time-table">
-          <caption>截至某天的账户余额快照</caption>
+          <caption className="sr-only">截至某天的账户余额快照</caption>
           <thead>
             <tr>
               <th scope="col">快照日</th>
@@ -442,7 +442,7 @@ function TimeRowsTable({
   return (
     <div className="banking-lab__table-wrap">
       <table className="banking-lab__table banking-metric__time-table">
-        <caption>期间内的账户交易事件</caption>
+        <caption className="sr-only">期间内的账户交易事件</caption>
         <thead>
           <tr>
             <th scope="col">事件日</th>

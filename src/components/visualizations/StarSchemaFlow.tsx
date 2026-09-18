@@ -86,7 +86,7 @@ function DataTable({ data, caption }: { data: StarSchemaTableData; caption: stri
   return (
     <div className="star-schema__data-table-wrap">
       <table className="star-schema__data-table">
-        <caption>{caption}</caption>
+        <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
             {data.columns.map((column) => (

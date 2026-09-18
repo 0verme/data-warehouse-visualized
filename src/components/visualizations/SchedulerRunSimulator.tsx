@@ -431,7 +431,7 @@ function AttemptTable({
       {attempts.length > 0 ? (
         <div className="scheduler-table-wrap">
           <table>
-            <caption>任务 attempt 记录</caption>
+            <caption className="sr-only">任务 attempt 记录</caption>
             <thead>
               <tr>
                 <th scope="col">attempt</th>
