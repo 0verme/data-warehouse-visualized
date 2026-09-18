@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import type {
   LoanGrainErrorDemo,
   LoanGrainId,
@@ -6,7 +6,13 @@ import type {
   LoanGrainVisualization,
   TeachingTableData,
 } from '../../types'
+import { createGrainErrorKernel, type GrainErrorStepSpecs } from '../../features/grain-error/steps'
 import { calculateLoanGrainErrorResult, getLoanGrainOption } from '../../utils/loan-grain'
+import {
+  applyVisualizationPlayerAction,
+  createVisualizationPlayer,
+  getCurrentVisualizationStep,
+} from '../../utils/visualization-steps'
 
 interface LoanGrainLabProps {
   visualization: LoanGrainVisualization
@@ -19,6 +25,17 @@ const errorStepLabels: Record<LoanGrainErrorStep, string> = {
   calculated: 'SUM 暴露了 Grain 错误',
   fixed: '合同金额先回到合同 Grain',
 }
+
+const errorStepSpecs = [
+  { id: 'joined', title: '错误模型', description: errorStepLabels.joined, risk: true },
+  {
+    id: 'calculated',
+    title: 'SUM 暴露 Grain 错误',
+    description: errorStepLabels.calculated,
+    risk: true,
+  },
+  { id: 'fixed', title: '修复到合同 Grain', description: errorStepLabels.fixed, risk: false },
+] as const satisfies GrainErrorStepSpecs<LoanGrainErrorStep>
 
 function formatCell(value: string | number | undefined): string {
   if (typeof value === 'number') {
@@ -139,23 +156,33 @@ function GrainQuestions({ option }: { option: LoanGrainOption }) {
 }
 
 function GrainErrorLab({ demo }: { demo: LoanGrainErrorDemo }) {
-  const [step, setStep] = useState<LoanGrainErrorStep>('joined')
-  const result = useMemo(() => calculateLoanGrainErrorResult(demo), [demo])
+  const kernel = useMemo(
+    () => createGrainErrorKernel(calculateLoanGrainErrorResult(demo), errorStepSpecs),
+    [demo],
+  )
+  const [player, dispatch] = useReducer(
+    applyVisualizationPlayerAction,
+    kernel.size,
+    createVisualizationPlayer,
+  )
+  const currentStep = getCurrentVisualizationStep(player, kernel)
+  const step = currentStep.state.step
+  const { result } = currentStep.state
   const isCalculated = step !== 'joined'
   const isFixed = step === 'fixed'
 
-  function reset() {
-    setStep('joined')
-  }
-
   return (
-    <section className="loan-grain__error" aria-labelledby="loan-grain-error-title">
+    <section
+      className="loan-grain__error"
+      aria-labelledby="loan-grain-error-title"
+      data-step-id={currentStep.id}
+    >
       <div className="loan-grain__section-heading">
         <div>
           <span className="eyebrow">GRAIN ERROR · Join 放大</span>
           <h3 id="loan-grain-error-title">合同金额 Join 到借据后，为什么不能直接 SUM？</h3>
         </div>
-        <p aria-live="polite">{errorStepLabels[step]}</p>
+        <p aria-live="polite">{currentStep.description}</p>
       </div>
       <div className="loan-grain__error-flow" aria-label="Grain 错误传播路径">
         <span className={step === 'joined' ? 'is-current' : 'is-done'}>合同 Grain</span>
@@ -201,7 +228,7 @@ function GrainErrorLab({ demo }: { demo: LoanGrainErrorDemo }) {
           className="button button--primary button--small"
           type="button"
           disabled={isCalculated}
-          onClick={() => setStep('calculated')}
+          onClick={() => dispatch('next')}
         >
           执行 SUM(contract_amount)
         </button>
@@ -209,11 +236,15 @@ function GrainErrorLab({ demo }: { demo: LoanGrainErrorDemo }) {
           className="button button--quiet button--small"
           type="button"
           disabled={!isCalculated || isFixed}
-          onClick={() => setStep('fixed')}
+          onClick={() => dispatch('next')}
         >
           修复 Grain
         </button>
-        <button className="button button--quiet button--small" type="button" onClick={reset}>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => dispatch('reset')}
+        >
           重置演示
         </button>
       </div>
