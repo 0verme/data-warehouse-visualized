@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useReducer, useState } from 'react'
 import type {
   LineageEdge,
   LineageEntityType,
@@ -14,6 +14,7 @@ import type {
   LineageRootCauseCandidate,
   LineageTeachingConfig,
 } from '../../features/lineage/types'
+import { createLineageImpactKernel } from '../../features/lineage-impact/steps'
 import {
   getDirectDownstreamNodes,
   getDirectUpstreamNodes,
@@ -24,6 +25,11 @@ import {
   getTransitiveDownstreamNodes,
   getTransitiveUpstreamNodes,
 } from '../../utils/lineage'
+import {
+  applyVisualizationPlayerAction,
+  createVisualizationPlayer,
+  getCurrentVisualizationStep,
+} from '../../utils/visualization-steps'
 
 interface LineageTeachingLabProps {
   nodes: LineageNode[]
@@ -868,20 +874,30 @@ function ImpactPanel({
   const blastHeadingId = useId().replace(/:/g, '')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [submitted, setSubmitted] = useState(false)
-  const [revealStep, setRevealStep] = useState(0)
   const summary = useMemo(
     () => getLineageImpactSummary(nodes, edges, config.sourceNodeId, { includeCrossEntity: true }),
     [config.sourceNodeId, edges, nodes],
   )
+  // Reveal 序列由 lineage 数据生成：Step 0 为空，最后一步为完整快照；
+  // player 只负责 index 推进，Prediction 仍由本组件自己的 state 管理。
+  const kernel = useMemo(
+    () => createLineageImpactKernel(config.expectedTransitiveNodeIds),
+    [config.expectedTransitiveNodeIds],
+  )
+  const [player, dispatchReveal] = useReducer(
+    applyVisualizationPlayerAction,
+    kernel.size,
+    createVisualizationPlayer,
+  )
+  const currentStep = getCurrentVisualizationStep(player, kernel)
+  const { revealedNodeIds, complete: revealComplete } = currentStep.state
   const expectedDirectIds = new Set(config.expectedDirectNodeIds)
-  const expectedTransitiveIds = config.expectedTransitiveNodeIds
   const finalMetricLabel = config.finalMetricNodeId
     ? (config.affectedMetricLabel ?? getNodeLabel(nodes, config.finalMetricNodeId))
     : (config.affectedMetricLabel ?? '最终指标消费者')
   const predictionCorrect =
     selectedIds.size === expectedDirectIds.size &&
     [...selectedIds].every((nodeId) => expectedDirectIds.has(nodeId))
-  const revealedIds = expectedTransitiveIds.slice(0, revealStep)
 
   function togglePrediction(nodeId: string) {
     setSelectedIds((current) => {
@@ -891,12 +907,12 @@ function ImpactPanel({
       return next
     })
     setSubmitted(false)
-    setRevealStep(0)
+    dispatchReveal('reset')
   }
 
   function submitPrediction() {
     setSubmitted(true)
-    setRevealStep(0)
+    dispatchReveal('reset')
   }
 
   return (
@@ -942,6 +958,7 @@ function ImpactPanel({
       {submitted && (
         <section
           className="lineage-teaching-blast-radius"
+          data-step-id={currentStep.id}
           aria-labelledby={`${blastHeadingId}-title`}
         >
           <div className="lineage-teaching-panel-heading">
@@ -964,17 +981,15 @@ function ImpactPanel({
           </div>
           <ImpactChain
             sourceNodeId={config.sourceNodeId}
-            revealedIds={revealedIds}
+            revealedIds={revealedNodeIds}
             nodes={nodes}
             directIds={new Set(summary.directDownstream)}
           />
-          {revealStep < expectedTransitiveIds.length ? (
+          {!revealComplete ? (
             <button
               className="button button--quiet button--small"
               type="button"
-              onClick={() =>
-                setRevealStep((current) => Math.min(current + 1, expectedTransitiveIds.length))
-              }
+              onClick={() => dispatchReveal('next')}
             >
               展开下一层影响
             </button>
