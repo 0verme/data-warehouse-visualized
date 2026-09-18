@@ -1,6 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { LessonSectionRenderer } from '../src/components/lesson/LessonSectionRenderer'
+import {
+  BusinessSystemFlow,
+  getConnectorState,
+  getOutputState,
+  getPhaseState,
+  getWarehouseState,
+} from '../src/components/visualizations/BusinessSystemFlow'
 import { getLessonContent } from '../src/content/lessons'
 import { getLessonBySlug } from '../src/data/course'
 
@@ -14,6 +21,57 @@ function renderLesson(slug: string): string {
   const content = getLessonContent(lesson)
   return renderToStaticMarkup(<LessonSectionRenderer lesson={lesson} sections={content.sections} />)
 }
+
+describe('BusinessSystemFlow Pilot A 语义', () => {
+  it('为 Source、Processing / Warehouse、Consumer / Output 和两类连接保留稳定语义', () => {
+    const markup = renderToStaticMarkup(
+      <BusinessSystemFlow
+        systems={[
+          { id: 'core', name: '核心系统', detail: '存款余额', volume: '120 亿' },
+          { id: 'credit', name: '信贷系统', detail: '贷款余额', volume: '90 亿' },
+        ]}
+        warehouseLabel="经营分析仓"
+        outputs={[{ name: '经营报表', detail: '存贷比 75%' }]}
+      />,
+    )
+
+    expect(markup).toContain('data-diagram-type="flow"')
+    expect(markup).toContain('data-node-role="source"')
+    expect(markup).toContain('data-node-role="processing"')
+    expect(markup).toContain('data-node-role="consumer"')
+    expect(markup).toContain('data-relation="data-transform"')
+    expect(markup).toContain('data-relation="delivery-publish-consume"')
+    expect(markup).toContain('data-from="source" data-to="processing"')
+    expect(markup).toContain('data-from="processing" data-to="consumer"')
+    expect(markup).toContain('aria-label="Source 到 Warehouse 的数据 / 加工关系，尚未开始"')
+    expect(markup).toContain('data-state="inactive"')
+    expect(markup).toContain('data-focus="primary"')
+    expect(markup).toContain('aria-pressed="true"')
+    expect(markup).toContain('当前查看')
+    expect(markup).toContain('等待汇集')
+    expect(markup).toContain('等待数据')
+    expect(markup).toContain('等待发布')
+  })
+
+  it('把播放阶段映射为独立的节点状态和连接状态', () => {
+    expect(getPhaseState(0)).toBe('waiting')
+    expect(getPhaseState(1)).toBe('collecting')
+    expect(getPhaseState(2)).toBe('processing')
+    expect(getPhaseState(3)).toBe('ready')
+
+    expect(getConnectorState('data-transform', 0)).toBe('inactive')
+    expect(getConnectorState('data-transform', 1)).toBe('current')
+    expect(getConnectorState('data-transform', 2)).toBe('completed')
+    expect(getConnectorState('delivery-publish-consume', 1)).toBe('inactive')
+    expect(getConnectorState('delivery-publish-consume', 2)).toBe('current')
+    expect(getConnectorState('delivery-publish-consume', 3)).toBe('completed')
+
+    expect(getWarehouseState(2)).toBe('processing')
+    expect(getWarehouseState(3)).toBe('ready')
+    expect(getOutputState(2)).toBe('waiting')
+    expect(getOutputState(3)).toBe('ready')
+  })
+})
 
 describe('认识数据仓库第一章交互', () => {
   it('把核心系统和信贷系统的存贷比案例交给跨系统可视化', () => {
