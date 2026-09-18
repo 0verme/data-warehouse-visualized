@@ -19,21 +19,14 @@ import {
 } from '../visualizations/BankingMetricLabs'
 import { BankingStarSchemaLab } from '../visualizations/BankingStarSchemaLab'
 import { BusinessSystemFlow } from '../visualizations/BusinessSystemFlow'
-import { DataQualityWorkbench } from '../visualizations/DataQualityWorkbench'
-import { DataServiceWorkbench } from '../visualizations/DataServiceWorkbench'
-import { GovernanceWorkbench } from '../visualizations/GovernanceWorkbench'
-import { LakehouseArchitectureLab } from '../visualizations/LakehouseArchitectureLab'
 import { LayerEvolutionLab } from '../visualizations/LayerEvolutionLab'
-import { LineageGraph } from '../visualizations/LineageGraph'
 import { LoanBusinessProcessLab } from '../visualizations/LoanBusinessProcessLab'
 import { LoanGrainLab } from '../visualizations/LoanGrainLab'
 import { MetricDefinitionLab } from '../visualizations/MetricDefinitionLab'
 import { ModelingIntro } from '../visualizations/ModelingIntro'
-import { PerformanceLab } from '../visualizations/PerformanceLab'
 import { PipelineFlow } from '../visualizations/PipelineFlow'
 import { ReportMetricJourney } from '../visualizations/ReportMetricJourney'
 import { SlowlyChangingDimension } from '../visualizations/SlowlyChangingDimension'
-import { SqlTransformationWorkbench } from '../visualizations/SqlTransformationWorkbench'
 import { StarSchemaFlow } from '../visualizations/StarSchemaFlow'
 import { WarehouseTermsLab } from '../visualizations/WarehouseTermsLab'
 import { CodeBlock } from './CodeBlock'
@@ -54,7 +47,58 @@ const LazyCapstoneWorkbench = lazy(() =>
   })),
 )
 
-type LazyVisualizationKind = 'scheduler' | 'capstone'
+const LazyLineageGraph = lazy(() =>
+  import('../visualizations/LineageGraph').then(({ LineageGraph }) => ({
+    default: LineageGraph,
+  })),
+)
+
+const LazyLakehouseArchitectureLab = lazy(() =>
+  import('../visualizations/LakehouseArchitectureLab').then(({ LakehouseArchitectureLab }) => ({
+    default: LakehouseArchitectureLab,
+  })),
+)
+
+const LazySqlTransformationWorkbench = lazy(() =>
+  import('../visualizations/SqlTransformationWorkbench').then(({ SqlTransformationWorkbench }) => ({
+    default: SqlTransformationWorkbench,
+  })),
+)
+
+const LazyDataQualityWorkbench = lazy(() =>
+  import('../visualizations/DataQualityWorkbench').then(({ DataQualityWorkbench }) => ({
+    default: DataQualityWorkbench,
+  })),
+)
+
+const LazyGovernanceWorkbench = lazy(() =>
+  import('../visualizations/GovernanceWorkbench').then(({ GovernanceWorkbench }) => ({
+    default: GovernanceWorkbench,
+  })),
+)
+
+const LazyPerformanceLab = lazy(() =>
+  import('../visualizations/PerformanceLab').then(({ PerformanceLab }) => ({
+    default: PerformanceLab,
+  })),
+)
+
+const LazyDataServiceWorkbench = lazy(() =>
+  import('../visualizations/DataServiceWorkbench').then(({ DataServiceWorkbench }) => ({
+    default: DataServiceWorkbench,
+  })),
+)
+
+type LazyVisualizationKind =
+  | 'lineage'
+  | 'lakehouse'
+  | 'sql-transformation'
+  | 'data-quality'
+  | 'governance'
+  | 'performance-lab'
+  | 'data-service'
+  | 'scheduler'
+  | 'capstone'
 
 function VisualizationLoading() {
   return (
@@ -173,13 +217,15 @@ function VisualizationBody({
       return <WarehouseTermsLab visualization={visualization} />
     case 'lineage':
       return (
-        <LineageGraph
-          nodes={visualization.nodes}
-          edges={visualization.edges}
-          investigationEvent={visualization.investigationEvent}
-          investigationEvents={visualization.investigationEvents}
-          teaching={visualization.teaching}
-        />
+        <VisualizationLoadBoundary key={lessonId} kind="lineage">
+          <LazyLineageGraph
+            nodes={visualization.nodes}
+            edges={visualization.edges}
+            investigationEvent={visualization.investigationEvent}
+            investigationEvents={visualization.investigationEvents}
+            teaching={visualization.teaching}
+          />
+        </VisualizationLoadBoundary>
       )
     case 'modeling-intro':
       return <ModelingIntro visualization={visualization} />
@@ -208,19 +254,44 @@ function VisualizationBody({
     case 'banking-metric-derivations':
       return <BankingMetricDerivationLab visualization={visualization} />
     case 'lakehouse':
-      return <LakehouseArchitectureLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="lakehouse">
+          <LazyLakehouseArchitectureLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'sql-transformation':
       return (
-        <SqlTransformationWorkbench visualization={visualization} codeHighlights={codeHighlights} />
+        <VisualizationLoadBoundary key={lessonId} kind="sql-transformation">
+          <LazySqlTransformationWorkbench
+            visualization={visualization}
+            codeHighlights={codeHighlights}
+          />
+        </VisualizationLoadBoundary>
       )
     case 'governance':
-      return <GovernanceWorkbench visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="governance">
+          <LazyGovernanceWorkbench visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'data-quality':
-      return <DataQualityWorkbench visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="data-quality">
+          <LazyDataQualityWorkbench visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'data-service':
-      return <DataServiceWorkbench visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="data-service">
+          <LazyDataServiceWorkbench visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'performance-lab':
-      return <PerformanceLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="performance-lab">
+          <LazyPerformanceLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'scheduler':
       return (
         <VisualizationLoadBoundary key={lessonId} kind="scheduler">
