@@ -76,7 +76,7 @@ export function buildJoinFanoutSteps(): readonly JoinFanoutStep[] {
     },
     {
       id: 'expand-result',
-      title: '结果展开',
+      title: '看见 2 × 2 = 4',
       description: `左表 ${step3.counts.matchedLeftRows} 行 × 右表 ${step3.counts.rightRows} 行 = 结果 ${step3.counts.resultRows} 行。SQL 没有报错，但结果行数已经被放大。`,
       state: step3,
       highlight: {
@@ -91,7 +91,7 @@ export function buildJoinFanoutSteps(): readonly JoinFanoutStep[] {
     {
       id: 'diagnose-key-grain',
       title: '指出根因',
-      description: `问题不是 JOIN 本身错误，而是 ${joinKey} 的粒度不足以唯一确定双方记录：A 既对应 ${leftRowCount} 个账户，又对应 ${rightRowCount} 个标签，两种“多”相乘，结果就不再是账户粒度。`,
+      description: `根因不在 JOIN 语法，而在 ${joinKey} 的粒度不足以唯一确定双方记录：A 既对应 ${leftRowCount} 个账户，又对应 ${rightRowCount} 个标签，两个“多”相乘，结果就不再是账户粒度。`,
       state: step3,
       highlight: {
         kind: 'diagnose',
@@ -104,8 +104,8 @@ export function buildJoinFanoutSteps(): readonly JoinFanoutStep[] {
     },
     {
       id: 'fix-align-grain',
-      title: '先对齐 Grain，再 Join',
-      description: `如果目标结果是账户级一行，就先把右表按 ${joinKey} 聚合到 1 行（${aggregatedTagCount} 个标签），再与账户表 Join：${step6.counts.matchedLeftRows} × ${step6.counts.rightRows} = ${step6.counts.resultRows} 行，放大消失。`,
+      title: '修复到 2 × 1 = 2',
+      description: `这个例子的目标是账户级一行：右表先按 ${joinKey} 聚合成 1 行（${aggregatedTagCount} 个标签），再 Join 账户表：${step6.counts.matchedLeftRows} × ${step6.counts.rightRows} = ${step6.counts.resultRows} 行，放大消失。`,
       state: step6,
       highlight: {
         kind: 'fix',

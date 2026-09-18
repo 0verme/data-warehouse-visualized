@@ -20,7 +20,7 @@ import {
 const STEP_KIND_LABELS: Record<JoinFanoutStepKind, string> = {
   observe: '观察',
   match: '逐行匹配',
-  expand: '结果膨胀',
+  expand: '结果放大',
   diagnose: '根因',
   fix: '修复',
 }
@@ -322,6 +322,7 @@ export function JoinFanoutSimulator() {
       data-diagram-type="schema"
       aria-label="JOIN 膨胀分步实验"
       data-step-id={step.id}
+      data-step-kind={highlight.kind}
     >
       <div className="visualization-toolbar join-fanout__toolbar">
         <div className="join-fanout__toolbar-main">
