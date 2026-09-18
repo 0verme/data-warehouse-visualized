@@ -28,5 +28,3 @@ export const dataLineageContent: LessonContent = {
     'Task dependency 说明任务先后，data lineage 说明数据来源；两者不能互相替代。',
   ],
 }
-
-export { qualityLineageInvestigation } from './data-lineage-shared'

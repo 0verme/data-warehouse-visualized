@@ -97,11 +97,9 @@ export interface LineageTaskDependencyExample {
 export interface LineageInvestigationTeachingConfig {
   qualityEvent: QualityEvent
   anomalyNodeId: string
-  directUpstreamNodeIds: readonly string[]
   upstreamExpansionNodeIds: readonly string[]
   transformationChecks: readonly string[]
   candidates: readonly LineageRootCauseCandidate[]
-  evidenceRecordIds?: readonly string[]
 }
 
 export interface LineageImpactTeachingConfig {

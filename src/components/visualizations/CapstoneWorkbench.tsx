@@ -17,7 +17,7 @@ import type {
 } from '../../features/capstone/types'
 import { CAPSTONE_STAGE_IDS } from '../../features/capstone/types'
 import { analyzeLineageInvestigation } from '../../utils/lineage'
-import { LineageGraph } from './LineageGraph'
+import { LegacyLineageGraph } from './LegacyLineageGraph'
 import {
   createInitialCapstoneState,
   getCapstoneLaunchReview,
@@ -820,7 +820,7 @@ function InvestigationStage({ visualization, state, review, dispatch }: StagePro
         </div>
       </div>
       <div className="capstone-lineage-graph">
-        <LineageGraph
+        <LegacyLineageGraph
           nodes={[...visualization.lineage.nodes]}
           edges={[...visualization.lineage.edges]}
           investigationEvent={visualization.lineage.investigationEvent}

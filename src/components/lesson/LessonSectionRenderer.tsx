@@ -13,7 +13,6 @@ import { BankingFactTypesLab } from '../visualizations/BankingFactTypesLab'
 import { BusinessSystemFlow } from '../visualizations/BusinessSystemFlow'
 import { LayerEvolutionLab } from '../visualizations/LayerEvolutionLab'
 import { LoanBusinessProcessLab } from '../visualizations/LoanBusinessProcessLab'
-import { PipelineFlow } from '../visualizations/PipelineFlow'
 import { ReportMetricJourney } from '../visualizations/ReportMetricJourney'
 import { WarehouseTermsLab } from '../visualizations/WarehouseTermsLab'
 import { CodeBlock } from './CodeBlock'
@@ -34,9 +33,9 @@ const LazyCapstoneWorkbench = lazy(() =>
   })),
 )
 
-const LazyLineageGraph = lazy(() =>
-  import('../visualizations/LineageGraph').then(({ LineageGraph }) => ({
-    default: LineageGraph,
+const LazyLineageTeachingLab = lazy(() =>
+  import('../visualizations/LineageTeachingLab').then(({ LineageTeachingLab }) => ({
+    default: LineageTeachingLab,
   })),
 )
 
@@ -130,18 +129,6 @@ const LazyMetricDefinitionLab = lazy(() =>
   })),
 )
 
-const LazyModelingIntro = lazy(() =>
-  import('../visualizations/ModelingIntro').then(({ ModelingIntro }) => ({
-    default: ModelingIntro,
-  })),
-)
-
-const LazySlowlyChangingDimension = lazy(() =>
-  import('../visualizations/SlowlyChangingDimension').then(({ SlowlyChangingDimension }) => ({
-    default: SlowlyChangingDimension,
-  })),
-)
-
 const LazyStarSchemaFlow = lazy(() =>
   import('../visualizations/StarSchemaFlow').then(({ StarSchemaFlow }) => ({
     default: StarSchemaFlow,
@@ -167,8 +154,6 @@ type LazyVisualizationKind =
   | 'banking-star-schema'
   | 'loan-grain'
   | 'metric-definition'
-  | 'modeling-intro'
-  | 'scd'
   | 'star-schema'
 
 function VisualizationLoading() {
@@ -278,8 +263,6 @@ function VisualizationBody({
           outputs={visualization.outputs}
         />
       )
-    case 'pipeline':
-      return <PipelineFlow stages={visualization.stages} />
     case 'layer-evolution':
       return <LayerEvolutionLab visualization={visualization} />
     case 'report-metric-journey':
@@ -289,19 +272,11 @@ function VisualizationBody({
     case 'lineage':
       return (
         <VisualizationLoadBoundary key={lessonId} kind="lineage">
-          <LazyLineageGraph
+          <LazyLineageTeachingLab
             nodes={visualization.nodes}
             edges={visualization.edges}
-            investigationEvent={visualization.investigationEvent}
-            investigationEvents={visualization.investigationEvents}
             teaching={visualization.teaching}
           />
-        </VisualizationLoadBoundary>
-      )
-    case 'modeling-intro':
-      return (
-        <VisualizationLoadBoundary key={lessonId} kind="modeling-intro">
-          <LazyModelingIntro visualization={visualization} />
         </VisualizationLoadBoundary>
       )
     case 'loan-business-process':
@@ -330,12 +305,6 @@ function VisualizationBody({
       return (
         <VisualizationLoadBoundary key={lessonId} kind="star-schema">
           <LazyStarSchemaFlow visualization={visualization} />
-        </VisualizationLoadBoundary>
-      )
-    case 'scd':
-      return (
-        <VisualizationLoadBoundary key={lessonId} kind="scd">
-          <LazySlowlyChangingDimension visualization={visualization} />
         </VisualizationLoadBoundary>
       )
     case 'metric-definition':
@@ -463,19 +432,6 @@ function getLegacyVisualizationCopy(visualization: LessonVisualization) {
         title: '从一张大宽表，走到一颗星',
         description:
           '先观察中央事实表和周围维度，再切换粒度，亲眼看见粒度不一致为什么会让金额重复计算。',
-      }
-    case 'modeling-intro':
-      return {
-        eyebrow: '建模导入',
-        title: '先从一行原始数据开始',
-        description: '先观察字段混在一起的订单记录，再用四步建模思路定义它的业务含义。',
-      }
-    case 'scd':
-      return {
-        eyebrow: 'SCD Type 2 交互实验',
-        title: '直接 UPDATE，历史去了哪里？',
-        description:
-          '先让错误方案产生历史冲突，再切换到 SCD Type 2，观察时间点查询如何命中正确版本。',
       }
     case 'metric-definition':
       return {

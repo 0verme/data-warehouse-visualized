@@ -8,13 +8,8 @@ import {
   bankingTableNodeIds,
   bankingTaskDependencyExample,
 } from '../../features/lineage/banking'
-import { qualityEventAdapter } from '../../features/lineage/quality-adapter'
 import type { LineageTeachingConfig } from '../../features/lineage/types'
 import { depositBalanceQualityEvent } from './data-quality'
-
-export const qualityLineageInvestigation = qualityEventAdapter.toInvestigationEvent(
-  depositBalanceQualityEvent,
-)
 
 const tableNodeIds = bankingTableNodeIds
 
@@ -23,8 +18,6 @@ export function createLineageVisualization(teaching: LineageTeachingConfig) {
     kind: 'lineage' as const,
     nodes: bankingLineageNodes,
     edges: bankingLineageEdges,
-    investigationEvent: qualityLineageInvestigation,
-    investigationEvents: [qualityLineageInvestigation],
     teaching,
   }
 }
@@ -53,7 +46,6 @@ export const fieldTeaching: LineageTeachingConfig = {
 
 const investigationConfig = {
   anomalyNodeId: BANKING_LINEAGE_NODE_IDS.dws,
-  directUpstreamNodeIds: [BANKING_LINEAGE_NODE_IDS.dwd],
   upstreamExpansionNodeIds: [
     BANKING_LINEAGE_NODE_IDS.accountBalanceSnapshot,
     BANKING_LINEAGE_NODE_IDS.account,
@@ -69,7 +61,6 @@ const investigationConfig = {
   ],
   qualityEvent: depositBalanceQualityEvent,
   candidates: bankingRootCauseCandidates,
-  evidenceRecordIds: bankingEvidenceRecords.map((record) => record.id),
 } satisfies NonNullable<LineageTeachingConfig['investigation']>
 
 export const investigationTeaching: LineageTeachingConfig = {

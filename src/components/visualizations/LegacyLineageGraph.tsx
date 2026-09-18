@@ -1,9 +1,10 @@
+/**
+ * LegacyLineageGraph 仅为 Capstone 保留。
+ * 新的 lesson visualization 不得继续使用；lesson 血缘统一走 LineageTeachingLab。
+ * 不继续补齐与 LineageTeachingLab 的 feature parity，也不在此迁移 timer / Step Kernel。
+ */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import type {
-  LineageInvestigationEventDefinition,
-  LineageTeachingConfig,
-} from '../../features/lineage/types'
-import { LineageTeachingLab } from './LineageTeachingLab'
+import type { LineageInvestigationEventDefinition } from '../../features/lineage/types'
 import type {
   LineageEdge,
   LineageEntityType,
@@ -31,12 +32,11 @@ import {
   LINEAGE_ENTITY_TYPES,
 } from '../../utils/lineage'
 
-interface LineageGraphProps {
+/** @deprecated Legacy graph props; lessons must use LineageTeachingLab instead. */
+interface LegacyLineageGraphProps {
   nodes: LineageNode[]
   edges: LineageEdge[]
   investigationEvent?: LineageInvestigationEvent
-  investigationEvents?: readonly LineageInvestigationEventDefinition[]
-  teaching?: LineageTeachingConfig
 }
 
 type ImpactMode = 'direct' | 'transitive'
@@ -124,12 +124,7 @@ function getLegacyInvestigationEvent(
   }
 }
 
-function LegacyLineageGraph({
-  nodes,
-  edges,
-  investigationEvent,
-  investigationEvents,
-}: LineageGraphProps) {
+export function LegacyLineageGraph({ nodes, edges, investigationEvent }: LegacyLineageGraphProps) {
   const instanceId = useId().replace(/:/g, '')
   const markerIds = {
     transform: `${instanceId}-marker-transform`,
@@ -145,17 +140,14 @@ function LegacyLineageGraph({
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [isInvestigationActive, setIsInvestigationActive] = useState(false)
   const [selectedInvestigationEventId, setSelectedInvestigationEventId] = useState(
-    () => investigationEvents?.[0]?.id ?? investigationEvent?.id ?? '',
+    () => investigationEvent?.id ?? '',
   )
   const timerIds = useRef<number[]>([])
 
-  const eventOptions = useMemo(() => {
-    if (investigationEvents && investigationEvents.length > 0) {
-      return investigationEvents
-    }
-
-    return investigationEvent ? [getLegacyInvestigationEvent(investigationEvent)] : []
-  }, [investigationEvent, investigationEvents])
+  const eventOptions = useMemo(
+    () => (investigationEvent ? [getLegacyInvestigationEvent(investigationEvent)] : []),
+    [investigationEvent],
+  )
   const activeInvestigationEvent =
     eventOptions.find((event) => event.id === selectedInvestigationEventId) ?? eventOptions[0]
 
@@ -1128,12 +1120,4 @@ function LegacyLineageGraph({
       </p>
     </div>
   )
-}
-
-export function LineageGraph(props: LineageGraphProps) {
-  if (props.teaching) {
-    return <LineageTeachingLab nodes={props.nodes} edges={props.edges} teaching={props.teaching} />
-  }
-
-  return <LegacyLineageGraph {...props} />
 }

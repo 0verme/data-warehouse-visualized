@@ -14,3 +14,15 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Shared reveal keyframes used by lesson blocks across lesson stylesheets. */
+@keyframes lesson-block-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

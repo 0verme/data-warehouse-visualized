@@ -6,7 +6,6 @@ import type {
   GovernanceVisualization,
   LakehouseVisualization,
   LineageEdge,
-  LineageInvestigationEvent,
   LineageNode,
   MetricVisualization,
   BankingMetricDefinitionVisualization,
@@ -16,18 +15,12 @@ import type {
   LayerEvolutionVisualization,
   LoanBusinessProcessVisualization,
   LoanGrainVisualization,
-  ModelingIntroVisualization,
-  PipelineStage,
   ReportMetricJourneyVisualization,
-  ScdVisualization,
   SourceSystem,
   StarSchemaVisualization,
   WarehouseTermsVisualization,
 } from '../types'
-import type {
-  LineageInvestigationEventDefinition,
-  LineageTeachingConfig,
-} from '../features/lineage/types'
+import type { LineageTeachingConfig } from '../features/lineage/types'
 import type { SchedulerVisualization } from '../features/scheduler/types'
 import type { SqlTransformationVisualization } from '../features/sql-transformation/types'
 import type { PerformanceVisualization } from '../features/performance/types'
@@ -127,10 +120,6 @@ export type LessonVisualization =
       warehouseLabel: string
       outputs: FlowOutput[]
     }
-  | {
-      kind: 'pipeline'
-      stages: PipelineStage[]
-    }
   | LayerEvolutionVisualization
   | ReportMetricJourneyVisualization
   | WarehouseTermsVisualization
@@ -138,19 +127,15 @@ export type LessonVisualization =
       kind: 'lineage'
       nodes: LineageNode[]
       edges: LineageEdge[]
-      investigationEvent?: LineageInvestigationEvent
-      investigationEvents?: LineageInvestigationEventDefinition[]
-      /** Lesson-focused wrappers share the same graph data and traversal kernel. */
-      teaching?: LineageTeachingConfig
+      /** Lessons render the teaching wrapper instead of the legacy graph. */
+      teaching: LineageTeachingConfig
     }
-  | ModelingIntroVisualization
   | LoanBusinessProcessVisualization
   | LoanGrainVisualization
   | BankingStarSchemaVisualization
   | BankingFactTypesVisualization
   | BankingCustomerHistoryVisualization
   | StarSchemaVisualization
-  | ScdVisualization
   | MetricVisualization
   | BankingMetricScopeVisualization
   | BankingMetricDefinitionVisualization

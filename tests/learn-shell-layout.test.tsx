@@ -110,7 +110,6 @@ const HIDDEN_CAPTION_COMPONENTS = [
   'LineageTeachingLab.tsx',
   'LoanGrainLab.tsx',
   'MetricDefinitionLab.tsx',
-  'ModelingIntro.tsx',
   'SchedulerRunSimulator.tsx',
   'SqlTransformationWorkbench.tsx',
   'StarSchemaFlow.tsx',

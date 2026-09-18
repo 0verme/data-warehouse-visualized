@@ -97,60 +97,17 @@
     font-size: 10px;
   }
 
-  .pipeline-flow__track {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .pipeline-flow__item {
-    align-items: stretch;
-  }
-
-  .pipeline-stage {
-    width: 100%;
-    min-height: 0;
-    padding: 14px;
-  }
-
-  .pipeline-stage p {
-    min-height: 0;
-  }
-
-  .pipeline-flow__arrow {
-    width: 100%;
-    height: 29px;
-  }
-
-  .pipeline-flow__arrow span {
-    height: 13px;
-  }
-
-  .pipeline-flow__legend {
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .modeling-lab__toolbar,
-  .modeling-lab__panel-heading,
   .star-topology__heading,
   .star-grain__heading,
   .star-error__heading,
-  .scd__scenario-heading,
-  .scd__subheading,
-  .scd__time-machine-heading,
-  .scd__time-result-heading,
   .metric-lab__section-heading,
   .lakehouse-lab__subheading {
     display: block;
   }
 
-  .modeling-lab__panel-heading p,
   .star-topology__heading > p,
   .star-grain__heading > p,
   .star-error__heading > p,
-  .scd__scenario-heading p,
-  .scd__subheading > p,
   .metric-lab__section-heading > p,
   .lakehouse-lab__subheading p {
     max-width: none;
