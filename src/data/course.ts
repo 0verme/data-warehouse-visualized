@@ -653,7 +653,8 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-05-join': {
       title: 'Join 为什么会让金额变大？',
-      summary: '用账户介质的一对多关系，观察 Join 如何复制余额并改变数据粒度。',
+      summary:
+        '用账户介质的一对多关系和一个 2 × 2 多对多实验，观察 Join 如何复制度量并改变数据粒度。',
       tags: ['Join', '数据粒度', '金额对账'],
     },
     'lesson-05-layers': {

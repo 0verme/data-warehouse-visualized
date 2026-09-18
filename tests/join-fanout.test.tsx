@@ -155,3 +155,37 @@ describe('JOIN 膨胀 Golden Sample · SSR 首屏与接线', () => {
     expect(kinds).toEqual(['sql-transformation', 'join-fanout'])
   })
 })
+
+describe('JOIN lesson · 叙事一致性', () => {
+  it('Takeaway 只保留三个检查问题，不重复数字口径', () => {
+    const content = getLessonContent(getLessonBySlug('sql-transformation-join')!)
+    const takeaway = content.sections.find((section) => section.kind === 'takeaway')
+
+    expect(takeaway?.bullets).toHaveLength(3)
+    expect(takeaway?.title).toContain('三个问题')
+    expect(takeaway?.bullets?.join('')).not.toMatch(/300,000|500,000/)
+  })
+
+  it('M:N 分步实验带 1:N → M:N 过渡，且步骤标题落在 2 × 2 与 2 × 1', () => {
+    const content = getLessonContent(getLessonBySlug('sql-transformation-join')!)
+    const visualizationSections = content.sections.filter(
+      (section) => section.kind === 'visualization',
+    )
+    const fanoutSection = visualizationSections.find(
+      (section) => section.visualization.kind === 'join-fanout',
+    )
+
+    expect(fanoutSection?.title).toContain('2 × 2 = 4')
+    expect(fanoutSection?.description).toContain('一对多已经会复制度量')
+
+    const stepTitles = buildJoinFanoutSteps().map((step) => step.title)
+    expect(stepTitles).toEqual([
+      '观察两边数据',
+      '匹配左表第 1 行',
+      '匹配左表第 2 行',
+      '看见 2 × 2 = 4',
+      '指出根因',
+      '修复到 2 × 1 = 2',
+    ])
+  })
+})

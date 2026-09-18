@@ -22,6 +22,11 @@
   color: var(--ink);
 }
 
+/* 保留两行说明高度，避免单行步骤与多行步骤之间整段跳动。 */
+.join-fanout__toolbar p {
+  min-height: 3.4em;
+}
+
 .join-fanout__progress {
   height: 4px;
   overflow: hidden;
@@ -88,6 +93,17 @@
   color: var(--text-muted);
   font-size: 18px;
   font-weight: 800;
+}
+
+/* Step 4 “看见 2 × 2 = 4”：只放大结果数字，并沿用风险语义。 */
+.join-fanout[data-step-kind='expand'] .join-fanout__equation > div.is-result {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.join-fanout[data-step-kind='expand'] .join-fanout__equation > div.is-result strong {
+  color: var(--danger-text);
+  font-size: 30px;
 }
 
 .join-fanout__tables {
@@ -336,6 +352,11 @@
 @container visualization (max-width: 480px) {
   .join-fanout {
     gap: 13px;
+  }
+
+  /* 移动端步骤说明最多占三行，统一预留，避免切换步骤时整块跳动。 */
+  .join-fanout__toolbar p {
+    min-height: 5.1em;
   }
 
   .join-fanout__equation {
