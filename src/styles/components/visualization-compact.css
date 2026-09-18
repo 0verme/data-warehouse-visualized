@@ -1,12 +1,29 @@
 /* Shared container-query primitives for visualization cards. */
 
 @container visualization (max-width: 660px) {
+  .business-flow .visualization-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 17px;
+    padding-bottom: 14px;
+  }
+
+  .business-flow .visualization-toolbar__actions {
+    width: 100%;
+  }
+
+  .business-flow .visualization-toolbar__actions .button {
+    flex: 1;
+  }
+
   .business-flow__diagram {
     display: flex;
     min-height: 0;
     flex-direction: column;
     align-items: stretch;
     gap: 13px;
+    padding: 12px 10px;
   }
 
   .business-flow__source-grid {
@@ -14,15 +31,18 @@
   }
 
   .business-flow__connector {
+    display: block;
     width: 100%;
-    height: 32px;
-    flex-direction: row;
-    justify-content: center;
+    height: 44px;
   }
 
   .business-flow__connector-line {
+    position: absolute;
+    top: 0;
+    left: 50%;
     width: 1px;
     height: 100%;
+    transform: translateX(-50%);
   }
 
   .business-flow__connector-line::after {
@@ -30,24 +50,27 @@
     right: -3px;
     bottom: -1px;
     border-top: 0;
-    border-right: 1px solid var(--line-strong);
-    border-bottom: 1px solid var(--line-strong);
+    border-right: 1px solid var(--diagram-connection-muted);
+    border-bottom: 1px solid var(--diagram-connection-muted);
     transform: rotate(45deg);
-  }
-
-  .business-flow--phase-1 .business-flow__connector-line::after,
-  .business-flow--phase-2 .business-flow__connector-line::after,
-  .business-flow--phase-3 .business-flow__connector-line::after {
-    border-color: var(--teal);
   }
 
   .business-flow__connector-label {
     position: absolute;
-    top: 7px;
-    left: 50%;
-    padding: 0 7px;
-    background: var(--surface);
-    transform: translateX(-50%);
+    top: 5px;
+    left: calc(50% + 10px);
+    padding: 0 5px;
+    background: var(--diagram-bg);
+    text-align: left;
+  }
+
+  .business-flow__connector-state {
+    position: absolute;
+    top: 25px;
+    left: calc(50% + 10px);
+    padding: 0 5px;
+    background: var(--diagram-bg);
+    text-align: left;
   }
 
   .warehouse-node {
@@ -63,6 +86,15 @@
   .business-flow--phase-2 .business-flow__packet,
   .business-flow--phase-3 .business-flow__packet {
     animation-name: packet-pulse;
+  }
+
+  .flow-inspector {
+    gap: 9px;
+    padding: 13px 2px 2px;
+  }
+
+  .flow-inspector p {
+    font-size: 10px;
   }
 
   .pipeline-flow__track {

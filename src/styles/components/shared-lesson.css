@@ -70,10 +70,14 @@
 
 .business-flow__diagram {
   display: grid;
-  grid-template-columns: minmax(150px, 1.15fr) 76px minmax(150px, 0.9fr) 76px minmax(145px, 1fr);
+  grid-template-columns: minmax(130px, 1.15fr) 64px minmax(130px, 0.9fr) 64px minmax(125px, 1fr);
   gap: 12px;
   align-items: center;
   min-height: 250px;
+  padding: 18px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-control);
+  background: var(--diagram-bg);
 }
 
 .business-flow__column-label {
@@ -81,6 +85,12 @@
   color: var(--ink-muted);
   font-size: 10px;
   letter-spacing: 0.05em;
+}
+
+.business-flow__sources,
+.business-flow__source-grid,
+.business-flow__outputs {
+  min-width: 0;
 }
 
 .business-flow__source-grid {
@@ -91,12 +101,13 @@
 .system-node {
   display: flex;
   width: 100%;
+  min-width: 0;
   gap: 10px;
   align-items: center;
   padding: 10px;
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--card-bg);
+  background: var(--diagram-surface);
   cursor: pointer;
   text-align: left;
   transition:
@@ -107,8 +118,8 @@
 
 .system-node:hover,
 .system-node.is-selected {
-  border-color: var(--info-border);
-  background: var(--info-bg);
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   transform: translateX(2px);
 }
 
@@ -120,13 +131,18 @@
   place-items: center;
   border-radius: 7px;
   background: var(--surface-muted);
-  color: var(--blue);
+  color: var(--diagram-connection);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
 }
 
 .system-node.is-selected .system-node__icon {
-  background: var(--info-bg);
+  background: var(--diagram-accent-soft);
+  color: var(--diagram-accent);
+}
+
+.system-node > span:last-child {
+  min-width: 0;
 }
 
 .system-node strong,
@@ -146,9 +162,23 @@
   font-size: 10px;
 }
 
+.system-node__state {
+  margin-top: 2px;
+}
+
+.system-node--collecting .system-node__state {
+  color: var(--info-text);
+  font-weight: 700;
+}
+
+.system-node--ready .system-node__state {
+  color: var(--text-secondary);
+}
+
 .business-flow__connector {
   position: relative;
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 7px;
   align-items: center;
@@ -161,7 +191,7 @@
   position: relative;
   width: 100%;
   height: 1px;
-  background: var(--line-strong);
+  background: var(--diagram-connection-muted);
 }
 
 .business-flow__connector-line::after {
@@ -170,27 +200,48 @@
   right: -1px;
   width: 7px;
   height: 7px;
-  border-top: 1px solid var(--line-strong);
-  border-right: 1px solid var(--line-strong);
+  border-top: 1px solid var(--diagram-connection-muted);
+  border-right: 1px solid var(--diagram-connection-muted);
   content: '';
   transform: rotate(45deg);
 }
 
-.business-flow--phase-1 .business-flow__connector-line,
-.business-flow--phase-2 .business-flow__connector-line,
-.business-flow--phase-3 .business-flow__connector-line {
-  background: var(--teal);
+.business-flow__connector--current .business-flow__connector-line {
+  background: var(--info-text);
 }
 
-.business-flow--phase-1 .business-flow__connector-line::after,
-.business-flow--phase-2 .business-flow__connector-line::after,
-.business-flow--phase-3 .business-flow__connector-line::after {
-  border-color: var(--teal);
+.business-flow__connector--current .business-flow__connector-line::after {
+  border-color: var(--info-text);
+}
+
+.business-flow__connector--completed .business-flow__connector-line {
+  background: var(--diagram-connection);
+}
+
+.business-flow__connector--completed .business-flow__connector-line::after {
+  border-color: var(--diagram-connection);
 }
 
 .business-flow__connector-label {
   order: 2;
   white-space: nowrap;
+}
+
+.business-flow__connector-state {
+  order: 3;
+  color: var(--ink-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.business-flow__connector--current .business-flow__connector-state {
+  color: var(--info-text);
+  font-weight: 700;
+}
+
+.business-flow__connector--completed .business-flow__connector-state {
+  color: var(--text-secondary);
+  font-weight: 700;
 }
 
 .business-flow__connector-arrow {
@@ -203,17 +254,18 @@
 .warehouse-node {
   display: flex;
   min-height: 145px;
+  min-width: 0;
   flex-direction: column;
   justify-content: center;
   padding: 18px;
-  border: 1px solid var(--info-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 12px;
-  background: var(--surface-blue);
+  background: var(--diagram-surface);
   text-align: center;
 }
 
 .warehouse-node__eyebrow {
-  color: var(--blue);
+  color: var(--ink-soft);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -221,13 +273,18 @@
 
 .warehouse-node strong {
   margin: 7px 0 4px;
-  color: var(--navy);
+  color: var(--ink);
   font-size: 17px;
 }
 
-.warehouse-node > span:last-child:not(.warehouse-node__eyebrow) {
+.warehouse-node__description,
+.warehouse-node__state {
   color: var(--ink-muted);
   font-size: 10px;
+}
+
+.warehouse-node__state {
+  margin-top: 3px;
 }
 
 .warehouse-node__status {
@@ -236,13 +293,32 @@
   margin-top: 13px;
   padding: 3px 7px;
   border-radius: 4px;
-  background: var(--success-bg);
-  color: var(--teal);
+  background: var(--info-bg);
+  color: var(--info-text);
   font-size: 9px;
 }
 
-.business-flow--phase-3 .warehouse-node {
+.warehouse-node--processing {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+}
+
+.warehouse-node--processing .warehouse-node__state {
+  color: var(--info-text);
+  font-weight: 700;
+}
+
+.warehouse-node--ready {
   border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.warehouse-node--ready .warehouse-node__state,
+.warehouse-node--ready .warehouse-node__status {
+  color: var(--text-primary);
+}
+
+.warehouse-node--ready .warehouse-node__status {
   background: var(--success-bg);
 }
 
@@ -252,11 +328,12 @@
 }
 
 .output-node {
+  min-width: 0;
   padding: 10px 12px;
-  border: 1px solid var(--card-border);
-  border-left: 3px solid var(--teal);
+  border: 1px solid var(--diagram-border);
+  border-left: 3px solid var(--diagram-connection);
   border-radius: 8px;
-  background: var(--card-bg);
+  background: var(--diagram-surface);
 }
 
 .output-node strong,
@@ -276,9 +353,18 @@
   line-height: 1.45;
 }
 
-.business-flow--phase-3 .output-node {
+.output-node__state {
+  font-weight: 700;
+}
+
+.output-node--ready {
   border-color: var(--success-border);
+  border-left-color: var(--success-text);
   background: var(--success-bg);
+}
+
+.output-node--ready .output-node__state {
+  color: var(--text-secondary);
 }
 
 .business-flow__packet {
@@ -295,7 +381,11 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--teal);
+  background: var(--info-text);
+}
+
+.business-flow--phase-3 .business-flow__packet span {
+  background: var(--success-text);
 }
 
 .business-flow--phase-1 .business-flow__packet,
@@ -324,15 +414,19 @@
   align-items: flex-start;
   margin-top: 6px;
   padding: 14px 16px;
-  border-top: 1px dashed var(--line-strong);
+  border-top: 1px solid var(--diagram-border);
+}
+
+.flow-inspector > div {
+  min-width: 0;
 }
 
 .flow-inspector__tag {
   flex: 0 0 auto;
   padding: 3px 7px;
   border-radius: 4px;
-  background: var(--warning-bg);
-  color: var(--amber);
+  background: var(--diagram-accent-soft);
+  color: var(--info-text);
   font-size: 10px;
   font-weight: 700;
 }
@@ -833,79 +927,6 @@
 
   .visualization-toolbar__actions .button {
     flex: 1;
-  }
-
-  .business-flow__diagram {
-    display: flex;
-    min-height: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 13px;
-  }
-
-  .business-flow__source-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .business-flow__connector {
-    width: 100%;
-    height: 32px;
-    flex-direction: row;
-    justify-content: center;
-  }
-
-  .business-flow__connector-line {
-    width: 1px;
-    height: 100%;
-  }
-
-  .business-flow__connector-line::after {
-    top: auto;
-    right: -3px;
-    bottom: -1px;
-    border-top: 0;
-    border-right: 1px solid var(--line-strong);
-    border-bottom: 1px solid var(--line-strong);
-    transform: rotate(45deg);
-  }
-
-  .business-flow--phase-1 .business-flow__connector-line::after,
-  .business-flow--phase-2 .business-flow__connector-line::after,
-  .business-flow--phase-3 .business-flow__connector-line::after {
-    border-color: var(--teal);
-  }
-
-  .business-flow__connector-label {
-    position: absolute;
-    top: 7px;
-    left: 50%;
-    padding: 0 7px;
-    background: var(--surface);
-    transform: translateX(-50%);
-  }
-
-  .warehouse-node {
-    min-height: 118px;
-  }
-
-  .business-flow__packet {
-    justify-content: center;
-    margin: -3px 0 1px;
-  }
-
-  .business-flow--phase-1 .business-flow__packet,
-  .business-flow--phase-2 .business-flow__packet,
-  .business-flow--phase-3 .business-flow__packet {
-    animation-name: packet-pulse;
-  }
-
-  .flow-inspector {
-    gap: 9px;
-    padding: 13px 2px 2px;
-  }
-
-  .flow-inspector p {
-    font-size: 10px;
   }
 
   .pipeline-flow__track {

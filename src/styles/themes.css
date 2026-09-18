@@ -84,8 +84,6 @@ html[data-theme='dark'] .learn-app .visualization-section,
 html[data-theme='dark'] .learn-app .compare-split__column,
 html[data-theme='dark'] .learn-app .lesson-nav__link,
 html[data-theme='dark'] .learn-app .lesson-opening__card,
-html[data-theme='dark'] .learn-app .system-node,
-html[data-theme='dark'] .learn-app .output-node,
 html[data-theme='dark'] .learn-app .pipeline-stage {
   border-color: var(--line);
   background: var(--surface);
@@ -93,14 +91,12 @@ html[data-theme='dark'] .learn-app .pipeline-stage {
 }
 
 html[data-theme='dark'] .learn-app .concept-card,
-html[data-theme='dark'] .learn-app .warehouse-node,
 html[data-theme='dark'] .learn-app .pipeline-stage--processing {
   border-color: var(--border-blue);
   background: var(--surface-blue);
 }
 
-html[data-theme='dark'] .learn-app .pipeline-stage--done,
-html[data-theme='dark'] .learn-app .business-flow--phase-3 .output-node {
+html[data-theme='dark'] .learn-app .pipeline-stage--done {
   border-color: var(--border-teal);
   background: var(--surface-teal-subtle);
 }

@@ -45,6 +45,15 @@
   --demo-bg: var(--surface-2);
   --demo-border: var(--border-strong);
 
+  /* Pilot A diagram semantics: roles stay stable while light / dark values follow foundation tokens. */
+  --diagram-bg: var(--demo-bg);
+  --diagram-surface: var(--surface-1);
+  --diagram-border: var(--border-strong);
+  --diagram-connection: var(--text-secondary);
+  --diagram-connection-muted: var(--text-muted);
+  --diagram-accent: var(--interactive);
+  --diagram-accent-soft: var(--info-bg);
+
   /* Existing names remain compatibility aliases for lesson-specific styles. */
   --canvas: var(--bg);
   --surface: var(--surface-1);
