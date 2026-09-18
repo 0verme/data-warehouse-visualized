@@ -1,11 +1,9 @@
 import type { QualityEvent } from '../data-quality/types'
 import type {
   LineageConfidence,
-  LineageEdge,
   LineageEvidence,
   LineageEvidenceSource,
   LineageInvestigationEvent,
-  LineageNode,
   LineageRelationType,
   LineageVerificationStatus,
 } from '../../types'
@@ -60,16 +58,6 @@ export interface LineageInvestigationEventDefinition extends LineageInvestigatio
   rootCauseCandidates?: readonly LineageRootCauseCandidate[]
   /** Legacy single-candidate field remains readable by older investigation consumers. */
   rootCauseCandidate?: LineageRootCauseCandidate
-}
-
-/** Structured provenance kept by the lineage projection without changing legacy graph types. */
-export interface LineageProductionNode extends LineageNode {
-  schedulerTaskId?: string
-}
-
-export interface LineageProductionEdge extends LineageEdge {
-  schedulerTaskId?: string
-  transformationStepId?: string
 }
 
 export interface LineageExternalEventAdapter<TEvent> {

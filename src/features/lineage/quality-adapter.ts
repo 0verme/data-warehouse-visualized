@@ -9,13 +9,6 @@ import type {
   LineageRootCauseCandidate,
 } from './types'
 
-const LEGACY_QUALITY_TABLE_NAMES = new Set([
-  'dwd_order_item',
-  'dws_sales_daily',
-  'ads_yesterday_sales',
-])
-const LEGACY_QUALITY_FINAL_IMPACT_NODE_ID = 'metric-report-status'
-
 function formatQualityTarget(event: QualityEvent): string {
   const field = event.field ?? event.target.field ?? 'table-level'
   return `${event.target.table}.${field}`
@@ -63,16 +56,10 @@ function createRootCauseCandidates(
   return [createTaskRootCauseCandidate(event, targetLabel)]
 }
 
-function getFinalImpactNodeId(event: QualityEvent): string {
-  return LEGACY_QUALITY_TABLE_NAMES.has(event.target.table)
-    ? LEGACY_QUALITY_FINAL_IMPACT_NODE_ID
-    : BANKING_LINEAGE_NODE_IDS.metric
-}
-
 /**
  * Quality Event owns observed facts. This adapter derives the lineage investigation context from
- * the scheduler task and the compatibility table map instead of reading investigation hints from
- * the event.
+ * the scheduler task and the canonical Banking table map instead of reading investigation hints
+ * from the event.
  */
 export function qualityEventToLineageInvestigation(
   event: QualityEvent,
@@ -95,7 +82,7 @@ export function qualityEventToLineageInvestigation(
     summary: `规则 ${event.ruleId} 在 ${formatQualityTarget(event)} 的 ${event.partition.column} = ${event.partition.value} 分区失败；从产出表开始复核直接上游，根因与下游影响由血缘关系推导。`,
     sourceEntityId,
     eventType: 'quality_alert',
-    affectedEntityId: getFinalImpactNodeId(event),
+    affectedEntityId: BANKING_LINEAGE_NODE_IDS.metric,
     evidence: createQualityEventEvidence(event),
     context,
     qualityEvent: event,
@@ -104,7 +91,7 @@ export function qualityEventToLineageInvestigation(
   }
 }
 
-/** The implementation uses the adapter seam reserved by the lineage production chain. */
+/** Quality Event → lineage investigation adapter for the Banking Teaching Domain. */
 export const qualityEventAdapter: LineageExternalEventAdapter<QualityEvent> = {
   toInvestigationEvent: qualityEventToLineageInvestigation,
 }
