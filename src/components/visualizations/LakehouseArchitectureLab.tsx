@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type {
   LakehouseAtomicCommitStatus,
@@ -7,6 +7,7 @@ import type {
   LakehouseLakeFirstAssessmentItem,
   LakehouseReplicationConfig,
   LakehouseSnapshot,
+  LakehouseSnapshotPointerState,
   LakehouseTableLayerConfig,
   LakehouseUnityMode,
   LakehouseVisualization,
@@ -20,6 +21,7 @@ import {
   getLakehouseUnityState,
   getLatestSnapshot,
   getReplicationState,
+  getSnapshotPointerState,
   timeTravelTo,
 } from '../../utils/lakehouse'
 
@@ -42,10 +44,10 @@ const STATUS_LABELS: Record<LakehouseAtomicCommitStatus, string> = {
 type FileStatus = 'failed' | 'held' | 'committed' | 'pending'
 
 const FILE_STATUS_LABELS: Record<FileStatus, string> = {
-  failed: '失败',
-  held: '未发布',
-  committed: '已发布',
-  pending: '待提交',
+  failed: '写入失败',
+  held: '已写入 · 未提交',
+  committed: '已提交',
+  pending: '未写入',
 }
 
 export function getFileStatus(
@@ -664,7 +666,8 @@ function FileCommitBatch({
           <h4 id="lakehouse-commit-batch-title">一次更新准备写入 {config.fileCount} 个文件</h4>
         </div>
         <p aria-live="polite">
-          {STATUS_LABELS[state.status]} · 本次批次可见 {state.visibleFileCount}/{state.fileCount}
+          {STATUS_LABELS[state.status]} · 已写入 {state.writtenFileCount}/{state.fileCount} · 已提交{' '}
+          {state.committedFileCount}/{state.fileCount}
         </p>
       </div>
       <ol
@@ -701,33 +704,148 @@ function FileCommitBatch({
 
 function SnapshotTimeline({
   snapshots,
+  publishedVersion,
   selectedVersion,
   onSelect,
 }: {
   snapshots: readonly LakehouseSnapshot[]
+  publishedVersion: number
   selectedVersion: number
   onSelect: (version: number) => void
 }) {
   return (
     <div
       className="lakehouse-snapshot-timeline"
-      aria-label="选择要读取的 Snapshot / Version"
+      aria-label="选择要读取的 Snapshot / Version；已发布版本是当前发布指针"
       data-detail-role="snapshot-timeline"
     >
-      {snapshots.map((snapshot) => (
-        <button
-          className={selectedVersion === snapshot.version ? 'is-selected' : ''}
-          type="button"
-          aria-pressed={selectedVersion === snapshot.version}
-          data-focus={selectedVersion === snapshot.version ? 'primary' : 'none'}
-          key={snapshot.id}
-          onClick={() => onSelect(snapshot.version)}
-        >
-          <span>v{snapshot.version}</span>
-          <small>{snapshot.committedAt}</small>
-        </button>
-      ))}
+      {snapshots.map((snapshot) => {
+        const isPublished = snapshot.version === publishedVersion
+        const isQueryTarget = snapshot.version === selectedVersion
+
+        return (
+          <button
+            className={[isQueryTarget ? 'is-selected' : '', isPublished ? 'is-published' : '']
+              .filter(Boolean)
+              .join(' ')}
+            type="button"
+            aria-pressed={isQueryTarget}
+            aria-label={`v${snapshot.version}，${snapshot.committedAt}${
+              isPublished ? '，当前发布指针' : ''
+            }${isQueryTarget && !isPublished ? '，本次查询目标（Time Travel）' : ''}`}
+            data-focus={isQueryTarget ? 'primary' : 'none'}
+            data-published={isPublished ? 'true' : undefined}
+            key={snapshot.id}
+            onClick={() => onSelect(snapshot.version)}
+          >
+            <span>v{snapshot.version}</span>
+            <small>{snapshot.committedAt}</small>
+            {isPublished ? (
+              <small className="lakehouse-snapshot-timeline__flag">已发布 · 当前指针</small>
+            ) : null}
+            {isQueryTarget && !isPublished ? (
+              <small className="lakehouse-snapshot-timeline__flag">本次查询 · Time Travel</small>
+            ) : null}
+          </button>
+        )
+      })}
     </div>
+  )
+}
+
+/**
+ * Local Pilot D presentation: the visibility causal chain plus the two pointer
+ * semantics. It is not a shared primitive and adds no diagram token.
+ */
+function SnapshotPointerPanel({
+  state,
+  commitStatus,
+}: {
+  state: LakehouseSnapshotPointerState
+  commitStatus: LakehouseAtomicCommitStatus
+}) {
+  const publishedValue =
+    state.previousPublishedVersion === null
+      ? `v${state.publishedVersion}`
+      : `v${state.previousPublishedVersion} → v${state.publishedVersion}`
+
+  return (
+    <section
+      className="lakehouse-pointer-panel"
+      aria-labelledby="lakehouse-pointer-title"
+      data-section="detail"
+    >
+      <div className="lakehouse-lab__subheading">
+        <div>
+          <span className="eyebrow eyebrow--small">Snapshot Visibility</span>
+          <h4 id="lakehouse-pointer-title">谁让新版本可见，或者不可见？</h4>
+        </div>
+        <p aria-live="polite" data-state={commitStatus}>
+          {state.summary}
+        </p>
+      </div>
+      <div
+        className="lakehouse-visibility-chain"
+        data-detail-role="visibility-chain"
+        aria-label="Snapshot 可见性因果链：Immutable Data Files → Metadata / Snapshot → Published Pointer → Reader Visibility"
+      >
+        {state.visibilitySteps.map((step, index) => (
+          <Fragment key={step.id}>
+            <article
+              className="lakehouse-visibility-node"
+              data-causal-step={step.id}
+              data-state={step.state}
+            >
+              <span className="lakehouse-visibility-node__index">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <strong>{step.label}</strong>
+              <span className="lakehouse-visibility-node__value">{step.value}</span>
+              <p>{step.detail}</p>
+            </article>
+            {index < state.visibilitySteps.length - 1 ? (
+              <Connector
+                relation="version-causality"
+                from={step.label}
+                to={state.visibilitySteps[index + 1]?.label ?? ''}
+              />
+            ) : null}
+          </Fragment>
+        ))}
+      </div>
+      <div className="lakehouse-pointer-compare" data-detail-role="pointer-compare">
+        <article
+          className="lakehouse-pointer-card"
+          data-pointer-role="published"
+          data-state={state.pointerMoved ? 'moved' : 'unchanged'}
+        >
+          <span>Current Published Snapshot Pointer</span>
+          <strong>{publishedValue}</strong>
+          <p>
+            {state.publishedSnapshotId} · {state.publishedCommittedAt} · 正式发布状态
+          </p>
+          <small>
+            {state.pointerMoved
+              ? 'Commit 成功后指针移动；读者默认读取新版本'
+              : '没有新的已提交 Snapshot，指针没有移动'}
+          </small>
+        </article>
+        <article
+          className="lakehouse-pointer-card"
+          data-pointer-role="query-target"
+          data-state={state.queryTargetIsPublished ? 'follows-published' : 'time-travel'}
+        >
+          <span>Query Target · 本次查询</span>
+          <strong>v{state.queryTargetVersion}</strong>
+          <p>{state.queryTargetSnapshotId} · 本次读取的数据来源</p>
+          <small>
+            {state.queryTargetIsPublished
+              ? '跟随发布指针：读取当前正式版本'
+              : 'Time Travel：只改变本次查询目标，不修改发布指针'}
+          </small>
+        </article>
+      </div>
+    </section>
   )
 }
 
@@ -775,6 +893,7 @@ function TableLayerLab({
   }
 
   const isLatest = selectedVersion === currentSnapshot?.version
+  const pointer = getSnapshotPointerState(snapshots, selectedVersion, commitState)
   const v2Schema = evolveSnapshotSchema(
     initialSnapshot,
     visualization.evolutionCommit.addedFields ?? [],
@@ -786,8 +905,8 @@ function TableLayerLab({
         <div>
           <span className="visualization-toolbar__label">Table Layer 实验</span>
           <p aria-live="polite" data-state={isLatest ? 'current' : 'time-travel'}>
-            {tableLayer.tableName} ·{' '}
-            {isLatest ? '读取最新 Table State' : `Time Travel 到 v${selectedVersion}`}
+            {tableLayer.tableName} · 发布指针 v{pointer.publishedVersion} · 本次查询 v
+            {pointer.queryTargetVersion}
           </p>
         </div>
         <button
@@ -864,6 +983,7 @@ function TableLayerLab({
           {commitStatus === 'committed' ? '已 Commit v2' : 'Commit：发布 v2'}
         </button>
       </div>
+      <SnapshotPointerPanel state={pointer} commitStatus={commitStatus} />
       <section
         className="lakehouse-version-panel"
         aria-labelledby="lakehouse-version-title"
@@ -876,20 +996,21 @@ function TableLayerLab({
           </div>
           <p aria-live="polite" data-state={isLatest ? 'current' : 'time-travel'}>
             {isLatest
-              ? `当前读取 v${viewedSnapshot.version}：${viewedSnapshot.change}`
-              : `Time Travel 已回到 v${viewedSnapshot.version}：${viewedSnapshot.change}`}
+              ? `本次查询读取 v${viewedSnapshot.version}（发布指针 v${pointer.publishedVersion}）：${viewedSnapshot.change}`
+              : `本次查询 Time Travel 到 v${viewedSnapshot.version}；发布指针仍为 v${pointer.publishedVersion}：${viewedSnapshot.change}`}
           </p>
         </div>
         <SnapshotTimeline
           snapshots={snapshots}
+          publishedVersion={pointer.publishedVersion}
           selectedVersion={selectedVersion}
           onSelect={setSelectedVersion}
         />
         <SnapshotTable snapshot={viewedSnapshot} />
         <p className="lakehouse-time-travel-note" data-state={isLatest ? 'current' : 'time-travel'}>
           {isLatest
-            ? '当前查询读取最新版本。'
-            : `今天发现加工结果有问题时，可以回到 v${selectedVersion} 查看修改之前的状态。`}
+            ? `本次查询跟随发布指针，读取最新已发布版本 v${pointer.publishedVersion}。`
+            : `Time Travel 只改变本次查询目标：Query Target = v${selectedVersion}；Current Published Pointer 仍为 v${pointer.publishedVersion}，不会因为回看而被改回。`}
         </p>
       </section>
       <section

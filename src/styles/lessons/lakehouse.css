@@ -56,6 +56,7 @@
 .lakehouse-table-layer-intro,
 .lakehouse-schema-compare,
 .lakehouse-commit-batch,
+.lakehouse-pointer-panel,
 .lakehouse-version-panel,
 .lakehouse-unity-switcher,
 .lakehouse-unity-comparison,
@@ -828,6 +829,23 @@
   background: var(--diagram-accent-soft);
 }
 
+/* 已发布是真实状态：用文本 + 边界权重表达，选中（Focus）仍由 accent 承担。 */
+.lakehouse-snapshot-timeline button[data-published='true']:not([data-focus='primary']) {
+  border-color: var(--diagram-connection);
+}
+
+.lakehouse-snapshot-timeline__flag {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lakehouse-snapshot-timeline button[data-published='true'] .lakehouse-snapshot-timeline__flag {
+  color: var(--text-secondary);
+}
+
 .lakehouse-snapshot-timeline span {
   color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
@@ -930,7 +948,139 @@
   line-height: 1.65;
 }
 
-/* ---- Unity ------------------------------------------------------------- */
+/* ---- Snapshot visibility chain (Pointer) ------------------------------- */
+/* Local Pilot D: Files → Metadata / Snapshot → Published Pointer → Reader.
+ * The chain reuses the version-causality relation; each step carries a real
+ * write / commit / visibility state, and selection stays a Focus.
+ */
+.lakehouse-visibility-chain {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.lakehouse-visibility-node {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  flex-direction: column;
+  padding: 12px;
+  border: 1px solid var(--diagram-border);
+  border-top: 3px solid var(--diagram-connection-muted);
+  border-radius: 8px;
+  background: var(--diagram-surface);
+}
+
+.lakehouse-visibility-node__index {
+  color: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.lakehouse-visibility-node strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.lakehouse-visibility-node__value {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.lakehouse-visibility-node p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+/* Files written but not committed is a real warning-ish state, not a failure colour. */
+.lakehouse-visibility-node[data-state='pending'] {
+  border-top-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.lakehouse-visibility-node[data-state='committed'] {
+  border-top-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.lakehouse-visibility-node[data-state='time-travel'] {
+  border-top-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+}
+
+.lakehouse-pointer-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lakehouse-pointer-card {
+  min-width: 0;
+  padding: 12px 13px 13px;
+  border: 1px solid var(--diagram-border);
+  border-radius: 9px;
+  background: var(--diagram-surface);
+}
+
+.lakehouse-pointer-card > span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.lakehouse-pointer-card > strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-primary);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.lakehouse-pointer-card p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.lakehouse-pointer-card small {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.lakehouse-pointer-card[data-pointer-role='published'] {
+  border-left: 3px solid var(--diagram-connection);
+}
+
+.lakehouse-pointer-card[data-pointer-role='published'][data-state='unchanged'] {
+  border-left-color: var(--diagram-connection-muted);
+}
+
+.lakehouse-pointer-card[data-pointer-role='query-target'][data-state='follows-published'] {
+  border-left: 3px solid var(--diagram-connection-muted);
+}
+
+.lakehouse-pointer-card[data-pointer-role='query-target'][data-state='time-travel'] {
+  border-left: 3px solid var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+}
 .lakehouse-unity-switcher {
   margin-top: 0;
 }
@@ -1072,6 +1222,11 @@
     flex-direction: column;
   }
 
+  /* Pointer 因果链与快照对照在窄容器纵向堆叠，避免 4 列把 Node 压到不可读。 */
+  .lakehouse-visibility-chain {
+    flex-direction: column;
+  }
+
   .lakehouse-schema-versions .lakehouse-connector__line {
     width: 40px;
   }
@@ -1097,6 +1252,10 @@
 
   .lakehouse-file-batch {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lakehouse-pointer-compare {
+    grid-template-columns: 1fr;
   }
 
   .lakehouse-compute-branch > div {
