@@ -18,6 +18,8 @@ import {
   getLayerSnapshots,
   getMissingDimensionGaps,
   getTableMetrics,
+  getTransformationStep,
+  getTransformationStepIndex,
   getTransformationStepResult,
   isInDatePartition,
   selectTransformationGrain,
@@ -28,6 +30,19 @@ import {
 const dataset = sqlTransformationDataset
 
 describe('SQL 与数据加工实验', () => {
+  it('只按当前银行 canonical step 查找，并对未知步骤保持明确失败', () => {
+    expect(getTransformationStep('clean-detail')).toMatchObject({
+      id: 'clean-detail',
+      number: '02',
+    })
+    expect(getTransformationStepIndex('clean-detail')).toBe(1)
+    expect(getTransformationStep('missing-step' as never)).toBeUndefined()
+    expect(getTransformationStepIndex('missing-step' as never)).toBe(-1)
+    expect(() => getTransformationStepResult(dataset, 'missing-step' as never)).toThrow(
+      '未知的数据加工步骤: missing-step',
+    )
+  })
+
   it('课程元数据注册了存款余额加工契约', () => {
     expect(
       sqlAndTransformationContent.sections.some(
