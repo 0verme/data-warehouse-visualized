@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import type {
   LakehouseAtomicCommitStatus,
   LakehouseDataSource,
@@ -47,7 +48,7 @@ const FILE_STATUS_LABELS: Record<FileStatus, string> = {
   pending: '待提交',
 }
 
-function getFileStatus(
+export function getFileStatus(
   batchStatus: LakehouseAtomicCommitStatus,
   fileNumber: number,
   failureAt: number,
@@ -58,6 +59,88 @@ function getFileStatus(
   }
 
   return batchStatus === 'committed' ? 'committed' : 'pending'
+}
+
+/**
+ * Pilot C connector vocabulary. Relation kinds are stable across the four focuses;
+ * focus / state overlays never rewrite the base relation a connector represents.
+ */
+export type LakehouseRelationKind =
+  'data-transform' | 'sync-copy' | 'shared-foundation' | 'version-causality'
+
+export const LAKEHOUSE_RELATION_LABELS: Record<LakehouseRelationKind, string> = {
+  'data-transform': '数据 / 加工',
+  'sync-copy': '复制 / 同步',
+  'shared-foundation': '共享基础',
+  'version-causality': '版本 / 因果',
+}
+
+type ZoneRole = 'source' | 'lake' | 'warehouse' | 'shared-storage' | 'compute'
+
+/**
+ * Zone is a local Pilot C presentation of an ownership / runtime / data-management
+ * boundary. It is not a shared primitive: pilot review decides later whether to
+ * extract a reusable Zone component.
+ */
+function Zone({
+  role,
+  title,
+  detail,
+  children,
+}: {
+  role: ZoneRole
+  title: string
+  detail?: string
+  children: ReactNode
+}) {
+  const titleId = `lakehouse-zone-${role}-title`
+
+  return (
+    <section className="lakehouse-zone" data-zone={role} aria-labelledby={titleId}>
+      <div className="lakehouse-zone__heading">
+        <h5 id={titleId}>{title}</h5>
+        {detail ? <p>{detail}</p> : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function Connector({
+  relation,
+  from,
+  to,
+  state,
+}: {
+  relation: LakehouseRelationKind
+  from: string
+  to: string
+  state?: string
+}) {
+  return (
+    <div
+      className="lakehouse-connector"
+      data-relation={relation}
+      aria-label={`${from} → ${to}，${LAKEHOUSE_RELATION_LABELS[relation]}关系${state ? `，${state}` : ''}`}
+    >
+      <span className="lakehouse-connector__line" aria-hidden="true" />
+      <span className="lakehouse-connector__label">{LAKEHOUSE_RELATION_LABELS[relation]}</span>
+      {state ? <span className="lakehouse-connector__state">{state}</span> : null}
+    </div>
+  )
+}
+
+function RelationLegend({ relations }: { relations: readonly LakehouseRelationKind[] }) {
+  return (
+    <ul className="lakehouse-legend" aria-label="连接关系图例">
+      {relations.map((relation) => (
+        <li key={relation} data-relation={relation}>
+          <span className="lakehouse-connector__line" aria-hidden="true" />
+          <span>{LAKEHOUSE_RELATION_LABELS[relation]}</span>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 function LabHeading({
@@ -80,9 +163,18 @@ function LabHeading({
 
 function SourceCards({ sources }: { sources: readonly LakehouseDataSource[] }) {
   return (
-    <div className="lakehouse-source-grid">
+    <div
+      className="lakehouse-source-grid"
+      data-detail-role="source-detail"
+      aria-label="输入来源详情"
+    >
       {sources.map((source) => (
-        <article className={`lakehouse-source-card is-${source.format}`} key={source.id}>
+        <article
+          className="lakehouse-source-card"
+          data-node-role="source"
+          data-entity-type={source.format}
+          key={source.id}
+        >
           <span className="lakehouse-source-card__type">{SOURCE_FORMAT_LABELS[source.format]}</span>
           <strong>{source.label}</strong>
           <code>{source.example}</code>
@@ -101,7 +193,11 @@ function SourceToLake({
   detail?: string
 }) {
   return (
-    <section className="lakehouse-source-flow" aria-labelledby="lakehouse-source-flow-title">
+    <section
+      className="lakehouse-source-flow"
+      aria-labelledby="lakehouse-source-flow-title"
+      data-section="overview"
+    >
       <div className="lakehouse-lab__subheading">
         <div>
           <span className="eyebrow eyebrow--small">统一入口</span>
@@ -109,21 +205,24 @@ function SourceToLake({
         </div>
         <p>{detail}</p>
       </div>
-      <div className="lakehouse-flow-rail" aria-label="所有数据统一进入 Lake">
-        <div className="lakehouse-flow-node">
-          <span>01</span>
-          <strong>Source</strong>
-          <small>Transaction · mobile event · partner file</small>
-        </div>
-        <span className="lakehouse-flow-arrow" aria-hidden="true">
-          →
-        </span>
-        <div className="lakehouse-flow-node is-emphasis">
-          <span>02</span>
-          <strong>Lake</strong>
-          <small>完整历史 · 原始 / 明细 · 开放承载</small>
-        </div>
+      <div className="lakehouse-zones" aria-label="统一入口的分区与连接">
+        <Zone role="source" title="Source · 业务输入区" detail="原始记录先进入平台">
+          <div className="lakehouse-flow-node" data-node-role="source">
+            <span>01</span>
+            <strong>Source</strong>
+            <small>Transaction · mobile event · partner file</small>
+          </div>
+        </Zone>
+        <Connector relation="data-transform" from="Source" to="Lake" />
+        <Zone role="lake" title="Lake · 数据平台区" detail="完整历史 · 原始 / 明细 · 开放承载">
+          <div className="lakehouse-flow-node" data-node-role="lake">
+            <span>02</span>
+            <strong>Lake</strong>
+            <small>完整历史 · 原始 / 明细 · 开放承载</small>
+          </div>
+        </Zone>
       </div>
+      <RelationLegend relations={['data-transform', 'sync-copy']} />
       <SourceCards sources={sources} />
     </section>
   )
@@ -158,7 +257,11 @@ function LakeFirstLab({
         description="同一批银行数据先进入 Lake。切换访问频率、查询 SLA 和消费方式，观察哪些数据需要高性能服务层。"
       />
       <SourceToLake sources={visualization.dataSources} />
-      <section className="lakehouse-demand" aria-labelledby="lakehouse-demand-title">
+      <section
+        className="lakehouse-demand"
+        aria-labelledby="lakehouse-demand-title"
+        data-section="overview"
+      >
         <div className="lakehouse-lab__subheading">
           <div>
             <span className="eyebrow eyebrow--small">改变服务需求</span>
@@ -172,6 +275,7 @@ function LakeFirstLab({
               className={`lakehouse-demand-option${demand.id === demandId ? ' is-selected' : ''}`}
               type="button"
               aria-pressed={demand.id === demandId}
+              data-focus={demand.id === demandId ? 'primary' : 'none'}
               key={demand.id}
               onClick={() => setDemandId(demand.id)}
             >
@@ -180,7 +284,7 @@ function LakeFirstLab({
             </button>
           ))}
         </div>
-        <div className="lakehouse-demand-facts" aria-live="polite">
+        <div className="lakehouse-demand-facts" aria-live="polite" data-detail-role="demand-facts">
           <div>
             <span>访问频率</span>
             <strong>{assessment.demand.accessFrequency}</strong>
@@ -198,7 +302,11 @@ function LakeFirstLab({
             <strong>{assessment.demand.consumer}</strong>
           </div>
         </div>
-        <div className="lakehouse-source-placement" aria-live="polite">
+        <div
+          className="lakehouse-source-placement"
+          aria-live="polite"
+          data-detail-role="placement-decision"
+        >
           {visualization.dataSources.map((source) => {
             const item = assessmentBySourceId.get(source.id)
             if (!item) {
@@ -209,6 +317,7 @@ function LakeFirstLab({
             return (
               <article
                 className={`lakehouse-placement-card${entersWarehouse ? ' is-warehouse' : ' is-lake-only'}`}
+                data-decision-result={entersWarehouse ? 'lake-and-warehouse' : 'lake-only'}
                 key={source.id}
               >
                 <div className="lakehouse-placement-card__heading">
@@ -217,7 +326,11 @@ function LakeFirstLab({
                 </div>
                 <div className="lakehouse-placement-card__path">
                   <span>Lake</span>
-                  <b aria-hidden="true">{entersWarehouse ? '→' : '·'}</b>
+                  {entersWarehouse ? (
+                    <b data-relation="sync-copy">{'→'}</b>
+                  ) : (
+                    <b aria-hidden="true">{'·'}</b>
+                  )}
                   <span>{entersWarehouse ? 'Warehouse 服务层' : '继续保留'}</span>
                 </div>
                 <p>{item.reason}</p>
@@ -225,7 +338,7 @@ function LakeFirstLab({
             )
           })}
         </div>
-        <div className="lakehouse-observation">
+        <div className="lakehouse-observation" data-detail-role="note">
           <strong>{assessment.summary}</strong>
           <p>
             “冷热”来自访问频率、查询
@@ -250,37 +363,63 @@ function ReplicationFlow({
   const primarySource = sources[0]
 
   return (
-    <div className="lakehouse-replication-flow" aria-label="Source 到 Warehouse 的复制链路">
-      <article className="lakehouse-replication-node">
-        <span>Source</span>
-        <strong>{primarySource?.label ?? 'Transaction'}</strong>
-        <small>业务系统产生原始记录</small>
-      </article>
-      <span className="lakehouse-flow-arrow" aria-hidden="true">
-        →
-      </span>
-      <article className="lakehouse-replication-node is-lake">
-        <span>Lake · 1 份</span>
-        <strong>{config.dataset.label}</strong>
-        <small>{state.lakeVersion} · 完整承载</small>
-      </article>
-      <span className="lakehouse-flow-arrow" aria-hidden="true">
-        →
-      </span>
-      <article className="lakehouse-replication-node is-sync">
-        <span>Transform / Sync</span>
-        <strong>{synced ? '同步已完成' : '等待同步'}</strong>
-        <small>{state.syncDelay}</small>
-      </article>
-      <span className="lakehouse-flow-arrow" aria-hidden="true">
-        →
-      </span>
-      <article className={`lakehouse-replication-node is-warehouse${synced ? ' is-ready' : ''}`}>
-        <span>Warehouse · {synced ? '第 2 份' : '暂无副本'}</span>
-        <strong>{synced ? config.dataset.label : '还没有数据'}</strong>
-        <small>{synced ? state.warehouseVersion : '高频查询的服务层'}</small>
-      </article>
-    </div>
+    <>
+      <div
+        className="lakehouse-zones lakehouse-zones--replication"
+        aria-label="Source 到 Warehouse 的复制链路"
+        data-section="overview"
+      >
+        <Zone role="source" title="Source · 业务系统区" detail="业务系统产生原始记录">
+          <article className="lakehouse-replication-node" data-node-role="source">
+            <span>Source</span>
+            <strong>{primarySource?.label ?? 'Transaction'}</strong>
+            <small>业务系统产生原始记录</small>
+          </article>
+        </Zone>
+        <Connector relation="data-transform" from="Source" to="Lake" />
+        <Zone role="lake" title="Lake · 数据平台区" detail="第 1 份 · 完整承载">
+          <article className="lakehouse-replication-node" data-node-role="lake">
+            <span>Lake · 1 份</span>
+            <strong>{config.dataset.label}</strong>
+            <small>{state.lakeVersion} · 完整承载</small>
+          </article>
+        </Zone>
+        <Connector
+          relation="sync-copy"
+          from="Lake"
+          to="Transform / Sync"
+          state={synced ? '已同步' : '等待同步'}
+        />
+        <article
+          className="lakehouse-replication-node lakehouse-stage"
+          data-node-role="transform"
+          data-state={synced ? 'synced' : 'pending'}
+          aria-label={`Transform / Sync，${synced ? '同步已完成' : '等待同步'}`}
+        >
+          <span>Transform / Sync</span>
+          <strong>{synced ? '同步已完成' : '等待同步'}</strong>
+          <small>{state.syncDelay}</small>
+        </article>
+        <Connector relation="sync-copy" from="Transform / Sync" to="Warehouse" />
+        <Zone
+          role="warehouse"
+          title="Warehouse · 服务层区"
+          detail={synced ? '第 2 份副本' : '暂无副本'}
+        >
+          <article
+            className="lakehouse-replication-node"
+            data-node-role="warehouse"
+            data-state={synced ? 'synced' : 'pending'}
+            aria-label={`Warehouse，${synced ? '已同步为第 2 份' : '等待同步'}`}
+          >
+            <span>Warehouse · {synced ? '第 2 份' : '暂无副本'}</span>
+            <strong>{synced ? config.dataset.label : '还没有数据'}</strong>
+            <small>{synced ? state.warehouseVersion : '高频查询的服务层'}</small>
+          </article>
+        </Zone>
+      </div>
+      <RelationLegend relations={['data-transform', 'sync-copy']} />
+    </>
   )
 }
 
@@ -294,7 +433,7 @@ function SchemaList({
   emptyLabel: string
 }) {
   return (
-    <div className="lakehouse-schema-list">
+    <div className="lakehouse-schema-list" data-detail-role="schema">
       <span>{label}</span>
       {fields ? (
         <ul>
@@ -325,7 +464,7 @@ function ReplicationLab({
       <div className="visualization-toolbar">
         <div>
           <span className="visualization-toolbar__label">异构湖仓复制观察</span>
-          <p aria-live="polite">
+          <p aria-live="polite" data-state={state.syncStatus}>
             当前副本：{state.replicaCount} 份 ·{' '}
             {state.syncStatus === 'synced' ? '已同步' : '尚未同步'}
           </p>
@@ -348,6 +487,7 @@ function ReplicationLab({
       <section
         className="lakehouse-replication-panel"
         aria-labelledby="lakehouse-replication-panel-title"
+        data-section="detail"
       >
         <div className="lakehouse-lab__subheading">
           <div>
@@ -365,14 +505,18 @@ function ReplicationLab({
           >
             {synced ? '同步已完成' : '执行一次 Transform / Sync'}
           </button>
-          <span aria-live="polite">
+          <span aria-live="polite" data-state={synced ? 'synced' : 'pending'}>
             {synced
               ? `完成时间：${config.syncedAt} · 用时：${config.syncDuration}`
               : 'Lake 中的数据仍然只有一份'}
           </span>
         </div>
-        <div className="lakehouse-replica-summary" aria-live="polite">
-          <article className="lakehouse-replica-card is-lake">
+        <div
+          className="lakehouse-replica-summary"
+          aria-live="polite"
+          data-detail-role="replica-summary"
+        >
+          <article className="lakehouse-replica-card" data-node-role="lake" data-state="ready">
             <div>
               <span>Lake</span>
               <strong>第 1 份</strong>
@@ -383,7 +527,11 @@ function ReplicationLab({
             </p>
             <SchemaList label="Schema" fields={state.lakeSchema} emptyLabel="没有 Schema" />
           </article>
-          <article className={`lakehouse-replica-card is-warehouse${synced ? ' is-ready' : ''}`}>
+          <article
+            className="lakehouse-replica-card"
+            data-node-role="warehouse"
+            data-state={synced ? 'synced' : 'pending'}
+          >
             <div>
               <span>Warehouse</span>
               <strong>{synced ? '第 2 份' : '等待副本'}</strong>
@@ -400,7 +548,7 @@ function ReplicationLab({
             />
           </article>
         </div>
-        <div className="lakehouse-responsibility-grid">
+        <div className="lakehouse-responsibility-grid" data-detail-role="responsibility">
           {state.responsibilities.map((responsibility) => (
             <article key={responsibility}>
               <span>同步后的责任</span>
@@ -420,7 +568,7 @@ function ReplicationLab({
 
 function SnapshotTable({ snapshot }: { snapshot: LakehouseSnapshot }) {
   return (
-    <div className="lakehouse-snapshot-table-wrap">
+    <div className="lakehouse-snapshot-table-wrap" data-detail-role="snapshot-table">
       <table className="lakehouse-snapshot-table">
         <caption>
           v{snapshot.version} · {snapshot.committedAt}
@@ -480,7 +628,12 @@ function SchemaEvolutionChain({
   ]
 
   return (
-    <ol className="lakehouse-schema-chain" aria-label="表能力形成链路">
+    <ol
+      className="lakehouse-schema-chain"
+      data-relation="version-causality"
+      data-detail-role="process-chain"
+      aria-label="版本 / 因果链路：Schema Evolution → Atomic Commit → Snapshot → Time Travel"
+    >
       {steps.map((step, index) => (
         <li key={step.label}>
           <span>{String(index + 1).padStart(2, '0')}</span>
@@ -500,7 +653,11 @@ function FileCommitBatch({
   state: ReturnType<typeof getAtomicCommitState>
 }) {
   return (
-    <section className="lakehouse-commit-batch" aria-labelledby="lakehouse-commit-batch-title">
+    <section
+      className="lakehouse-commit-batch"
+      aria-labelledby="lakehouse-commit-batch-title"
+      data-section="overview"
+    >
       <div className="lakehouse-lab__subheading">
         <div>
           <span className="eyebrow eyebrow--small">Atomic Commit</span>
@@ -510,19 +667,32 @@ function FileCommitBatch({
           {STATUS_LABELS[state.status]} · 本次批次可见 {state.visibleFileCount}/{state.fileCount}
         </p>
       </div>
-      <ol className={`lakehouse-file-batch is-${state.status}`} aria-label="文件提交批次">
+      <ol
+        className={`lakehouse-file-batch is-${state.status}`}
+        data-state={state.status}
+        data-detail-role="file-batch"
+        aria-label="文件提交批次"
+      >
         {Array.from({ length: config.fileCount }, (_, index) => {
           const fileNumber = index + 1
           const fileStatus = getFileStatus(state.status, fileNumber, config.failureAt)
           return (
-            <li className={`lakehouse-file-item is-${fileStatus}`} key={fileNumber}>
+            <li
+              className={`lakehouse-file-item is-${fileStatus}`}
+              data-state={fileStatus}
+              key={fileNumber}
+            >
               <span>F{String(fileNumber).padStart(2, '0')}</span>
               <small>{FILE_STATUS_LABELS[fileStatus]}</small>
             </li>
           )
         })}
       </ol>
-      <p className={`lakehouse-commit-message is-${state.status}`} aria-live="polite">
+      <p
+        className={`lakehouse-commit-message is-${state.status}`}
+        aria-live="polite"
+        data-state={state.status}
+      >
         {state.message}
       </p>
     </section>
@@ -539,12 +709,17 @@ function SnapshotTimeline({
   onSelect: (version: number) => void
 }) {
   return (
-    <div className="lakehouse-snapshot-timeline" aria-label="选择要读取的 Snapshot / Version">
+    <div
+      className="lakehouse-snapshot-timeline"
+      aria-label="选择要读取的 Snapshot / Version"
+      data-detail-role="snapshot-timeline"
+    >
       {snapshots.map((snapshot) => (
         <button
           className={selectedVersion === snapshot.version ? 'is-selected' : ''}
           type="button"
           aria-pressed={selectedVersion === snapshot.version}
+          data-focus={selectedVersion === snapshot.version ? 'primary' : 'none'}
           key={snapshot.id}
           onClick={() => onSelect(snapshot.version)}
         >
@@ -610,7 +785,7 @@ function TableLayerLab({
       <div className="visualization-toolbar">
         <div>
           <span className="visualization-toolbar__label">Table Layer 实验</span>
-          <p aria-live="polite">
+          <p aria-live="polite" data-state={isLatest ? 'current' : 'time-travel'}>
             {tableLayer.tableName} ·{' '}
             {isLatest ? '读取最新 Table State' : `Time Travel 到 v${selectedVersion}`}
           </p>
@@ -631,6 +806,7 @@ function TableLayerLab({
       <section
         className="lakehouse-table-layer-intro"
         aria-labelledby="lakehouse-table-layer-title"
+        data-section="detail"
       >
         <div className="lakehouse-lab__subheading">
           <div>
@@ -650,6 +826,7 @@ function TableLayerLab({
       <section
         className="lakehouse-schema-compare"
         aria-labelledby="lakehouse-schema-compare-title"
+        data-section="detail"
       >
         <div className="lakehouse-lab__subheading">
           <div>
@@ -658,15 +835,13 @@ function TableLayerLab({
           </div>
           <p>消费者读取到的是表的 Schema 变化，不必自行猜测某批文件多了什么。</p>
         </div>
-        <div className="lakehouse-schema-versions">
+        <div className="lakehouse-schema-versions" data-detail-role="schema-compare">
           <SchemaList
             label="v1 · 原始事件"
             fields={initialSnapshot.columns}
             emptyLabel="没有字段"
           />
-          <span className="lakehouse-schema-arrow" aria-hidden="true">
-            →
-          </span>
+          <Connector relation="version-causality" from="v1 Schema" to="v2 Schema" />
           <SchemaList label="v2 · 增加 channel" fields={v2Schema.columns} emptyLabel="没有字段" />
         </div>
       </section>
@@ -689,13 +864,17 @@ function TableLayerLab({
           {commitStatus === 'committed' ? '已 Commit v2' : 'Commit：发布 v2'}
         </button>
       </div>
-      <section className="lakehouse-version-panel" aria-labelledby="lakehouse-version-title">
+      <section
+        className="lakehouse-version-panel"
+        aria-labelledby="lakehouse-version-title"
+        data-section="detail"
+      >
         <div className="lakehouse-lab__subheading">
           <div>
             <span className="eyebrow eyebrow--small">Snapshot / Version History</span>
             <h4 id="lakehouse-version-title">一次成功 Commit，产生一个新的 Table State</h4>
           </div>
-          <p aria-live="polite">
+          <p aria-live="polite" data-state={isLatest ? 'current' : 'time-travel'}>
             {isLatest
               ? `当前读取 v${viewedSnapshot.version}：${viewedSnapshot.change}`
               : `Time Travel 已回到 v${viewedSnapshot.version}：${viewedSnapshot.change}`}
@@ -707,13 +886,17 @@ function TableLayerLab({
           onSelect={setSelectedVersion}
         />
         <SnapshotTable snapshot={viewedSnapshot} />
-        <p className="lakehouse-time-travel-note">
+        <p className="lakehouse-time-travel-note" data-state={isLatest ? 'current' : 'time-travel'}>
           {isLatest
             ? '当前查询读取最新版本。'
             : `今天发现加工结果有问题时，可以回到 v${selectedVersion} 查看修改之前的状态。`}
         </p>
       </section>
-      <section className="lakehouse-open-format-note" aria-label="Open Table Format 现实示例">
+      <section
+        className="lakehouse-open-format-note"
+        aria-label="Open Table Format 现实示例"
+        data-section="detail"
+      >
         <div>
           <span className="eyebrow eyebrow--small">Open Table Format</span>
           <strong>这是抽象能力，不是某个产品的教程</strong>
@@ -740,67 +923,90 @@ function UnityFlow({
   const firstSource = sources[0]
   if (mode === 'heterogeneous') {
     return (
-      <div className="lakehouse-unity-flow" aria-label="异构湖仓数据流">
-        <div className="lakehouse-flow-node">
-          <span>Source</span>
-          <strong>{firstSource?.label ?? 'Transaction'}</strong>
-          <small>业务数据进入平台</small>
+      <>
+        <div
+          className="lakehouse-zones lakehouse-zones--unity"
+          aria-label="异构湖仓数据流"
+          data-section="overview"
+        >
+          <Zone role="source" title="Source · 业务输入区" detail="业务数据进入平台">
+            <div className="lakehouse-flow-node" data-node-role="source">
+              <span>Source</span>
+              <strong>{firstSource?.label ?? 'Transaction'}</strong>
+              <small>业务数据进入平台</small>
+            </div>
+          </Zone>
+          <Connector relation="data-transform" from="Source" to="Lake" />
+          <Zone
+            role="lake"
+            title="Lake（异构） · 数据平台区"
+            detail="副本 1 · 完整历史与原始上下文"
+          >
+            <div className="lakehouse-flow-node" data-node-role="lake">
+              <span>Lake · 副本 1</span>
+              <strong>开放存储 / Table</strong>
+              <small>完整历史与原始上下文</small>
+            </div>
+          </Zone>
+          <Connector relation="sync-copy" from="Lake" to="Copy / Transform" />
+          <div className="lakehouse-flow-node lakehouse-stage" data-node-role="transform">
+            <span>Copy / Transform</span>
+            <strong>跨体系同步</strong>
+            <small>需要保持两侧状态一致</small>
+          </div>
+          <Connector relation="sync-copy" from="Copy / Transform" to="Warehouse" />
+          <Zone role="warehouse" title="Warehouse · 服务层区" detail="副本 2 · 稳定查询与报表">
+            <div className="lakehouse-flow-node" data-node-role="warehouse">
+              <span>Warehouse · 副本 2</span>
+              <strong>MPP / BI 表</strong>
+              <small>稳定查询与报表</small>
+            </div>
+          </Zone>
         </div>
-        <span className="lakehouse-flow-arrow" aria-hidden="true">
-          →
-        </span>
-        <div className="lakehouse-flow-node is-emphasis">
-          <span>Lake · 副本 1</span>
-          <strong>开放存储 / Table</strong>
-          <small>完整历史与原始上下文</small>
-        </div>
-        <span className="lakehouse-flow-arrow" aria-hidden="true">
-          →
-        </span>
-        <div className="lakehouse-flow-node is-sync">
-          <span>Copy / Transform</span>
-          <strong>跨体系同步</strong>
-          <small>需要保持两侧状态一致</small>
-        </div>
-        <span className="lakehouse-flow-arrow" aria-hidden="true">
-          →
-        </span>
-        <div className="lakehouse-flow-node is-warehouse">
-          <span>Warehouse · 副本 2</span>
-          <strong>MPP / BI 表</strong>
-          <small>稳定查询与报表</small>
-        </div>
-      </div>
+        <RelationLegend relations={['data-transform', 'sync-copy']} />
+      </>
     )
   }
 
   return (
-    <div className="lakehouse-unity-flow is-shared" aria-label="共享基础能力的数据流">
-      <div className="lakehouse-flow-node">
-        <span>Source</span>
-        <strong>{firstSource?.label ?? 'Transaction'}</strong>
-        <small>数据持续进入</small>
+    <>
+      <div
+        className="lakehouse-zones lakehouse-zones--unity"
+        aria-label="共享基础能力的数据流"
+        data-section="overview"
+      >
+        <Zone role="source" title="Source · 业务输入区" detail="数据持续进入">
+          <div className="lakehouse-flow-node" data-node-role="source">
+            <span>Source</span>
+            <strong>{firstSource?.label ?? 'Transaction'}</strong>
+            <small>数据持续进入</small>
+          </div>
+        </Zone>
+        <Connector relation="data-transform" from="Source" to="Shared Storage / Table" />
+        <Zone
+          role="shared-storage"
+          title="Shared Storage / Table · 共享基础区"
+          detail={`副本 ${replicaCount} · Storage、Table semantics、Metadata 协同共享`}
+        >
+          <div className="lakehouse-flow-node" data-node-role="shared-table">
+            <span>Shared Storage / Table · 副本 {replicaCount}</span>
+            <strong>同一份受管理数据</strong>
+            <small>Storage、Table semantics、Metadata 协同共享</small>
+          </div>
+        </Zone>
+        <Connector relation="shared-foundation" from="Shared Storage / Table" to="Compute" />
+        <Zone role="compute" title="Compute · 计算边界" detail="不同 Compute 仍可存在">
+          <div className="lakehouse-compute-branch">
+            <div>
+              <strong data-node-role="compute">Lake Compute</strong>
+              <strong data-node-role="compute">MPP / BI Compute</strong>
+              <strong data-node-role="compute">其他分析引擎</strong>
+            </div>
+          </div>
+        </Zone>
       </div>
-      <span className="lakehouse-flow-arrow" aria-hidden="true">
-        →
-      </span>
-      <div className="lakehouse-flow-node is-shared-table">
-        <span>Shared Storage / Table · 副本 {replicaCount}</span>
-        <strong>同一份受管理数据</strong>
-        <small>Storage、Table semantics、Metadata 协同共享</small>
-      </div>
-      <span className="lakehouse-flow-arrow" aria-hidden="true">
-        →
-      </span>
-      <div className="lakehouse-compute-branch">
-        <span>不同 Compute 仍可存在</span>
-        <div>
-          <strong>Lake Compute</strong>
-          <strong>MPP / BI Compute</strong>
-          <strong>其他分析引擎</strong>
-        </div>
-      </div>
-    </div>
+      <RelationLegend relations={['data-transform', 'shared-foundation']} />
+    </>
   )
 }
 
@@ -839,6 +1045,7 @@ function UnityLab({
       <section
         className="lakehouse-unity-switcher"
         aria-labelledby="lakehouse-unity-switcher-title"
+        data-section="overview"
       >
         <div className="lakehouse-lab__subheading">
           <div>
@@ -852,6 +1059,7 @@ function UnityLab({
             className={mode === 'heterogeneous' ? 'is-selected' : ''}
             type="button"
             aria-pressed={mode === 'heterogeneous'}
+            data-focus={mode === 'heterogeneous' ? 'primary' : 'none'}
             onClick={() => setMode('heterogeneous')}
           >
             <strong>异构湖仓</strong>
@@ -861,6 +1069,7 @@ function UnityLab({
             className={mode === 'shared-table' ? 'is-selected' : ''}
             type="button"
             aria-pressed={mode === 'shared-table'}
+            data-focus={mode === 'shared-table' ? 'primary' : 'none'}
             onClick={() => setMode('shared-table')}
           >
             <strong>共享基础能力的形态</strong>
@@ -876,6 +1085,7 @@ function UnityLab({
       <section
         className="lakehouse-unity-comparison"
         aria-labelledby="lakehouse-unity-comparison-title"
+        data-section="detail"
       >
         <div className="lakehouse-lab__subheading">
           <div>
@@ -884,7 +1094,7 @@ function UnityLab({
           </div>
           <p aria-live="polite">当前：{state.modeLabel}</p>
         </div>
-        <div className="lakehouse-unity-table-wrap">
+        <div className="lakehouse-unity-table-wrap" data-detail-role="comparison">
           <table className="lakehouse-unity-table">
             <caption>异构湖仓与共享基础能力形态的观察维度</caption>
             <thead>
@@ -907,6 +1117,7 @@ function UnityLab({
       <section
         className="lakehouse-unity-responsibilities"
         aria-labelledby="lakehouse-unity-responsibilities-title"
+        data-section="detail"
       >
         <div className="lakehouse-lab__subheading">
           <div>
@@ -915,7 +1126,7 @@ function UnityLab({
           </div>
           <p>共享更多基础能力，系统仍要处理表、元数据和多引擎边界。</p>
         </div>
-        <ul>
+        <ul data-detail-role="responsibility">
           {state.responsibilities.map((responsibility) => (
             <li key={responsibility}>{responsibility}</li>
           ))}

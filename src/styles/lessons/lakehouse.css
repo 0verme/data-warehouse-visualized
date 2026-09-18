@@ -1,6 +1,9 @@
-/* Lakehouse: Source → Lake → Table / Warehouse. */
+/* Lakehouse: Architecture → Zone / Connector / Focus / State visual grammar (Pilot C).
+ * Roles use neutral diagram tokens; only real failed / held / committed states use
+ * existing status tokens; demand / mode / version selection is a Focus (accent).
+ */
 .lakehouse-lab {
-  color: var(--ink);
+  color: var(--text-primary);
 }
 
 .lakehouse-lab__heading {
@@ -9,7 +12,7 @@
 
 .lakehouse-lab__heading h3 {
   margin: 7px 0 0;
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 20px;
   letter-spacing: -0.035em;
   line-height: 1.35;
@@ -18,7 +21,7 @@
 .lakehouse-lab__heading p {
   max-width: 720px;
   margin: 8px 0 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.7;
 }
@@ -33,7 +36,7 @@
 
 .lakehouse-lab__subheading h4 {
   margin: 6px 0 0;
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 16px;
   line-height: 1.4;
 }
@@ -41,7 +44,7 @@
 .lakehouse-lab__subheading p {
   max-width: 330px;
   margin: 16px 0 0;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 10px;
   line-height: 1.6;
   text-align: right;
@@ -59,7 +62,7 @@
 .lakehouse-unity-responsibilities {
   margin-top: 25px;
   padding-top: 22px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .lakehouse-source-flow {
@@ -68,37 +71,159 @@
   border-top: 0;
 }
 
-.lakehouse-flow-rail,
-.lakehouse-replication-flow,
-.lakehouse-unity-flow {
+/* ---- Zone grammar -------------------------------------------------- */
+/* Zone boundaries express ownership / runtime / data-management edges.
+ * They use title, neutral border, surface and whitespace — not a hue.
+ */
+.lakehouse-zones {
   display: flex;
   gap: 12px;
+  align-items: stretch;
+}
+
+.lakehouse-zone {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 12px 13px 14px;
+  border: 1px solid var(--diagram-border);
+  border-radius: 10px;
+  background: var(--diagram-bg);
+}
+
+.lakehouse-zone__heading {
+  margin-bottom: 10px;
+}
+
+.lakehouse-zone__heading h5 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.lakehouse-zone__heading p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+/* ---- Connector grammar --------------------------------------------- */
+/* Base relation is encoded by stable data-relation + line pattern + label.
+ * No relation depends on color; focus / state overlays never rewrite the base relation.
+ */
+.lakehouse-connector {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 64px;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  align-self: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+.lakehouse-connector__line {
+  position: relative;
+  width: 52px;
+  height: 2px;
+  background: var(--diagram-connection);
+}
+
+.lakehouse-connector__line::after {
+  position: absolute;
+  top: -4px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid var(--diagram-connection);
+  border-right: 2px solid var(--diagram-connection);
+  content: '';
+  transform: rotate(45deg);
+}
+
+/* sync / copy: dashed boundary line keeps the same data direction. */
+.lakehouse-connector[data-relation='sync-copy'] .lakehouse-connector__line {
+  height: 0;
+  border-top: 2px dashed var(--diagram-connection);
+}
+
+/* shared foundation: dotted line + open diamond endpoint (architecture relation, not data). */
+.lakehouse-connector[data-relation='shared-foundation'] .lakehouse-connector__line {
+  height: 0;
+  border-top: 2px dotted var(--diagram-connection);
+  background: transparent;
+}
+
+.lakehouse-connector[data-relation='shared-foundation'] .lakehouse-connector__line::after {
+  top: -5px;
+  right: -5px;
+  border: 1px solid var(--diagram-connection);
+  background: transparent;
+  transform: rotate(45deg);
+}
+
+/* version / causality: lighter solid line + open chevron endpoint. */
+.lakehouse-connector[data-relation='version-causality'] .lakehouse-connector__line::after {
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.lakehouse-connector__label {
+  max-width: 96px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.lakehouse-connector__state {
+  color: var(--text-secondary);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.lakehouse-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.lakehouse-legend li {
+  display: flex;
+  gap: 6px;
   align-items: center;
 }
 
+.lakehouse-legend .lakehouse-connector__line {
+  width: 20px;
+}
+
+/* ---- Node grammar --------------------------------------------------- */
+/* Architecture nodes are neutral; their role is carried by the label text
+ * and data-node-role, not by a set of hues (no success / teal for roles).
+ */
 .lakehouse-flow-node,
 .lakehouse-replication-node {
   min-width: 0;
   flex: 1 1 0;
   padding: 13px;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--line-strong);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--surface-muted);
+  background: var(--diagram-surface);
 }
 
-.lakehouse-flow-node.is-emphasis,
-.lakehouse-replication-node.is-lake {
-  border-color: var(--success-border);
-  border-top-color: var(--teal);
-  background: var(--success-bg);
-}
-
-.lakehouse-flow-node.is-sync,
-.lakehouse-replication-node.is-sync {
-  border-color: var(--warning-border);
-  border-top-color: var(--amber);
-  background: var(--warning-bg);
+.lakehouse-stage {
+  flex: 0 0 150px;
 }
 
 .lakehouse-flow-node > span,
@@ -112,7 +237,7 @@
 
 .lakehouse-flow-node > span,
 .lakehouse-replication-node > span {
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
   font-weight: 750;
@@ -121,7 +246,7 @@
 .lakehouse-flow-node > strong,
 .lakehouse-replication-node > strong {
   margin-top: 6px;
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 13px;
   line-height: 1.4;
 }
@@ -129,16 +254,9 @@
 .lakehouse-flow-node > small,
 .lakehouse-replication-node > small {
   margin-top: 7px;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 9px;
   line-height: 1.5;
-}
-
-.lakehouse-flow-arrow {
-  flex: 0 0 auto;
-  color: var(--blue);
-  font-size: 18px;
-  line-height: 1;
 }
 
 .lakehouse-source-grid {
@@ -148,27 +266,13 @@
   margin-top: 13px;
 }
 
+/* Input format (TABLE / EVENT / FILE) is a type label, not a status; cards stay neutral. */
 .lakehouse-source-card {
   min-width: 0;
   padding: 12px 13px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--surface-muted);
-}
-
-.lakehouse-source-card.is-table {
-  border-color: var(--info-border);
-  background: var(--info-bg);
-}
-
-.lakehouse-source-card.is-event-log {
-  border-color: var(--success-border);
-  background: var(--success-bg);
-}
-
-.lakehouse-source-card.is-json-file {
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-source-card__type,
@@ -178,7 +282,7 @@
 }
 
 .lakehouse-source-card__type {
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 8px;
   font-weight: 750;
@@ -187,7 +291,7 @@
 
 .lakehouse-source-card strong {
   margin-top: 6px;
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -195,17 +299,19 @@
 .lakehouse-source-card code {
   margin-top: 5px;
   overflow-wrap: anywhere;
-  color: var(--blue-deep);
+  color: var(--text-secondary);
   font-size: 9px;
 }
 
 .lakehouse-source-card p {
   margin: 8px 0 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.6;
 }
 
+/* ---- Decision / Focus ------------------------------------------------ */
+/* Selected demand / mode is a Focus: diagram accent, independent of business state. */
 .lakehouse-demand-options,
 .lakehouse-unity-options {
   display: grid;
@@ -220,9 +326,9 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 11px 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 8px;
-  background: var(--surface);
+  background: var(--diagram-surface);
   color: inherit;
   cursor: pointer;
   text-align: left;
@@ -233,11 +339,15 @@
 }
 
 .lakehouse-demand-option:hover,
-.lakehouse-demand-option.is-selected,
-.lakehouse-unity-options button:hover,
-.lakehouse-unity-options button.is-selected {
-  border-color: var(--info-border);
-  background: var(--info-bg);
+.lakehouse-unity-options button:hover {
+  border-color: var(--diagram-connection);
+  transform: translateY(-1px);
+}
+
+.lakehouse-demand-option[data-focus='primary'],
+.lakehouse-unity-options button[data-focus='primary'] {
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
   transform: translateY(-1px);
 }
 
@@ -250,14 +360,14 @@
 
 .lakehouse-demand-option strong,
 .lakehouse-unity-options strong {
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 12px;
 }
 
 .lakehouse-demand-option small,
 .lakehouse-unity-options small {
   margin-top: 5px;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 9px;
   line-height: 1.5;
 }
@@ -268,9 +378,9 @@
   gap: 8px;
   margin-top: 12px;
   padding: 12px 13px;
-  border: 1px solid var(--info-border);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--info-bg);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-demand-facts div {
@@ -283,7 +393,7 @@
 }
 
 .lakehouse-demand-facts span {
-  color: var(--blue-deep);
+  color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 8px;
   font-weight: 750;
@@ -291,7 +401,7 @@
 
 .lakehouse-demand-facts strong {
   margin-top: 4px;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.5;
 }
@@ -303,19 +413,19 @@
   margin-top: 12px;
 }
 
+/* Placement is a decision result, not success: neutral base, accent only when承接. */
 .lakehouse-placement-card {
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--line-strong);
+  border: 1px solid var(--diagram-border);
+  border-left: 3px solid var(--diagram-connection-muted);
   border-radius: 8px;
-  background: var(--surface-muted);
+  background: var(--diagram-surface);
 }
 
-.lakehouse-placement-card.is-warehouse {
-  border-color: var(--success-border);
-  border-left-color: var(--teal);
-  background: var(--success-bg);
+.lakehouse-placement-card[data-decision-result='lake-and-warehouse'] {
+  border-color: var(--diagram-accent);
+  border-left-color: var(--diagram-accent);
 }
 
 .lakehouse-placement-card__heading,
@@ -327,36 +437,44 @@
 }
 
 .lakehouse-placement-card__heading strong {
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 11px;
 }
 
 .lakehouse-placement-card__heading span {
-  color: var(--teal);
+  color: var(--text-muted);
   font-size: 9px;
   font-weight: 750;
   text-align: right;
 }
 
-.lakehouse-placement-card.is-lake-only .lakehouse-placement-card__heading span {
-  color: var(--ink-muted);
+.lakehouse-placement-card[data-decision-result='lake-and-warehouse']
+  .lakehouse-placement-card__heading
+  span {
+  color: var(--diagram-accent);
 }
 
 .lakehouse-placement-card__path {
   justify-content: flex-start;
   margin-top: 10px;
-  color: var(--blue-deep);
+  color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
 }
 
 .lakehouse-placement-card__path b {
-  color: var(--teal);
+  color: var(--text-secondary);
+}
+
+.lakehouse-placement-card[data-decision-result='lake-and-warehouse']
+  .lakehouse-placement-card__path
+  b {
+  color: var(--diagram-accent);
 }
 
 .lakehouse-placement-card p {
   margin: 8px 0 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.55;
 }
@@ -364,13 +482,13 @@
 .lakehouse-observation {
   margin-top: 12px;
   padding: 13px;
-  border-left: 3px solid var(--teal);
+  border-left: 3px solid var(--diagram-connection);
   border-radius: 0 8px 8px 0;
-  background: var(--teal-soft);
+  background: var(--diagram-bg);
 }
 
 .lakehouse-observation strong {
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -380,31 +498,12 @@
 .lakehouse-unity-note,
 .lakehouse-time-travel-note {
   margin: 7px 0 0;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 10px;
   line-height: 1.65;
 }
 
-.lakehouse-replication-flow {
-  align-items: stretch;
-}
-
-.lakehouse-replication-node.is-warehouse {
-  border-color: var(--info-border);
-  border-top-color: var(--blue);
-  background: var(--info-bg);
-}
-
-.lakehouse-replication-node.is-warehouse.is-ready {
-  border-color: var(--success-border);
-  border-top-color: var(--teal);
-  background: var(--success-bg);
-}
-
-.lakehouse-replication-panel {
-  margin-top: 25px;
-}
-
+/* ---- Replication Detail ---------------------------------------------- */
 .lakehouse-replication-actions,
 .lakehouse-table-layer-actions {
   display: flex;
@@ -415,7 +514,7 @@
 }
 
 .lakehouse-replication-actions > span {
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 10px;
 }
 
@@ -426,27 +525,14 @@
   margin-top: 13px;
 }
 
+/* Replica presence is a Detail fact, not a business success: neutral cards,
+ * state carried by stable text + data-state. */
 .lakehouse-replica-card {
   min-width: 0;
   padding: 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--surface-muted);
-}
-
-.lakehouse-replica-card.is-lake {
-  border-color: var(--success-border);
-  background: var(--success-bg);
-}
-
-.lakehouse-replica-card.is-warehouse {
-  border-color: var(--info-border);
-  background: var(--info-bg);
-}
-
-.lakehouse-replica-card.is-warehouse.is-ready {
-  border-color: var(--success-border);
-  background: var(--success-bg);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-replica-card > div {
@@ -457,20 +543,20 @@
 }
 
 .lakehouse-replica-card > div span {
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
   font-weight: 750;
 }
 
 .lakehouse-replica-card > div strong {
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 15px;
 }
 
 .lakehouse-replica-card > p {
   margin: 9px 0 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.6;
 }
@@ -480,7 +566,7 @@
 }
 
 .lakehouse-schema-list > span {
-  color: var(--blue-deep);
+  color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 8px;
   font-weight: 750;
@@ -495,14 +581,14 @@
 
 .lakehouse-schema-list li {
   padding: 4px 6px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 5px;
-  background: var(--surface);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-schema-list code,
 .lakehouse-schema-list p {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 9px;
 }
 
@@ -520,12 +606,12 @@
 .lakehouse-responsibility-grid article {
   min-width: 0;
   padding: 10px 11px;
-  border-left: 2px solid var(--amber);
-  background: var(--surface-muted);
+  border-left: 2px solid var(--diagram-connection-muted);
+  background: var(--diagram-bg);
 }
 
 .lakehouse-responsibility-grid span {
-  color: var(--amber);
+  color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 8px;
   font-weight: 750;
@@ -533,11 +619,12 @@
 
 .lakehouse-responsibility-grid p {
   margin: 5px 0 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.55;
 }
 
+/* ---- Table Layer ------------------------------------------------------ */
 .lakehouse-table-layer-intro {
   margin-top: 0;
 }
@@ -550,9 +637,9 @@
 
 .lakehouse-table-questions span {
   padding: 10px 11px;
-  border: 1px dashed #b9cee5;
+  border: 1px dashed var(--diagram-border);
   border-radius: 7px;
-  color: var(--blue-deep);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.5;
 }
@@ -563,24 +650,22 @@
   align-items: center;
 }
 
+.lakehouse-schema-versions .lakehouse-connector {
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.lakehouse-schema-versions .lakehouse-connector__line {
+  width: 38px;
+}
+
 .lakehouse-schema-versions .lakehouse-schema-list {
   flex: 1 1 0;
   margin-top: 0;
   padding: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 8px;
-  background: var(--surface-muted);
-}
-
-.lakehouse-schema-versions .lakehouse-schema-list:last-child {
-  border-color: var(--success-border);
-  background: var(--success-bg);
-}
-
-.lakehouse-schema-arrow {
-  flex: 0 0 auto;
-  color: var(--blue);
-  font-size: 18px;
+  background: var(--diagram-surface);
 }
 
 .lakehouse-schema-chain {
@@ -595,14 +680,14 @@
 .lakehouse-schema-chain li {
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--teal);
+  border: 1px solid var(--diagram-border);
+  border-top: 3px solid var(--diagram-connection-muted);
   border-radius: 8px;
-  background: var(--surface);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-schema-chain li > span {
-  color: var(--teal);
+  color: var(--text-muted);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
   font-weight: 750;
@@ -611,14 +696,14 @@
 .lakehouse-schema-chain strong {
   display: block;
   margin-top: 7px;
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 11px;
   line-height: 1.4;
 }
 
 .lakehouse-schema-chain p {
   margin: 6px 0 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 9px;
   line-height: 1.6;
 }
@@ -639,9 +724,9 @@
 .lakehouse-file-item {
   min-width: 0;
   padding: 8px 5px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 6px;
-  background: var(--surface-muted);
+  background: var(--diagram-surface);
   text-align: center;
 }
 
@@ -651,7 +736,7 @@
 }
 
 .lakehouse-file-item span {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 9px;
   font-weight: 750;
@@ -659,51 +744,57 @@
 
 .lakehouse-file-item small {
   margin-top: 4px;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 8px;
 }
 
-.lakehouse-file-item.is-held {
+/* File visibility is a real state: pending (neutral), held (warning),
+ * failed (danger), committed (success). */
+.lakehouse-file-item[data-state='pending'] {
+  color: var(--text-muted);
+}
+
+.lakehouse-file-item[data-state='held'] {
   border-color: var(--warning-border);
   background: var(--warning-bg);
 }
 
-.lakehouse-file-item.is-failed {
+.lakehouse-file-item[data-state='failed'] {
   border-color: var(--danger-border);
   background: var(--danger-bg);
 }
 
-.lakehouse-file-item.is-failed span,
-.lakehouse-file-item.is-failed small {
-  color: var(--danger);
+.lakehouse-file-item[data-state='failed'] span,
+.lakehouse-file-item[data-state='failed'] small {
+  color: var(--danger-text);
 }
 
-.lakehouse-file-item.is-committed {
+.lakehouse-file-item[data-state='committed'] {
   border-color: var(--success-border);
   background: var(--success-bg);
 }
 
-.lakehouse-file-item.is-committed span,
-.lakehouse-file-item.is-committed small {
-  color: var(--teal);
+.lakehouse-file-item[data-state='committed'] span,
+.lakehouse-file-item[data-state='committed'] small {
+  color: var(--success-text);
 }
 
 .lakehouse-commit-message {
   margin: 10px 0 0;
   padding: 10px 12px;
-  border-left: 3px solid var(--line-strong);
-  background: var(--surface-muted);
-  color: var(--ink-soft);
+  border-left: 3px solid var(--diagram-connection-muted);
+  background: var(--diagram-bg);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.6;
 }
 
-.lakehouse-commit-message.is-failed {
+.lakehouse-commit-message[data-state='failed'] {
   border-left-color: var(--danger-border);
   background: var(--danger-bg);
 }
 
-.lakehouse-commit-message.is-committed {
+.lakehouse-commit-message[data-state='committed'] {
   border-left-color: var(--success-border);
   background: var(--success-bg);
 }
@@ -725,37 +816,41 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 7px 9px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 6px;
-  background: var(--surface);
+  background: var(--diagram-surface);
   cursor: pointer;
   text-align: left;
 }
 
-.lakehouse-snapshot-timeline button.is-selected {
-  border-color: var(--teal);
-  background: var(--teal-soft);
+.lakehouse-snapshot-timeline button[data-focus='primary'] {
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
 }
 
 .lakehouse-snapshot-timeline span {
-  color: var(--teal);
+  color: var(--text-secondary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   font-weight: 750;
 }
 
+.lakehouse-snapshot-timeline button[data-focus='primary'] span {
+  color: var(--diagram-accent);
+}
+
 .lakehouse-snapshot-timeline small {
   margin-top: 3px;
-  color: var(--ink-muted);
+  color: var(--text-muted);
   font-size: 8px;
 }
 
 .lakehouse-snapshot-table-wrap,
 .lakehouse-unity-table-wrap {
   overflow-x: auto;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 9px;
-  background: var(--surface);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-snapshot-table,
@@ -786,8 +881,8 @@
 .lakehouse-unity-table th,
 .lakehouse-unity-table td {
   padding: 8px 9px;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
 }
@@ -807,8 +902,8 @@
 
 .lakehouse-snapshot-table thead th,
 .lakehouse-unity-table thead th {
-  background: var(--surface-muted);
-  color: var(--ink-muted);
+  background: var(--diagram-bg);
+  color: var(--text-muted);
   font-size: 9px;
   font-weight: 750;
   white-space: nowrap;
@@ -816,7 +911,7 @@
 
 .lakehouse-snapshot-table td,
 .lakehouse-unity-table td {
-  color: var(--ink-soft);
+  color: var(--text-secondary);
 }
 
 .lakehouse-open-format-note {
@@ -825,26 +920,27 @@
   gap: 14px;
   margin-top: 22px;
   padding: 13px;
-  border: 1px dashed var(--info-border);
+  border: 1px dashed var(--diagram-border);
   border-radius: 8px;
-  background: var(--surface-2);
+  background: var(--diagram-surface);
 }
 
 .lakehouse-open-format-note strong {
   display: block;
   margin-top: 6px;
-  color: var(--navy);
+  color: var(--text-primary);
   font-size: 11px;
   line-height: 1.5;
 }
 
 .lakehouse-open-format-note p {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.65;
 }
 
+/* ---- Unity ------------------------------------------------------------- */
 .lakehouse-unity-switcher {
   margin-top: 0;
 }
@@ -857,46 +953,30 @@
   min-height: 92px;
 }
 
-.lakehouse-unity-flow {
+.lakehouse-zones--unity {
   margin-top: 15px;
-  align-items: stretch;
-}
-
-.lakehouse-unity-flow.is-shared .lakehouse-flow-node.is-shared-table {
-  border-color: var(--success-border);
-  border-top-color: var(--teal);
-  background: var(--success-bg);
 }
 
 .lakehouse-compute-branch {
-  min-width: 220px;
-  flex: 1.5 1 0;
-  padding: 12px;
-  border: 1px solid var(--info-border);
-  border-radius: 9px;
-  background: var(--info-bg);
-}
-
-.lakehouse-compute-branch > span {
-  color: var(--blue-deep);
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  font-size: 9px;
-  font-weight: 750;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .lakehouse-compute-branch > div {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin-top: 12px;
 }
 
 .lakehouse-compute-branch strong {
   padding: 9px 7px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--diagram-border);
   border-radius: 6px;
-  background: var(--surface);
-  color: var(--ink-soft);
+  background: var(--diagram-surface);
+  color: var(--text-secondary);
   font-size: 9px;
   line-height: 1.45;
   text-align: center;
@@ -913,7 +993,7 @@
 
 .lakehouse-unity-table tbody th {
   width: 24%;
-  color: var(--navy);
+  color: var(--text-primary);
   font-weight: 750;
   white-space: nowrap;
 }
@@ -932,9 +1012,9 @@
 
 .lakehouse-unity-responsibilities li {
   padding: 9px 11px 9px 26px;
-  border-left: 2px solid var(--amber);
-  background: var(--surface-muted);
-  color: var(--ink-soft);
+  border-left: 2px solid var(--diagram-connection-muted);
+  background: var(--diagram-bg);
+  color: var(--text-secondary);
   font-size: 10px;
   line-height: 1.6;
 }
@@ -942,12 +1022,16 @@
 .lakehouse-unity-responsibilities li::before {
   margin-left: -15px;
   margin-right: 7px;
-  color: var(--amber);
+  color: var(--text-muted);
   content: '·';
   font-weight: 750;
 }
 
-@media (max-width: 760px) {
+/* ---- Responsive (container-first) -------------------------------------- */
+/* The lesson section is the `visualization` container; 320 / 375 / 480 / 660
+ * containers stack the architecture path first and keep tables locally scrollable.
+ */
+@container visualization (max-width: 660px) {
   .lakehouse-lab__subheading {
     display: block;
   }
@@ -958,16 +1042,26 @@
     text-align: left;
   }
 
-  .lakehouse-flow-rail,
-  .lakehouse-replication-flow,
-  .lakehouse-unity-flow {
+  .lakehouse-zones {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .lakehouse-flow-arrow {
+  .lakehouse-connector {
+    flex-direction: row;
+    gap: 8px;
+    min-width: 0;
     align-self: center;
+    justify-content: center;
+    padding: 3px 0;
+  }
+
+  .lakehouse-connector__line {
+    width: 40px;
     transform: rotate(90deg);
+  }
+
+  .lakehouse-stage {
+    flex: 0 0 auto;
   }
 
   .lakehouse-source-grid,
@@ -978,12 +1072,9 @@
   .lakehouse-table-questions,
   .lakehouse-schema-chain,
   .lakehouse-responsibility-grid,
+  .lakehouse-unity-options,
   .lakehouse-open-format-note {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .lakehouse-file-batch {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .lakehouse-schema-versions {
@@ -991,63 +1082,12 @@
     flex-direction: column;
   }
 
-  .lakehouse-schema-arrow {
-    align-self: center;
-    transform: rotate(90deg);
+  .lakehouse-schema-versions .lakehouse-connector__line {
+    width: 40px;
   }
 
   .lakehouse-compute-branch {
     min-width: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .lakehouse-source-grid,
-  .lakehouse-demand-options,
-  .lakehouse-source-placement,
-  .lakehouse-demand-facts,
-  .lakehouse-replica-summary,
-  .lakehouse-table-questions,
-  .lakehouse-schema-chain,
-  .lakehouse-responsibility-grid,
-  .lakehouse-unity-options,
-  .lakehouse-open-format-note {
-    grid-template-columns: 1fr;
-  }
-
-  .lakehouse-file-batch {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .lakehouse-compute-branch > div {
-    grid-template-columns: 1fr;
-  }
-}
-
-@container visualization (max-width: 660px) {
-  .lakehouse-source-grid,
-  .lakehouse-demand-options,
-  .lakehouse-source-placement,
-  .lakehouse-demand-facts,
-  .lakehouse-replica-summary,
-  .lakehouse-table-questions,
-  .lakehouse-schema-chain,
-  .lakehouse-responsibility-grid,
-  .lakehouse-unity-options,
-  .lakehouse-open-format-note {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .lakehouse-flow-rail,
-  .lakehouse-replication-flow,
-  .lakehouse-unity-flow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .lakehouse-flow-arrow {
-    align-self: center;
-    transform: rotate(90deg);
   }
 }
 
