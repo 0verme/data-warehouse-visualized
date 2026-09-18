@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import type {
   LineageEdge,
+  LineageEntityType,
   LineageEvidenceSource,
   LineageNode,
   LineageVerificationStatus,
@@ -17,7 +18,9 @@ import {
   getDirectDownstreamNodes,
   getDirectUpstreamNodes,
   getInvestigationDecision,
+  getLineageEntityType,
   getLineageImpactSummary,
+  getLineageRelationVisual,
   getTransitiveDownstreamNodes,
   getTransitiveUpstreamNodes,
 } from '../../utils/lineage'
@@ -27,6 +30,20 @@ interface LineageTeachingLabProps {
   nodes: LineageNode[]
   edges: LineageEdge[]
   teaching: LineageTeachingConfig
+}
+
+const ENTITY_TYPE_LABELS: Record<LineageEntityType, string> = {
+  table: '表',
+  field: '字段',
+  task: '任务',
+  metric: '指标',
+}
+
+const ENTITY_TYPE_MARKERS: Record<LineageEntityType, string> = {
+  table: '▣',
+  field: '◇',
+  task: '▶',
+  metric: '●',
 }
 
 const EVIDENCE_SOURCE_LABELS: Record<LineageEvidenceSource, string> = {
@@ -41,13 +58,6 @@ const VERIFICATION_STATUS_LABELS: Record<LineageVerificationStatus, string> = {
   confirmed: '已确认',
   pending: '待确认',
 }
-
-const RELATION_LABELS = {
-  transform: '加工',
-  depends_on: '运行依赖',
-  derives: '派生',
-  consumes: '消费',
-} as const
 
 function getNode(nodes: readonly LineageNode[], nodeId: string): LineageNode | undefined {
   return nodes.find((node) => node.id === nodeId)
@@ -71,14 +81,20 @@ function getTableGraph(
 
 function StatusBadge({ status }: { status: LineageVerificationStatus }) {
   return (
-    <span className={`lineage-teaching-badge lineage-teaching-badge--${status}`}>
+    <span
+      className={`lineage-teaching-badge lineage-teaching-badge--status lineage-teaching-badge--${status}`}
+    >
       {VERIFICATION_STATUS_LABELS[status]}
     </span>
   )
 }
 
 function EvidenceBadge({ source }: { source: LineageEvidenceSource }) {
-  return <span className="lineage-teaching-badge">{EVIDENCE_SOURCE_LABELS[source]}</span>
+  return (
+    <span className="lineage-teaching-badge lineage-teaching-badge--source">
+      来源：{EVIDENCE_SOURCE_LABELS[source]}
+    </span>
+  )
 }
 
 function NodeFlow({
@@ -98,19 +114,27 @@ function NodeFlow({
     <ol className="lineage-teaching-flow" aria-label={label}>
       {nodeIds.map((nodeId, index) => {
         const node = getNode(nodes, nodeId)
+        const entityType = node ? getLineageEntityType(node) : 'table'
         const content = (
           <>
-            <span className="lineage-teaching-flow__layer">{node?.layer ?? '对象'}</span>
+            <span className="lineage-teaching-flow__layer" data-node-type={entityType}>
+              <span className="lineage-node__type-marker" aria-hidden="true">
+                {ENTITY_TYPE_MARKERS[entityType]}
+              </span>{' '}
+              {ENTITY_TYPE_LABELS[entityType]} · {node?.layer ?? '对象'}
+            </span>
             <strong>{node?.label ?? nodeId}</strong>
             <small>{node?.role ?? '教学对象'}</small>
           </>
         )
 
         return (
-          <li key={nodeId}>
+          <li data-node-type={entityType} key={nodeId}>
             {onSelect ? (
               <button
                 className={`lineage-teaching-flow__node${activeNodeId === nodeId ? ' is-selected' : ''}`}
+                data-focus={activeNodeId === nodeId ? 'primary' : 'context'}
+                data-node-type={entityType}
                 type="button"
                 aria-pressed={activeNodeId === nodeId}
                 onClick={() => onSelect(nodeId)}
@@ -118,7 +142,13 @@ function NodeFlow({
                 {content}
               </button>
             ) : (
-              <div className="lineage-teaching-flow__node">{content}</div>
+              <div
+                className="lineage-teaching-flow__node"
+                data-focus="context"
+                data-node-type={entityType}
+              >
+                {content}
+              </div>
             )}
             {index < nodeIds.length - 1 && (
               <span className="lineage-teaching-flow__arrow" aria-hidden="true">
@@ -208,20 +238,33 @@ function TaskDependencyContrast({
         “谁先跑”描述运行依赖；“数据从哪里来”描述数据依赖。两个关系可能方向相同，但回答的不是同一个问题。
       </p>
       <div className="lineage-teaching-contrast-grid">
-        <div>
-          <span>任务关系：谁先跑</span>
-          <div className="lineage-teaching-mini-flow">
+        <div data-relation="depends_on">
+          <span>任务关系：谁先跑 · control / dependency · depends_on</span>
+          <div
+            className="lineage-teaching-mini-flow"
+            aria-label="控制依赖方向：前置任务到被放行任务"
+          >
             <code>{example.upstreamLabel}</code>
-            <span aria-hidden="true">↓</span>
+            <span
+              className="lineage-teaching-mini-flow__arrow lineage-teaching-mini-flow__arrow--dependency"
+              aria-hidden="true"
+            >
+              ↓
+            </span>
             <code>{example.downstreamLabel}</code>
           </div>
           <small>{example.evidence.detail}</small>
         </div>
-        <div>
-          <span>数据关系：数据从哪里来</span>
-          <div className="lineage-teaching-mini-flow">
+        <div data-relation="transform">
+          <span>数据关系：数据从哪里来 · data / transform</span>
+          <div className="lineage-teaching-mini-flow" aria-label="数据加工方向：上游表到下游表">
             <code>dwd_account_balance_detail</code>
-            <span aria-hidden="true">↓</span>
+            <span
+              className="lineage-teaching-mini-flow__arrow lineage-teaching-mini-flow__arrow--data"
+              aria-hidden="true"
+            >
+              ↓
+            </span>
             <code>dws_deposit_balance_daily</code>
           </div>
           <small>这条关系回答 DWS 的数据来源，不说明任务何时获得运行 slot。</small>
@@ -409,6 +452,9 @@ function FieldDependencyPanel({ teaching }: { teaching: LineageTeachingConfig })
             <div>
               <span className="lineage-teaching-overline">当前依赖</span>
               <h4>{selected.label}</h4>
+              <span className="lineage-teaching-relation" data-relation="derives">
+                {getLineageRelationVisual('derives').label}
+              </span>
             </div>
             <div className="lineage-teaching-badge-row">
               <EvidenceBadge source={selected.evidenceSource} />
@@ -749,18 +795,28 @@ function ImpactPredictionChoices({
     <div className="lineage-teaching-impact-choices" role="group" aria-label="直接下游预测选项">
       {nodeIds.map((nodeId) => {
         const node = getNode(nodes, nodeId)
+        const entityType = node ? getLineageEntityType(node) : 'table'
         const selected = selectedIds.has(nodeId)
         return (
           <button
             className={`lineage-teaching-impact-choice${selected ? ' is-selected' : ''}`}
+            data-focus={selected ? 'primary' : 'context'}
+            data-node-type={entityType}
             type="button"
             aria-pressed={selected}
             disabled={disabled}
             key={nodeId}
             onClick={() => onToggle(nodeId)}
           >
-            <strong>{node?.label ?? nodeId}</strong>
-            <small>{node?.role ?? '教学对象'}</small>
+            <strong>
+              <span className="lineage-node__type-marker" aria-hidden="true">
+                {ENTITY_TYPE_MARKERS[entityType]}
+              </span>{' '}
+              {node?.label ?? nodeId}
+            </strong>
+            <small>
+              {ENTITY_TYPE_LABELS[entityType]} · {node?.role ?? '教学对象'}
+            </small>
           </button>
         )
       })}
@@ -781,12 +837,17 @@ function ImpactChain({
 }) {
   return (
     <ol className="lineage-teaching-impact-chain" aria-label="影响传播链">
-      <li className="is-source">
-        <span>变更起点</span>
+      <li className="is-source" data-focus="primary" data-impact-level="source">
+        <span>变更起点 · Primary Focus</span>
         <strong>{getNodeLabel(nodes, sourceNodeId)}</strong>
       </li>
       {revealedIds.map((nodeId) => (
-        <li className={directIds.has(nodeId) ? 'is-direct' : 'is-transitive'} key={nodeId}>
+        <li
+          className={directIds.has(nodeId) ? 'is-direct' : 'is-transitive'}
+          data-focus="path"
+          data-impact-level={directIds.has(nodeId) ? 'direct' : 'transitive'}
+          key={nodeId}
+        >
           <span>{directIds.has(nodeId) ? '直接下游' : '传递影响'}</span>
           <strong>{getNodeLabel(nodes, nodeId)}</strong>
         </li>
@@ -944,6 +1005,9 @@ function EvidenceRecordCard({
   return (
     <button
       className={`lineage-teaching-evidence-record${selected ? ' is-selected' : ''}`}
+      data-focus={selected ? 'primary' : 'context'}
+      data-relation={record.relation}
+      data-verification-status={record.verificationStatus}
       type="button"
       aria-pressed={selected}
       onClick={onSelect}
@@ -952,7 +1016,8 @@ function EvidenceRecordCard({
         {record.sourceLabel} <span aria-hidden="true">→</span> {record.targetLabel}
       </strong>
       <small>
-        {RELATION_LABELS[record.relation]} · {EVIDENCE_SOURCE_LABELS[record.evidenceSource]} ·{' '}
+        {getLineageRelationVisual(record.relation).label} ·{' '}
+        {EVIDENCE_SOURCE_LABELS[record.evidenceSource]} ·{' '}
         {VERIFICATION_STATUS_LABELS[record.verificationStatus]}
       </small>
     </button>
@@ -1039,6 +1104,8 @@ export function LineageTeachingLab({ nodes, edges, teaching }: LineageTeachingLa
   return (
     <div
       className={`lineage-teaching-lab lineage-teaching-lab--${teaching.mode}`}
+      data-diagram-type="dependency"
+      data-focus={teaching.mode === 'impact' ? 'path' : 'context'}
       data-lineage-lesson-mode={teaching.mode}
       aria-labelledby={`lineage-teaching-${instanceId}-title`}
     >
