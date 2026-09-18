@@ -9,25 +9,12 @@ import type { Lesson } from '../../data/course'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
-import { BankingCustomerHistoryLab } from '../visualizations/BankingCustomerHistoryLab'
 import { BankingFactTypesLab } from '../visualizations/BankingFactTypesLab'
-import {
-  BankingMetricDefinitionLab,
-  BankingMetricDerivationLab,
-  BankingMetricScopeLab,
-  BankingMetricTimeLab,
-} from '../visualizations/BankingMetricLabs'
-import { BankingStarSchemaLab } from '../visualizations/BankingStarSchemaLab'
 import { BusinessSystemFlow } from '../visualizations/BusinessSystemFlow'
 import { LayerEvolutionLab } from '../visualizations/LayerEvolutionLab'
 import { LoanBusinessProcessLab } from '../visualizations/LoanBusinessProcessLab'
-import { LoanGrainLab } from '../visualizations/LoanGrainLab'
-import { MetricDefinitionLab } from '../visualizations/MetricDefinitionLab'
-import { ModelingIntro } from '../visualizations/ModelingIntro'
 import { PipelineFlow } from '../visualizations/PipelineFlow'
 import { ReportMetricJourney } from '../visualizations/ReportMetricJourney'
-import { SlowlyChangingDimension } from '../visualizations/SlowlyChangingDimension'
-import { StarSchemaFlow } from '../visualizations/StarSchemaFlow'
 import { WarehouseTermsLab } from '../visualizations/WarehouseTermsLab'
 import { CodeBlock } from './CodeBlock'
 import { CompareSplit } from './CompareSplit'
@@ -89,6 +76,72 @@ const LazyDataServiceWorkbench = lazy(() =>
   })),
 )
 
+const LazyBankingCustomerHistoryLab = lazy(() =>
+  import('../visualizations/BankingCustomerHistoryLab').then(({ BankingCustomerHistoryLab }) => ({
+    default: BankingCustomerHistoryLab,
+  })),
+)
+
+const LazyBankingMetricScopeLab = lazy(() =>
+  import('../visualizations/BankingMetricLabs').then(({ BankingMetricScopeLab }) => ({
+    default: BankingMetricScopeLab,
+  })),
+)
+
+const LazyBankingMetricDefinitionLab = lazy(() =>
+  import('../visualizations/BankingMetricLabs').then(({ BankingMetricDefinitionLab }) => ({
+    default: BankingMetricDefinitionLab,
+  })),
+)
+
+const LazyBankingMetricTimeLab = lazy(() =>
+  import('../visualizations/BankingMetricLabs').then(({ BankingMetricTimeLab }) => ({
+    default: BankingMetricTimeLab,
+  })),
+)
+
+const LazyBankingMetricDerivationLab = lazy(() =>
+  import('../visualizations/BankingMetricLabs').then(({ BankingMetricDerivationLab }) => ({
+    default: BankingMetricDerivationLab,
+  })),
+)
+
+const LazyBankingStarSchemaLab = lazy(() =>
+  import('../visualizations/BankingStarSchemaLab').then(({ BankingStarSchemaLab }) => ({
+    default: BankingStarSchemaLab,
+  })),
+)
+
+const LazyLoanGrainLab = lazy(() =>
+  import('../visualizations/LoanGrainLab').then(({ LoanGrainLab }) => ({
+    default: LoanGrainLab,
+  })),
+)
+
+const LazyMetricDefinitionLab = lazy(() =>
+  import('../visualizations/MetricDefinitionLab').then(({ MetricDefinitionLab }) => ({
+    default: MetricDefinitionLab,
+  })),
+)
+
+const LazyModelingIntro = lazy(() =>
+  import('../visualizations/ModelingIntro').then(({ ModelingIntro }) => ({
+    default: ModelingIntro,
+  })),
+)
+
+const LazySlowlyChangingDimension = lazy(() =>
+  import('../visualizations/SlowlyChangingDimension').then(({ SlowlyChangingDimension }) => ({
+    default: SlowlyChangingDimension,
+  })),
+)
+
+const LazyStarSchemaFlow = lazy(() =>
+  import('../visualizations/StarSchemaFlow').then(({ StarSchemaFlow }) => ({
+    default: StarSchemaFlow,
+  })),
+)
+
 type LazyVisualizationKind =
   | 'lineage'
   | 'lakehouse'
@@ -99,6 +152,17 @@ type LazyVisualizationKind =
   | 'data-service'
   | 'scheduler'
   | 'capstone'
+  | 'banking-customer-history'
+  | 'banking-metric-scope'
+  | 'banking-metric-definition'
+  | 'banking-metric-time'
+  | 'banking-metric-derivations'
+  | 'banking-star-schema'
+  | 'loan-grain'
+  | 'metric-definition'
+  | 'modeling-intro'
+  | 'scd'
+  | 'star-schema'
 
 function VisualizationLoading() {
   return (
@@ -228,31 +292,75 @@ function VisualizationBody({
         </VisualizationLoadBoundary>
       )
     case 'modeling-intro':
-      return <ModelingIntro visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="modeling-intro">
+          <LazyModelingIntro visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'loan-business-process':
       return <LoanBusinessProcessLab visualization={visualization} />
     case 'loan-grain':
-      return <LoanGrainLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="loan-grain">
+          <LazyLoanGrainLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'banking-star-schema':
-      return <BankingStarSchemaLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="banking-star-schema">
+          <LazyBankingStarSchemaLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'banking-fact-types':
       return <BankingFactTypesLab visualization={visualization} />
     case 'banking-customer-history':
-      return <BankingCustomerHistoryLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="banking-customer-history">
+          <LazyBankingCustomerHistoryLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'star-schema':
-      return <StarSchemaFlow visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="star-schema">
+          <LazyStarSchemaFlow visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'scd':
-      return <SlowlyChangingDimension visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="scd">
+          <LazySlowlyChangingDimension visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'metric-definition':
-      return <MetricDefinitionLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="metric-definition">
+          <LazyMetricDefinitionLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'banking-metric-scope':
-      return <BankingMetricScopeLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="banking-metric-scope">
+          <LazyBankingMetricScopeLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'banking-metric-definition':
-      return <BankingMetricDefinitionLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="banking-metric-definition">
+          <LazyBankingMetricDefinitionLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'banking-metric-time':
-      return <BankingMetricTimeLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="banking-metric-time">
+          <LazyBankingMetricTimeLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'banking-metric-derivations':
-      return <BankingMetricDerivationLab visualization={visualization} />
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="banking-metric-derivations">
+          <LazyBankingMetricDerivationLab visualization={visualization} />
+        </VisualizationLoadBoundary>
+      )
     case 'lakehouse':
       return (
         <VisualizationLoadBoundary key={lessonId} kind="lakehouse">
