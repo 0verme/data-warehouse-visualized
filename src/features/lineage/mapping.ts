@@ -1,23 +1,8 @@
-import { LEGACY_SCHEDULER_TASK_IDS, SCHEDULER_TASK_IDS } from '../../utils/scheduler'
 import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { BANKING_LINEAGE_NODE_IDS, BANKING_LINEAGE_TASK_NODE_IDS } from './banking'
 
-/**
- * Scheduler identity → canonical banking lineage task node.
- *
- * The old e-commerce task IDs stay readable and point to the preserved legacy graph nodes;
- * current banking aliases and the explicit Banking Teaching Domain IDs point to the same
- * canonical banking graph.
- */
+/** Scheduler identity → canonical Banking Teaching Domain lineage task node. */
 export const LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
-  [SCHEDULER_TASK_IDS.accountBalanceSnapshot]: BANKING_LINEAGE_TASK_NODE_IDS.accountBalanceSnapshot,
-  [SCHEDULER_TASK_IDS.account]: BANKING_LINEAGE_TASK_NODE_IDS.account,
-  [SCHEDULER_TASK_IDS.customer]: BANKING_LINEAGE_TASK_NODE_IDS.customer,
-  [SCHEDULER_TASK_IDS.product]: BANKING_LINEAGE_TASK_NODE_IDS.product,
-  [SCHEDULER_TASK_IDS.branch]: BANKING_LINEAGE_TASK_NODE_IDS.branch,
-  [SCHEDULER_TASK_IDS.dwd]: BANKING_LINEAGE_TASK_NODE_IDS.dwd,
-  [SCHEDULER_TASK_IDS.dws]: BANKING_LINEAGE_TASK_NODE_IDS.dws,
-  [SCHEDULER_TASK_IDS.ads]: BANKING_LINEAGE_TASK_NODE_IDS.ads,
   [BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot]:
     BANKING_LINEAGE_TASK_NODE_IDS.accountBalanceSnapshot,
   [BANKING_SCHEDULER_TASK_IDS.account]: BANKING_LINEAGE_TASK_NODE_IDS.account,
@@ -27,26 +12,10 @@ export const LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
   [BANKING_SCHEDULER_TASK_IDS.dwd]: BANKING_LINEAGE_TASK_NODE_IDS.dwd,
   [BANKING_SCHEDULER_TASK_IDS.dws]: BANKING_LINEAGE_TASK_NODE_IDS.dws,
   [BANKING_SCHEDULER_TASK_IDS.ads]: BANKING_LINEAGE_TASK_NODE_IDS.ads,
-  [LEGACY_SCHEDULER_TASK_IDS.odsOrders]: 'task-load-order',
-  [LEGACY_SCHEDULER_TASK_IDS.odsOrderItems]: 'task-load-order',
-  [LEGACY_SCHEDULER_TASK_IDS.odsUsers]: 'task-load-order',
-  [LEGACY_SCHEDULER_TASK_IDS.odsPayments]: 'task-load-order',
-  [LEGACY_SCHEDULER_TASK_IDS.odsRefunds]: 'task-load-order',
-  [LEGACY_SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
-  [LEGACY_SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
-  [LEGACY_SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
 }
 
 /** Current main's pre-PR72 banking graph remains available to production adapters. */
 export const LEGACY_BANKING_LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
-  [SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-balance',
-  [SCHEDULER_TASK_IDS.account]: 'task-load-balance',
-  [SCHEDULER_TASK_IDS.customer]: 'task-load-balance',
-  [SCHEDULER_TASK_IDS.product]: 'task-load-balance',
-  [SCHEDULER_TASK_IDS.branch]: 'task-load-balance',
-  [SCHEDULER_TASK_IDS.dwd]: 'task-build-deposit-detail',
-  [SCHEDULER_TASK_IDS.dws]: 'task-build-deposit-topic',
-  [SCHEDULER_TASK_IDS.ads]: 'task-publish-deposit-balance',
   [BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-balance',
   [BANKING_SCHEDULER_TASK_IDS.account]: 'task-load-balance',
   [BANKING_SCHEDULER_TASK_IDS.customer]: 'task-load-balance',
@@ -57,16 +26,16 @@ export const LEGACY_BANKING_LINEAGE_TASK_NODE_IDS: Readonly<Record<string, strin
   [BANKING_SCHEDULER_TASK_IDS.ads]: 'task-publish-deposit-balance',
 }
 
-/** The preserved e-commerce lineage fixture uses the current scheduler task IDs as aliases. */
+/** The preserved e-commerce lineage fixture is keyed by current Scheduler task IDs. */
 export const LEGACY_ECOMMERCE_LINEAGE_TASK_NODE_IDS: Readonly<Record<string, string>> = {
-  [SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-order',
-  [SCHEDULER_TASK_IDS.account]: 'task-load-order',
-  [SCHEDULER_TASK_IDS.customer]: 'task-load-order',
-  [SCHEDULER_TASK_IDS.product]: 'task-load-order',
-  [SCHEDULER_TASK_IDS.branch]: 'task-load-order',
-  [SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
-  [SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
-  [SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
+  [BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.account]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.customer]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.product]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.branch]: 'task-load-order',
+  [BANKING_SCHEDULER_TASK_IDS.dwd]: 'task-build-order-detail',
+  [BANKING_SCHEDULER_TASK_IDS.dws]: 'task-build-sales',
+  [BANKING_SCHEDULER_TASK_IDS.ads]: 'task-publish-report',
 }
 
 /** Quality targets use the canonical Banking Teaching Domain lineage graph. */

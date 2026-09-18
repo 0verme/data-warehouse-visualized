@@ -4,11 +4,7 @@ import type {
   SqlTransformationVisualization,
   TransformationStepId,
 } from '../sql-transformation/types'
-import {
-  SCHEDULER_TASK_IDS,
-  buildSchedulerTimeline,
-  createInitialSchedulerRun,
-} from '../../utils/scheduler'
+import { buildSchedulerTimeline, createInitialSchedulerRun } from '../../utils/scheduler'
 import { BANKING_SCHEDULER_TASK_IDS } from '../scheduler/banking'
 import { getTransformationStep } from '../../utils/sql-transformation'
 import {
@@ -37,10 +33,10 @@ export interface LineageProductionGraph {
 }
 
 const REQUIRED_TASK_IDS = [
-  SCHEDULER_TASK_IDS.accountBalanceSnapshot,
-  SCHEDULER_TASK_IDS.dwd,
-  SCHEDULER_TASK_IDS.dws,
-  SCHEDULER_TASK_IDS.ads,
+  BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot,
+  BANKING_SCHEDULER_TASK_IDS.dwd,
+  BANKING_SCHEDULER_TASK_IDS.dws,
+  BANKING_SCHEDULER_TASK_IDS.ads,
 ] as const
 
 type EdgeBinding = {
@@ -53,17 +49,17 @@ type EdgeBinding = {
 const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   'ods-account-balance->dwd-deposit-balance': {
     stepId: 'clean-detail',
-    taskId: SCHEDULER_TASK_IDS.dwd,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
   'dwd-deposit-balance->dws-deposit-balance': {
     stepId: 'aggregate-layers',
-    taskId: SCHEDULER_TASK_IDS.dws,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
   'dws-deposit-balance->ads-deposit-balance': {
     stepId: 'contract',
-    taskId: SCHEDULER_TASK_IDS.ads,
+    taskId: BANKING_SCHEDULER_TASK_IDS.ads,
     confidence: 'confirmed',
   },
   'dws-account-profile->ads-deposit-balance': {
@@ -72,16 +68,16 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   },
   'field-dwd-balance->task-build-deposit-detail': {
     stepId: 'clean-detail',
-    taskId: SCHEDULER_TASK_IDS.dwd,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
   'task-build-deposit-detail->dwd-deposit-balance': {
     stepId: 'clean-detail',
-    taskId: SCHEDULER_TASK_IDS.dwd,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
   'dwd-deposit-balance->task-build-deposit-topic': {
-    taskId: SCHEDULER_TASK_IDS.dws,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
   'dwd-deposit-balance->task-build-account-profile': {
@@ -90,7 +86,7 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   },
   'task-build-deposit-topic->dws-deposit-balance': {
     stepId: 'aggregate-layers',
-    taskId: SCHEDULER_TASK_IDS.dws,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
   'task-build-account-profile->dws-account-profile': {
@@ -107,7 +103,7 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   },
   'task-build-deposit-topic->field-dws-balance': {
     stepId: 'aggregate-layers',
-    taskId: SCHEDULER_TASK_IDS.dws,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
   'task-build-account-profile->field-dws-account-scope': {
@@ -115,7 +111,7 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
     confidence: 'manual',
   },
   'field-dws-balance->task-publish-deposit-balance': {
-    taskId: SCHEDULER_TASK_IDS.ads,
+    taskId: BANKING_SCHEDULER_TASK_IDS.ads,
     confidence: 'inferred',
   },
   'field-dws-account-scope->task-publish-deposit-balance': {
@@ -124,12 +120,12 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   },
   'task-publish-deposit-balance->ads-deposit-balance': {
     stepId: 'contract',
-    taskId: SCHEDULER_TASK_IDS.ads,
+    taskId: BANKING_SCHEDULER_TASK_IDS.ads,
     confidence: 'confirmed',
   },
   'task-publish-deposit-balance->field-ads-balance': {
     stepId: 'contract',
-    taskId: SCHEDULER_TASK_IDS.ads,
+    taskId: BANKING_SCHEDULER_TASK_IDS.ads,
     confidence: 'confirmed',
   },
   'field-ads-balance->metric-deposit-report': {
@@ -146,12 +142,12 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   },
   'field-ods-balance->field-dwd-balance': {
     stepId: 'clean-detail',
-    taskId: SCHEDULER_TASK_IDS.dwd,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
   'field-dwd-balance->field-dws-balance': {
     stepId: 'aggregate-layers',
-    taskId: SCHEDULER_TASK_IDS.dws,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
   'field-dwd-balance->field-dws-account-scope': {
@@ -160,7 +156,7 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
   },
   'field-dws-balance->field-ads-balance': {
     stepId: 'contract',
-    taskId: SCHEDULER_TASK_IDS.ads,
+    taskId: BANKING_SCHEDULER_TASK_IDS.ads,
     confidence: 'inferred',
   },
   'field-dws-account-scope->field-ads-balance': {
@@ -168,11 +164,11 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
     confidence: 'manual',
   },
   'task-load-balance->task-build-deposit-detail': {
-    taskId: SCHEDULER_TASK_IDS.dwd,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dwd,
     confidence: 'confirmed',
   },
   'task-build-deposit-detail->task-build-deposit-topic': {
-    taskId: SCHEDULER_TASK_IDS.dws,
+    taskId: BANKING_SCHEDULER_TASK_IDS.dws,
     confidence: 'confirmed',
   },
   'task-build-deposit-detail->task-build-account-profile': {
@@ -180,7 +176,7 @@ const EDGE_BINDINGS: Readonly<Record<string, EdgeBinding>> = {
     confidence: 'manual',
   },
   'task-build-deposit-topic->task-publish-deposit-balance': {
-    taskId: SCHEDULER_TASK_IDS.ads,
+    taskId: BANKING_SCHEDULER_TASK_IDS.ads,
     confidence: 'inferred',
   },
   'task-build-account-profile->task-publish-deposit-balance': {
@@ -193,26 +189,11 @@ function edgeKey(edge: Pick<LineageEdge, 'source' | 'target'>): string {
   return `${edge.source}->${edge.target}`
 }
 
-const SCHEDULER_TASK_ID_PAIRS = [
-  [SCHEDULER_TASK_IDS.accountBalanceSnapshot, BANKING_SCHEDULER_TASK_IDS.accountBalanceSnapshot],
-  [SCHEDULER_TASK_IDS.account, BANKING_SCHEDULER_TASK_IDS.account],
-  [SCHEDULER_TASK_IDS.customer, BANKING_SCHEDULER_TASK_IDS.customer],
-  [SCHEDULER_TASK_IDS.product, BANKING_SCHEDULER_TASK_IDS.product],
-  [SCHEDULER_TASK_IDS.branch, BANKING_SCHEDULER_TASK_IDS.branch],
-  [SCHEDULER_TASK_IDS.dwd, BANKING_SCHEDULER_TASK_IDS.dwd],
-  [SCHEDULER_TASK_IDS.dws, BANKING_SCHEDULER_TASK_IDS.dws],
-  [SCHEDULER_TASK_IDS.ads, BANKING_SCHEDULER_TASK_IDS.ads],
-] as const
-
 function getTask(
   tasks: readonly SchedulerTaskDefinition[],
   taskId: string,
 ): SchedulerTaskDefinition {
-  const pair = SCHEDULER_TASK_ID_PAIRS.find(([left, right]) => taskId === left || taskId === right)
-  const task = tasks.find(
-    (candidate) =>
-      candidate.taskId === taskId || (pair?.some((id) => id === candidate.taskId) ?? false),
-  )
+  const task = tasks.find((candidate) => candidate.taskId === taskId)
   if (!task) {
     throw new Error(`血缘绑定找不到 Scheduler task: ${taskId}`)
   }
@@ -384,7 +365,7 @@ function createTaskFailureEvent(
   scheduler: SchedulerVisualization,
   baseNodes: readonly LineageNode[],
 ): LineageInvestigationEventDefinition {
-  const failedTask = getTask(scheduler.tasks, SCHEDULER_TASK_IDS.dwd)
+  const failedTask = getTask(scheduler.tasks, BANKING_SCHEDULER_TASK_IDS.dwd)
   const taskId = failedTask.taskId
   const timeline = buildSchedulerTimeline(
     createInitialSchedulerRun(scheduler.tasks, {
@@ -438,7 +419,7 @@ function validateBindingInput(input: LineageProductionBindingInput): void {
     getTask(input.scheduler.tasks, taskId)
   }
 
-  const adsTask = getTask(input.scheduler.tasks, SCHEDULER_TASK_IDS.ads)
+  const adsTask = getTask(input.scheduler.tasks, BANKING_SCHEDULER_TASK_IDS.ads)
   const transformationContract = input.transformation.taskContract
   const schedulerContract = input.scheduler.taskContract
   const reusesTransformationContract =
