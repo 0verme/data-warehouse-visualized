@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { Lesson } from '../../data/course'
 import { getChapters, getChapterTitle, getLessonBySlug } from '../../data/course'
 import type { LessonContent } from '../../content/types'
@@ -22,6 +22,7 @@ import { getRoute } from '../../utils/routes'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getLocaleSnapshot, subscribeToLocaleChanges } from '../../utils/locale'
+import { ensureLessonStyles } from '../../utils/lesson-styles'
 import { GlobalHeaderActions } from '../GlobalHeaderActions'
 import { CourseSidebar, type SidebarRevealRequest } from './CourseSidebar'
 import { LessonViewport } from './LessonViewport'
@@ -43,6 +44,8 @@ interface LearnShellProps {
 }
 
 type NavigationKind = 'initial' | 'navigate' | 'traverse'
+
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
 interface NavigationEvent {
   id: number
@@ -203,6 +206,15 @@ export function LearnShell({
     initialContent,
   )
   const activeContent = contentState.status === 'ready' ? contentState.content : null
+
+  // `/learn/` can restore a progress lesson that is not the SSR lesson, and
+  // ClientRouter replaces the head on every navigation. Link the active
+  // lesson's stylesheet whenever the route/content changes and it is missing.
+  useIsomorphicLayoutEffect(() => {
+    if (activeContent) {
+      ensureLessonStyles(activeContent)
+    }
+  }, [activeContent, navigationEvent.id])
   const adjacentLessons = getAdjacentLessons(lessons, activeLesson.slug)
   const completedCount = getCompletedCount(progress)
   const isActiveLessonCompleted = progress.completedLessonIds.includes(activeLesson.id)

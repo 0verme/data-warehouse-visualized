@@ -32,7 +32,6 @@ import {
   getOutputStateLabel,
   transitionSchedulerRun,
 } from '../../utils/scheduler'
-import '../../styles/lessons/scheduler.css'
 
 interface SchedulerRunSimulatorProps {
   visualization: SchedulerVisualization

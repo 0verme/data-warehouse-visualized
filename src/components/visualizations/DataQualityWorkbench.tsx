@@ -22,7 +22,6 @@ import {
   QUALITY_STATUS_LABELS,
   evaluateDataQuality,
 } from '../../utils/data-quality'
-import '../../styles/lessons/data-quality.css'
 
 interface DataQualityWorkbenchProps {
   visualization: DataQualityVisualization

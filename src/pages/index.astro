@@ -8,6 +8,7 @@ import { HERO_METRIC_SQL_EXAMPLE } from '../data/code-examples'
 import { getMessage } from '../i18n/messages'
 import { buildCodeHighlightMap } from '../utils/build-code-highlight'
 import { getChapterDisplayNumber } from '../utils/lesson'
+import homeStylesUrl from '../styles/layouts/home.css?url'
 
 const actualDemoCount = lessons.filter((lesson) => lesson.demo !== 'coming-soon').length
 const codeHighlights = await buildCodeHighlightMap([HERO_METRIC_SQL_EXAMPLE])
@@ -17,6 +18,7 @@ const baseUrl = import.meta.env.BASE_URL
 <BaseLayout
   title="数据仓库图解｜交互实验理解数据工程链路"
   description="面向中文学习者的交互式数据仓库与数据工程教材。通过建模、SQL 加工、调度、质量与血缘实验，看懂一条数据如何变成可信指标。"
+  styleUrls={[homeStylesUrl]}
 >
   <div class="site-shell home-page">
     <header class="site-header">

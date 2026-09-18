@@ -1,14 +1,17 @@
 ---
 import { ClientRouter } from 'astro:transitions'
-import '../styles/global.css'
+import globalStylesUrl from '../styles/global.css?url'
 
 interface Props {
   title: string
   description: string
   canonical?: string
+  /** Page-owned stylesheets (home, learn shell, lesson/visualization styles). */
+  styleUrls?: string[]
 }
 
-const { title, description, canonical } = Astro.props
+const { title, description, canonical, styleUrls = [] } = Astro.props
+const stylesheetUrls = [globalStylesUrl, ...styleUrls]
 const baseUrl = import.meta.env.BASE_URL
 const canonicalPath = Astro.url.pathname.startsWith(baseUrl)
   ? Astro.url.pathname
@@ -63,6 +66,9 @@ const canonicalUrl =
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <title>{title}</title>
+    {stylesheetUrls.map((href) => (
+      <link rel="stylesheet" href={href} />
+    ))}
     <ClientRouter fallback="none" />
   </head>
   <body>

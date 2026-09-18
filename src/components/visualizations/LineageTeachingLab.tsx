@@ -24,7 +24,6 @@ import {
   getTransitiveDownstreamNodes,
   getTransitiveUpstreamNodes,
 } from '../../utils/lineage'
-import '../../styles/lessons/lineage-teaching.css'
 
 interface LineageTeachingLabProps {
   nodes: LineageNode[]

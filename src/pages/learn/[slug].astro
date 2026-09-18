@@ -5,6 +5,7 @@ import type { LessonContent } from '../../content/types'
 import { lessons, type Lesson } from '../../data/course'
 import { buildLessonCodeHighlightMap } from '../../utils/build-code-highlight'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
+import { getLessonStyleUrls, learnSharedStyleUrls } from '../../utils/lesson-styles'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 
 interface Props {
@@ -28,9 +29,10 @@ export async function getStaticPaths() {
 
 const { lesson, content, codeHighlights } = Astro.props
 const pageTitle = `${lesson.title}｜数据仓库图解`
+const styleUrls = [...learnSharedStyleUrls, ...getLessonStyleUrls(content)]
 ---
 
-<BaseLayout title={pageTitle} description={lesson.summary}>
+<BaseLayout title={pageTitle} description={lesson.summary} styleUrls={styleUrls}>
   <LearnShell
     client:load
     transition:persist="learn-shell"
