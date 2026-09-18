@@ -20,9 +20,9 @@ describe('首页 Header 操作区', () => {
   it('复用学习页的语言与主题图标控件', () => {
     const markup = renderToStaticMarkup(<GlobalHeaderActions />)
 
-    expect(markup).toContain('class="locale-switcher__trigger"')
+    expect(markup).toContain('class="topbar-control locale-switcher__trigger"')
     expect(markup).toContain('<svg class="locale-switcher__globe"')
-    expect(markup).toContain('class="theme-toggle"')
+    expect(markup).toContain('class="topbar-control theme-toggle"')
     expect(markup).not.toContain('locale-switcher__label')
   })
 

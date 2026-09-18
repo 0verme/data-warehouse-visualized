@@ -251,8 +251,24 @@ export function LearnShell({
       data-initial-lesson-id={initialLesson.id}
     >
       <header className="learn-topbar">
+        <a
+          className="brand brand--learn"
+          href={getRoute('/')}
+          aria-label={getMessage('homeAriaLabel', activeLocale)}
+        >
+          <span className="brand__mark" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="brand__text">
+            <strong>{getMessage('siteName', activeLocale)}</strong>
+            <small>{getMessage('interactiveTextbook', activeLocale)}</small>
+          </span>
+        </a>
+
         <button
-          className="sidebar-collapse-toggle"
+          className="topbar-control sidebar-collapse-toggle"
           type="button"
           aria-expanded={!isSidebarCollapsed}
           aria-controls="course-sidebar"
@@ -293,21 +309,29 @@ export function LearnShell({
           </svg>
         </button>
 
-        <a
-          className="brand brand--learn"
-          href={getRoute('/')}
-          aria-label={getMessage('homeAriaLabel', activeLocale)}
+        <button
+          className="topbar-control sidebar-toggle"
+          type="button"
+          aria-expanded={isSidebarOpen}
+          aria-controls="course-sidebar"
+          aria-label={getMessage('courseDirectory', activeLocale)}
+          title={getMessage('courseDirectory', activeLocale)}
+          onClick={() => setIsSidebarOpen((isOpen) => !isOpen)}
         >
-          <span className="brand__mark" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="brand__text">
-            <strong>{getMessage('siteName', activeLocale)}</strong>
-            <small>{getMessage('interactiveTextbook', activeLocale)}</small>
-          </span>
-        </a>
+          <svg
+            className="sidebar-toggle__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
+        </button>
 
         <div className="learn-topbar__progress">
           <div className="learn-topbar__nav">
@@ -329,33 +353,7 @@ export function LearnShell({
           />
         </div>
 
-        <GlobalHeaderActions locale={activeLocale}>
-          <button
-            className="sidebar-toggle"
-            type="button"
-            aria-expanded={isSidebarOpen}
-            aria-controls="course-sidebar"
-            aria-label={getMessage('courseDirectory', activeLocale)}
-            onClick={() => setIsSidebarOpen((isOpen) => !isOpen)}
-          >
-            <svg
-              className="sidebar-toggle__icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span className="sidebar-toggle__label">
-              {getMessage('courseDirectory', activeLocale)}
-            </span>
-          </button>
-        </GlobalHeaderActions>
+        <GlobalHeaderActions locale={activeLocale} />
       </header>
 
       <div className="learn-layout">

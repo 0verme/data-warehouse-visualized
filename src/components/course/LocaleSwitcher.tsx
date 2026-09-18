@@ -45,7 +45,7 @@ export function LocaleSwitcher({ locale, onLocaleChange }: LocaleSwitcherProps) 
   return (
     <div className={`locale-switcher${isOpen ? ' is-open' : ''}`} ref={switcherRef}>
       <button
-        className="locale-switcher__trigger"
+        className="topbar-control locale-switcher__trigger"
         type="button"
         aria-haspopup="menu"
         aria-expanded={isOpen}

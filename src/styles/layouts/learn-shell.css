@@ -41,6 +41,7 @@
   height: var(--learn-topbar-height);
   min-height: var(--learn-topbar-height);
   padding: 0 clamp(14px, 2.5vw, 30px);
+  gap: 10px;
   border-bottom: 1px solid var(--topbar-border);
   background: var(--topbar-bg);
   backdrop-filter: blur(14px);
@@ -53,38 +54,10 @@
 
 .sidebar-collapse-toggle {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: 12px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--ink-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease,
-    transform 150ms ease;
-}
-
-.sidebar-collapse-toggle:hover {
-  background: var(--surface-muted);
-  color: var(--ink);
-  border-color: var(--line-strong, #c5d2e0);
 }
 
 .sidebar-collapse-toggle:active {
   transform: scale(0.96);
-}
-
-.sidebar-collapse-toggle:focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 2px;
 }
 
 .sidebar-collapse-toggle__icon {
@@ -268,27 +241,12 @@
 
 .sidebar-toggle {
   display: none;
-  align-items: center;
-  gap: 7px;
-  min-height: 35px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 650;
 }
 
 .sidebar-toggle__icon {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   flex: 0 0 auto;
-  color: var(--blue);
-}
-
-.sidebar-toggle__label {
-  white-space: nowrap;
 }
 
 .learn-layout {
@@ -903,9 +861,16 @@
   }
 
   .learn-topbar__progress {
-    width: min(420px, calc(100vw - 380px));
-    min-width: 180px;
-    margin: 0;
+    /* Mobile/tablet: the progress fills the middle of the header instead of being
+       absolutely centered, so the left brand + sidebar controls and the right
+       action buttons can never overlap or squeeze it. */
+    position: static;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: 420px;
+    margin: 0 auto;
+    transform: none;
   }
 
   .sidebar-collapse-toggle {
@@ -914,7 +879,6 @@
 
   .sidebar-toggle {
     display: inline-flex;
-    margin-left: 0;
   }
 
   .learn-layout {
@@ -970,8 +934,6 @@
   }
 
   .learn-topbar__progress {
-    width: min(160px, calc(100vw - 256px));
-    min-width: 96px;
     gap: 0;
   }
 }
@@ -990,26 +952,6 @@
 
   .brand--learn .brand__text small {
     display: none;
-  }
-
-  .sidebar-toggle {
-    width: 34px;
-    height: 34px;
-    min-height: 34px;
-  }
-
-  .sidebar-toggle__label {
-    display: none;
-  }
-
-  .sidebar-toggle {
-    margin-left: 0;
-    padding: 0;
-  }
-
-  .sidebar-toggle__icon {
-    width: 16px;
-    height: 16px;
   }
 
   .course-sidebar {
@@ -1174,18 +1116,12 @@
   .brand--learn .brand__text {
     display: none;
   }
-
-  .learn-topbar__progress {
-    width: min(150px, calc(100vw - 266px));
-    min-width: 90px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .progress-indicator__track span,
   .learn-layout,
-  .course-sidebar,
-  .sidebar-collapse-toggle {
+  .course-sidebar {
     transition: none !important;
   }
 }
