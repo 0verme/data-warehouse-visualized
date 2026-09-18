@@ -1,7 +1,11 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { LakehouseArchitectureLab } from '../src/components/visualizations/LakehouseArchitectureLab'
+import {
+  LakehouseArchitectureLab,
+  getFileStatus,
+  LAKEHOUSE_RELATION_LABELS,
+} from '../src/components/visualizations/LakehouseArchitectureLab'
 import {
   lakehouseContent,
   lakehouseReplicationContent,
@@ -209,5 +213,104 @@ describe('湖仓一体的共享基础能力', () => {
       '仍可不同',
     )
     expect(sharedTable.responsibilities).toHaveLength(3)
+  })
+})
+
+describe('Pilot C lakehouse 视觉语法：Zone / Connector / Focus / State / Detail', () => {
+  const lakeFirstMarkup = renderToStaticMarkup(
+    createElement(LakehouseArchitectureLab, { visualization: lakehouseVisualizations.lakeFirst }),
+  )
+  const replicationMarkup = renderToStaticMarkup(
+    createElement(LakehouseArchitectureLab, {
+      visualization: lakehouseVisualizations.replication,
+    }),
+  )
+  const tableLayerMarkup = renderToStaticMarkup(
+    createElement(LakehouseArchitectureLab, {
+      visualization: lakehouseVisualizations.tableLayer,
+    }),
+  )
+  const unityMarkup = renderToStaticMarkup(
+    createElement(LakehouseArchitectureLab, { visualization: lakehouseVisualizations.unity }),
+  )
+
+  it('Connector relation 映射稳定，不做成另一种虚线关系', () => {
+    expect(LAKEHOUSE_RELATION_LABELS).toMatchObject({
+      'data-transform': '数据 / 加工',
+      'sync-copy': '复制 / 同步',
+      'shared-foundation': '共享基础',
+      'version-causality': '版本 / 因果',
+    })
+  })
+
+  it('lake-first：Zone / Node / Decision / Detail 语义齐全且不混用成功色', () => {
+    expect(lakeFirstMarkup).toContain('data-zone="source"')
+    expect(lakeFirstMarkup).toContain('data-zone="lake"')
+    expect(lakeFirstMarkup).toContain('data-node-role="source"')
+    expect(lakeFirstMarkup).toContain('data-node-role="lake"')
+    expect(lakeFirstMarkup).toContain('data-relation="data-transform"')
+    expect(lakeFirstMarkup).toContain('data-detail-role="placement-decision"')
+    expect(lakeFirstMarkup).toContain('data-detail-role="demand-facts"')
+    // 默认 high-frequency-bi 时 transactions 进入 Warehouse 服务层，是决策结果而非 success
+    expect(lakeFirstMarkup).toContain('data-decision-result="lake-and-warehouse"')
+    // 图例让连接关系不依赖颜色
+    expect(lakeFirstMarkup).toContain('lakehouse-legend')
+  })
+
+  it('replication：sync-copy 关系与 pending 初始状态稳定，不把“副本就绪”当成成功', () => {
+    expect(replicationMarkup).toContain('data-zone="source"')
+    expect(replicationMarkup).toContain('data-zone="lake"')
+    expect(replicationMarkup).toContain('data-zone="warehouse"')
+    expect(replicationMarkup).toContain('data-node-role="transform"')
+    expect(replicationMarkup).toContain('data-relation="data-transform"')
+    expect(replicationMarkup).toContain('data-relation="sync-copy"')
+    expect(replicationMarkup).toContain('data-state="pending"')
+    expect(replicationMarkup).toContain('等待同步')
+    expect(replicationMarkup).toContain('还没有数据')
+    expect(replicationMarkup).toContain('data-detail-role="replica-summary"')
+    expect(replicationMarkup).toContain('data-detail-role="responsibility"')
+    // 初始渲染没有成功色表达“副本”，state 由文字承担
+    expect(replicationMarkup).not.toContain('已同步')
+  })
+
+  it('table-layer：version causality、文件状态、快照时间轴语义齐全', () => {
+    expect(tableLayerMarkup).toContain('data-relation="version-causality"')
+    expect(tableLayerMarkup).toContain('data-detail-role="file-batch"')
+    expect(tableLayerMarkup).toContain('data-detail-role="snapshot-timeline"')
+    expect(tableLayerMarkup).toContain('data-detail-role="snapshot-table"')
+    // 初始 idle：所有文件 pending
+    expect(tableLayerMarkup).toContain('data-state="pending"')
+    // 初始读取最新版本
+    expect(tableLayerMarkup).toContain('data-state="current"')
+    // 默认选中 v1 是 Focus，不是状态
+    expect(tableLayerMarkup).toContain('data-focus="primary"')
+  })
+
+  it('unity：heterogeneous 与 shared-table 的 zone / relation / focus 互不误标', () => {
+    expect(unityMarkup).toContain('data-zone="warehouse"')
+    expect(unityMarkup).toContain('data-node-role="transform"')
+    expect(unityMarkup).toContain('data-relation="sync-copy"')
+    expect(unityMarkup).toContain('data-focus="primary"')
+    expect(unityMarkup).toContain('data-detail-role="comparison"')
+    expect(unityMarkup).toContain('data-detail-role="responsibility"')
+    // 共享基础能力区在异构模式下不出现（切换后由 state 呈现）
+    expect(unityMarkup).not.toContain('data-zone="shared-storage"')
+    expect(unityMarkup).not.toContain('data-zone="compute"')
+  })
+
+  it('selected Focus 不等于业务 State：选中按钮没有 success / danger 语义数据', () => {
+    const selectedFocusPattern = /data-focus="primary"[^>]*>/g
+    expect(lakeFirstMarkup.match(selectedFocusPattern)).toBeTruthy()
+    expect(tableLayerMarkup.match(selectedFocusPattern)).toBeTruthy()
+    // 选中只是 aria-pressed + data-focus，不携带 data-state 或推荐分
+    expect(lakeFirstMarkup).not.toContain('得分')
+    expect(unityMarkup).not.toContain('得分')
+  })
+
+  it('getFileStatus 按批次状态映射 failed / held / committed / pending', () => {
+    expect(getFileStatus('failed', 6, 6)).toBe('failed')
+    expect(getFileStatus('failed', 3, 6)).toBe('held')
+    expect(getFileStatus('committed', 4, 6)).toBe('committed')
+    expect(getFileStatus('idle', 4, 6)).toBe('pending')
   })
 })
