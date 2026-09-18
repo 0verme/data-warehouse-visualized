@@ -154,7 +154,7 @@ function OrderTable({
   return (
     <div className={wrapperClassName}>
       <table className={tableClassName}>
-        <caption>{caption}</caption>
+        <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
             {columns.map((column) => (

@@ -561,15 +561,6 @@
   font-size: 10px;
 }
 
-.scheduler-table-wrap caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .scheduler-table-wrap th,
 .scheduler-table-wrap td {
   padding: 8px 9px;

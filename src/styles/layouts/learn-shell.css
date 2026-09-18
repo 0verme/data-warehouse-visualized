@@ -1,5 +1,13 @@
 /* LearnShell, sidebar, lesson header, and lesson content layout. */
 
+/* Learn documents do not own vertical scrolling: the viewport-sized shell below
+   plus its inner scroll containers do. Scoped to the SSR `learn-page` state so
+   ordinary site pages keep normal document scrolling. */
+html.learn-page,
+html.learn-page body {
+  overflow: hidden;
+}
+
 /* Learning shell */
 .learn-app {
   --learn-sidebar-width: 308px;

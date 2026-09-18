@@ -105,17 +105,6 @@
   min-width: 400px;
 }
 
-.star-schema__table caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 .star-schema__table th,
 .star-schema__table td {
   padding: 9px 10px;
@@ -1863,17 +1852,6 @@
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   line-height: 1.4;
-}
-
-.star-schema__data-table caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .star-schema__data-table th,

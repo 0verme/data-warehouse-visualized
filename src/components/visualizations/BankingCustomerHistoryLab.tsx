@@ -46,7 +46,7 @@ function VersionTable({
   return (
     <div className="banking-lab__table-wrap">
       <table className="banking-lab__table banking-history__version-table">
-        <caption>
+        <caption className="sr-only">
           {showHistoryFields ? 'Customer 拉链表版本' : 'Customer 覆盖更新后的当前行'}
         </caption>
         <thead>

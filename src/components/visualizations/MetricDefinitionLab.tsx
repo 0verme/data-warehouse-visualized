@@ -145,7 +145,7 @@ function OrderParticipationTable({
   return (
     <div className="metric-lab__table-wrap">
       <table className="metric-lab__orders-table">
-        <caption>订单参与计算明细</caption>
+        <caption className="sr-only">订单参与计算明细</caption>
         <thead>
           <tr>
             <th>订单</th>
@@ -225,7 +225,7 @@ function GrainDetail({
       </div>
       <div className="metric-lab__table-wrap metric-lab__table-wrap--grain">
         <table className="metric-lab__detail-table">
-          <caption>订单明细粒度示例</caption>
+          <caption className="sr-only">订单明细粒度示例</caption>
           <thead>
             <tr>
               <th>订单</th>

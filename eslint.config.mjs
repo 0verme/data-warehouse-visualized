@@ -31,4 +31,13 @@ export default tseslint.config(
       ...reactHooks.configs['recommended-latest'].rules,
     },
   },
+  {
+    files: ['tests/e2e/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  },
 )

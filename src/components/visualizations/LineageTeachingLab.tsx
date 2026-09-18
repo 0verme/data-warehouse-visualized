@@ -1108,7 +1108,7 @@ export function LineageTeachingLab({ nodes, edges, teaching }: LineageTeachingLa
       data-lineage-lesson-mode={teaching.mode}
       aria-labelledby={`lineage-teaching-${instanceId}-title`}
     >
-      <h2 className="lineage-teaching-sr-only" id={`lineage-teaching-${instanceId}-title`}>
+      <h2 className="sr-only" id={`lineage-teaching-${instanceId}-title`}>
         数据血缘教学实验
       </h2>
       {teaching.mode === 'overview' && (

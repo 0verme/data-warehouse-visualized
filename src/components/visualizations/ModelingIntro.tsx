@@ -39,7 +39,7 @@ function RawOrderTable({
   return (
     <div className="modeling-lab__table-wrap">
       <table className="modeling-lab__table">
-        <caption>原始订单数据：订单、用户、商品和店铺字段暂时混在一起</caption>
+        <caption className="sr-only">原始订单数据：订单、用户、商品和店铺字段暂时混在一起</caption>
         <thead>
           <tr>
             {visualization.rawTable.columns.map((column) => {
