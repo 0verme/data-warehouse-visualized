@@ -276,6 +276,22 @@ describe('第 07 章数据血缘', () => {
     expect(getLineageTableNodeId('dws_deposit_balance_daily')).toBe(BANKING_LINEAGE_NODE_IDS.dws)
   })
 
+  it('删除的 Legacy 表 / task 映射不再回退到任何节点', () => {
+    expect(() => getLineageTaskNodeId('task-load-order')).toThrow(
+      /血缘映射没有为 Scheduler task 配置节点/,
+    )
+    expect(() => getLineageTableNodeId('dwd_order_item')).toThrow(
+      /血缘映射没有为质量目标表配置节点/,
+    )
+    expect(() => getLineageTableNodeId('ads_yesterday_sales')).toThrow(
+      /血缘映射没有为质量目标表配置节点/,
+    )
+    // 未知 Banking 之外的表名同样保持显式报错，而不是回退到错误节点。
+    expect(() => getLineageTableNodeId('ods_behavior_event')).toThrow(
+      /血缘映射没有为质量目标表配置节点/,
+    )
+  })
+
   it('把第 06 章 QualityEvent 适配为近到远调查入口', () => {
     expect(depositBalanceQualityEvent).toMatchObject({
       ruleId: QUALITY_RULE_IDS.reconciliation,
