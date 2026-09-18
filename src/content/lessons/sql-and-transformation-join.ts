@@ -55,6 +55,14 @@ export const sqlTransformationJoinContent: LessonContent = {
       visualization,
     },
     {
+      kind: 'visualization',
+      eyebrow: '分步实验 · 为什么行数会相乘',
+      title: '把 2 × 2 一步步走完',
+      description:
+        '用 6 步逐行匹配：先看双方都不唯一的 key，再看每一行怎样被复制，最后回到“目标结果 Grain”找正确做法。',
+      visualization: { kind: 'join-fanout' },
+    },
+    {
       kind: 'narrative',
       title: '三个判断比 JOIN 关键字更重要',
       paragraphs: [

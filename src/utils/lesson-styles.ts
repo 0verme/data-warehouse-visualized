@@ -9,6 +9,7 @@ import metricStylesUrl from '../styles/lessons/metric.css?url'
 import scdStylesUrl from '../styles/lessons/scd.css?url'
 import dataModelingStylesUrl from '../styles/lessons/data-modeling.css?url'
 import sqlWorkbenchStylesUrl from '../styles/lessons/sql-workbench.css?url'
+import joinFanoutStylesUrl from '../styles/lessons/join-fanout.css?url'
 import schedulerStylesUrl from '../styles/lessons/scheduler.css?url'
 import dataQualityStylesUrl from '../styles/lessons/data-quality.css?url'
 import lineageStylesUrl from '../styles/lessons/lineage.css?url'
@@ -36,6 +37,7 @@ const lessonStyleUrls = {
   'scd.css': scdStylesUrl,
   'data-modeling.css': dataModelingStylesUrl,
   'sql-workbench.css': sqlWorkbenchStylesUrl,
+  'join-fanout.css': joinFanoutStylesUrl,
   'scheduler.css': schedulerStylesUrl,
   'data-quality.css': dataQualityStylesUrl,
   'lineage.css': lineageStylesUrl,
@@ -91,6 +93,7 @@ export const visualizationStyleSheets: Record<
   'banking-metric-derivations': ['banking-metrics.css'],
   lakehouse: ['lakehouse.css'],
   'sql-transformation': ['sql-workbench.css'],
+  'join-fanout': ['join-fanout.css'],
   governance: ['governance.css'],
   'performance-lab': ['performance.css'],
   scheduler: ['scheduler.css'],

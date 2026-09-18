@@ -52,6 +52,12 @@ const LazySqlTransformationWorkbench = lazy(() =>
   })),
 )
 
+const LazyJoinFanoutSimulator = lazy(() =>
+  import('../visualizations/JoinFanoutSimulator').then(({ JoinFanoutSimulator }) => ({
+    default: JoinFanoutSimulator,
+  })),
+)
+
 const LazyDataQualityWorkbench = lazy(() =>
   import('../visualizations/DataQualityWorkbench').then(({ DataQualityWorkbench }) => ({
     default: DataQualityWorkbench,
@@ -146,6 +152,7 @@ type LazyVisualizationKind =
   | 'lineage'
   | 'lakehouse'
   | 'sql-transformation'
+  | 'join-fanout'
   | 'data-quality'
   | 'governance'
   | 'performance-lab'
@@ -374,6 +381,12 @@ function VisualizationBody({
             visualization={visualization}
             codeHighlights={codeHighlights}
           />
+        </VisualizationLoadBoundary>
+      )
+    case 'join-fanout':
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="join-fanout">
+          <LazyJoinFanoutSimulator />
         </VisualizationLoadBoundary>
       )
     case 'governance':

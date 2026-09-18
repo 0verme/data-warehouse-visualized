@@ -1,0 +1,369 @@
+/* Interactive Visualization 2.0 · Phase 1 JOIN Golden Sample.
+   Only existing diagram / semantic tokens are used; see Issue #119 and
+   docs/DIAGRAM_VISUAL_GRAMMAR.md (§2.4, §5.4, §5.5, §7, §9). */
+
+.join-fanout {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: var(--ink, #152238);
+}
+
+.join-fanout__toolbar-main {
+  min-width: 0;
+}
+
+.join-fanout__toolbar .visualization-toolbar__label {
+  display: inline-block;
+  margin-bottom: 3px;
+}
+
+.join-fanout__toolbar p strong {
+  color: var(--ink);
+}
+
+.join-fanout__progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--progress-track);
+}
+
+.join-fanout__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--diagram-accent);
+  transition: width var(--motion-standard) ease;
+}
+
+.join-fanout__equation {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.join-fanout__equation > div {
+  display: grid;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.join-fanout__equation > div.is-result {
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+}
+
+.join-fanout__equation small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.join-fanout__equation strong {
+  color: var(--text-primary);
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.join-fanout__equation span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.join-fanout__equation > b {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.join-fanout__tables {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.join-fanout__table-scroll {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.join-fanout__table {
+  width: 100%;
+  min-width: 300px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-control);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--diagram-surface);
+  font-size: 12px;
+}
+
+.join-fanout__table caption {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--diagram-border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: left;
+}
+
+.join-fanout__table caption strong {
+  color: var(--text-primary);
+}
+
+.join-fanout__table thead th {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+
+.join-fanout__table thead th small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.join-fanout__table tbody th,
+.join-fanout__table tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.join-fanout__table tbody tr:last-child th,
+.join-fanout__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.join-fanout__table tbody tr[data-state='waiting'] {
+  color: var(--text-muted);
+}
+
+.join-fanout__table tbody tr[data-state='matched'] {
+  background: var(--surface-2);
+}
+
+.join-fanout__table tbody tr[data-state='active'] {
+  background: var(--diagram-accent-soft);
+}
+
+.join-fanout__table tbody tr[data-focus='primary'] {
+  background: var(--diagram-accent-soft);
+  box-shadow: inset 3px 0 0 var(--diagram-accent);
+}
+
+.join-fanout__key {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 5px;
+  border: 1px solid var(--diagram-border);
+  border-radius: 4px;
+  background: var(--diagram-accent-soft);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.join-fanout__tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.join-fanout__tag {
+  display: inline-flex;
+  min-width: 22px;
+  justify-content: center;
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.join-fanout__row-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.join-fanout__table tbody tr[data-focus='primary'] .join-fanout__row-status {
+  border-color: var(--diagram-accent);
+  background: var(--diagram-surface);
+  color: var(--info-text);
+  font-weight: 850;
+}
+
+.join-fanout__result {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--diagram-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.join-fanout__result[data-tone='warning'] {
+  border-color: var(--warning-border);
+  border-left-color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+.join-fanout__result[data-tone='risk'] {
+  border-color: var(--danger-border);
+  border-left-color: var(--danger-text);
+  background: var(--danger-bg);
+}
+
+.join-fanout__result[data-tone='ok'] {
+  border-color: var(--success-border);
+  border-left-color: var(--success-text);
+  background: var(--success-bg);
+}
+
+.join-fanout__result-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.join-fanout__result-heading > div {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.join-fanout__result-heading span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.join-fanout__result-heading strong {
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.join-fanout__result-heading p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.join-fanout__result[data-tone='risk'] .join-fanout__result-heading p {
+  color: var(--danger-text);
+}
+
+.join-fanout__result[data-tone='ok'] .join-fanout__result-heading p {
+  color: var(--success-text);
+}
+
+.join-fanout__empty {
+  margin: 0;
+  padding: 12px 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.join-fanout__table--result {
+  min-width: 360px;
+}
+
+.join-fanout__table--result tbody tr[data-state='new'] {
+  background: var(--diagram-accent-soft);
+}
+
+.join-fanout__table--result tbody tr[data-focus='primary'] .join-fanout__row-status {
+  border-color: var(--diagram-accent);
+  background: var(--diagram-surface);
+  color: var(--info-text);
+}
+
+.join-fanout .button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@container visualization (max-width: 660px) {
+  .join-fanout__tables {
+    grid-template-columns: 1fr;
+  }
+
+  .join-fanout__result {
+    padding: 12px;
+  }
+}
+
+@container visualization (max-width: 480px) {
+  .join-fanout {
+    gap: 13px;
+  }
+
+  .join-fanout__equation {
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .join-fanout__equation > div {
+    padding: 6px 7px;
+  }
+
+  .join-fanout__equation strong {
+    font-size: 22px;
+  }
+
+  .join-fanout__table {
+    font-size: 11px;
+  }
+
+  .join-fanout__table thead th,
+  .join-fanout__table tbody th,
+  .join-fanout__table tbody td {
+    padding: 7px 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .join-fanout__progress > span {
+    transition: none;
+  }
+}
