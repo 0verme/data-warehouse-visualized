@@ -745,6 +745,7 @@ html.learn-page body {
 
 .lesson-opening__card strong {
   margin: 5px 0 2px;
+  overflow-wrap: anywhere;
   color: var(--navy);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 20px;

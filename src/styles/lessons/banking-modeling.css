@@ -627,6 +627,7 @@
 
 .loan-grain__error-heading {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: flex-start;
   justify-content: space-between;
@@ -2936,6 +2937,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  /* 错误做法 / 修复做法 是 before-after 对照：容器不够宽时纵向堆叠。 */
+  .loan-grain__error-models--fixed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .banking-star__field-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2984,6 +2990,7 @@
 @container visualization (max-width: 480px) {
   .loan-process__measures,
   .loan-grain__answer-grid,
+  .loan-grain__options,
   .banking-star__field-board,
   .banking-facts__definition-grid,
   .banking-facts__question-grid,

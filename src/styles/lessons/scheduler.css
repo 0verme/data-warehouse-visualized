@@ -1002,12 +1002,10 @@
 }
 
 .scheduler-focused-evidence strong {
-  overflow: hidden;
+  overflow-wrap: break-word;
   color: var(--navy, #173b68);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .scheduler-time-semantics__timeline {
@@ -1130,6 +1128,11 @@
   color: var(--teal, #239181);
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 14px;
+  white-space: nowrap;
+}
+
+/* 金额与单位是一个语义单元：可以换行，但不允许「元」孤行。 */
+.scheduler-result-summary__amount {
   white-space: nowrap;
 }
 
@@ -1510,20 +1513,28 @@
     min-width: 0;
   }
 
+  /* <select> 的 min-content 由最宽 option 决定，会撑破窄容器。 */
+  .scheduler-rerun-lesson__date > label > select {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .scheduler-toolbar__buttons .button {
     flex: 1 1 45%;
   }
 
+  /* 重跑模式 / 输出对照 都是 A/B 语义：容器不够宽时改单列，不硬拆双栏。 */
   .scheduler-run-facts,
-  .scheduler-rerun__plan,
   .scheduler-choice-group,
   .scheduler-output-comparison__grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .scheduler-rerun__plan > div:last-child,
-  .scheduler-output-comparison__grid,
-  .scheduler-choice-group {
+  .scheduler-rerun__plan {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scheduler-rerun__plan > div:last-child {
     grid-column: 1 / -1;
   }
 

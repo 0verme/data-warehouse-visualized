@@ -952,6 +952,15 @@
   gap: 14px;
 }
 
+/*
+ * The right column holds a horizontally scrollable table wrapper. `1fr` is
+ * `minmax(auto, 1fr)`, so without an explicit 0 minimum the table's intrinsic
+ * width (≈552px) wins and pushes the whole visualization past its container.
+ */
+.performance-state__update-grid > * {
+  min-width: 0;
+}
+
 .performance-state__subheading {
   display: block;
   margin-bottom: 8px;
@@ -1386,6 +1395,12 @@
   }
 }
 
+@container visualization (max-width: 680px) {
+  .performance-state__update-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 850px) {
   .performance-metric-grid,
   .performance-state__grain-grid {
@@ -1406,7 +1421,6 @@
   .performance-evidence-heading,
   .performance-diagnosis__case,
   .performance-skew__description,
-  .performance-state__update-grid,
   .performance-choice-card-grid {
     grid-template-columns: 1fr;
   }
