@@ -5,10 +5,14 @@ import type {
   BankingCustomerVersion,
 } from '../../types'
 import {
+  addCustomerDays,
   applyCustomerType1Update,
   applyCustomerType2Update,
+  diffCustomerDays,
+  getCustomerHistoryCursorView,
   getCustomerVersionAt,
 } from '../../utils/customer-history'
+import type { CustomerHistoryCursorView } from '../../utils/customer-history'
 
 interface BankingCustomerHistoryLabProps {
   visualization: BankingCustomerHistoryVisualization
@@ -16,22 +20,15 @@ interface BankingCustomerHistoryLabProps {
 
 type HistoryMode = 'type1' | 'type2'
 
-function getVersionForPoint(
-  point: BankingCustomerTimelinePoint | undefined,
-  mode: HistoryMode,
-  isUpdated: boolean,
-  type1Version: BankingCustomerVersion,
-  type2Versions: readonly BankingCustomerVersion[],
-): BankingCustomerVersion | undefined {
-  if (!point) {
-    return undefined
-  }
+function getDefaultCursorIndex(visualization: BankingCustomerHistoryVisualization): number {
+  const loanNotePoint = visualization.timeline.find((point) => point.kind === 'loan-note')
+  const anchorDate = loanNotePoint?.date ?? visualization.loanNote.disbursedDate
 
-  if (mode === 'type2' && isUpdated) {
-    return getCustomerVersionAt(type2Versions, point.date)
-  }
+  return Math.max(0, diffCustomerDays(visualization.initialVersion.effectiveFrom, anchorDate))
+}
 
-  return type1Version
+function formatRatio(ratio: number): string {
+  return `${(ratio * 100).toFixed(4)}%`
 }
 
 function VersionTable({
@@ -224,12 +221,23 @@ function VersionControls({
   )
 }
 
-function HistoryFeedback({ mode, isUpdated }: { mode: HistoryMode; isUpdated: boolean }) {
+function HistoryFeedback({
+  mode,
+  isUpdated,
+  view,
+}: {
+  mode: HistoryMode
+  isUpdated: boolean
+  view: CustomerHistoryCursorView
+}) {
   if (!isUpdated) {
     return (
       <div className="banking-history__feedback">
         <strong>先写入一次属性变化</strong>
-        <span>更新 Customer 后，把时间拨到 2025-10-10，查看历史 LoanNote 命中的客户状态。</span>
+        <span>
+          更新 Customer 后，把业务日期游标停在 2025-10-10，查看历史 LoanNote 命中的客户状态； 再移到{' '}
+          {view.boundaryDayBefore} 和 {view.boundaryDate} 观察版本边界。
+        </span>
       </div>
     )
   }
@@ -239,7 +247,8 @@ function HistoryFeedback({ mode, isUpdated }: { mode: HistoryMode; isUpdated: bo
       <div className="banking-history__feedback banking-history__feedback--wrong" role="alert">
         <strong>覆盖更新丢失了历史语义</strong>
         <span>
-          2025-10-10 的 N001 当时属于普通客户、杭州支行，但当前唯一一行已经显示为 VIP、上海支行。
+          2025-10-10 的 N001 当时属于普通客户、杭州支行，但覆盖更新后整段时间都返回 VIP、上海支行——
+          把游标移到 {view.boundaryDayBefore} 和 {view.boundaryDate}，命中结果不会变化。
         </span>
       </div>
     )
@@ -248,124 +257,331 @@ function HistoryFeedback({ mode, isUpdated }: { mode: HistoryMode; isUpdated: bo
   return (
     <div className="banking-history__feedback banking-history__feedback--correct" role="status">
       <strong>拉链表保留了历史版本</strong>
-      <span>同一个 customer_id 保留多行版本，查询时间点时可以还原 N001 当时的客户等级和机构。</span>
+      <span>
+        同一个 customer_id 保留多行版本。把游标停在 {view.boundaryDayBefore} 命中 customer_sk{' '}
+        {view.bars[0]?.version.customerSk}，移到 {view.boundaryDate} 就切换为 customer_sk{' '}
+        {view.bars[1]?.version.customerSk ?? view.bars[0]?.version.customerSk}。
+      </span>
     </div>
   )
 }
 
-function TimeMachine({
-  points,
-  selectedIndex,
-  selectedPoint,
-  onSelect,
+function VersionIntervalRail({
+  view,
+  mode,
 }: {
-  points: readonly BankingCustomerTimelinePoint[]
-  selectedIndex: number
-  selectedPoint: BankingCustomerTimelinePoint | undefined
-  onSelect: (index: number) => void
+  view: CustomerHistoryCursorView
+  mode: HistoryMode
 }) {
-  if (!selectedPoint) {
-    return null
-  }
+  const isTypeTwo = mode === 'type2'
+  const boundaryRatio = diffCustomerDays(view.windowStart, view.boundaryDate) / view.totalDays
+  const cursorRatio = diffCustomerDays(view.windowStart, view.cursorDate) / view.totalDays
 
   return (
-    <div className="banking-history__timeline">
-      <div className="banking-history__timeline-heading">
-        <div>
-          <span className="eyebrow">TIME TRAVEL · 时间点查询</span>
-          <h4>把日期拨回去，查看 Customer 当时的属性</h4>
-        </div>
-        <div className="banking-history__readout" aria-live="polite">
-          <span>当前日期</span>
-          <strong>{selectedPoint.date}</strong>
-          <small>{selectedPoint.detail}</small>
+    <div className="banking-history__intervals">
+      <div className="banking-history__interval-heading">
+        <span className="eyebrow">VERSION INTERVALS · 版本有效区间</span>
+        <h4>每个版本都是半开区间 [start_date, end_date)</h4>
+        <p>
+          {`start 包含（≤），end 不包含（<）；变更日 ${view.boundaryDate} 只属于新版本。`}
+          {isTypeTwo
+            ? '两段区间不重叠，所以同一个业务日期只会命中一个版本。'
+            : ' Type 1 没有版本边界：只有一行覆盖更新，整段时间都返回同一行当前属性。'}
+        </p>
+      </div>
+      <div className="banking-history__interval-axis">
+        <span className="banking-history__interval-axis-spacer" aria-hidden="true" />
+        <div className="banking-history__interval-axis-track">
+          <span>{view.windowStart}</span>
+          <span>{view.windowEnd}（视图窗口）</span>
         </div>
       </div>
-      <div className="banking-history__point-rail">
-        {points.map((point, index) => (
-          <button
-            className={`banking-history__time-point banking-history__time-point--${point.kind}${index === selectedIndex ? ' is-selected' : ''}`}
-            type="button"
-            aria-current={index === selectedIndex ? 'step' : undefined}
-            aria-label={`${point.label}，${point.date}，${point.detail}`}
-            onClick={() => onSelect(index)}
-            key={`${point.date}-${point.kind}`}
+      <ol className="banking-history__interval-list" aria-label="Customer 版本有效区间">
+        {view.bars.map((bar) => (
+          <li
+            className={`banking-history__interval-row${bar.isActive ? ' is-active' : ''}`}
+            data-state={bar.isActive ? 'active' : 'inactive'}
+            key={bar.version.customerSk}
           >
-            <i aria-hidden="true" />
-            <strong>{point.label}</strong>
-            <small>{point.date}</small>
-          </button>
+            <div className="banking-history__interval-label">
+              <strong>v{bar.ordinal}</strong>
+              <code>customer_sk {bar.version.customerSk}</code>
+              <span className="banking-history__interval-badge">
+                {bar.isActive ? '当前命中' : '未命中'}
+              </span>
+            </div>
+            <div className="banking-history__interval-track">
+              <span
+                className="banking-history__interval-span"
+                data-open-end={bar.isOpenEnd ? 'true' : undefined}
+                style={{
+                  left: formatRatio(bar.startRatio),
+                  width: formatRatio(bar.endRatio - bar.startRatio),
+                }}
+                aria-hidden="true"
+              />
+              <span
+                className="banking-history__interval-boundary"
+                style={{ left: formatRatio(boundaryRatio) }}
+                aria-hidden="true"
+              />
+              <span
+                className="banking-history__interval-cursor"
+                style={{ left: formatRatio(cursorRatio) }}
+                aria-hidden="true"
+              />
+            </div>
+            <p className="banking-history__interval-range">
+              <code>
+                {bar.version.effectiveFrom} ≤ t &lt; {bar.version.effectiveTo}
+              </code>
+              <span>
+                {bar.version.level} · {bar.version.branch}
+                {bar.isOpenEnd ? ' · 开放结束' : ''}
+              </span>
+            </p>
+          </li>
         ))}
+      </ol>
+      <div className="banking-history__interval-legend">
+        <span>
+          <i
+            className="banking-history__interval-legend-mark banking-history__interval-legend-mark--cursor"
+            aria-hidden="true"
+          />
+          业务日期游标 {view.cursorDate}
+        </span>
+        <span>
+          <i
+            className="banking-history__interval-legend-mark banking-history__interval-legend-mark--boundary"
+            aria-hidden="true"
+          />
+          {isTypeTwo ? '版本边界' : '变更发生日'} {view.boundaryDate}
+        </span>
       </div>
-      <label className="banking-history__slider">
-        <span>拖动时间滑块</span>
-        <input
-          type="range"
-          min="0"
-          max={Math.max(points.length - 1, 0)}
-          step="1"
-          value={selectedIndex}
-          aria-label="拖动时间滑块查看客户历史属性"
-          aria-valuetext={`${selectedPoint.date}，${selectedPoint.detail}`}
-          onChange={(event) => onSelect(Number(event.target.value))}
-        />
-      </label>
     </div>
+  )
+}
+
+function BoundaryZoom({
+  view,
+  versions,
+  mode,
+}: {
+  view: CustomerHistoryCursorView
+  versions: readonly BankingCustomerVersion[]
+  mode: HistoryMode
+}) {
+  const dates = [
+    addCustomerDays(view.boundaryDate, -2),
+    view.boundaryDayBefore,
+    view.boundaryDate,
+    addCustomerDays(view.boundaryDate, 1),
+  ]
+
+  return (
+    <div className="banking-history__boundary-zoom">
+      <div className="banking-history__boundary-zoom-heading">
+        <span className="eyebrow">BOUNDARY ZOOM · 边界放大</span>
+        <p>
+          {mode === 'type2'
+            ? `${view.boundaryDayBefore} 仍命中旧版本，${view.boundaryDate} 起命中新版本——因为 end_date 不包含变更日。`
+            : `Type 1 没有版本边界：这 4 天都返回同一行当前属性。`}
+        </p>
+      </div>
+      <ol className="banking-history__boundary-days">
+        {dates.map((date) => {
+          const hit = getCustomerVersionAt(versions, date)
+          const ordinal = hit
+            ? versions.findIndex((item) => item.customerSk === hit.customerSk) + 1
+            : 0
+          const isCursor = date === view.cursorDate
+
+          return (
+            <li
+              className={`banking-history__boundary-day${isCursor ? ' is-cursor' : ''}`}
+              data-state={isCursor ? 'cursor' : 'idle'}
+              key={date}
+            >
+              <span>{date}</span>
+              <strong>{hit ? `v${ordinal} · customer_sk ${hit.customerSk}` : '未命中'}</strong>
+              <small>{hit ? `${hit.level} · ${hit.branch}` : '—'}</small>
+              <em className="banking-history__boundary-day-flag">{isCursor ? '游标在此' : ''}</em>
+            </li>
+          )
+        })}
+      </ol>
+    </div>
+  )
+}
+
+function DateCursorControls({
+  view,
+  points,
+  onSelectIndex,
+  onSelectDate,
+}: {
+  view: CustomerHistoryCursorView
+  points: readonly BankingCustomerTimelinePoint[]
+  onSelectIndex: (index: number) => void
+  onSelectDate: (date: string) => void
+}) {
+  const cursorIndex = diffCustomerDays(view.windowStart, view.cursorDate)
+
+  return (
+    <>
+      <div className="banking-history__cursor-controls">
+        <label className="banking-history__slider">
+          <span>业务日期游标（日粒度）</span>
+          <input
+            type="range"
+            min="0"
+            max={view.totalDays}
+            step="1"
+            value={cursorIndex}
+            aria-label="业务日期游标"
+            aria-valuetext={
+              view.hit
+                ? `${view.cursorDate}，命中 customer_sk ${view.hit.customerSk}，${view.hit.level}，${view.hit.branch}`
+                : `${view.cursorDate}，没有命中任何版本`
+            }
+            onChange={(event) => onSelectIndex(Number(event.target.value))}
+          />
+        </label>
+        <div
+          className="banking-history__cursor-steps"
+          role="group"
+          aria-label="按天移动业务日期游标"
+        >
+          <button
+            className="button button--quiet button--small"
+            type="button"
+            disabled={view.cursorDate === view.windowStart}
+            onClick={() => onSelectDate(addCustomerDays(view.cursorDate, -1))}
+          >
+            前一天
+          </button>
+          <button
+            className="button button--quiet button--small"
+            type="button"
+            disabled={view.cursorDate === view.windowEnd}
+            onClick={() => onSelectDate(addCustomerDays(view.cursorDate, 1))}
+          >
+            后一天
+          </button>
+        </div>
+      </div>
+      <div className="banking-history__cursor-presets">
+        <div
+          className="banking-history__cursor-preset-group"
+          role="group"
+          aria-label="版本边界对照日期"
+        >
+          <span>边界对照</span>
+          <button
+            className={`banking-history__preset${view.cursorDate === view.boundaryDayBefore ? ' is-selected' : ''}`}
+            type="button"
+            aria-pressed={view.cursorDate === view.boundaryDayBefore}
+            onClick={() => onSelectDate(view.boundaryDayBefore)}
+          >
+            {view.boundaryDayBefore} · 旧版本
+          </button>
+          <button
+            className={`banking-history__preset${view.cursorDate === view.boundaryDate ? ' is-selected' : ''}`}
+            type="button"
+            aria-pressed={view.cursorDate === view.boundaryDate}
+            onClick={() => onSelectDate(view.boundaryDate)}
+          >
+            {view.boundaryDate} · 新版本
+          </button>
+        </div>
+        <div
+          className="banking-history__cursor-preset-group"
+          role="group"
+          aria-label="事件日期快捷跳转"
+        >
+          <span>事件锚点</span>
+          {points.map((point) => {
+            const isSelected = point.date === view.cursorDate
+
+            return (
+              <button
+                className={`banking-history__preset banking-history__preset--${point.kind}${isSelected ? ' is-selected' : ''}`}
+                type="button"
+                aria-pressed={isSelected}
+                title={`${point.detail}（${point.date}）`}
+                onClick={() => onSelectIndex(diffCustomerDays(view.windowStart, point.date))}
+                key={`${point.date}-${point.kind}`}
+              >
+                {point.label} · {point.date}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </>
   )
 }
 
 function HistoryResult({
-  point,
-  version,
+  view,
   loanNote,
   mode,
 }: {
-  point: BankingCustomerTimelinePoint
-  version: BankingCustomerVersion | undefined
+  view: CustomerHistoryCursorView
   loanNote: BankingCustomerHistoryVisualization['loanNote']
   mode: HistoryMode
 }) {
-  const isLoanPoint = point.kind === 'loan-note'
+  const version = view.hit
+  const isActualLoanDate = view.cursorDate === loanNote.disbursedDate
 
   return (
-    <div className="banking-history__result" aria-live="polite">
+    <div className="banking-history__result">
       <div className="banking-history__result-heading">
         <div>
           <span className="eyebrow">AS-OF QUERY · 截止时间查询</span>
-          <h4>{point.date} 的 Customer 版本</h4>
+          <h4>业务日期 t = {view.cursorDate} 时的 Customer 版本</h4>
         </div>
         <span className={`banking-history__answer banking-history__answer--${mode}`}>
-          {mode === 'type2' ? '按有效区间命中' : '读取当前唯一行'}
+          {mode === 'type2' ? '按 [start_date, end_date) 命中' : '读取当前唯一行'}
         </span>
       </div>
       <div className="banking-history__version-answer">
         <span>customer_id = {loanNote.customerId}</span>
-        <strong>
-          {version?.level ?? '没有匹配版本'} · {version?.branch ?? '—'}
+        <strong
+          className="banking-history__switch-indicator"
+          key={`${mode}-${version?.customerSk ?? 'none'}`}
+        >
+          {version
+            ? `customer_sk ${version.customerSk} · ${version.level} · ${version.branch}`
+            : '没有匹配版本'}
         </strong>
         <small>
           {version
-            ? `customer_sk ${version.customerSk} · ${version.effectiveFrom} ≤ t < ${version.effectiveTo}`
+            ? `${version.effectiveFrom} ≤ t < ${version.effectiveTo}（${version.isCurrent ? '当前版本' : '历史版本'}）`
             : '请检查有效时间区间'}
         </small>
       </div>
-      {isLoanPoint && (
-        <div className="banking-history__join-result">
-          <article>
-            <span>LoanNote</span>
-            <strong>{loanNote.noteId}</strong>
-            <small>
-              {loanNote.disbursedDate} · ¥{loanNote.disbursedPrincipal.toLocaleString('zh-CN')}
-            </small>
-          </article>
-          <b aria-hidden="true">JOIN</b>
-          <article>
-            <span>Customer</span>
-            <strong>{version?.level ?? '未命中'}</strong>
-            <small>{version?.branch ?? '无历史版本'}</small>
-          </article>
-        </div>
-      )}
+      <div className="banking-history__join-result">
+        <article>
+          <span>LoanNote</span>
+          <strong>{loanNote.noteId}</strong>
+          <small>
+            {loanNote.disbursedDate} · ¥{loanNote.disbursedPrincipal.toLocaleString('zh-CN')}
+          </small>
+        </article>
+        <b aria-hidden="true">JOIN</b>
+        <article data-state={version ? 'hit' : 'miss'}>
+          <span>Customer</span>
+          <strong>{version ? `${version.level} · ${version.branch}` : '未命中'}</strong>
+          <small>{version ? `customer_sk ${version.customerSk}` : '无历史版本'}</small>
+        </article>
+      </div>
+      <p className="banking-history__result-note">
+        {isActualLoanDate
+          ? `N001 的实际放款日就是 ${loanNote.disbursedDate}，这是真实的历史查询。`
+          : `N001 的实际放款日是 ${loanNote.disbursedDate}；这里把业务日期改成 ${view.cursorDate}，用来对照同一个 [start_date, end_date) 会命中哪一版。`}
+      </p>
     </div>
   )
 }
@@ -373,12 +589,7 @@ function HistoryResult({
 export function BankingCustomerHistoryLab({ visualization }: BankingCustomerHistoryLabProps) {
   const [mode, setMode] = useState<HistoryMode>('type1')
   const [isUpdated, setIsUpdated] = useState(false)
-  const [selectedIndex, setSelectedIndex] = useState(
-    Math.max(
-      0,
-      visualization.timeline.findIndex((point) => point.kind === 'loan-note'),
-    ),
-  )
+  const [cursorIndex, setCursorIndex] = useState(() => getDefaultCursorIndex(visualization))
   const type1Version = useMemo(
     () =>
       isUpdated
@@ -390,25 +601,27 @@ export function BankingCustomerHistoryLab({ visualization }: BankingCustomerHist
     () => applyCustomerType2Update([visualization.initialVersion], visualization.change),
     [visualization.change, visualization.initialVersion],
   )
-  const selectedPoint = visualization.timeline[selectedIndex] ?? visualization.timeline[0]
-  const selectedVersion = getVersionForPoint(
-    selectedPoint,
-    mode,
-    isUpdated,
-    type1Version,
-    type2Versions,
+  const activeVersions = useMemo(
+    () => (mode === 'type2' && isUpdated ? type2Versions : [type1Version]),
+    [isUpdated, mode, type1Version, type2Versions],
   )
-  const activeVersions = mode === 'type2' && isUpdated ? type2Versions : [type1Version]
+  const cursorView = useMemo(
+    () => getCustomerHistoryCursorView(visualization, activeVersions, cursorIndex),
+    [activeVersions, cursorIndex, visualization],
+  )
+
+  function selectIndex(index: number) {
+    setCursorIndex(Math.min(Math.max(Math.trunc(index), 0), cursorView.totalDays))
+  }
+
+  function selectDate(date: string) {
+    selectIndex(diffCustomerDays(cursorView.windowStart, date))
+  }
 
   function reset() {
     setMode('type1')
     setIsUpdated(false)
-    setSelectedIndex(
-      Math.max(
-        0,
-        visualization.timeline.findIndex((point) => point.kind === 'loan-note'),
-      ),
-    )
+    setCursorIndex(getDefaultCursorIndex(visualization))
   }
 
   function updateCustomer() {
@@ -463,7 +676,7 @@ export function BankingCustomerHistoryLab({ visualization }: BankingCustomerHist
           <VersionTable
             versions={activeVersions}
             showHistoryFields={mode === 'type2'}
-            selectedVersion={selectedVersion}
+            selectedVersion={cursorView.hit}
           />
         </div>
         <div className="banking-history__key-note">
@@ -480,34 +693,47 @@ export function BankingCustomerHistoryLab({ visualization }: BankingCustomerHist
           </div>
           <p>customer_id 说明“是哪位客户”，customer_sk 说明“这位客户的哪一个历史版本”。</p>
         </div>
-        <HistoryFeedback mode={mode} isUpdated={isUpdated} />
+        <HistoryFeedback mode={mode} isUpdated={isUpdated} view={cursorView} />
       </section>
       <section className="banking-history__query" aria-labelledby="banking-history-query-title">
         <div className="banking-history__section-heading">
           <div>
             <span className="eyebrow">AS-OF · 时间点查询</span>
-            <h3 id="banking-history-query-title">分析 2025 年贷款时，客户当时是什么状态？</h3>
+            <h3 id="banking-history-query-title">
+              同一个 N001，在不同业务日期命中哪个 Customer 版本？
+            </h3>
           </div>
-          <p>点击时间点或拖动滑块，观察同一笔 LoanNote 命中哪个 Customer 版本。</p>
+          <p>
+            把业务日期游标停在任意一天，观察 [start_date, end_date) 如何决定命中的 customer_sk
+            与历史属性。
+          </p>
         </div>
-        {selectedPoint ? (
-          <>
-            <TimeMachine
-              points={visualization.timeline}
-              selectedIndex={selectedIndex}
-              selectedPoint={selectedPoint}
-              onSelect={setSelectedIndex}
-            />
-            <HistoryResult
-              point={selectedPoint}
-              version={selectedVersion}
-              loanNote={visualization.loanNote}
-              mode={mode}
-            />
-          </>
-        ) : (
-          <p className="banking-history__empty">暂无可查询的时间点。</p>
-        )}
+        <div className="banking-history__timeline">
+          <div className="banking-history__timeline-heading">
+            <div>
+              <span className="eyebrow">DATE CURSOR · 日期游标</span>
+              <h4>拖动游标，跨过 {cursorView.boundaryDate} 观察版本切换</h4>
+            </div>
+            <div className="banking-history__readout" role="status" aria-live="polite">
+              <span>业务日期 t</span>
+              <strong>{cursorView.cursorDate}</strong>
+              <small>
+                {cursorView.hit
+                  ? `命中 customer_sk ${cursorView.hit.customerSk} · ${cursorView.hit.level} · ${cursorView.hit.branch}`
+                  : '没有命中任何版本'}
+              </small>
+            </div>
+          </div>
+          <VersionIntervalRail view={cursorView} mode={mode} />
+          <DateCursorControls
+            view={cursorView}
+            points={visualization.timeline}
+            onSelectIndex={selectIndex}
+            onSelectDate={selectDate}
+          />
+          <BoundaryZoom view={cursorView} versions={activeVersions} mode={mode} />
+        </div>
+        <HistoryResult view={cursorView} loanNote={visualization.loanNote} mode={mode} />
       </section>
     </div>
   )

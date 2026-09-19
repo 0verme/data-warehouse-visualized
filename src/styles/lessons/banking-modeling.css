@@ -2005,109 +2005,238 @@
   font-size: 9px;
 }
 
-.banking-history__point-rail {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 7px 0 0;
-}
-
-.banking-history__point-rail::before {
-  position: absolute;
-  top: 17px;
-  right: 8%;
-  left: 8%;
-  height: 1px;
-  background: var(--border-strong);
-  content: '';
-}
-
-.banking-history__time-point {
-  position: relative;
-  z-index: 1;
-  display: flex;
+/* 版本区间时间线：用 [start_date, end_date) 半开区间表达命中语义，而不是装饰性时间轴。 */
+.banking-history__intervals {
   min-width: 0;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 3px;
-  border: 0;
-  background: transparent;
+  margin-bottom: 13px;
+  padding: 13px 14px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.banking-history__interval-heading h4 {
+  margin: 5px 0 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+
+.banking-history__interval-heading > p {
+  margin: 6px 0 0;
   color: var(--text-muted);
-  cursor: pointer;
-  text-align: center;
-}
-
-.banking-history__time-point:hover,
-.banking-history__time-point.is-selected {
-  color: var(--blue-deep);
-}
-
-.banking-history__time-point i {
-  display: block;
-  width: 13px;
-  height: 13px;
-  margin-bottom: 8px;
-  border: 3px solid var(--surface-2);
-  border-radius: 50%;
-  background: var(--border-strong);
-  box-shadow: 0 0 0 1px var(--border-strong);
-  transition:
-    background-color var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease,
-    transform var(--motion-fast) ease;
-}
-
-.banking-history__time-point--loan-note i {
-  background: var(--accent-primary);
-  box-shadow: 0 0 0 1px var(--accent-primary);
-}
-
-.banking-history__time-point--change i {
-  background: var(--accent-warning);
-  box-shadow: 0 0 0 1px var(--accent-warning);
-}
-
-.banking-history__time-point--now i {
-  background: var(--accent-info);
-  box-shadow: 0 0 0 1px var(--accent-info);
-}
-
-.banking-history__time-point.is-selected i {
-  transform: scale(1.3);
-}
-
-.banking-history__time-point--change.is-selected {
-  color: var(--accent-warning);
-}
-
-.banking-history__time-point strong,
-.banking-history__time-point small {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.banking-history__time-point strong {
-  color: inherit;
   font-size: 10px;
+  line-height: 1.65;
 }
 
-.banking-history__time-point small {
-  margin-top: 3px;
+.banking-history__interval-axis {
+  display: grid;
+  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.banking-history__interval-axis-track {
+  display: flex;
+  justify-content: space-between;
+  min-width: 0;
   color: var(--text-muted);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 8px;
 }
 
+.banking-history__interval-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.banking-history__interval-row {
+  display: grid;
+  grid-template-columns: minmax(0, 132px) minmax(0, 1fr);
+  grid-template-areas:
+    'label track'
+    'range range';
+  gap: 3px 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  transition:
+    border-color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease;
+}
+
+.banking-history__interval-row.is-active {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.banking-history__interval-label {
+  display: flex;
+  grid-area: label;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  align-items: center;
+}
+
+.banking-history__interval-label strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.banking-history__interval-label code {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.banking-history__interval-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.banking-history__interval-row.is-active .banking-history__interval-badge {
+  background: var(--success-border);
+  color: var(--navy);
+}
+
+.banking-history__interval-track {
+  position: relative;
+  grid-area: track;
+  min-width: 0;
+  height: 22px;
+}
+
+.banking-history__interval-span {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface-3);
+  transition:
+    border-color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease;
+}
+
+.banking-history__interval-row.is-active .banking-history__interval-span {
+  border-color: var(--accent-primary);
+  background: var(--info-bg);
+}
+
+/* 开放结束（9999-12-31）用虚线 + 省略号表达，不依赖颜色。 */
+.banking-history__interval-span[data-open-end='true'] {
+  border-right-style: dashed;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.banking-history__interval-span[data-open-end='true']::after {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  color: var(--text-muted);
+  content: '…';
+  font-size: 9px;
+  transform: translateY(-50%);
+}
+
+.banking-history__interval-boundary {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 0;
+  border-left: 1px dashed var(--accent-warning);
+  transform: translateX(-0.5px);
+}
+
+.banking-history__interval-cursor {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  z-index: 2;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--surface);
+  transform: translateX(-1px);
+}
+
+.banking-history__interval-range {
+  display: flex;
+  grid-area: range;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 3px 9px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.banking-history__interval-range code {
+  color: var(--text-primary);
+  font-size: 9px;
+}
+
+.banking-history__interval-range span {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.banking-history__interval-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin-top: 11px;
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.banking-history__interval-legend > span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.banking-history__interval-legend-mark {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.banking-history__interval-legend-mark--cursor {
+  background: var(--accent-primary);
+}
+
+.banking-history__interval-legend-mark--boundary {
+  border-left: 1px dashed var(--accent-warning);
+}
+
+/* 日期游标：滑块是主入口，前后一天按钮是窄屏辅助入口。 */
+.banking-history__cursor-controls {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  margin-top: 14px;
+}
+
 .banking-history__slider {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-top: 17px;
-  padding-top: 13px;
-  border-top: 1px solid var(--border-subtle);
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
   color: var(--text-muted);
   font-size: 9px;
 }
@@ -2116,6 +2245,161 @@
   width: 100%;
   accent-color: var(--accent-primary);
   cursor: pointer;
+}
+
+.banking-history__cursor-steps {
+  display: flex;
+  flex: none;
+  gap: 7px;
+}
+
+.banking-history__cursor-presets {
+  display: grid;
+  gap: 7px;
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.banking-history__cursor-preset-group {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.banking-history__cursor-preset-group > span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.banking-history__preset {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 8px;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) ease,
+    background-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.banking-history__preset:hover {
+  border-color: var(--border-strong);
+  color: var(--blue-deep);
+}
+
+.banking-history__preset.is-selected {
+  border-color: var(--accent-primary);
+  background: var(--info-bg);
+  color: var(--blue-deep);
+  font-weight: 750;
+}
+
+.banking-history__preset:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+/* 边界放大：把 2026-03-31 / 2026-04-01 放在可对照的日粒度视图里。 */
+.banking-history__boundary-zoom {
+  min-width: 0;
+  margin-top: 13px;
+  padding: 11px 12px;
+  border: 1px dashed var(--border-emphasis);
+  border-radius: var(--radius-control);
+}
+
+.banking-history__boundary-zoom-heading > p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.banking-history__boundary-days {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.banking-history__boundary-day {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 7px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.banking-history__boundary-day.is-cursor {
+  border-color: var(--accent-primary);
+  background: var(--info-bg);
+}
+
+.banking-history__boundary-day > span {
+  color: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 8px;
+}
+
+.banking-history__boundary-day > strong {
+  margin-top: 5px;
+  color: var(--text-primary);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.banking-history__boundary-day > small {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 8px;
+}
+
+.banking-history__boundary-day-flag {
+  min-height: 12px;
+  margin-top: 4px;
+  color: var(--accent-primary);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.banking-history__result-note {
+  margin: 11px 0 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+/* Motion 只表达「命中版本发生切换」；元素重建时重播一次，静态文本始终完整。 */
+@keyframes banking-history-version-switch {
+  from {
+    box-shadow: inset 0 0 0 2px var(--accent-primary);
+  }
+  to {
+    box-shadow: inset 0 0 0 0 transparent;
+  }
+}
+
+.banking-history__switch-indicator {
+  animation: banking-history-version-switch var(--motion-standard) ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banking-history__switch-indicator {
+    animation: none;
+  }
 }
 
 .banking-history__result {
@@ -2246,16 +2530,6 @@
   color: var(--accent-primary);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
-  text-align: center;
-}
-
-.banking-history__empty {
-  margin: 0;
-  padding: 14px;
-  border: 1px dashed var(--border-emphasis);
-  border-radius: var(--radius-control);
-  color: var(--text-muted);
-  font-size: 11px;
   text-align: center;
 }
 
@@ -2604,18 +2878,6 @@
     padding: 13px;
   }
 
-  .banking-history__point-rail {
-    min-width: 510px;
-  }
-
-  .banking-history__timeline {
-    overflow-x: auto;
-  }
-
-  .banking-history__slider {
-    min-width: 510px;
-  }
-
   .banking-history__answer {
     display: inline-block;
     margin-top: 9px;
@@ -2748,8 +3010,33 @@
     grid-template-columns: 1fr;
   }
 
-  .banking-history__point-rail,
-  .banking-history__slider {
-    min-width: 510px;
+  /* 窄容器：区间条改为标签 / 轨道 / 范围三行堆叠，日粒度游标降级为按钮 + 滑块。 */
+  .banking-history__interval-axis,
+  .banking-history__interval-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .banking-history__interval-row {
+    grid-template-areas:
+      'label'
+      'track'
+      'range';
+  }
+
+  .banking-history__interval-axis-spacer {
+    display: none;
+  }
+
+  .banking-history__cursor-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .banking-history__cursor-steps .button {
+    flex: 1;
+  }
+
+  .banking-history__boundary-days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
