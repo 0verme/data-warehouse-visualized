@@ -374,14 +374,23 @@
   justify-content: space-between;
 }
 
+/*
+ * Rule id + status: the id track may shrink below its content, so a long
+ * identifier wraps instead of forcing the whole rule card wider than its grid
+ * track (which used to overflow the visualization at 320px).
+ */
+.data-quality-rule__topline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
 .data-quality-rule__topline code {
   min-width: 0;
-  overflow: hidden;
+  overflow-wrap: break-word;
   color: var(--rule-color, var(--navy, #173b68));
   font-size: 8px;
   font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .data-quality-rule > strong {
@@ -402,7 +411,8 @@
 
 .data-quality-rule__values {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* expected / observed 并排需要约 168px：装不下时自动落到单列全宽。 */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr));
   gap: 1px;
   margin-top: 4px;
   overflow: hidden;
@@ -431,12 +441,10 @@
 }
 
 .data-quality-rule__values b {
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: var(--navy, #173b68);
   font-family: var(--font-mono, Consolas, monospace);
   font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .data-quality-status {
@@ -563,12 +571,10 @@
 }
 
 .data-quality-evidence__heading strong {
-  overflow: hidden;
+  overflow-wrap: break-word;
   color: var(--warning-text);
   font-family: var(--font-mono, Consolas, monospace);
   font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .data-quality-evidence__heading > span {
@@ -609,6 +615,7 @@
 
 .data-quality-sample__heading {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: baseline;
   justify-content: space-between;
@@ -620,12 +627,11 @@
 }
 
 .data-quality-sample__heading span {
-  overflow: hidden;
+  min-width: 0;
+  overflow-wrap: break-word;
   color: var(--ink-muted, #75839a);
   font-family: var(--font-mono, Consolas, monospace);
   font-size: 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .data-quality-sample dl {

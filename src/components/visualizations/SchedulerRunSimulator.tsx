@@ -896,7 +896,9 @@ function DepositBalanceResultSummary({ visualization }: { visualization: Schedul
       </div>
       <b>
         {visualization.outputPreview.beforeLateAmount.toLocaleString('zh-CN')} →{' '}
-        {visualization.outputPreview.afterLateAmount.toLocaleString('zh-CN')} 元
+        <span className="scheduler-result-summary__amount">
+          {visualization.outputPreview.afterLateAmount.toLocaleString('zh-CN')} 元
+        </span>
       </b>
     </div>
   )

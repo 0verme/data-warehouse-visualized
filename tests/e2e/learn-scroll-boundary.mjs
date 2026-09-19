@@ -63,6 +63,39 @@ const REGRESSION_LESSONS = [
 /** Lessons whose captions were only safe because an ancestor had a transform. */
 const TRANSFORM_PROTECTED_LESSONS = ['grain', 'star-schema-and-grain']
 
+/**
+ * Comparison shells / metric grids.
+ *
+ * These must lay themselves out inside their container: a table may scroll
+ * inside its own wrapper, but the comparison shell itself must never become a
+ * horizontal scroller, and it must never push the visualization wider than the
+ * lesson column.
+ */
+const NO_HORIZONTAL_SCROLL_LAYOUTS = [
+  '.sql-workbench__table-pair',
+  '.sql-workbench__join-tables',
+  '.sql-workbench__metrics',
+  '.sql-workbench__layer-meta',
+  '.loan-grain__options',
+  '.loan-grain__error-models',
+  '.performance-state__update-grid',
+  '.data-quality-rule-grid',
+  '.data-quality-rule__values',
+  '.scheduler-run-facts',
+  '.scheduler-choice-group',
+  '.scheduler-output-comparison__grid',
+  '.scheduler-rerun__plan',
+]
+
+/**
+ * Deliberate, pre-existing overflow that is present at every viewport
+ * (including 1440 desktop) and is therefore not a responsive regression:
+ *   - `.scheduler-propagation` draws its connector on the cell border
+ *     (`right: -7px`) inside an `overflow: hidden` track;
+ *   - `.scheduler-task-node` ellipsizes long task ids into a compact DAG chip.
+ */
+const INTENTIONAL_OVERFLOW = ['.scheduler-propagation', '.scheduler-task-node']
+
 const INTERACTION_LESSONS = ['deposit-metric-derivations', 'sql-transformation-join', 'grain']
 const SHORT_LESSON = 'why-data-warehouse'
 
@@ -135,6 +168,85 @@ function readLessonSlugs() {
     .sort()
 }
 
+/**
+ * Horizontal-overflow geometry.
+ *
+ * The Learning Shell clips its own horizontal axis, so a document-level
+ * `scrollWidth` check alone cannot see a visualization that outgrew its
+ * container — the overflow is simply hidden. These probes measure the real
+ * geometry instead: every box from the lesson column down to the comparison
+ * shell must fit, tables may scroll only inside their own wrapper, and no
+ * visible text may be clipped by a non-scrollable ancestor.
+ */
+async function measureHorizontal(page) {
+  return page.evaluate(
+    ({ noScrollLayouts, intentional }) => {
+      const doc = document.documentElement
+      const shell = document.querySelector('.learn-main__scroll')
+      const sections = Array.from(document.querySelectorAll('.visualization-section'))
+
+      const guards = []
+      for (const selector of noScrollLayouts) {
+        for (const el of document.querySelectorAll(selector)) {
+          const over = el.scrollWidth - el.clientWidth
+          if (over > 1) guards.push({ selector, over })
+        }
+      }
+
+      const clipped = []
+      // Only the shells this contract covers: other lessons legitimately
+      // ellipsize dense chrome (DAG chips, long schema paths) at every
+      // viewport, and flagging those would drown the responsive signal.
+      for (const guard of noScrollLayouts) {
+        for (const container of document.querySelectorAll(guard)) {
+          for (const el of container.querySelectorAll('*')) {
+            const style = getComputedStyle(el)
+            if (style.display === 'none' || style.visibility === 'hidden') continue
+            if (el.closest('.sr-only')) continue
+            if (el.closest(intentional.join(','))) continue
+            if (el.scrollWidth - el.clientWidth <= 1) continue
+            // Intentional local scrollers (table / code wrappers) are allowed.
+            if (style.overflowX === 'auto' || style.overflowX === 'scroll') continue
+            if (['BUTTON', 'A', 'SELECT', 'INPUT', 'TEXTAREA'].includes(el.tagName)) continue
+            // Containers whose only overflow comes from an allowed local scroller.
+            const containsScroller = Array.from(el.children).some(
+              (child) =>
+                ['auto', 'scroll'].includes(getComputedStyle(child).overflowX) &&
+                child.scrollWidth > child.clientWidth,
+            )
+            if (containsScroller) continue
+            const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
+            if (!text) continue
+            clipped.push({
+              guard,
+              cls:
+                typeof el.className === 'string'
+                  ? el.className.split(/\s+/).slice(0, 2).join('.')
+                  : '',
+              over: el.scrollWidth - el.clientWidth,
+              text: text.slice(0, 40),
+            })
+          }
+        }
+      }
+
+      return {
+        docScrollWidth: doc.scrollWidth,
+        innerWidth: window.innerWidth,
+        shellScrollOverflow: shell ? shell.scrollWidth - shell.clientWidth : 0,
+        sectionCount: sections.length,
+        sectionMaxOverflow: sections.length
+          ? Math.max(0, ...sections.map((section) => section.scrollWidth - section.clientWidth))
+          : 0,
+        guardOverflows: guards,
+        clipped: clipped.slice(0, 5),
+        clippedCount: clipped.length,
+      }
+    },
+    { noScrollLayouts: NO_HORIZONTAL_SCROLL_LAYOUTS, intentional: INTENTIONAL_OVERFLOW },
+  )
+}
+
 async function measureShell(page) {
   return page.evaluate(() => {
     const scroller = document.querySelector('.learn-main__scroll')
@@ -186,6 +298,35 @@ async function scanPage(page, baseUrl, path) {
   await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' })
   await page.waitForSelector('.learn-main__scroll', { timeout: 15_000 })
   const m = await measureShell(page)
+  const h = await measureHorizontal(page)
+
+  check(
+    `${path} document 不产生横向滚动`,
+    h.docScrollWidth - h.innerWidth <= TOLERANCE,
+    `docScrollWidth=${h.docScrollWidth} innerWidth=${h.innerWidth}`,
+  )
+  check(
+    `${path} Learn 滚动区没有横向溢出`,
+    h.shellScrollOverflow <= TOLERANCE,
+    `shellScrollOverflow=${h.shellScrollOverflow}`,
+  )
+  check(
+    `${path} visualization 容器没有横向溢出`,
+    h.sectionMaxOverflow <= TOLERANCE,
+    `sections=${h.sectionCount} maxOverflow=${h.sectionMaxOverflow}`,
+  )
+  check(
+    `${path} comparison / metric shell 自身不横向滚动`,
+    h.guardOverflows.length === 0,
+    h.guardOverflows.map((entry) => `${entry.selector}+${entry.over}px`).join(', '),
+  )
+  check(
+    `${path} comparison / metric shell 内的数值与标识符可读`,
+    h.clippedCount === 0,
+    h.clipped
+      .map((entry) => `${entry.guard}>${entry.cls}(${entry.over}px) ${entry.text}`)
+      .join(' | '),
+  )
 
   check(
     `${path} document 不产生纵向滚动`,
@@ -335,6 +476,151 @@ async function srOnlyAccessibilityProbe(context, page, baseUrl) {
   await client.detach()
 }
 
+/**
+ * Responsive comparison contract.
+ *
+ * Desktop: `minmax(0,1fr) auto minmax(0,1fr)` with a → connector and the two
+ * cards side by side. Mobile: `minmax(0,1fr)` with a ↓ connector and the cards
+ * stacked. Verified against the live geometry so a future selector-specificity
+ * regression (the original bug) fails loudly instead of silently keeping two
+ * 126px columns.
+ */
+const RESPONSIVE_COMPARISON_CASES = [
+  {
+    slug: 'sql-transformation-cleaning',
+    shell: '.sql-workbench__table-pair',
+    cards: '.sql-workbench__table-card',
+    arrow: '.sql-workbench__table-arrow',
+  },
+  {
+    slug: 'grain',
+    shell: '.loan-grain__error-models--fixed',
+    cards: '.loan-grain__error-model',
+    arrow: null,
+    clicks: ['执行 SUM(contract_amount)', '修复 Grain'],
+  },
+]
+
+async function responsiveComparisonProbe(context, page, baseUrl) {
+  for (const [mode, viewport] of [
+    ['mobile', { width: 320, height: 720 }],
+    ['desktop', { width: 1280, height: 900 }],
+  ]) {
+    await page.setViewportSize(viewport)
+    for (const testCase of RESPONSIVE_COMPARISON_CASES) {
+      const label = `${testCase.slug} @ ${mode}`
+      await page.goto(`${baseUrl}/learn/${testCase.slug}/`, { waitUntil: 'networkidle' })
+      await page.waitForSelector('.learn-main__scroll', { timeout: 15_000 })
+      for (const click of testCase.clicks ?? []) {
+        await page.getByRole('button', { name: click, exact: false }).first().click()
+        await page.waitForTimeout(150)
+      }
+      await page.waitForTimeout(200)
+
+      const geometry = await page.evaluate(
+        ({ shell, cards, arrow }) => {
+          const shellEl = document.querySelector(shell)
+          if (!shellEl) return null
+          const shellRect = shellEl.getBoundingClientRect()
+          const arrowEl = arrow ? shellEl.querySelector(arrow) : null
+          const arrowRect = arrowEl ? arrowEl.getBoundingClientRect() : null
+          return {
+            shellScrolls: shellEl.scrollWidth - shellEl.clientWidth > 1,
+            shellRect: { left: shellRect.left, right: shellRect.right },
+            cards: Array.from(shellEl.querySelectorAll(cards)).map((card) => {
+              const rect = card.getBoundingClientRect()
+              return {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                width: rect.width,
+              }
+            }),
+            arrowTransform: arrowEl ? getComputedStyle(arrowEl).transform : null,
+            arrowRect: arrowRect
+              ? {
+                  top: arrowRect.top,
+                  bottom: arrowRect.bottom,
+                  left: arrowRect.left,
+                  right: arrowRect.right,
+                }
+              : null,
+          }
+        },
+        { shell: testCase.shell, cards: testCase.cards, arrow: testCase.arrow },
+      )
+
+      if (!geometry) {
+        check(`${label} comparison shell 存在`, false, testCase.shell)
+        continue
+      }
+
+      check(`${label} comparison shell 不横向滚动`, !geometry.shellScrolls)
+      check(
+        `${label} comparison 至少有两张对照卡片`,
+        geometry.cards.length >= 2,
+        `${geometry.cards.length}`,
+      )
+      if (geometry.cards.length < 2) continue
+
+      const [first, second] = geometry.cards
+      if (mode === 'mobile') {
+        check(
+          `${label} 卡片纵向堆叠`,
+          second.top >= first.bottom - TOLERANCE,
+          `first.bottom=${first.bottom} second.top=${second.top}`,
+        )
+        check(
+          `${label} 卡片占满 comparison 宽度`,
+          geometry.cards.every(
+            (card) =>
+              Math.abs(card.width - (geometry.shellRect.right - geometry.shellRect.left)) <= 2,
+          ),
+          geometry.cards.map((card) => Math.round(card.width)).join(','),
+        )
+      } else {
+        check(
+          `${label} 卡片左右并排`,
+          second.left >= first.right - TOLERANCE,
+          `first.right=${first.right} second.left=${second.left}`,
+        )
+      }
+
+      if (geometry.arrowTransform === null) continue
+      const rotated = geometry.arrowTransform.replace(/\s/g, '').startsWith('matrix(0,1,')
+      check(
+        `${label} 箭头方向符合布局方向`,
+        mode === 'mobile' ? rotated : geometry.arrowTransform === 'none',
+        geometry.arrowTransform,
+      )
+      if (mode === 'mobile') {
+        check(
+          `${label} ↓ 箭头位于两张卡片之间`,
+          geometry.arrowRect.top >= first.bottom - TOLERANCE &&
+            geometry.arrowRect.bottom <= second.top + TOLERANCE,
+          `arrow=[${geometry.arrowRect.top},${geometry.arrowRect.bottom}] cards=[${first.bottom},${second.top}]`,
+        )
+      } else {
+        // Side-by-side layout: the row spans both cards, so the → connector
+        // must sit horizontally between them and inside the row box.
+        check(
+          `${label} → 箭头位于两张卡片之间`,
+          geometry.arrowRect.left >= first.right - TOLERANCE &&
+            geometry.arrowRect.right <= second.left + TOLERANCE,
+          `arrow=[${geometry.arrowRect.left},${geometry.arrowRect.right}] cards=[${first.right},${second.left}]`,
+        )
+        check(
+          `${label} → 箭头在卡片行内居中对齐`,
+          geometry.arrowRect.top >= first.top - TOLERANCE &&
+            geometry.arrowRect.bottom <= first.bottom + TOLERANCE,
+          `arrow=[${geometry.arrowRect.top},${geometry.arrowRect.bottom}] card=[${first.top},${first.bottom}]`,
+        )
+      }
+    }
+  }
+}
+
 async function navigationStateProbe(page, baseUrl) {
   await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' })
   const home = await page.evaluate(() => ({
@@ -475,6 +761,18 @@ async function main() {
         await page.close()
         await context.close()
       }
+    }
+
+    {
+      const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+      const page = await context.newPage()
+      try {
+        await responsiveComparisonProbe(context, page, baseUrl)
+      } finally {
+        await page.close()
+        await context.close()
+      }
+      console.log('[learn-scroll] responsive comparison contract probe done')
     }
 
     console.log(`[learn-scroll] ${checks - failures}/${checks} checks passed`)

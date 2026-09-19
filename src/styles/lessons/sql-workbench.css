@@ -255,13 +255,15 @@
 .sql-workbench__table-pair,
 .sql-workbench__join-tables {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--sql-workbench-arrow-column) minmax(0, 1fr);
   gap: 9px;
   align-items: stretch;
   min-width: 0;
+  --sql-workbench-arrow-column: 24px;
 }
 
 .sql-workbench__table-card {
+  width: 100%;
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -281,12 +283,11 @@
 }
 
 .sql-workbench__table-card-heading > strong {
-  overflow: hidden;
+  /* 表名 / 标识符只能在极窄时折行，不能被剪掉。 */
+  overflow-wrap: anywhere;
   color: var(--navy, #173b68);
   font-family: 'SFMono-Regular', Consolas, monospace;
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .sql-workbench__table-card-heading > small {
@@ -297,6 +298,7 @@
 
 .sql-workbench__table-arrow {
   display: grid;
+  align-self: center;
   place-items: center;
   color: var(--blue, #2d6cdf);
   font-size: 21px;
@@ -412,6 +414,15 @@
   gap: 8px;
 }
 
+/*
+ * 指标卡按自身最小承载宽度降列：短行情（如「5 → 4 行」）可以保持紧凑，
+ * 长金额（如「528,000 → 430,000 元」）在空间不足时自然落到单列，
+ * 不再被压进约 100px 的半屏卡片。
+ */
+.sql-workbench__metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+
 .sql-workbench__metric,
 .sql-workbench__join-facts > div,
 .sql-workbench__layer-meta > div {
@@ -434,6 +445,7 @@
 
 .sql-workbench__metric > div {
   display: flex;
+  flex-wrap: wrap;
   gap: 7px;
   align-items: baseline;
   margin-top: 4px;
@@ -463,7 +475,7 @@
 }
 
 .sql-workbench__cleaning-table .sql-workbench__table-pair {
-  grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr);
+  --sql-workbench-arrow-column: 18px;
 }
 
 .sql-workbench__signal-panel {
@@ -753,11 +765,10 @@
 .sql-workbench__layer-meta strong {
   display: block;
   margin-top: 4px;
-  overflow: hidden;
   color: var(--navy, #173b68);
   font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Grain 是业务语义，只能换行，不能被 ellipsis 吃掉。 */
+  overflow-wrap: break-word;
 }
 
 .sql-workbench__layer-observation,
@@ -903,7 +914,17 @@
   }
 }
 
-@media (max-width: 720px) {
+/*
+ * Responsive authority for the workbench.
+ *
+ * Container-first on purpose: the lesson column can be much narrower than the
+ * viewport (desktop sidebar) and much wider than it (plain mobile), so the
+ * visualization container — not the device width — decides the layout.
+ * Keeping a single block also removes the specificity fight that used to leave
+ * `.sql-workbench__cleaning-table .sql-workbench__table-pair` in two columns
+ * at 390px/320px.
+ */
+@container visualization (max-width: 720px) {
   .sql-workbench__focus {
     padding: 17px;
   }
@@ -917,56 +938,67 @@
     justify-self: start;
   }
 
+  .sql-workbench__plan-layout,
+  .sql-workbench__cleaning-layout,
+  .sql-workbench__join-match-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Comparison shell: 加工前 / 加工后 stack, arrow rotates to ↓. */
+  .sql-workbench__table-pair,
+  .sql-workbench__join-tables {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sql-workbench__table-arrow {
+    justify-self: center;
+    width: 26px;
+    min-height: 26px;
+    line-height: 1;
+    transform: rotate(90deg);
+  }
+
   .sql-workbench__plan-fields,
-  .sql-workbench__join-facts,
-  .sql-workbench__metrics,
+  .sql-workbench__join-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Grain keeps a full row so 「一行 = …」 can wrap instead of eliding. */
   .sql-workbench__layer-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .sql-workbench__table-pair,
-  .sql-workbench__join-tables {
-    grid-template-columns: 1fr;
+  .sql-workbench__layer-meta > div:first-child {
+    grid-column: 1 / -1;
   }
 
-  .sql-workbench__table-arrow {
-    min-height: 18px;
-    transform: rotate(90deg);
-  }
-
+  /* Processing chain becomes a vertical flow with explicit ↓ connectors. */
   .sql-workbench__layer-flow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
+  .sql-workbench__layer-flow-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
   .sql-workbench__layer-flow-item > b {
-    display: none;
+    display: grid;
+    justify-self: center;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    line-height: 1;
+    transform: rotate(90deg);
   }
 
   .sql-workbench__contract-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sql-workbench__contract-grid-wide {
     grid-column: auto;
-  }
-}
-
-@container visualization (max-width: 720px) {
-  .sql-workbench__plan-layout,
-  .sql-workbench__cleaning-layout,
-  .sql-workbench__join-match-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .sql-workbench__table-pair,
-  .sql-workbench__join-tables {
-    grid-template-columns: 1fr;
-  }
-
-  .sql-workbench__table-arrow {
-    min-height: 18px;
-    transform: rotate(90deg);
   }
 }
 
