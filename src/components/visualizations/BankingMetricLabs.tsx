@@ -15,20 +15,36 @@ import type {
 import {
   calculateBankingMetric,
   calculateBankingMetricTime,
+  compareBankingMetricScopes,
+  diffBankingMetricFilters,
   formatBankingMetricYi,
   formatBankingMetricYuan,
   getBankingMetricBranchLabel,
   getBankingMetricCustomerLabel,
   getBankingMetricDefinition,
+  getBankingMetricMemberKey,
   getBankingMetricProductLabel,
+  getBankingMetricWhereSql,
+  isSameBankingMetricFilter,
 } from '../../utils/banking-metrics'
+
+type ScopeMemberStatus = 'entered' | 'left' | 'stayed'
+
+const scopeMemberStatusLabels = {
+  entered: '进入',
+  left: '离开',
+  stayed: '在集合中',
+} satisfies Record<ScopeMemberStatus, string>
 
 function AccountSnapshotTable({
   rows,
   caption,
+  statuses,
 }: {
   rows: readonly BankingMetricAccountSnapshot[]
   caption: string
+  /** 传入时增加“本次变化”列，把集合成员进出与表格行对应起来。 */
+  statuses?: ReadonlyMap<string, ScopeMemberStatus>
 }) {
   return (
     <div className="banking-lab__table-wrap">
@@ -37,6 +53,7 @@ function AccountSnapshotTable({
         <thead>
           <tr>
             <th scope="col">账户</th>
+            {statuses && <th scope="col">本次变化</th>}
             <th scope="col">客户口径</th>
             <th scope="col">产品</th>
             <th scope="col">机构</th>
@@ -45,18 +62,31 @@ function AccountSnapshotTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.accountId}-${row.snapshotDate}`}>
-              <th scope="row">
-                <code>{row.accountId}</code>
-              </th>
-              <td>{getBankingMetricCustomerLabel(row.customerScope)}</td>
-              <td>{getBankingMetricProductLabel(row.product)}</td>
-              <td>{getBankingMetricBranchLabel(row.branch)}</td>
-              <td>{row.snapshotDate}</td>
-              <td>{formatBankingMetricYi(row.balance, row.currency)}</td>
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const status = statuses?.get(getBankingMetricMemberKey(row)) ?? 'stayed'
+            return (
+              <tr
+                className={statuses ? `is-${status}` : undefined}
+                key={`${row.accountId}-${row.snapshotDate}`}
+              >
+                <th scope="row">
+                  <code>{row.accountId}</code>
+                </th>
+                {statuses && (
+                  <td>
+                    <span className={`banking-metric-scope__member-status is-${status}`}>
+                      {scopeMemberStatusLabels[status]}
+                    </span>
+                  </td>
+                )}
+                <td>{getBankingMetricCustomerLabel(row.customerScope)}</td>
+                <td>{getBankingMetricProductLabel(row.product)}</td>
+                <td>{getBankingMetricBranchLabel(row.branch)}</td>
+                <td>{row.snapshotDate}</td>
+                <td>{formatBankingMetricYi(row.balance, row.currency)}</td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -89,12 +119,12 @@ function ScopeScenarioCard({
   )
 }
 
-function ScopeDetails({ scenario }: { scenario: BankingMetricScopeScenario }) {
-  const excludedProducts = scenario.filter.excludedProducts ?? []
+function ScopeDetails({ filter }: { filter: BankingMetricBalanceFilter }) {
+  const excludedProducts = filter.excludedProducts ?? []
   const productScope =
-    scenario.filter.productScope === 'all'
+    filter.productScope === 'all'
       ? '全部存款产品'
-      : `${getBankingMetricProductLabel(scenario.filter.productScope)}存款`
+      : `${getBankingMetricProductLabel(filter.productScope)}存款`
   const exclusions =
     excludedProducts.length > 0
       ? `；排除 ${excludedProducts.map((product) => getBankingMetricProductLabel(product)).join('、')}`
@@ -104,11 +134,11 @@ function ScopeDetails({ scenario }: { scenario: BankingMetricScopeScenario }) {
     <dl className="banking-metric-scope__details">
       <div>
         <dt>统计日期</dt>
-        <dd>{scenario.filter.snapshotDate}</dd>
+        <dd>{filter.snapshotDate}</dd>
       </div>
       <div>
         <dt>客户范围</dt>
-        <dd>{getBankingMetricCustomerLabel(scenario.filter.customerScope)}</dd>
+        <dd>{getBankingMetricCustomerLabel(filter.customerScope)}</dd>
       </div>
       <div>
         <dt>产品范围</dt>
@@ -119,11 +149,11 @@ function ScopeDetails({ scenario }: { scenario: BankingMetricScopeScenario }) {
       </div>
       <div>
         <dt>机构范围</dt>
-        <dd>{getBankingMetricBranchLabel(scenario.filter.branch)}</dd>
+        <dd>{getBankingMetricBranchLabel(filter.branch)}</dd>
       </div>
       <div>
         <dt>币种</dt>
-        <dd>{scenario.filter.currency === 'CNY' ? 'CNY（人民币）' : scenario.filter.currency}</dd>
+        <dd>{filter.currency === 'CNY' ? 'CNY（人民币）' : filter.currency}</dd>
       </div>
       <div>
         <dt>输入 Grain</dt>
@@ -133,41 +163,158 @@ function ScopeDetails({ scenario }: { scenario: BankingMetricScopeScenario }) {
   )
 }
 
+const excludedProductOptions: readonly BankingMetricProduct[] = [
+  'demand',
+  'term',
+  'negotiated',
+  'margin',
+]
+
+/** 排除产品是集合边界上的“减法”，单独用一个可多选的条件组表达。 */
+function ExcludedProductsGroup({
+  excludedProducts,
+  onToggle,
+}: {
+  excludedProducts: readonly BankingMetricProduct[]
+  onToggle: (product: BankingMetricProduct) => void
+}) {
+  return (
+    <fieldset className="banking-metric-scope__choice-group">
+      <legend>排除产品</legend>
+      <div>
+        {excludedProductOptions.map((product) => {
+          const isSelected = excludedProducts.includes(product)
+          return (
+            <button
+              className={`banking-metric-scope__choice${isSelected ? ' is-selected' : ''}`}
+              type="button"
+              aria-pressed={isSelected}
+              onClick={() => onToggle(product)}
+              key={product}
+            >
+              <strong>{getBankingMetricProductLabel(product)}</strong>
+              <small>{isSelected ? '已排除' : '可排除'}</small>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
 export function BankingMetricScopeLab({
   visualization,
 }: {
   visualization: BankingMetricScopeVisualization
 }) {
-  const [selectedId, setSelectedId] = useState(visualization.scenarios[0]?.id ?? '')
-  const selectedScenario =
-    visualization.scenarios.find((scenario) => scenario.id === selectedId) ??
-    visualization.scenarios[0]
+  const initialFilter = visualization.scenarios[0]?.filter ?? null
+  const [filter, setFilter] = useState<BankingMetricBalanceFilter | null>(initialFilter)
+  const [previousFilter, setPreviousFilter] = useState<BankingMetricBalanceFilter | null>(null)
   const calculation = useMemo(
     () =>
-      selectedScenario
-        ? calculateBankingMetric(visualization.snapshots, selectedScenario.filter)
-        : { total: 0, rows: [] },
-    [selectedScenario, visualization.snapshots],
+      filter ? calculateBankingMetric(visualization.snapshots, filter) : { total: 0, rows: [] },
+    [filter, visualization.snapshots],
+  )
+  const previousCalculation = useMemo(
+    () => (previousFilter ? calculateBankingMetric(visualization.snapshots, previousFilter) : null),
+    [previousFilter, visualization.snapshots],
+  )
+  const delta = useMemo(
+    () =>
+      previousCalculation
+        ? compareBankingMetricScopes(previousCalculation.rows, calculation.rows)
+        : null,
+    [previousCalculation, calculation.rows],
+  )
+  const filterChanges = useMemo(
+    () => (previousFilter && filter ? diffBankingMetricFilters(previousFilter, filter) : []),
+    [previousFilter, filter],
+  )
+  const whereSql = useMemo(() => (filter ? getBankingMetricWhereSql(filter) : ''), [filter])
+
+  if (!filter) {
+    return null
+  }
+
+  const activeScenario = visualization.scenarios.find((scenario) =>
+    isSameBankingMetricFilter(scenario.filter, filter),
+  )
+  const scopeTitle = activeScenario?.title ?? '自定义口径'
+  const scopeLabel = activeScenario?.label ?? '自定义'
+  const statuses = new Map<string, ScopeMemberStatus>(
+    calculation.rows.map((snapshot) => [getBankingMetricMemberKey(snapshot), 'stayed']),
   )
 
-  if (!selectedScenario) {
-    return null
+  for (const snapshot of delta?.entered ?? []) {
+    statuses.set(getBankingMetricMemberKey(snapshot), 'entered')
+  }
+
+  for (const snapshot of delta?.left ?? []) {
+    statuses.set(getBankingMetricMemberKey(snapshot), 'left')
+  }
+
+  const memberRows = [...calculation.rows, ...(delta?.left ?? [])]
+  const previousTotal = previousCalculation?.total ?? null
+  const amountDelta = previousTotal === null ? null : calculation.total - previousTotal
+  const currencyChanged = previousFilter !== null && previousFilter.currency !== filter.currency
+
+  function applyFilter(nextFilter: BankingMetricBalanceFilter) {
+    if (!filter || isSameBankingMetricFilter(filter, nextFilter)) {
+      return
+    }
+
+    setPreviousFilter(filter)
+    setFilter(nextFilter)
+  }
+
+  function updateFilter<Key extends keyof BankingMetricBalanceFilter>(
+    key: Key,
+    value: BankingMetricBalanceFilter[Key],
+  ) {
+    if (!filter) {
+      return
+    }
+
+    applyFilter({ ...filter, [key]: value })
+  }
+
+  function toggleExcludedProduct(product: BankingMetricProduct) {
+    if (!filter) {
+      return
+    }
+
+    const excluded = new Set(filter.excludedProducts ?? [])
+
+    if (excluded.has(product)) {
+      excluded.delete(product)
+    } else {
+      excluded.add(product)
+    }
+
+    applyFilter({ ...filter, excludedProducts: excluded.size > 0 ? [...excluded] : undefined })
+  }
+
+  function applyScenario(scenario: BankingMetricScopeScenario) {
+    applyFilter({ ...scenario.filter })
+  }
+
+  function reset() {
+    setFilter(initialFilter)
+    setPreviousFilter(null)
   }
 
   return (
     <div className="banking-metric-lab banking-metric-scope-lab">
       <div className="visualization-toolbar">
         <div>
-          <span className="visualization-toolbar__label">存款余额 · 统计集合对比</span>
+          <span className="visualization-toolbar__label">存款余额 · 统计集合与 WHERE</span>
           <p aria-live="polite">
-            当前：{selectedScenario.title} · {calculation.rows.length} 个账户快照参与计算
+            当前：{scopeTitle} · {calculation.rows.length} 个账户快照 ·{' '}
+            {formatBankingMetricYi(calculation.total, filter.currency)}
+            {delta && `（本次 +${delta.entered.length} 进入 / −${delta.left.length} 离开）`}
           </p>
         </div>
-        <button
-          className="button button--quiet button--small"
-          type="button"
-          onClick={() => setSelectedId(visualization.scenarios[0]?.id ?? '')}
-        >
+        <button className="button button--quiet button--small" type="button" onClick={reset}>
           重置对比
         </button>
       </div>
@@ -178,7 +325,7 @@ export function BankingMetricScopeLab({
             <span className="eyebrow">THREE ANSWERS · 三组口径</span>
             <h3 id="metric-scope-title">结果不同，先看谁进入了统计集合</h3>
           </div>
-          <p>每张卡只改变少量业务条件，点击后查看账户快照和口径说明。</p>
+          <p>点击预设会同步设置下方的过滤条件；预设是快速入口，不是唯一玩法。</p>
         </div>
         <div className="banking-metric-scope__scenario-grid">
           {visualization.scenarios.map((scenario) => {
@@ -188,29 +335,191 @@ export function BankingMetricScopeLab({
                 key={scenario.id}
                 scenario={scenario}
                 total={result.total}
-                isSelected={scenario.id === selectedScenario.id}
-                onSelect={setSelectedId}
+                isSelected={activeScenario?.id === scenario.id}
+                onSelect={(scenarioId) => {
+                  const nextScenario = visualization.scenarios.find(
+                    (candidate) => candidate.id === scenarioId,
+                  )
+
+                  if (nextScenario) {
+                    applyScenario(nextScenario)
+                  }
+                }}
               />
             )
           })}
         </div>
       </section>
 
-      <section className="banking-metric-scope__selected" aria-live="polite">
+      <section className="banking-metric-scope__workspace" aria-label="口径条件与等价 WHERE">
+        <div className="banking-metric-scope__controls">
+          <div className="banking-metric__section-heading">
+            <div>
+              <span className="eyebrow eyebrow--small">SCOPE CONTROLS · 口径条件</span>
+              <h3>条件决定哪些 Account 快照进入集合</h3>
+            </div>
+            <p>客户、产品、币种、机构、日期都可以组合；每次变化都会与上一次口径对比。</p>
+          </div>
+          <ChoiceGroup
+            variant="scope"
+            label="客户口径"
+            value={filter.customerScope}
+            options={customerChoiceOptions}
+            onChange={(value) => updateFilter('customerScope', value)}
+          />
+          <ChoiceGroup
+            variant="scope"
+            label="产品口径"
+            value={filter.productScope}
+            options={productChoiceOptions}
+            onChange={(value) => updateFilter('productScope', value)}
+          />
+          <ExcludedProductsGroup
+            excludedProducts={filter.excludedProducts ?? []}
+            onToggle={toggleExcludedProduct}
+          />
+          <ChoiceGroup
+            variant="scope"
+            label="币种"
+            value={filter.currency}
+            options={currencyChoiceOptions}
+            onChange={(value) => updateFilter('currency', value)}
+          />
+          <ChoiceGroup
+            variant="scope"
+            label="机构"
+            value={filter.branch}
+            options={branchChoiceOptions}
+            onChange={(value) => updateFilter('branch', value)}
+          />
+          <ChoiceGroup
+            variant="scope"
+            label="统计日期"
+            value={filter.snapshotDate}
+            options={dateChoiceOptions}
+            onChange={(value) => updateFilter('snapshotDate', value)}
+          />
+        </div>
+        <div className="banking-metric-scope__where">
+          <span className="eyebrow eyebrow--small">WHERE · 集合边界</span>
+          <h3>当前口径对应的筛选条件</h3>
+          <figure>
+            <pre className="banking-metric-scope__sql">
+              <code>{whereSql}</code>
+            </pre>
+            <figcaption>
+              这段条件与上方口径一一对应，说明集合边界怎么划；本节只做教学表达，不执行真实 SQL。
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section className="banking-metric-scope__delta" aria-labelledby="metric-scope-delta-title">
         <div className="banking-metric__section-heading">
           <div>
-            <span className="eyebrow eyebrow--small">当前口径 · {selectedScenario.label}</span>
-            <h3>{selectedScenario.title}</h3>
+            <span className="eyebrow eyebrow--small">SET DELTA · 集合变化</span>
+            <h3 id="metric-scope-delta-title">谁进入了集合，谁离开了集合？</h3>
+          </div>
+          <p>
+            {delta
+              ? '比较上一次口径与当前口径，金额变化来自集合成员变化。'
+              : '还没有发生口径变化；切换预设或条件后，这里显示成员进出。'}
+          </p>
+        </div>
+        {delta && (
+          <div className="banking-metric-scope__delta-body">
+            <dl className="banking-metric-scope__changes">
+              {filterChanges.length > 0 ? (
+                filterChanges.map((change) => (
+                  <div key={change.field}>
+                    <dt>{change.label}</dt>
+                    <dd>
+                      {change.before} → {change.after}
+                    </dd>
+                  </div>
+                ))
+              ) : (
+                <div>
+                  <dt>本次变化</dt>
+                  <dd>口径条件没有变化</dd>
+                </div>
+              )}
+            </dl>
+            <ul className="banking-metric-scope__delta-list">
+              {delta.entered.map((snapshot) => (
+                <li
+                  className="banking-metric-scope__delta-item is-entered"
+                  key={`entered-${getBankingMetricMemberKey(snapshot)}`}
+                >
+                  <span aria-hidden="true">+</span> <code>{snapshot.accountId}</code> 进入集合 ·{' '}
+                  {getBankingMetricProductLabel(snapshot.product)} ·{' '}
+                  {formatBankingMetricYi(snapshot.balance, snapshot.currency)}
+                </li>
+              ))}
+              {delta.left.map((snapshot) => (
+                <li
+                  className="banking-metric-scope__delta-item is-left"
+                  key={`left-${getBankingMetricMemberKey(snapshot)}`}
+                >
+                  <span aria-hidden="true">−</span> <code>{snapshot.accountId}</code> 离开集合 ·{' '}
+                  {getBankingMetricProductLabel(snapshot.product)} ·{' '}
+                  {formatBankingMetricYi(snapshot.balance, snapshot.currency)}
+                </li>
+              ))}
+              {delta.entered.length === 0 && delta.left.length === 0 && (
+                <li className="banking-metric-scope__delta-item is-empty">
+                  集合成员没有变化：当前条件仍然落在同一批账户快照上。
+                </li>
+              )}
+            </ul>
+            {previousTotal !== null && (
+              <p className="banking-metric-scope__aggregate-move">
+                {currencyChanged ? (
+                  <>
+                    币种变化后不再直接相减：上一次集合合计{' '}
+                    {formatBankingMetricYi(previousTotal, previousFilter.currency)}，当前{' '}
+                    {formatBankingMetricYi(calculation.total, filter.currency)}。
+                  </>
+                ) : (
+                  <>
+                    集合合计：{formatBankingMetricYi(previousTotal, filter.currency)} →{' '}
+                    {formatBankingMetricYi(calculation.total, filter.currency)}
+                    {amountDelta !== null && amountDelta !== 0 && (
+                      <span>
+                        （{amountDelta > 0 ? '+' : '−'}
+                        {formatBankingMetricYi(Math.abs(amountDelta), filter.currency)}）
+                      </span>
+                    )}
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section
+        className="banking-metric-scope__selected"
+        aria-labelledby="metric-scope-selected-title"
+      >
+        <div className="banking-metric__section-heading">
+          <div>
+            <span className="eyebrow eyebrow--small">当前口径 · {scopeLabel}</span>
+            <h3 id="metric-scope-selected-title">{scopeTitle}</h3>
           </div>
           <strong className="banking-metric__big-value">
-            {formatBankingMetricYi(calculation.total, selectedScenario.filter.currency)}
+            {formatBankingMetricYi(calculation.total, filter.currency)}
           </strong>
         </div>
-        <ScopeDetails scenario={selectedScenario} />
+        <ScopeDetails filter={filter} />
         <AccountSnapshotTable
-          rows={calculation.rows}
-          caption={`${selectedScenario.title}参与统计的账户快照`}
+          rows={memberRows}
+          caption={`${scopeTitle}统计集合成员与本次变化`}
+          statuses={statuses}
         />
+        <p className="banking-metric-scope__table-note">
+          表格里标记“离开”的行来自上一次口径，不计入当前合计；其余行才构成当前统计集合。
+        </p>
       </section>
 
       <div className="banking-metric-scope__other-differences">
@@ -569,21 +878,26 @@ function ChoiceGroup<Value extends string>({
   value,
   options,
   onChange,
+  variant = 'derivation',
 }: {
   label: string
   value: Value
   options: readonly ChoiceOption<Value>[]
   onChange: (value: Value) => void
+  /** 同一个本地控件被口径组合器与 Scope Set Delta 复用，只区分样式前缀。 */
+  variant?: 'derivation' | 'scope'
 }) {
+  const prefix = variant === 'scope' ? 'banking-metric-scope' : 'banking-metric-derivation'
+
   return (
-    <fieldset className="banking-metric-derivation__choice-group">
+    <fieldset className={`${prefix}__choice-group`}>
       <legend>{label}</legend>
       <div>
         {options.map((option) => {
           const isSelected = option.value === value
           return (
             <button
-              className={`banking-metric-derivation__choice${isSelected ? ' is-selected' : ''}`}
+              className={`${prefix}__choice${isSelected ? ' is-selected' : ''}`}
               type="button"
               aria-pressed={isSelected}
               onClick={() => onChange(option.value)}
