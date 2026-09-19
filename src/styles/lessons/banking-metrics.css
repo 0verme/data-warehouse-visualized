@@ -560,16 +560,25 @@
 }
 
 .banking-metric-time__rail {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(90px, 1fr));
-  gap: 7px;
   margin-top: 18px;
-  padding: 15px 9px 3px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
 }
 
-.banking-metric-time__rail::before {
+/* 节点按实际数量等分容器宽度：列宽下限只保证文字可读，
+   容器装不下时才由 .banking-metric-time__rail 提供内部横向滚动。 */
+.banking-metric-time__rail-track {
+  position: relative;
+  display: grid;
+  width: min-content;
+  min-width: 100%;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(42px, 1fr);
+  gap: 7px;
+  padding: 15px 9px 3px;
+}
+
+.banking-metric-time__rail-track::before {
   position: absolute;
   top: 21px;
   right: 7%;
@@ -583,7 +592,7 @@
   position: relative;
   z-index: 1;
   display: flex;
-  min-width: 90px;
+  min-width: 0;
   flex-direction: column;
   align-items: center;
   color: var(--text-muted);
@@ -946,8 +955,18 @@
     grid-template-columns: 1fr;
   }
 
-  .banking-metric-time__rail {
-    min-width: 520px;
+  .banking-metric-time__rail-track {
+    grid-auto-columns: minmax(36px, 1fr);
+    gap: 5px;
+    padding-inline: 6px;
+  }
+
+  .banking-metric-time__rail-point strong {
+    font-size: 8px;
+  }
+
+  .banking-metric-time__rail-point small {
+    font-size: 7px;
   }
 
   .banking-metric-derivation__result dl {

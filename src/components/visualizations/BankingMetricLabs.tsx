@@ -702,13 +702,15 @@ function TimeRail({ visualization }: { visualization: BankingMetricTimeVisualiza
 
   return (
     <div className="banking-metric-time__rail" aria-label="存款余额与交易时间轴">
-      {dates.map((date) => (
-        <div className="banking-metric-time__rail-point" key={date}>
-          <i aria-hidden="true" />
-          <strong>{date}</strong>
-          <small>{date === visualization.asOfDate ? '状态快照' : '交易事件'}</small>
-        </div>
-      ))}
+      <div className="banking-metric-time__rail-track">
+        {dates.map((date) => (
+          <div className="banking-metric-time__rail-point" key={date}>
+            <i aria-hidden="true" />
+            <strong>{date}</strong>
+            <small>{date === visualization.asOfDate ? '状态快照' : '交易事件'}</small>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
