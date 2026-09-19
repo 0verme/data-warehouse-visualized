@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { getLessonContent } from '../src/content/lessons'
 import { depositMetricDefinitionStages } from '../src/content/lessons/deposit-metric-definition'
 import { depositMetricDerivationVisualization } from '../src/content/lessons/deposit-metric-derivations'
@@ -103,6 +104,23 @@ describe('第 03 章银行指标课程', () => {
       'T004',
     ])
     expect(period.factType).toContain('Transaction Fact')
+  })
+
+  it('时间轴节点按可用宽度均分，不再用固定宽度撑出横向溢出', () => {
+    const stylesheet = readFileSync(
+      new URL('../src/styles/lessons/banking-metrics.css', import.meta.url),
+      'utf8',
+    )
+    const track = stylesheet.match(/\.banking-metric-time__rail-track \{([^}]+)\}/)?.[1] ?? ''
+    const point = stylesheet.match(/\.banking-metric-time__rail-point \{([^}]+)\}/)?.[1] ?? ''
+
+    expect(track).toContain('grid-auto-flow: column')
+    expect(track).toContain('grid-auto-columns: minmax(42px, 1fr)')
+    expect(track).toContain('min-width: 100%')
+    expect(track).not.toContain('repeat(5')
+    expect(point).toContain('min-width: 0')
+    expect(stylesheet).not.toContain('repeat(5, minmax(90px, 1fr))')
+    expect(stylesheet).not.toMatch(/\.banking-metric-time__rail \{[^}]*min-width: 520px/)
   })
 
   it('口径组合器能派生杭州分行小微定期余额，并只保留匹配快照', () => {
