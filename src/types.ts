@@ -701,8 +701,51 @@ export interface LakehouseAtomicCommitState {
   status: LakehouseAtomicCommitStatus
   fileCount: number
   failureAt: number
+  /** 已写入存储的文件数。已写入不等于已提交，也不等于读者可见。 */
+  writtenFileCount: number
+  /** 已被 Commit 纳入新 Snapshot 的文件数。 */
+  committedFileCount: number
+  /** 本次批次中读者可见的文件数。只有 committed 状态大于 0。 */
   visibleFileCount: number
   message: string
+}
+
+export type LakehouseVisibilityStepId = 'files' | 'metadata' | 'pointer' | 'reader'
+
+/**
+ * 可见性因果链每一步的真实状态。empty / pending 都是“还没有形成可见版本”，
+ * committed 表示这一步已经完成，unchanged 表示仍停留在旧版本
+ * （指针未移动或读者仍读旧版本），time-travel 表示本次查询读取历史 Snapshot。
+ */
+export type LakehouseVisibilityStepState =
+  'empty' | 'pending' | 'committed' | 'unchanged' | 'time-travel'
+
+export interface LakehouseVisibilityStep {
+  id: LakehouseVisibilityStepId
+  label: string
+  state: LakehouseVisibilityStepState
+  value: string
+  detail: string
+}
+
+/**
+ * Snapshot Pointer 状态：把「正式发布状态」与「本次查询目标」分开表达。
+ * published* 只来自已提交的 snapshots；queryTarget* 是一次读取的目标。
+ */
+export interface LakehouseSnapshotPointerState {
+  publishedVersion: number
+  publishedSnapshotId: string
+  publishedCommittedAt: string
+  previousPublishedVersion: number | null
+  pointerMoved: boolean
+  queryTargetVersion: number
+  queryTargetSnapshotId: string
+  queryTargetIsPublished: boolean
+  readerVersion: number
+  metadataStatus: 'not-started' | 'uncommitted' | 'committed'
+  metadataVersion: number
+  visibilitySteps: LakehouseVisibilityStep[]
+  summary: string
 }
 
 export interface LakehouseUnityDimension {

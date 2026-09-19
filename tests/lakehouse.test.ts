@@ -23,6 +23,7 @@ import {
   getLakeFirstAssessment,
   getLakehouseUnityState,
   getReplicationState,
+  getSnapshotPointerState,
   timeTravelTo,
 } from '../src/utils/lakehouse'
 
@@ -158,14 +159,24 @@ describe('复制、Table Layer 与版本实验', () => {
     expect(synced.responsibilities).toHaveLength(3)
   })
 
-  it('Atomic Commit 在失败时不发布半批文件，成功后整体可见', () => {
+  it('Atomic Commit 区分已写入与已提交，失败时不发布半批文件', () => {
+    expect(getAtomicCommitState(10, 6, 'idle')).toMatchObject({
+      status: 'idle',
+      writtenFileCount: 0,
+      committedFileCount: 0,
+      visibleFileCount: 0,
+    })
     expect(getAtomicCommitState(10, 6, 'failed')).toMatchObject({
       status: 'failed',
+      writtenFileCount: 5,
+      committedFileCount: 0,
       visibleFileCount: 0,
-      message: '第 6 个文件写入失败；前 5 个文件保持待发布，读者继续看到旧 Snapshot。',
+      message: '第 6 个文件写入失败；前 5 个文件已写入但未提交，读者继续看到旧 Snapshot。',
     })
     expect(getAtomicCommitState(10, 6, 'committed')).toMatchObject({
       status: 'committed',
+      writtenFileCount: 10,
+      committedFileCount: 10,
       visibleFileCount: 10,
     })
   })
@@ -194,6 +205,132 @@ describe('复制、Table Layer 与版本实验', () => {
     expect(timeTravelTo(committed, 1)).toEqual(initialSnapshot)
     expect(timeTravelTo(committed, 1)?.columns).not.toContain('channel')
     expect(timeTravelTo(committed, 2)?.columns).toContain('channel')
+  })
+})
+
+describe('Current Snapshot Pointer 与 reader visibility', () => {
+  const idleCommit = getAtomicCommitState(10, 6, 'idle')
+  const failedCommit = getAtomicCommitState(10, 6, 'failed')
+  const committedCommit = getAtomicCommitState(10, 6, 'committed')
+  const committedSnapshots = commitSnapshot(
+    tableLayerVisualization.snapshots,
+    tableLayerVisualization.evolutionCommit,
+  )
+
+  it('initial：published pointer → v1，reader sees v1，没有未提交批次', () => {
+    const state = getSnapshotPointerState(tableLayerVisualization.snapshots, 1, idleCommit)
+
+    expect(state).toMatchObject({
+      publishedVersion: 1,
+      previousPublishedVersion: null,
+      pointerMoved: false,
+      queryTargetVersion: 1,
+      queryTargetIsPublished: true,
+      readerVersion: 1,
+      metadataStatus: 'not-started',
+      metadataVersion: 2,
+    })
+    expect(state.visibilitySteps.map((step) => step.id)).toEqual([
+      'files',
+      'metadata',
+      'pointer',
+      'reader',
+    ])
+    expect(state.visibilitySteps.find((step) => step.id === 'files')).toMatchObject({
+      state: 'empty',
+      value: '尚未写入文件',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'pointer')).toMatchObject({
+      state: 'unchanged',
+      value: '仍为 v1',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'reader')?.value).toBe('仍读取 v1')
+    expect(state.summary).toContain('读者看到 v1')
+  })
+
+  it('commit success：新 Snapshot committed，published pointer v1 → v2，reader sees v2', () => {
+    const state = getSnapshotPointerState(committedSnapshots, 2, committedCommit)
+
+    expect(state).toMatchObject({
+      publishedVersion: 2,
+      previousPublishedVersion: 1,
+      pointerMoved: true,
+      queryTargetVersion: 2,
+      queryTargetIsPublished: true,
+      readerVersion: 2,
+      metadataStatus: 'committed',
+      metadataVersion: 2,
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'files')).toMatchObject({
+      state: 'committed',
+      value: '已写入 10 / 10 个文件',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'metadata')).toMatchObject({
+      state: 'committed',
+      value: 'v2 Snapshot 已提交',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'pointer')).toMatchObject({
+      state: 'committed',
+      value: 'v1 → v2',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'reader')?.value).toBe('读取 v2')
+    expect(state.summary).toBe('Commit 成功：Published Pointer v1 → v2，读者看到 v2。')
+  })
+
+  it('commit failure：partial files 不改变 reader visibility，pointer 仍 v1，reader sees v1', () => {
+    const state = getSnapshotPointerState(tableLayerVisualization.snapshots, 1, failedCommit)
+
+    expect(state).toMatchObject({
+      publishedVersion: 1,
+      pointerMoved: false,
+      queryTargetVersion: 1,
+      queryTargetIsPublished: true,
+      readerVersion: 1,
+      metadataStatus: 'uncommitted',
+      metadataVersion: 2,
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'files')).toMatchObject({
+      state: 'pending',
+      value: '已写入 5 / 10 个文件',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'metadata')).toMatchObject({
+      state: 'pending',
+      value: 'v2 Snapshot 未提交',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'pointer')).toMatchObject({
+      state: 'unchanged',
+      value: '仍为 v1',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'reader')).toMatchObject({
+      state: 'unchanged',
+      value: '仍读取 v1',
+    })
+    expect(state.summary).toContain('Commit 失败')
+    expect(state.summary).toContain('读者仍看到 v1')
+  })
+
+  it('time travel：published pointer 仍 v2，query target = v1，本次查询读 v1', () => {
+    const state = getSnapshotPointerState(committedSnapshots, 1, committedCommit)
+
+    expect(state).toMatchObject({
+      publishedVersion: 2,
+      previousPublishedVersion: 1,
+      pointerMoved: true,
+      queryTargetVersion: 1,
+      queryTargetSnapshotId: 'snapshot-1',
+      queryTargetIsPublished: false,
+      readerVersion: 1,
+      metadataStatus: 'committed',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'pointer')).toMatchObject({
+      state: 'committed',
+      value: 'v1 → v2',
+    })
+    expect(state.visibilitySteps.find((step) => step.id === 'reader')).toMatchObject({
+      state: 'time-travel',
+      value: '本次查询读取 v1',
+    })
+    expect(state.summary).toBe('本次查询 Time Travel 到 v1；Current Published Pointer 仍为 v2。')
   })
 })
 
@@ -284,6 +421,27 @@ describe('Pilot C lakehouse 视觉语法：Zone / Connector / Focus / State / De
     expect(tableLayerMarkup).toContain('data-state="current"')
     // 默认选中 v1 是 Focus，不是状态
     expect(tableLayerMarkup).toContain('data-focus="primary"')
+  })
+
+  it('table-layer：可见性因果链与两个 Pointer 语义默认状态正确', () => {
+    expect(tableLayerMarkup).toContain('data-detail-role="visibility-chain"')
+    expect(tableLayerMarkup).toContain('data-causal-step="files"')
+    expect(tableLayerMarkup).toContain('data-causal-step="metadata"')
+    expect(tableLayerMarkup).toContain('data-causal-step="pointer"')
+    expect(tableLayerMarkup).toContain('data-causal-step="reader"')
+    expect(tableLayerMarkup).toContain('data-detail-role="pointer-compare"')
+    expect(tableLayerMarkup).toContain('data-pointer-role="published"')
+    expect(tableLayerMarkup).toContain('data-pointer-role="query-target"')
+    // 初始：发布指针未移动，Query Target 跟随发布指针
+    expect(tableLayerMarkup).toContain('data-state="unchanged"')
+    expect(tableLayerMarkup).toContain('data-state="follows-published"')
+    expect(tableLayerMarkup).toContain('Current Published Snapshot Pointer')
+    expect(tableLayerMarkup).toContain('已发布 · 当前指针')
+    // 初始没有 Time Travel
+    expect(tableLayerMarkup).not.toContain('data-state="time-travel"')
+    expect(tableLayerMarkup).not.toContain(
+      'data-pointer-role="query-target" data-state="time-travel"',
+    )
   })
 
   it('unity：heterogeneous 与 shared-table 的 zone / relation / focus 互不误标', () => {
