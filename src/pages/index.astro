@@ -3,14 +3,14 @@ import { GlobalHeaderActions } from '../components/GlobalHeaderActions'
 import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
 import { SiteFooter } from '../components/SiteFooter'
 import BaseLayout from '../layouts/BaseLayout.astro'
-import { chapters, lessons } from '../data/course'
+import { chapters, isLessonAvailable, lessons } from '../data/course'
 import { HERO_METRIC_SQL_EXAMPLE } from '../data/code-examples'
 import { getMessage } from '../i18n/messages'
 import { buildCodeHighlightMap } from '../utils/build-code-highlight'
 import { getChapterDisplayNumber } from '../utils/lesson'
 import homeStylesUrl from '../styles/layouts/home.css?url'
 
-const actualDemoCount = lessons.filter((lesson) => lesson.demo !== 'coming-soon').length
+const actualDemoCount = lessons.filter(isLessonAvailable).length
 const codeHighlights = await buildCodeHighlightMap([HERO_METRIC_SQL_EXAMPLE])
 const baseUrl = import.meta.env.BASE_URL
 ---
@@ -184,10 +184,8 @@ const baseUrl = import.meta.env.BASE_URL
         </div>
         <ol class="home-course-map__list">
           {chapters.map((chapter) => {
-            const lesson =
-              chapter.lessons.find((chapterLesson) => chapterLesson.demo !== 'coming-soon') ??
-              chapter.lessons[0]
-            const isReady = lesson.demo !== 'coming-soon'
+            const lesson = chapter.lessons.find(isLessonAvailable) ?? chapter.lessons[0]
+            const isReady = isLessonAvailable(lesson)
             return (
               <li>
                 <a

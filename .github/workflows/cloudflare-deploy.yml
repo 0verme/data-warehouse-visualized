@@ -41,8 +41,17 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      - name: Run type check
+        run: npm run check
+
       - name: Build static site
         run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser smoke
+        run: npm run test:e2e:smoke -- --skip-build
 
       - name: Deploy to Cloudflare Workers
         if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}

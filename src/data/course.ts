@@ -44,6 +44,16 @@ export interface LessonDefinition {
   demo: LessonDemo
 }
 
+/**
+ * Single source of truth for "is this lesson online?".
+ *
+ * The home page, the README course facts test and the release gate all derive
+ * lesson counts from this predicate instead of re-implementing it.
+ */
+export function isLessonAvailable(lesson: Pick<LessonDefinition, 'demo'>): boolean {
+  return lesson.demo !== 'coming-soon'
+}
+
 /** Display text for one lesson in a specific locale. */
 export interface LessonTranslation {
   title: string
