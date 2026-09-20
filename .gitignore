@@ -1,4 +1,6 @@
-node_modules/
+# Must not use a trailing slash: `node_modules/` only matches directories and
+# would let a `node_modules` symlink be committed again.
+node_modules
 dist/
 .astro/
 coverage/

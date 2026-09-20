@@ -19,7 +19,7 @@ GitHub main
 
 工作流文件位于 [`.github/workflows/cloudflare-deploy.yml`](../.github/workflows/cloudflare-deploy.yml)：
 
-- **Pull Request**：执行 `npm ci`、`npm run test`、`npm run lint`、`npm run format:check` 与 `npm run build`，仅用于集成验证，不执行部署。
+- **Pull Request**：执行 `npm ci`、`npm run test`、`npm run lint`、`npm run format:check`、`npm run check`（Astro / TypeScript 类型检查）、`npm run build` 与 `npm run test:e2e:smoke`（Chromium 浏览器 smoke），仅用于集成验证，不执行部署。
 - **Push to `main`**：完成验证与静态资源构建 (`dist/`) 后，自动调用共享 Action `0verme/ci-workflows/.github/actions/cloudflare-worker-deploy@v1` 将产物部署至 Cloudflare Workers。
 - **手动触发 (`workflow_dispatch`)**：支持在 GitHub Actions 界面手动选择分支触发生产发布。
 
@@ -73,9 +73,14 @@ GitHub main
 ```bash
 npm ci
 npm run test
+npm run check
 npm run lint
 npm run format:check
 npm run build
+
+# 浏览器 smoke（第一次需要先安装 Chromium）：
+npx playwright install chromium
+npm run test:e2e:smoke -- --skip-build
 
 # dry-run 验证 Wrangler 读取配置与产物（不会真正上传）：
 npm run deploy -- --dry-run

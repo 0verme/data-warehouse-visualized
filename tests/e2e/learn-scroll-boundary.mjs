@@ -13,28 +13,28 @@
  *   4. `.sr-only` content is still exposed to assistive technology.
  *   5. Ordinary (non-Learn) pages still scroll the document normally.
  *
- * The script is opt-in because the repository has no browser-test CI job yet.
- * The CI-runnable CSS/SSR contract lives in `tests/learn-shell-layout.test.tsx`.
+ * This is the deep layout suite and stays slow on purpose (every Learn page ×
+ * 4 viewports). The minimum release gate runs `tests/e2e/release-smoke.mjs`
+ * instead; this script is the manual / pre-release deeper check. The
+ * CI-runnable CSS/SSR contract lives in `tests/learn-shell-layout.test.tsx`.
  *
  * Usage:
  *   npm run test:e2e:learn-scroll                 # build + preview + scan
  *   npm run test:e2e:learn-scroll -- --skip-build # reuse existing dist/
  *   npm run test:e2e:learn-scroll -- --base http://127.0.0.1:4321
  *
- * Requires the `playwright` package (not an app dependency):
- *   npm i -D playwright && npx playwright install chromium
+ * Requires the `playwright` devDependency and a Chromium build:
+ *   npx playwright install chromium
  * Override resolution with `PLAYWRIGHT_MODULE=/path/to/node_modules/playwright`.
  */
-import { execFileSync, spawn } from 'node:child_process'
 import { readdirSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import net from 'node:net'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { TOLERANCE, createChecker, launchChromium, startPreview } from './lib/harness.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const DIST_LEARN = join(ROOT, 'dist', 'learn')
-const TOLERANCE = 1
+const SCRIPT_NAME = 'learn-scroll'
 
 const VIEWPORTS = [
   { name: 'desktop-1440x900', width: 1440, height: 900 },
@@ -109,62 +109,7 @@ const skipBuild = args.includes('--skip-build')
 const baseArgIndex = args.indexOf('--base')
 const externalBase = baseArgIndex >= 0 ? args[baseArgIndex + 1] : null
 
-let failures = 0
-let checks = 0
-
-function check(label, condition, detail = '') {
-  checks += 1
-  if (!condition) {
-    failures += 1
-    console.error(`  FAIL ${label}${detail ? ` — ${detail}` : ''}`)
-  }
-}
-
-function loadPlaywright() {
-  const require = createRequire(import.meta.url)
-  const candidates = process.env.PLAYWRIGHT_MODULE
-    ? [process.env.PLAYWRIGHT_MODULE, 'playwright']
-    : ['playwright']
-
-  for (const id of candidates) {
-    try {
-      return require(id)
-    } catch {
-      // try next candidate
-    }
-  }
-
-  throw new Error(
-    'playwright not found. Install it with `npm i -D playwright && npx playwright install chromium` ' +
-      'or point PLAYWRIGHT_MODULE at an existing installation.',
-  )
-}
-
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer()
-    server.unref()
-    server.on('error', reject)
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address()
-      server.close(() => resolve(port))
-    })
-  })
-}
-
-async function waitForServer(url, timeoutMs = 30_000) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      const response = await fetch(url)
-      if (response.ok) return
-    } catch {
-      // server not ready yet
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200))
-  }
-  throw new Error(`preview server did not become ready: ${url}`)
-}
+const { check, report } = createChecker()
 
 function readLessonSlugs() {
   return readdirSync(DIST_LEARN, { withFileTypes: true })
@@ -668,31 +613,16 @@ async function navigationStateProbe(page, baseUrl) {
 }
 
 async function main() {
-  const { chromium } = loadPlaywright()
-  const launchOptions = process.env.CHROMIUM_EXECUTABLE
-    ? { executablePath: process.env.CHROMIUM_EXECUTABLE }
-    : {}
-  const browser = await chromium.launch(launchOptions)
-
-  let preview = null
-  let baseUrl = externalBase
+  const browser = await launchChromium()
+  const preview = await startPreview({
+    root: ROOT,
+    base: externalBase,
+    skipBuild,
+    scriptName: SCRIPT_NAME,
+  })
+  const baseUrl = preview.baseUrl
 
   try {
-    if (!baseUrl) {
-      if (!skipBuild) {
-        console.log('[learn-scroll] building static site…')
-        execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'inherit' })
-      }
-      const port = await getFreePort()
-      baseUrl = `http://127.0.0.1:${port}`
-      preview = spawn('npx', ['astro', 'preview', '--port', String(port), '--host', '127.0.0.1'], {
-        cwd: ROOT,
-        stdio: 'ignore',
-        detached: true,
-      })
-      await waitForServer(`${baseUrl}/learn/`)
-    }
-
     const lessonSlugs = readLessonSlugs()
     const pagePaths = ['/learn/', ...lessonSlugs.map((slug) => `/learn/${slug}/`)]
     console.log(
@@ -779,23 +709,12 @@ async function main() {
       }
       console.log('[learn-scroll] responsive comparison contract probe done')
     }
-
-    console.log(`[learn-scroll] ${checks - failures}/${checks} checks passed`)
-    if (failures > 0) {
-      console.error(`[learn-scroll] FAILED with ${failures} failing checks`)
-    }
   } finally {
     await browser.close()
-    if (preview?.pid) {
-      try {
-        process.kill(-preview.pid, 'SIGTERM')
-      } catch {
-        preview.kill('SIGTERM')
-      }
-    }
+    preview.stop()
   }
 
-  if (failures > 0) {
+  if (report(SCRIPT_NAME) > 0) {
     process.exitCode = 1
   }
 }

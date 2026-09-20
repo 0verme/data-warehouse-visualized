@@ -61,7 +61,7 @@ ODS、DWD、DWS、ADS 是常见的分层叫法，不是所有团队都必须照�
 
 ### 第一次系统学习数据仓库
 
-按主课程顺序学习第 **01 章** 到第 **11 章**。这条路线从业务系统和一张报表开始，经过建模、指标、SQL 加工、调度、质量、血缘、治理、湖仓、数据服务和性能；第 **12 章** 综合实战目前处于规划中，第 **13 章** 生产实践案例可以在完成主课程后按需进入。
+按主课程顺序学习第 **01 章** 到第 **11 章**。这条路线从业务系统和一张报表开始，经过建模、指标、SQL 加工、调度、质量、血缘、治理、湖仓、数据服务和性能；第 **12 章** 跨系统分行经营分析数据产品是综合实战 Capstone，第 **13 章** 生产实践案例可以在完成主课程后按需进入。
 
 ### 已经会 SQL / ETL
 
@@ -73,23 +73,23 @@ ODS、DWD、DWS、ADS 是常见的分层叫法，不是所有团队都必须照�
 
 ## 完整课程体系
 
-当前课程定义包含 **13 个章节、54 节课程**：其中 **53 节已上线，1 节规划中**。按已上线课程的实验入口计，当前有 **53 个交互实验入口**，对应 **22 类实验工作台**。各章课程数量和状态如下：
+当前课程定义包含 **13 个章节、54 节课程**：其中 **54 节已上线，0 节规划中**。按已上线课程的实验入口计，当前有 **54 个交互实验入口**，对应 **23 类实验工作台**。各章课程数量和状态如下：
 
-| 章节                                                       | 主题                | 课程数 | 状态   |
-| :--------------------------------------------------------- | :------------------ | -----: | :----- |
-| [第 01 章](https://sql.sb/learn/why-data-warehouse/)       | 认识数据仓库        |      4 | 已上线 |
-| [第 02 章](https://sql.sb/learn/data-modeling/)            | 数据建模            |      5 | 已上线 |
-| [第 03 章](https://sql.sb/learn/metric-system/)            | 指标体系            |      4 | 已上线 |
-| [第 04 章](https://sql.sb/learn/sql-and-transformation/)   | SQL 与数据加工      |      5 | 已上线 |
-| [第 05 章](https://sql.sb/learn/scheduling-system/)        | 调度系统            |      5 | 已上线 |
-| [第 06 章](https://sql.sb/learn/data-quality/)             | 数据质量            |      5 | 已上线 |
-| [第 07 章](https://sql.sb/learn/data-lineage/)             | 数据血缘            |      5 | 已上线 |
-| [第 08 章](https://sql.sb/learn/data-governance/)          | 数据治理            |      5 | 已上线 |
-| [第 09 章](https://sql.sb/learn/lakehouse/)                | 湖仓                |      4 | 已上线 |
-| [第 10 章](https://sql.sb/learn/data-service/)             | 数据服务            |      5 | 已上线 |
-| [第 11 章](https://sql.sb/learn/performance-and-practice/) | 性能与工程实践      |      5 | 已上线 |
-| 第 12 章                                                   | 从 0 搭一套数据仓库 |      1 | 规划中 |
-| 第 13 章                                                   | 生产实践案例        |      1 | 已上线 |
+| 章节                                                       | 主题                       | 课程数 | 状态   |
+| :--------------------------------------------------------- | :------------------------- | -----: | :----- |
+| [第 01 章](https://sql.sb/learn/why-data-warehouse/)       | 认识数据仓库               |      4 | 已上线 |
+| [第 02 章](https://sql.sb/learn/data-modeling/)            | 数据建模                   |      5 | 已上线 |
+| [第 03 章](https://sql.sb/learn/metric-system/)            | 指标体系                   |      4 | 已上线 |
+| [第 04 章](https://sql.sb/learn/sql-and-transformation/)   | SQL 与数据加工             |      5 | 已上线 |
+| [第 05 章](https://sql.sb/learn/scheduling-system/)        | 调度系统                   |      5 | 已上线 |
+| [第 06 章](https://sql.sb/learn/data-quality/)             | 数据质量                   |      5 | 已上线 |
+| [第 07 章](https://sql.sb/learn/data-lineage/)             | 数据血缘                   |      5 | 已上线 |
+| [第 08 章](https://sql.sb/learn/data-governance/)          | 数据治理                   |      5 | 已上线 |
+| [第 09 章](https://sql.sb/learn/lakehouse/)                | 湖仓                       |      4 | 已上线 |
+| [第 10 章](https://sql.sb/learn/data-service/)             | 数据服务                   |      5 | 已上线 |
+| [第 11 章](https://sql.sb/learn/performance-and-practice/) | 性能与工程实践             |      5 | 已上线 |
+| 第 12 章                                                   | 跨系统分行经营分析数据产品 |      1 | 已上线 |
+| 第 13 章                                                   | 生产实践案例               |      1 | 已上线 |
 
 ## 视觉预览
 
@@ -143,10 +143,18 @@ npm run dev
 
 ```bash
 npm run test         # 运行 Vitest 单元测试
+npm run check        # 运行 Astro / TypeScript 类型检查
 npm run lint         # 运行 ESLint 静态代码检查
 npm run format:check # 检查 Prettier 格式
 npm run build        # 构建静态站点产物 (dist/)
 npm run preview      # 本地预览生产构建
+```
+
+发布门禁还包含一个 Chromium 浏览器 smoke（`/learn` 加载、切课、无双滚动条 / 无横向溢出、Step Player 与 Capstone 交互），需要先安装浏览器：
+
+```bash
+npx playwright install chromium
+npm run test:e2e:smoke # 构建 + 启动 preview + 检查桌面 1280×800 / 移动 390×844
 ```
 
 ```text
