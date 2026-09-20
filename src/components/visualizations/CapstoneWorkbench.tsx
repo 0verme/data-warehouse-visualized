@@ -11,11 +11,13 @@ import type {
   CapstoneLaunchReview,
   CapstonePerformanceChoice,
   CapstoneProjectState,
+  CapstoneQualityRecheck,
   CapstoneReconciliationDecision,
   CapstoneStageId,
   CapstoneVisualization,
 } from '../../features/capstone/types'
 import { CAPSTONE_STAGE_IDS } from '../../features/capstone/types'
+import { getCapstoneRepairActionForCandidate } from '../../features/capstone/reconciliation'
 import { analyzeLineageInvestigation } from '../../utils/lineage'
 import { LegacyLineageGraph } from './LegacyLineageGraph'
 import {
@@ -142,6 +144,26 @@ function formatRatio(value: number | null): string {
   return value === null
     ? 'NULL · 不可计算'
     : value.toLocaleString('zh-CN', { maximumFractionDigits: 4 })
+}
+
+function formatRecheckThreshold(recheck: CapstoneQualityRecheck): string {
+  const { threshold } = recheck
+  const operator =
+    threshold.operator === 'at-most' ? '≤' : threshold.operator === 'at-least' ? '≥' : '='
+  const value = threshold.value.toLocaleString('zh-CN')
+  const unit =
+    threshold.unit === 'currency'
+      ? ' 元'
+      : threshold.unit === 'days'
+        ? ' 天'
+        : threshold.unit === 'accounts'
+          ? ' 个账户'
+          : ' 行'
+  const warning =
+    threshold.warningRange === undefined
+      ? ''
+      : `（warning range ${threshold.warningRange.toLocaleString('zh-CN')}）`
+  return `${operator} ${value}${unit}${warning}`
 }
 
 function getLatestDecision(
@@ -716,6 +738,128 @@ function IncidentStage({ visualization, state, dispatch }: StageProps) {
   )
 }
 
+function RecheckEvidence({ recheck }: { recheck: CapstoneQualityRecheck }) {
+  const passed = recheck.releaseStatus === 'released'
+  return (
+    <div
+      className={`capstone-recheck-panel capstone-recheck-panel--${passed ? 'pass' : 'fail'}`}
+      role="status"
+      aria-label="复检证据"
+    >
+      <span className="capstone-eyebrow">复检证据 · {recheck.ruleId}</span>
+      <strong>{passed ? 'PASS · 可以继续发布流程' : 'FAIL · Release 保持 BLOCKED'}</strong>
+      <p>
+        修复动作「{recheck.repairLabel}」已按同一 business_date Rerun；
+        {recheck.candidateVerdict === 'confirmed'
+          ? '重算后的差额回到阈值内，该候选被复检确认。'
+          : '重算后的差额仍然超出阈值，该候选被复检排除。'}
+      </p>
+      <dl className="capstone-recheck-facts">
+        <div>
+          <dt>expected · DWD 重聚合</dt>
+          <dd>{formatAmount(recheck.expectedBalance)}</dd>
+        </div>
+        <div>
+          <dt>observed · DWS 写入</dt>
+          <dd>
+            {formatAmount(recheck.observedBalanceBefore)} →{' '}
+            <strong>{formatAmount(recheck.observedBalanceAfter)}</strong>
+          </dd>
+        </div>
+        <div>
+          <dt>delta</dt>
+          <dd className={recheck.delta === 0 ? 'is-positive' : 'is-negative'}>
+            {formatAmount(recheck.delta)}
+          </dd>
+        </div>
+        <div>
+          <dt>threshold</dt>
+          <dd>{formatRecheckThreshold(recheck)}</dd>
+        </div>
+        <div>
+          <dt>quality status</dt>
+          <dd>
+            {recheck.status} · {recheck.releaseStatus}
+          </dd>
+        </div>
+        <div>
+          <dt>reconciliation</dt>
+          <dd>{recheck.observed}</dd>
+        </div>
+      </dl>
+      <ul className="capstone-recheck-changes">
+        {recheck.appliedChanges.map((change) => (
+          <li key={change}>{change}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function QualityRepairPanel({
+  state,
+  dispatch,
+}: {
+  state: CapstoneProjectState
+  dispatch: (action: CapstoneAction) => void
+}) {
+  const recheck = state.qualityRecheck
+  const repairAction = getCapstoneRepairActionForCandidate(state.investigationCandidateId)
+  const passed = recheck?.releaseStatus === 'released'
+
+  return (
+    <div className="capstone-repair-panel">
+      <div className="capstone-recovery-panel">
+        <div>
+          <span className="capstone-eyebrow">修复后验证 · apply → recompute → quality</span>
+          <h3>
+            {recheck
+              ? passed
+                ? 'Quality PASS · Release released'
+                : 'Quality FAIL · Release 保持 BLOCKED'
+              : '还没有执行修复与复检'}
+          </h3>
+          {recheck ? (
+            <p>
+              {passed
+                ? '同一 business_date 已重跑，重算后的对账差额在阈值内。'
+                : `同一 business_date 已重跑，重算后的对账差额 ${formatAmount(recheck.delta)} 仍超出阈值。`}
+            </p>
+          ) : repairAction ? (
+            <>
+              <p>
+                修复动作「{repairAction.label}」：{repairAction.detail}
+              </p>
+              <p>Rerun 范围：{repairAction.rerunScope}</p>
+            </>
+          ) : (
+            <p>先在上方选择一个根因候选，页面会给出对应的可执行修复动作。</p>
+          )}
+        </div>
+        <button
+          className="capstone-primary-button"
+          type="button"
+          disabled={!state.investigationCandidateId || !repairAction}
+          onClick={() => dispatch({ type: 'apply-quality-repair' })}
+        >
+          {recheck
+            ? passed
+              ? '已完成修复复检'
+              : '重新执行修复复检'
+            : '应用修复动作 → Rerun → 复检'}
+        </button>
+      </div>
+      {recheck && <RecheckEvidence recheck={recheck} />}
+      {recheck && !passed && (
+        <p className="capstone-small-note">
+          错误候选不会自动
+          PASS：修复动作没有消除差额时，请回到上方候选列表重新选择，再执行一次修复与复检。
+        </p>
+      )}
+    </div>
+  )
+}
+
 function InvestigationStage({ visualization, state, review, dispatch }: StageProps) {
   const decision = getLatestDecision(state, 'investigate')
   const result = analyzeLineageInvestigation(
@@ -799,8 +943,16 @@ function InvestigationStage({ visualization, state, review, dispatch }: StagePro
           </div>
           {selectedCandidate && (
             <p className="capstone-boundary-note">
-              当前选择仍是 <strong>pending candidate</strong>，需要数据 Diff、SQL
-              版本、任务日志或业务变更记录确认。
+              {state.qualityRecheck?.candidateVerdict === 'confirmed' ? (
+                '复检已确认该候选：重算后的 reconciliation delta 回到阈值内。'
+              ) : state.qualityRecheck?.candidateVerdict === 'rejected' ? (
+                '复检已排除该候选：重算后的 reconciliation invariant 仍然失败。'
+              ) : (
+                <>
+                  当前选择仍是 <strong>pending candidate</strong>
+                  ，需要执行修复、Rerun 与复检来验证；不能把依赖关系当成业务根因证明。
+                </>
+              )}
             </p>
           )}
         </article>
@@ -826,30 +978,11 @@ function InvestigationStage({ visualization, state, review, dispatch }: StagePro
           investigationEvent={visualization.lineage.investigationEvent}
         />
       </div>
-      <div className="capstone-recovery-panel">
-        <div>
-          <span className="capstone-eyebrow">修复后验证</span>
-          <h3>
-            {state.qualityRecovered
-              ? 'Quality PASS · Release released'
-              : '还没有解除 Release Block'}
-          </h3>
-          <p>
-            {state.qualityRecovered
-              ? '同一 business_date 已重跑并完成对账复检。'
-              : '选择候选后，按同一业务日期修复、Rerun，再重新执行 Quality。'}
-          </p>
-        </div>
-        <button
-          className="capstone-primary-button"
-          type="button"
-          disabled={!state.investigationCandidateId || state.qualityRecovered}
-          onClick={() => dispatch({ type: 'recover-quality' })}
-        >
-          {state.qualityRecovered ? '已完成恢复' : '记录修复、Rerun 与复检'}
-        </button>
-      </div>
-      <DecisionNote decision={decision} tone={state.qualityRecovered ? 'success' : 'warning'} />
+      <QualityRepairPanel state={state} dispatch={dispatch} />
+      <DecisionNote
+        decision={decision}
+        tone={state.qualityRecheck?.releaseStatus === 'released' ? 'success' : 'warning'}
+      />
       <p className="capstone-small-note">
         本次调查的传递影响来自现有 Lineage utility；Governance
         只消费这份影响结果，不重新建设影响分析。
@@ -1118,6 +1251,14 @@ function LaunchReviewStage({ visualization, state, review, dispatch }: StageProp
           </p>
           <small>{review.quality.evidenceBoundary}</small>
         </div>
+        {review.quality.recheck ? (
+          <>
+            <RecheckEvidence recheck={review.quality.recheck} />
+            <ReviewList items={review.quality.recheck.evidence} />
+          </>
+        ) : (
+          <p className="capstone-muted">还没有执行任何修复动作；Release 仍然 BLOCKED。</p>
+        )}
       </ReviewSection>
       <ReviewSection title="Lineage / Blast Radius">
         <div className="capstone-review-columns">

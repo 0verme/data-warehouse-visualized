@@ -20,6 +20,10 @@ import {
   type LoanBalanceSnapshot,
 } from '../features/capstone/types'
 import type { Account, AccountBalanceSnapshot, Branch } from '../features/sql-transformation/types'
+import {
+  evaluateCapstoneQualityRepair,
+  getCapstoneRepairActionForCandidate,
+} from '../features/capstone/reconciliation'
 import { deduplicateBalanceSnapshots } from './sql-transformation'
 import { analyzeLineageInvestigation, getLineageEntityType } from './lineage'
 import { getGovernanceLineageImpact, getGovernanceRecommendation } from './governance'
@@ -159,7 +163,8 @@ export function createInitialCapstoneState(
     loanLateDecision: null,
     reconciliationDecision: null,
     investigationCandidateId: null,
-    qualityRecovered: false,
+    qualityRepairActionId: null,
+    qualityRecheck: null,
     consumerChoice: null,
     performanceChoice: null,
     performanceMeasured: false,
@@ -228,7 +233,7 @@ export function getCapstoneLaunchStatus(state: CapstoneProjectState): CapstoneLa
       state.loanLateDecision !== 'rerun-original-business-date') ||
     state.reconciliationDecision !== 'block-and-investigate' ||
     state.investigationCandidateId === null ||
-    !state.qualityRecovered ||
+    state.qualityRecheck?.releaseStatus !== 'released' ||
     state.consumerChoice === null ||
     !state.performanceMeasured ||
     state.performanceChoice === null ||
@@ -247,7 +252,11 @@ export function getCapstoneLaunchStatus(state: CapstoneProjectState): CapstoneLa
 
 function deriveProjectState(state: CapstoneProjectState): CapstoneProjectState {
   const completedCheckpointIds = orderCompletedStages(state.completedCheckpointIds)
-  const launchStatus = getCapstoneLaunchStatus({ ...state, completedCheckpointIds })
+  const qualityRecheck = state.qualityRepairActionId
+    ? evaluateCapstoneQualityRepair(state.qualityRepairActionId)
+    : null
+  const derived: CapstoneProjectState = { ...state, qualityRecheck }
+  const launchStatus = getCapstoneLaunchStatus({ ...derived, completedCheckpointIds })
   const allStagesCompleted = completedCheckpointIds.length === CAPSTONE_STAGE_IDS.length
   const missionStatus: CapstoneMissionStatus = allStagesCompleted
     ? launchStatus === 'READY'
@@ -260,7 +269,7 @@ function deriveProjectState(state: CapstoneProjectState): CapstoneProjectState {
       : 'in-progress'
 
   return {
-    ...state,
+    ...derived,
     completedCheckpointIds,
     checkpointStates: deriveCheckpointStates(completedCheckpointIds),
     missionStatus,
@@ -314,7 +323,7 @@ function resetDownstream(
     loanLateDecision: reset('incident') ? null : state.loanLateDecision,
     reconciliationDecision: reset('incident') ? null : state.reconciliationDecision,
     investigationCandidateId: reset('investigate') ? null : state.investigationCandidateId,
-    qualityRecovered: reset('investigate') ? false : state.qualityRecovered,
+    qualityRepairActionId: reset('investigate') ? null : state.qualityRepairActionId,
     consumerChoice: reset('deliver') ? null : state.consumerChoice,
     performanceChoice: reset('scale') ? null : state.performanceChoice,
     performanceMeasured: reset('scale') ? false : state.performanceMeasured,
@@ -550,7 +559,12 @@ export function transitionCapstoneProject(
       if (!isStageWorkable(state, 'investigate') || !action.candidateId) return state
       const nextBase = resetDownstream(state, 'investigate')
       const next = completeCheckpoint(
-        { ...nextBase, investigationCandidateId: action.candidateId },
+        {
+          ...nextBase,
+          investigationCandidateId: action.candidateId,
+          qualityRepairActionId: null,
+          qualityRecheck: null,
+        },
         'investigate',
       )
       return recordDecision(next, {
@@ -566,7 +580,7 @@ export function transitionCapstoneProject(
         recoveryPath: '结合数据 Diff、SQL 版本、执行参数、日志或业务变更记录确认候选。',
       })
     }
-    case 'recover-quality': {
+    case 'apply-quality-repair': {
       if (
         !isStageWorkable(state, 'investigate') ||
         !state.investigationCandidateId ||
@@ -575,29 +589,44 @@ export function transitionCapstoneProject(
         return state
       }
 
+      const repair = getCapstoneRepairActionForCandidate(state.investigationCandidateId)
+      if (!repair) {
+        return state
+      }
+
+      const recheck = evaluateCapstoneQualityRepair(repair.id)
+      if (!recheck) {
+        return state
+      }
+
+      const recovered = recheck.releaseStatus === 'released'
       const next = deriveProjectState({
         ...state,
-        qualityRecovered: true,
+        qualityRepairActionId: repair.id,
         incidents: {
           ...state.incidents,
           'deposit-reconciliation': {
             ...state.incidents['deposit-reconciliation'],
-            status: 'recovered',
-            consequence: '修复后按同一业务日期 Rerun，Quality 复检通过，Release 才能解除阻断。',
+            status: recovered ? 'recovered' : 'handled',
+            consequence: recovered
+              ? '修复后按同一业务日期 Rerun，Quality 复检通过，Release 才能解除阻断。'
+              : `修复后按同一业务日期 Rerun，reconciliation delta 仍为 ${formatAmount(recheck.delta)}，Quality 复检仍失败，Release 保持阻断。`,
           },
         },
       })
       return recordDecision(next, {
         checkpointId: 'investigate',
-        input: '选中的候选已完成数据对照和同日期恢复验证。',
-        evidence: [
-          '同一 business_date = 2026-09-30 重新执行目标分区',
-          'DWD / DWS 同口径对账恢复为 delta = 0',
-          'Quality recovery evaluation = PASS，Release = released',
-        ],
-        decision: '修复后 Rerun、重新质量检查，再解除 Release Block。',
-        consequence: '后续 Deliver 可以读取有效发布状态；失败事件仍保留在 Decision Records。',
-        recoveryPath: '若复检仍失败，继续保留 BLOCKED，回到候选和加工证据继续调查。',
+        input: `对候选 ${state.investigationCandidateId} 应用修复动作「${repair.label}」，按同一 business_date 重跑后重新执行质量检查。`,
+        evidence: recheck.evidence,
+        decision: recovered
+          ? `修复动作「${repair.label}」通过复检：reconciliation invariant 恢复，Release 解除阻断。`
+          : `修复动作「${repair.label}」未通过复检：reconciliation invariant 仍失败，不能解除 Release 阻断。`,
+        consequence: recovered
+          ? '后续 Deliver 可以读取有效发布状态；失败事件仍保留在 Decision Records。'
+          : 'Release 保持 BLOCKED；需要回到候选列表，根据证据重新选择修复动作并再次复检。',
+        recoveryPath: recovered
+          ? '若后续复检失败，继续保留 BLOCKED，回到候选和加工证据继续调查。'
+          : '重新选择候选 / 修复动作，或补充数据 Diff、SQL 版本、执行参数与业务变更证据。',
       })
     }
     case 'choose-consumer': {
@@ -839,7 +868,8 @@ export function normalizeCapstoneState(
       typeof partial.investigationCandidateId === 'string'
         ? partial.investigationCandidateId
         : null,
-    qualityRecovered: partial.qualityRecovered === true,
+    qualityRepairActionId: null,
+    qualityRecheck: null,
     consumerChoice: parseValidChoice(partial.consumerChoice, CAPSTONE_CONSUMERS),
     performanceChoice: parseValidChoice(partial.performanceChoice, CAPSTONE_PERFORMANCE_CHOICES),
     performanceMeasured: partial.performanceMeasured === true,
@@ -851,7 +881,13 @@ export function normalizeCapstoneState(
     launchStatus: fallback.launchStatus,
   }
 
-  const derivedState = deriveProjectState(state)
+  const candidateRepair = getCapstoneRepairActionForCandidate(state.investigationCandidateId)
+  const qualityRepairActionId =
+    candidateRepair && partial.qualityRepairActionId === candidateRepair.id
+      ? candidateRepair.id
+      : null
+  const restoredState: CapstoneProjectState = { ...state, qualityRepairActionId }
+  const derivedState = deriveProjectState(restoredState)
   const normalizedActive =
     requestedActiveCheckpointId &&
     derivedState.checkpointStates[requestedActiveCheckpointId] !== 'locked'
@@ -906,7 +942,7 @@ function getQualityEvidence(
   visualization: CapstoneVisualization,
   state: CapstoneProjectState,
 ): GovernanceQualityEvidence {
-  return state.qualityRecovered
+  return state.qualityRecheck?.releaseStatus === 'released'
     ? visualization.governance.recoveryEvidence
     : visualization.governance.failureEvidence
 }
@@ -977,8 +1013,12 @@ function getRemainingRisks(
 ): string[] {
   const risks: string[] = []
   if (status === 'BLOCKED') {
-    if (!state.qualityRecovered) {
-      risks.push('Quality reconciliation 仍未完成修复、Rerun 和复检，Release 继续 BLOCKED。')
+    if (state.qualityRecheck?.releaseStatus !== 'released') {
+      risks.push(
+        state.qualityRecheck
+          ? `最近一次复检仍失败：reconciliation delta = ${formatAmount(state.qualityRecheck.delta)}，Quality 未通过，Release 继续 BLOCKED。`
+          : 'Quality reconciliation 仍未完成修复、Rerun 和复检，Release 继续 BLOCKED。',
+      )
     }
     if (state.grainChoice && state.grainChoice !== 'business-date-branch') {
       risks.push('最终 Grain 尚未成立，不能把结果解释为 business_date × branch_id。')
@@ -999,7 +1039,13 @@ function getRemainingRisks(
   if (state.performanceChoice === 'add-resources') {
     risks.push('增加资源可能降低 Runtime，但成本和容量责任高于 Partition Pruning 方案。')
   }
-  if (state.investigationCandidateId) {
+  if (state.investigationCandidateId && state.qualityRecheck) {
+    risks.push(
+      state.qualityRecheck.candidateVerdict === 'confirmed'
+        ? `根因候选已由复检确认：reconciliation delta = ${formatAmount(state.qualityRecheck.delta)}；仍建议保留数据 Diff / SQL 版本等人工证据。`
+        : '当前候选已被复检排除；根因仍需结合数据 Diff、SQL 版本、任务日志或业务变更记录确认。',
+    )
+  } else if (state.investigationCandidateId) {
     risks.push('根因候选仍需结合数据 Diff、SQL 版本、任务日志或业务变更记录确认。')
   }
   const zeroRatioRow = visualization.facts.productRows.find(
@@ -1022,13 +1068,14 @@ export function getCapstoneLaunchReview(
   state: CapstoneProjectState,
 ): CapstoneLaunchReview {
   const status = getReviewStatus(state)
+  const qualityReleased = state.qualityRecheck?.releaseStatus === 'released'
   const labels = getNodeLabelMap(visualization.lineage.nodes)
   const lineageResult = analyzeLineageInvestigation(
     visualization.lineage.nodes,
     visualization.lineage.edges,
     visualization.lineage.investigationEvent,
   )
-  const governanceAsset = state.qualityRecovered
+  const governanceAsset = qualityReleased
     ? visualization.governance.recoveredAsset
     : visualization.governance.asset
   const governanceEvidence = getQualityEvidence(visualization, state)
@@ -1075,10 +1122,11 @@ export function getCapstoneLaunchReview(
       failureEventId: visualization.quality.event.eventId,
       expectedValue: String(visualization.quality.event.expected),
       observedValue: String(visualization.quality.event.observed),
-      effectiveStatus: state.qualityRecovered
-        ? visualization.quality.recovery.releaseDecision.status
+      effectiveStatus: qualityReleased
+        ? 'released'
         : visualization.quality.failure.releaseDecision.status,
-      effectiveBlocked: !state.qualityRecovered,
+      effectiveBlocked: !qualityReleased,
+      recheck: state.qualityRecheck,
       rerunBusinessDate: visualization.mission.businessDate,
       evidenceBoundary:
         'Quality Event 记录观察事实；Lineage 提供调查路径；候选根因必须由数据和任务证据最终确认。',

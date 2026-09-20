@@ -5,24 +5,21 @@ import {
   qualityEventToGovernanceEvidence,
 } from '../governance/quality-adapter'
 import { performanceVisualizations } from '../performance/banking'
-import {
-  BANKING_SCHEDULER_TASK_IDS,
-  bankingDepositBalanceTaskContract,
-  createBankingSchedulerTasks,
-} from '../scheduler/banking'
-import type { SchedulerRunState, SchedulerTaskDefinition } from '../scheduler/types'
-import {
-  buildSchedulerTimeline,
-  createInitialSchedulerRun,
-  createPartitionRerunPlan,
-} from '../../utils/scheduler'
-import {
-  createDataQualityVisualization,
-  createQualitySchedulerRun,
-  createQualityTeachingModel,
-  evaluateDataQuality,
-} from '../../utils/data-quality'
+import { QUALITY_RULE_IDS } from '../../utils/data-quality'
 import { buildBranchBusinessDaily } from '../../utils/capstone'
+import { createCapstoneSchedulerProjection } from './scheduler'
+import {
+  CAPSTONE_BUSINESS_DATE,
+  CAPSTONE_DELIVERY_SLA_AT,
+  CAPSTONE_FINAL_PRODUCT_TABLE,
+} from './constants'
+import {
+  CAPSTONE_INCIDENT_INITIAL_CONFIG,
+  CAPSTONE_REPAIR_ACTIONS,
+  applyCapstoneRepair,
+  createCapstoneIncidentQualityEvaluation,
+  getCapstoneIncidentRootRepairAction,
+} from './reconciliation'
 import {
   BANKING_LINEAGE_NODE_IDS,
   bankingLineageEdges,
@@ -44,7 +41,6 @@ import type {
   CapstoneLineageProjection,
   CapstoneMissionBrief,
   CapstoneQualityProjection,
-  CapstoneSchedulerProjection,
   CapstoneSourceFacts,
   CapstoneVisualization,
   LoanBalanceSnapshot,
@@ -55,16 +51,17 @@ import type {
   DataServicePublishedAsset,
   DataServicePublishedBalance,
 } from '../data-service/types'
-import type { QualityBankingModel, QualityRuleDefinition } from '../data-quality/types'
-import type { TransformationTaskContract } from '../sql-transformation/types'
+import type { QualityRuleDefinition } from '../data-quality/types'
 
-export const CAPSTONE_BUSINESS_DATE = '2026-09-30'
-export const CAPSTONE_PROCESSING_STARTED_AT = '2026-10-01 07:00'
-export const CAPSTONE_LOAN_EXPECTED_AT = '2026-10-01 06:30'
-export const CAPSTONE_LOAN_ARRIVED_AT = '2026-10-01 07:35'
-export const CAPSTONE_DELIVERY_SLA_AT = '2026-10-01 08:00'
-export const CAPSTONE_FINAL_PRODUCT_TABLE = 'branch_business_daily'
-export const CAPSTONE_FINAL_GRAIN = 'business_date × branch_id'
+export {
+  CAPSTONE_BUSINESS_DATE,
+  CAPSTONE_PROCESSING_STARTED_AT,
+  CAPSTONE_LOAN_EXPECTED_AT,
+  CAPSTONE_LOAN_ARRIVED_AT,
+  CAPSTONE_DELIVERY_SLA_AT,
+  CAPSTONE_FINAL_PRODUCT_TABLE,
+  CAPSTONE_FINAL_GRAIN,
+} from './constants'
 
 /** The extra branch exists only to make the denominator-zero behavior observable. */
 export const capstoneBranches = [
@@ -213,210 +210,33 @@ export const capstoneCheckpoints = [
   },
 ] as const
 
-function withContract(
-  base: TransformationTaskContract,
-  overrides: Partial<TransformationTaskContract>,
-): TransformationTaskContract {
-  return { ...base, ...overrides }
-}
-
-function getTask(
-  tasks: readonly SchedulerTaskDefinition[],
-  taskId: string,
-): SchedulerTaskDefinition {
-  const task = tasks.find((candidate) => candidate.taskId === taskId)
-  if (!task) {
-    throw new Error(`Capstone Scheduler 缺少任务: ${taskId}`)
-  }
-  return task
-}
-
-/** Add only the Capstone loan path to the existing banking Scheduler task model. */
-export function createCapstoneSchedulerTasks(): SchedulerTaskDefinition[] {
-  const bankingTasks = createBankingSchedulerTasks(bankingDepositBalanceTaskContract)
-  const branchTask = getTask(bankingTasks, BANKING_SCHEDULER_TASK_IDS.branch)
-  const depositAdsTask = getTask(bankingTasks, BANKING_SCHEDULER_TASK_IDS.ads)
-
-  const loanInputTask: SchedulerTaskDefinition = {
-    taskId: 'prepare.loan-balance-snapshot.daily.v1',
-    label: 'LoanBalanceSnapshot 到达',
-    layer: 'ods',
-    description: '接收信贷系统提供的 loan_id × snapshot_date 日终贷款余额事实。',
-    dependsOn: [],
-    contract: withContract(bankingDepositBalanceTaskContract, {
-      taskId: 'prepare.loan-balance-snapshot.daily.v1',
-      inputTables: ['LoanBalanceSnapshot'],
-      outputTable: 'ods_loan_balance_snapshot',
-      outputGrain: 'loan_id × snapshot_date',
-      dependencies: [],
-      rerunHint: `按 business_date = ${CAPSTONE_BUSINESS_DATE} 覆盖贷款快照分区。`,
-    }),
-    durationMinutes: 3,
-    maxAttempts: 1,
-    slaMinutes: 330,
-  }
-
-  const loanDwdTask: SchedulerTaskDefinition = {
-    taskId: 'transform.loan-balance.detail.daily.v1',
-    label: 'DWD 贷款余额明细',
-    layer: 'dwd',
-    description: '保留信贷系统最小事实，按 loan_id × snapshot_date 对齐分行键。',
-    dependsOn: [loanInputTask.taskId],
-    contract: withContract(bankingDepositBalanceTaskContract, {
-      taskId: 'transform.loan-balance.detail.daily.v1',
-      inputTables: [loanInputTask.contract.outputTable],
-      outputTable: 'dwd_loan_balance_detail',
-      outputGrain: 'loan_id × snapshot_date',
-      dependencies: [loanInputTask.taskId],
-      rerunHint: `只重算 business_date = ${CAPSTONE_BUSINESS_DATE} 的贷款明细分区。`,
-    }),
-    durationMinutes: 4,
-    maxAttempts: 2,
-    slaMinutes: 330,
-  }
-
-  const loanDwsTask: SchedulerTaskDefinition = {
-    taskId: 'transform.loan-balance.topic.daily.v1',
-    label: 'DWS 贷款余额主题',
-    layer: 'dws',
-    description: '先按 business_date × branch_id 汇总贷款日终余额。',
-    dependsOn: [loanDwdTask.taskId],
-    contract: withContract(bankingDepositBalanceTaskContract, {
-      taskId: 'transform.loan-balance.topic.daily.v1',
-      inputTables: [loanDwdTask.contract.outputTable, 'Branch'],
-      outputTable: 'dws_loan_balance_daily',
-      outputGrain: CAPSTONE_FINAL_GRAIN,
-      dependencies: [loanDwdTask.taskId, branchTask.taskId],
-      rerunHint: `按 business_date = ${CAPSTONE_BUSINESS_DATE} 覆盖贷款主题分区。`,
-    }),
-    durationMinutes: 5,
-    maxAttempts: 2,
-    slaMinutes: 330,
-  }
-
-  const finalTask: SchedulerTaskDefinition = {
-    taskId: 'publish.branch-business-daily.v1',
-    label: '发布 branch_business_daily',
-    layer: 'ads',
-    description: '汇合存款主题和贷款主题，写入分行日经营指标快照。',
-    dependsOn: [depositAdsTask.taskId, loanDwsTask.taskId, branchTask.taskId],
-    contract: withContract(bankingDepositBalanceTaskContract, {
-      taskId: 'publish.branch-business-daily.v1',
-      inputTables: [
-        depositAdsTask.contract.outputTable,
-        loanDwsTask.contract.outputTable,
-        'Branch',
-      ],
-      outputTable: CAPSTONE_FINAL_PRODUCT_TABLE,
-      outputGrain: CAPSTONE_FINAL_GRAIN,
-      dependencies: [depositAdsTask.taskId, loanDwsTask.taskId, branchTask.taskId],
-      rerunHint: `按 business_date = ${CAPSTONE_BUSINESS_DATE} 覆盖 branch_business_daily 目标分区。`,
-    }),
-    durationMinutes: 4,
-    maxAttempts: 2,
-    slaMinutes: 330,
-  }
-
-  return [...bankingTasks, loanInputTask, loanDwdTask, loanDwsTask, finalTask]
-}
-
-const capstoneSchedulerTasks = createCapstoneSchedulerTasks()
-
-function buildSchedulerRun(
-  tasks: readonly SchedulerTaskDefinition[],
-  scenario: 'happy-path' | 'upstream-late',
-): { terminal: SchedulerRunState; timeline: SchedulerRunState[] } {
-  const initial = createInitialSchedulerRun(tasks, {
-    businessDate: CAPSTONE_BUSINESS_DATE,
-    scenario,
-    scheduledAt: CAPSTONE_PROCESSING_STARTED_AT,
-    maxConcurrentTasks: 8,
-    lateDataAvailableAt: CAPSTONE_LOAN_ARRIVED_AT,
-    lateDataDetectedAt: CAPSTONE_LOAN_ARRIVED_AT,
-    lateDataTaskId: 'prepare.loan-balance-snapshot.daily.v1',
-    runId: `run.capstone.branch-business.${scenario}`,
-  })
-  const timeline = buildSchedulerTimeline(initial)
-  const terminal = timeline.at(-1)
-  if (!terminal || (terminal.status !== 'success' && terminal.status !== 'failed')) {
-    throw new Error(`Capstone Scheduler 未能到达终态: ${scenario}`)
-  }
-  return { terminal, timeline }
-}
-
-function createCapstoneSchedulerProjection(): CapstoneSchedulerProjection {
-  const happy = buildSchedulerRun(capstoneSchedulerTasks, 'happy-path')
-  const late = buildSchedulerRun(capstoneSchedulerTasks, 'upstream-late')
-  return {
-    tasks: capstoneSchedulerTasks,
-    happyRun: happy.terminal,
-    lateRun: late.terminal,
-    lateTimeline: late.timeline,
-    loanExpectedAt: CAPSTONE_LOAN_EXPECTED_AT,
-    processingStartedAt: CAPSTONE_PROCESSING_STARTED_AT,
-    loanArrivedAt: CAPSTONE_LOAN_ARRIVED_AT,
-    deliverySlaAt: CAPSTONE_DELIVERY_SLA_AT,
-    loanRerunPlan: createPartitionRerunPlan(
-      capstoneSchedulerTasks,
-      CAPSTONE_BUSINESS_DATE,
-      'partial',
-      'prepare.loan-balance-snapshot.daily.v1',
-    ),
-    backfillPlan: createPartitionRerunPlan(
-      capstoneSchedulerTasks,
-      CAPSTONE_BUSINESS_DATE,
-      'full',
-      'publish.branch-business-daily.v1',
-    ),
-  }
-}
-
-function createCapstoneQualityProjection(
-  scheduler: CapstoneSchedulerProjection,
-): CapstoneQualityProjection {
-  const baseModel = createQualityTeachingModel()
-  const model: QualityBankingModel = {
-    ...baseModel,
-    targetDate: CAPSTONE_BUSINESS_DATE,
-    reconciliation: {
-      ...baseModel.reconciliation,
-      businessDate: CAPSTONE_BUSINESS_DATE,
-      expectedDwdBalance: 12_000_000_000,
-      observedDwsBalance: 11_800_000_000,
-    },
-  }
-  const qualitySchedulerRun = createQualitySchedulerRun(
-    scheduler.tasks,
-    CAPSTONE_BUSINESS_DATE,
-    'happy-path',
-    CAPSTONE_PROCESSING_STARTED_AT,
-  )
-  const visualization = createDataQualityVisualization(qualitySchedulerRun, 'status', model)
-  const failure = evaluateDataQuality(visualization, {
-    scenario: 'balance-reconciliation-drift',
-    action: 'block',
-  })
-  const recovery = evaluateDataQuality(visualization, {
-    scenario: 'baseline',
-    action: 'block',
-  })
+function createCapstoneQualityProjection(): CapstoneQualityProjection {
+  const initial = createCapstoneIncidentQualityEvaluation(CAPSTONE_INCIDENT_INITIAL_CONFIG)
+  const failure = initial.evaluation
   const event = failure.events.find(
-    (candidate) => candidate.ruleId === 'dq.dws.deposit-balance.reconciliation.v1',
+    (candidate) => candidate.ruleId === QUALITY_RULE_IDS.reconciliation,
   )
   if (!event) {
     throw new Error('Capstone 质量事故缺少跨层对账 Quality Event')
   }
 
+  const repaired = applyCapstoneRepair(
+    CAPSTONE_INCIDENT_INITIAL_CONFIG,
+    getCapstoneIncidentRootRepairAction(),
+  )
+  const recoveryReference = createCapstoneIncidentQualityEvaluation(repaired.config).evaluation
+
   return {
     failure,
-    recovery,
+    recoveryReference,
+    repairActions: CAPSTONE_REPAIR_ACTIONS,
     event,
     reconciliation: {
       businessDate: CAPSTONE_BUSINESS_DATE,
       branch: '杭州分行',
-      expectedDwdBalance: model.reconciliation.expectedDwdBalance,
-      observedDwsBalance: model.reconciliation.observedDwsBalance,
-      delta: model.reconciliation.observedDwsBalance - model.reconciliation.expectedDwdBalance,
+      expectedDwdBalance: initial.recompute.dwdReaggregated,
+      observedDwsBalance: initial.recompute.dwsWritten,
+      delta: initial.recompute.delta,
     },
   }
 }
@@ -735,7 +555,10 @@ function createCapstoneGovernanceProjection(
     ruleDefinition.name,
     quality.failure.releaseDecision,
   )
-  const recoveryEvidence = qualityEvaluationToGovernanceEvidence(quality.recovery, ruleDefinition)
+  const recoveryEvidence = qualityEvaluationToGovernanceEvidence(
+    quality.recoveryReference,
+    ruleDefinition,
+  )
   return {
     asset: createGovernanceAsset(failureEvidence, 'unknown'),
     recoveredAsset: createGovernanceAsset(recoveryEvidence, 'pass'),
@@ -829,7 +652,7 @@ function createCapstoneSourceFacts(): CapstoneSourceFacts {
 
 export function createCapstoneVisualization(): CapstoneVisualization {
   const scheduler = createCapstoneSchedulerProjection()
-  const quality = createCapstoneQualityProjection(scheduler)
+  const quality = createCapstoneQualityProjection()
   const facts = createCapstoneSourceFacts()
   const lineage = createCapstoneLineageProjection(quality)
   const governance = createCapstoneGovernanceProjection(quality)

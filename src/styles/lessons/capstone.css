@@ -1140,6 +1140,98 @@
   line-height: 1.6;
 }
 
+.capstone-repair-panel {
+  margin-top: 18px;
+}
+
+.capstone-recheck-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid var(--success-border);
+  border-radius: 13px;
+  padding: 18px;
+  background: var(--card-bg);
+}
+
+.capstone-recheck-panel--fail {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.capstone-recheck-panel > strong {
+  color: var(--capstone-teal);
+  font-size: 15px;
+}
+
+.capstone-recheck-panel--fail > strong {
+  color: var(--capstone-red);
+}
+
+.capstone-recheck-panel > p {
+  margin: 0;
+  color: var(--capstone-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.capstone-recheck-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.capstone-recheck-facts div {
+  min-width: 0;
+  border: 1px solid var(--capstone-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--panel-bg);
+}
+
+.capstone-recheck-facts dt {
+  color: var(--capstone-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.capstone-recheck-facts dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--capstone-ink);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.capstone-recheck-facts dd.is-positive {
+  color: var(--capstone-teal);
+}
+
+.capstone-recheck-facts dd.is-negative {
+  color: var(--capstone-red);
+}
+
+.capstone-recheck-changes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capstone-recheck-changes li {
+  border-left: 3px solid var(--capstone-blue);
+  padding-left: 10px;
+  color: var(--capstone-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .capstone-deliver-banner {
   display: flex;
   align-items: center;
@@ -1625,6 +1717,10 @@
   .capstone-action-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .capstone-recheck-facts {
+    grid-template-columns: 1fr;
   }
 
   .capstone-action-bar small {

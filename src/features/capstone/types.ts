@@ -4,7 +4,13 @@ import type {
   DataServicePublishedAsset,
   DataServicePublishedBalance,
 } from '../data-service/types'
-import type { QualityEvent, QualityEvaluation } from '../data-quality/types'
+import type {
+  QualityCheckResult,
+  QualityEvent,
+  QualityEvaluation,
+  QualityScalar,
+  QualityThreshold,
+} from '../data-quality/types'
 import type {
   SchedulerRerunPlan,
   SchedulerRunState,
@@ -128,6 +134,67 @@ export interface CapstoneDecisionRecord {
 /** Backward-friendly domain name for consumers that call these entries Decision Records. */
 export type DecisionRecord = CapstoneDecisionRecord
 
+/**
+ * 跨层对账事故里可以在加工链路上被真实修复的三个缺陷维度。
+ * 缺陷只描述“事故数据本身处于什么状态”，repair action 负责把它移除后重新计算。
+ */
+export type CapstoneReconciliationDefect =
+  'value-source-drift' | 'branch-join-loss' | 'product-filter-over-restriction'
+
+export interface CapstoneReconciliationConfig {
+  readonly defects: readonly CapstoneReconciliationDefect[]
+}
+
+export type CapstoneRepairTarget = 'value-source' | 'branch-join' | 'product-filter'
+
+/** 一个根因候选对应一个确定性修复动作；动作只改写加工配置，再由 recompute 得到结果。 */
+export interface CapstoneQualityRepairAction {
+  id: string
+  target: CapstoneRepairTarget
+  clearsDefect: CapstoneReconciliationDefect
+  label: string
+  detail: string
+  rerunScope: string
+  /** 该动作对应的 root cause candidate id / entityId，用于把候选映射到可执行修复。 */
+  candidateKeys: readonly string[]
+}
+
+export interface CapstoneReconciliationGroupOutcome {
+  groupId: string
+  label: string
+  balance: number
+  includedInDws: boolean
+  excludedReason: string | null
+}
+
+/** apply transformation 之后重新计算出的对账数据状态。 */
+export interface CapstoneReconciliationRecompute {
+  config: CapstoneReconciliationConfig
+  dwdReaggregated: number
+  dwsWritten: number
+  delta: number
+  groups: readonly CapstoneReconciliationGroupOutcome[]
+}
+
+/** 复检证据：由既有 `evaluateDataQuality` 在重算后的模型上重新执行得出。 */
+export interface CapstoneQualityRecheck {
+  repairActionId: string
+  repairLabel: string
+  candidateVerdict: 'confirmed' | 'rejected'
+  ruleId: string
+  expected: QualityScalar
+  observed: QualityScalar
+  expectedBalance: number
+  observedBalanceBefore: number
+  observedBalanceAfter: number
+  delta: number
+  threshold: QualityThreshold
+  status: QualityCheckResult['status']
+  releaseStatus: QualityEvaluation['releaseDecision']['status']
+  appliedChanges: readonly string[]
+  evidence: readonly string[]
+}
+
 export interface CapstoneProjectState {
   missionId: string
   businessDate: string
@@ -140,7 +207,10 @@ export interface CapstoneProjectState {
   loanLateDecision: CapstoneLoanLateDecision | null
   reconciliationDecision: CapstoneReconciliationDecision | null
   investigationCandidateId: string | null
-  qualityRecovered: boolean
+  /** 已应用的修复动作；null = 尚未执行修复，Release 不能解除阻断。 */
+  qualityRepairActionId: string | null
+  /** 由 qualityRepairActionId 确定性派生的复检结果，是 Release 闸门的唯一依据。 */
+  qualityRecheck: CapstoneQualityRecheck | null
   consumerChoice: CapstoneConsumerChoice | null
   performanceChoice: CapstonePerformanceChoice | null
   performanceMeasured: boolean
@@ -160,7 +230,7 @@ export type CapstoneAction =
   | { type: 'handle-loan-late'; decision: CapstoneLoanLateDecision }
   | { type: 'handle-reconciliation'; decision: CapstoneReconciliationDecision }
   | { type: 'select-root-cause'; candidateId: string }
-  | { type: 'recover-quality' }
+  | { type: 'apply-quality-repair' }
   | { type: 'choose-consumer'; consumer: CapstoneConsumerChoice }
   | { type: 'choose-performance'; choice: CapstonePerformanceChoice }
   | { type: 'measure-performance' }
@@ -182,7 +252,12 @@ export interface CapstoneSchedulerProjection {
 
 export interface CapstoneQualityProjection {
   failure: QualityEvaluation
-  recovery: QualityEvaluation
+  /**
+   * 参考复检：对事故配置应用「清除现存缺陷」的修复后重新计算的评估结果。
+   * 只用于 Governance 的已发布展示模板；Release 闸门读取 state.qualityRecheck。
+   */
+  recoveryReference: QualityEvaluation
+  repairActions: readonly CapstoneQualityRepairAction[]
   event: QualityEvent
   reconciliation: {
     businessDate: string
@@ -262,6 +337,7 @@ export interface CapstoneLaunchReview {
     observedValue: string
     effectiveStatus: QualityEvaluation['releaseDecision']['status']
     effectiveBlocked: boolean
+    recheck: CapstoneQualityRecheck | null
     rerunBusinessDate: string
     evidenceBoundary: string
   }

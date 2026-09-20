@@ -85,12 +85,12 @@ export const capstoneContent: LessonContent = {
       title: 'Investigate：用事件和血缘缩小调查范围',
       paragraphs: [
         'Quality Event 告诉你哪里、哪一天、哪条规则失败，以及失败时任务处于什么状态；Lineage 告诉你这个字段从哪里来、会影响哪些下游。两者结合，可以从 DWS 目标字段沿上游路径检查加工、维度和源快照。',
-        '血缘箭头和 Blast Radius 是依赖证据，不自动等于业务根因证明。真正的根因还需要数据 Diff、SQL 版本、任务日志、执行参数或业务变更记录来确认。修复之后，要按同一业务日期重跑，再重新做 Quality 检查。',
+        '血缘箭头和 Blast Radius 是依赖证据，不自动等于业务根因证明。真正的根因要用「修复动作 → Rerun → 重新计算」来检验：选中候选后，页面会给出对应的可执行修复动作，重跑后重新显示 expected、observed、delta 和阈值。错误候选的修复不会消除差额，Release 继续 BLOCKED；只有让对账回到阈值的修复才能通过复检。',
       ],
       bullets: [
         '先看直接上游，再按证据展开到源快照和公共维度。',
-        '把根因候选标记为 pending，避免把猜测写成结论。',
-        '只有 Quality recovery 通过，Release 才能解除阻断。',
+        '把根因候选标记为 pending，用修复后的重新计算结果确认或排除，而不是把猜测写成结论。',
+        '只有重新计算出的 reconciliation invariant 通过，Release 才能解除阻断。',
       ],
     },
     {
