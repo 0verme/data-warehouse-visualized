@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getLessonContent } from '../src/content/lessons'
-import { getLessonBySlug, lessons } from '../src/data/course'
+import { getChapterTitle, getLessonBySlug, lessons } from '../src/data/course'
 import {
   getAdjacentLessons,
   getChapterDisplayNumber,
@@ -592,6 +592,39 @@ describe('课程数据与导航', () => {
     expect(chapterText).toContain('API 不等于实时数据')
     expect(chapterText).toContain('deposit_balance_20260930.flag')
     expect(chapterText).toContain('12000000000')
+  })
+
+  it('第 13 章新增生产实践案例 13-1，并接在 Capstone 之后作为课程终点', () => {
+    const chapterLessons = lessons.filter((lesson) => lesson.chapter === '13')
+
+    expect(getChapterTitle('13')).toBe('生产实践案例')
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(['lifecycle-path-failure'])
+    expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
+      '13-1',
+    ])
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual(['lifecycle-path'])
+    expect(
+      getLessonContent(chapterLessons[0]!).sections.map((section) => section.kind ?? 'narrative'),
+    ).toEqual([
+      'narrative',
+      'visualization',
+      'narrative',
+      'narrative',
+      'engineering-note',
+      'takeaway',
+    ])
+    expect(getLessonBySlug('lifecycle-path-failure')).toMatchObject({
+      id: 'lesson-13-1',
+      slug: 'lifecycle-path-failure',
+      chapter: '13',
+      title: '上线当天明明成功了，为什么第二天才失败？',
+    })
+    expect(getAdjacentLessons(lessons, 'build-a-warehouse').next?.slug).toBe(
+      'lifecycle-path-failure',
+    )
+    expect(getAdjacentLessons(lessons, 'lifecycle-path-failure').previous?.slug).toBe(
+      'build-a-warehouse',
+    )
   })
 
   it('首尾课程不会产生越界导航', () => {

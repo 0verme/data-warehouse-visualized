@@ -42,6 +42,7 @@ describe('课程 CSS ownership', () => {
   it('代表课程只加载自己需要的 lesson CSS', () => {
     expect(lessonStyleSheets('why-data-warehouse')).toEqual([])
     expect(lessonStyleSheets('sql-transformation-join')).toEqual(['join-fanout.css'])
+    expect(lessonStyleSheets('lifecycle-path-failure')).toEqual(['lifecycle-path.css'])
     expect(lessonStyleSheets('warehouse-terms')).toEqual(['warehouse-intro.css'])
     expect(lessonStyleSheets('scheduling-system')).toEqual(['scheduler.css'])
     expect(lessonStyleSheets('data-quality')).toEqual(['data-quality.css'])

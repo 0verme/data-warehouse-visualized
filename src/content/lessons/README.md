@@ -50,3 +50,4 @@
 - `performance-shuffle-skew.ts`：11-3 开户机构 Shuffle Key 倾斜、Worker 长尾与通用处理方向
 - `performance-first-seen.ts`：11-4 customer-counterparty first_seen 增量状态与固定窗口特征
 - `performance-tradeoffs.ts`：11-5 Before / After、迟到数据、副作用与工程取舍
+- `lifecycle-path-failure.ts`：13-1 生产实践案例 · 生命周期执行路径（Day 1 成功 / Day 2 失败）

@@ -29,6 +29,7 @@ export type LessonDemo =
   | 'data-quality'
   | 'data-service'
   | 'capstone'
+  | 'lifecycle-path'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -81,6 +82,7 @@ export const chapterDefinitions = [
   { id: '10' },
   { id: '11' },
   { id: '12' },
+  { id: '13' },
 ] as const satisfies readonly ChapterDefinition[]
 
 export type ChapterId = (typeof chapterDefinitions)[number]['id']
@@ -564,6 +566,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 35,
     demo: 'capstone',
   },
+  {
+    id: 'lesson-13-1',
+    slug: 'lifecycle-path-failure',
+    chapter: '13',
+    order: 100,
+    difficulty: 'advanced',
+    estimatedMinutes: 18,
+    demo: 'lifecycle-path',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -583,6 +594,7 @@ export const chapterTranslations: Partial<Record<Locale, Record<ChapterId, Chapt
     '10': { title: '数据服务' },
     '11': { title: '性能与工程实践' },
     '12': { title: '跨系统分行经营分析数据产品' },
+    '13': { title: '生产实践案例' },
   },
 }
 
@@ -862,6 +874,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '沿一条连续 Mission 串起存款、贷款、调度、质量、血缘、治理、数据服务和性能，完成 Launch Review。',
       tags: ['Capstone', 'Mission', 'Launch Review'],
+    },
+    'lesson-13-1': {
+      title: '上线当天明明成功了，为什么第二天才失败？',
+      summary:
+        '同一个任务、同一段代码，因为目标对象「不存在 / 已存在」进入两条生命周期路径；用两天证据链定位 maintain.prepare 的规则缺口。',
+      tags: ['生产案例', '生命周期路径', '判断链', 'Rerun'],
     },
   },
 }
