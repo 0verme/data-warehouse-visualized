@@ -147,9 +147,12 @@ const JOURNEYS = [
         requireVisible: true,
       },
       {
-        selector: '.lakehouse-zones--replication',
-        label: 'zone 图',
-        informational: true,
+        // The graph itself is 716px tall; the node the sync action mutates is the
+        // Warehouse replica, so that is the block held to the contract.
+        selector: '.lakehouse-zones--replication [data-node-role="warehouse"]',
+        label: 'zone 图中被更新的 Warehouse 节点',
+        maxScreens: 1,
+        requireVisible: true,
       },
       {
         selector: '[data-lakehouse-action-result]',
