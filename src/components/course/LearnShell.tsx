@@ -26,6 +26,7 @@ import { ensureLessonStyles } from '../../utils/lesson-styles'
 import { GlobalHeaderActions } from '../GlobalHeaderActions'
 import { CourseSidebar, type SidebarRevealRequest } from './CourseSidebar'
 import { LessonViewport } from './LessonViewport'
+import { useLessonAnchorScroll } from './useLessonAnchorScroll'
 import { useLessonContent } from './useLessonContent'
 import {
   createProgressBootstrapScript,
@@ -112,6 +113,7 @@ export function LearnShell({
     id: 0,
     kind: 'initial',
   })
+  const mainScrollRef = useRef<HTMLDivElement | null>(null)
   const [sidebarRevealRequest, setSidebarRevealRequest] = useState<SidebarRevealRequest>({
     id: 0,
     lessonId: '',
@@ -215,6 +217,15 @@ export function LearnShell({
       ensureLessonStyles(activeContent)
     }
   }, [activeContent, navigationEvent.id])
+
+  // Declared after `ensureLessonStyles` on purpose: lesson CSS must be present
+  // before an anchor target is measured. See `useLessonAnchorScroll`.
+  useLessonAnchorScroll({
+    containerRef: mainScrollRef,
+    navigation: navigationEvent,
+    contentStatus: contentState.status,
+    activeLessonSlug: activeLesson.slug,
+  })
   const adjacentLessons = getAdjacentLessons(lessons, activeLesson.slug)
   const completedCount = getCompletedCount(progress)
   const isActiveLessonCompleted = progress.completedLessonIds.includes(activeLesson.id)
@@ -389,6 +400,7 @@ export function LearnShell({
           isCompleted={isActiveLessonCompleted}
           onToggleComplete={toggleActiveLesson}
           locale={activeLocale}
+          mainScrollRef={mainScrollRef}
           mainScrollResetKey={navigationEvent.id}
           shouldResetMainScroll={navigationEvent.id > 0 && navigationEvent.kind === 'navigate'}
         />

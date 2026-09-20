@@ -9,6 +9,7 @@ import type { Lesson } from '../../data/course'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getCodeHighlightKey, type CodeHighlightMap } from '../../utils/code-highlight'
+import { getLegacyHeadingId, getSectionHeadingId } from '../../utils/heading-id'
 import { BankingFactTypesLab } from '../visualizations/BankingFactTypesLab'
 import { BusinessSystemFlow } from '../visualizations/BusinessSystemFlow'
 import { LayerEvolutionLab } from '../visualizations/LayerEvolutionLab'
@@ -223,20 +224,23 @@ interface VisualizationBlockProps {
   eyebrow: string
   title: string
   description: string
-  blockId: string
+  /** Anchor id from `getSectionHeadingId` / `getLegacyHeadingId`. */
+  headingId: string
 }
 
 function NarrativeSection({
   section,
+  headingId,
   composed,
 }: {
   section: Extract<LessonSection, { title: string; paragraphs: string[] }>
+  headingId: string
   composed?: boolean
 }) {
   return (
     <article className={`lesson-section${composed ? ' lesson-section--composed' : ''}`}>
       <div>
-        <h2>{section.title}</h2>
+        <h2 id={headingId}>{section.title}</h2>
         {section.paragraphs.map((paragraph, paragraphIndex) => (
           <p key={`${paragraphIndex}-${paragraph}`}>{paragraph}</p>
         ))}
@@ -416,11 +420,9 @@ function VisualizationBlock({
   eyebrow,
   title,
   description,
-  blockId,
+  headingId,
   codeHighlights,
 }: VisualizationBlockProps) {
-  const headingId = `${lessonId}-${blockId}-title`
-
   return (
     <section className="visualization-section" aria-labelledby={headingId}>
       <div className="section-heading">
@@ -539,21 +541,21 @@ function LegacyBlocks({
           lessonId={lesson.id}
           visualization={legacyVisualization}
           {...visualizationCopy}
-          blockId="legacy-visualization"
+          headingId={getLegacyHeadingId(lesson.id, 'visualization')}
           codeHighlights={codeHighlights}
         />
       )}
       {legacyComparison && (
         <CompareSplit
           comparison={legacyComparison}
-          headingId={`${lesson.id}-legacy-compare-title`}
+          headingId={getLegacyHeadingId(lesson.id, 'compare')}
         />
       )}
       {legacyCode && (
         <CodeBlock
           {...legacyCode}
           highlightedCode={getHighlightedCode(codeHighlights, legacyCode.language, legacyCode.code)}
-          headingId={`${lesson.id}-legacy-code-title`}
+          headingId={getLegacyHeadingId(lesson.id, 'code')}
         />
       )}
       <LegacyTeachingNotes engineeringTip={engineeringTip} pitfalls={pitfalls} locale={locale} />
@@ -584,7 +586,7 @@ function renderSection(
       return (
         <CompareSplit
           comparison={section}
-          headingId={`${lessonId}-section-${index}-compare-title`}
+          headingId={getSectionHeadingId(lessonId, index, 'compare')}
           key={`compare-${index}`}
         />
       )
@@ -593,7 +595,7 @@ function renderSection(
         <CodeBlock
           {...section}
           highlightedCode={getHighlightedCode(codeHighlights, section.language, section.code)}
-          headingId={`${lessonId}-section-${index}-sql-title`}
+          headingId={getSectionHeadingId(lessonId, index, 'sql')}
           key={`sql-${index}`}
         />
       )
@@ -601,7 +603,7 @@ function renderSection(
       return (
         <VisualizationBlock
           {...section}
-          blockId={`section-${index}`}
+          headingId={getSectionHeadingId(lessonId, index, 'visualization')}
           codeHighlights={codeHighlights}
           key={`visualization-${index}`}
           lessonId={lessonId}
@@ -613,7 +615,7 @@ function renderSection(
           title={section.title}
           text={section.text}
           bullets={section.bullets}
-          headingId={`${lessonId}-section-${index}-takeaway-title`}
+          headingId={getSectionHeadingId(lessonId, index, 'takeaway')}
           key={`takeaway-${index}`}
         />
       )
@@ -624,13 +626,27 @@ function renderSection(
     case 'pitfall':
       return <Pitfall text={section.text} title={section.title} key={`pitfall-${index}`} />
     case 'narrative':
-      return <NarrativeSection section={section} composed key={`narrative-${index}`} />
+      return (
+        <NarrativeSection
+          section={section}
+          headingId={getSectionHeadingId(lessonId, index, 'narrative')}
+          composed
+          key={`narrative-${index}`}
+        />
+      )
     default:
       if (!isNarrativeSection(section)) {
         return null
       }
 
-      return <NarrativeSection section={section} composed key={`narrative-${index}`} />
+      return (
+        <NarrativeSection
+          section={section}
+          headingId={getSectionHeadingId(lessonId, index, 'narrative')}
+          composed
+          key={`narrative-${index}`}
+        />
+      )
   }
 }
 
@@ -653,7 +669,11 @@ export function LessonSectionRenderer({
       <>
         <section className="lesson-sections" aria-label={getMessage('lessonBody', locale)}>
           {legacySections.map((section, index) => (
-            <NarrativeSection section={section} key={`${section.title}-${index}`} />
+            <NarrativeSection
+              section={section}
+              headingId={getSectionHeadingId(lesson.id, index, 'narrative')}
+              key={`${section.title}-${index}`}
+            />
           ))}
         </section>
         <LegacyBlocks

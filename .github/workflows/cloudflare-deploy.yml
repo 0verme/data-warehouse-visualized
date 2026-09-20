@@ -53,6 +53,9 @@ jobs:
       - name: Run browser smoke
         run: npm run test:e2e:smoke -- --skip-build
 
+      - name: Run browser fragment regression
+        run: npm run test:e2e:learn-anchor -- --skip-build
+
       - name: Deploy to Cloudflare Workers
         if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
         uses: 0verme/ci-workflows/.github/actions/cloudflare-worker-deploy@v1
