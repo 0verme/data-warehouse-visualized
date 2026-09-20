@@ -96,7 +96,12 @@ const NO_HORIZONTAL_SCROLL_LAYOUTS = [
  */
 const INTENTIONAL_OVERFLOW = ['.scheduler-propagation', '.scheduler-task-node']
 
-const INTERACTION_LESSONS = ['deposit-metric-derivations', 'sql-transformation-join', 'grain']
+const INTERACTION_LESSONS = [
+  'deposit-metric-derivations',
+  'sql-transformation-join',
+  'grain',
+  'lifecycle-path-failure',
+]
 const SHORT_LESSON = 'why-data-warehouse'
 
 const args = process.argv.slice(2)

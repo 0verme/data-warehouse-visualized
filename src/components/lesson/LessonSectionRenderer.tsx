@@ -57,6 +57,12 @@ const LazyJoinFanoutSimulator = lazy(() =>
   })),
 )
 
+const LazyLifecyclePathLab = lazy(() =>
+  import('../visualizations/LifecyclePathLab').then(({ LifecyclePathLab }) => ({
+    default: LifecyclePathLab,
+  })),
+)
+
 const LazyDataQualityWorkbench = lazy(() =>
   import('../visualizations/DataQualityWorkbench').then(({ DataQualityWorkbench }) => ({
     default: DataQualityWorkbench,
@@ -140,6 +146,7 @@ type LazyVisualizationKind =
   | 'lakehouse'
   | 'sql-transformation'
   | 'join-fanout'
+  | 'lifecycle-path'
   | 'data-quality'
   | 'governance'
   | 'performance-lab'
@@ -356,6 +363,12 @@ function VisualizationBody({
       return (
         <VisualizationLoadBoundary key={lessonId} kind="join-fanout">
           <LazyJoinFanoutSimulator />
+        </VisualizationLoadBoundary>
+      )
+    case 'lifecycle-path':
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="lifecycle-path">
+          <LazyLifecyclePathLab />
         </VisualizationLoadBoundary>
       )
     case 'governance':
