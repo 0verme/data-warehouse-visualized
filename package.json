@@ -13,6 +13,7 @@
     "check": "astro check",
     "test:e2e:smoke": "node tests/e2e/release-smoke.mjs",
     "test:e2e:learn-scroll": "node tests/e2e/learn-scroll-boundary.mjs",
+    "test:e2e:learn-anchor": "node tests/e2e/learn-anchor-fragment.mjs",
     "deploy": "wrangler deploy",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -2,6 +2,7 @@ import type { Lesson } from '../../data/course'
 import type { LessonContent as LessonContentData } from '../../content/types'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
+import { getConceptHeadingId, getOpeningHeadingId } from '../../utils/heading-id'
 import { ConceptCard } from './ConceptCard'
 import { LessonSectionRenderer } from './LessonSectionRenderer'
 
@@ -21,10 +22,10 @@ export function LessonContent({
   return (
     <div className="lesson-content">
       {content.opening && (
-        <section className="lesson-opening" aria-labelledby={`${lesson.id}-opening-title`}>
+        <section className="lesson-opening" aria-labelledby={getOpeningHeadingId(lesson.id)}>
           <div className="lesson-opening__heading">
             <span className="eyebrow">{content.opening.eyebrow}</span>
-            <h2 id={`${lesson.id}-opening-title`}>{content.opening.title}</h2>
+            <h2 id={getOpeningHeadingId(lesson.id)}>{content.opening.title}</h2>
             <p>{content.opening.intro}</p>
           </div>
           <div className="lesson-opening__cards">
@@ -40,7 +41,11 @@ export function LessonContent({
         </section>
       )}
 
-      <ConceptCard term={content.concept.term} definition={content.concept.definition} />
+      <ConceptCard
+        term={content.concept.term}
+        definition={content.concept.definition}
+        headingId={getConceptHeadingId(lesson.id)}
+      />
 
       <LessonSectionRenderer
         lesson={lesson}
