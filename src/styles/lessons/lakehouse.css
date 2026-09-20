@@ -514,6 +514,37 @@
   margin-top: 13px;
 }
 
+/*
+ * #144 Pattern 1: conclusion of the current action, rendered next to the action
+ * row of every variant (replication / table-layer / unity). The toolbar summary
+ * it mirrors stays where it is; the detailed panels below keep their place.
+ */
+.lakehouse-action-result {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--diagram-connection);
+  border-left: 3px solid var(--diagram-accent);
+  border-radius: 0 9px 9px 0;
+  background: var(--surface-muted);
+}
+
+.lakehouse-action-result > span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lakehouse-action-result > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .lakehouse-replication-actions > span {
   color: var(--text-muted);
   font-size: 10px;

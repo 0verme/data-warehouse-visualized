@@ -484,7 +484,13 @@ function LifecycleLab({ visualization }: { visualization: GovernanceVisualizatio
     }
 
     setSelectedAssetId(replacement.id)
-    setQuery('存款余额')
+    /*
+     * #144 Pattern 1: the search follows the migrated asset instead of widening
+     * back to a generic keyword. The result list keeps the same single hit, so the
+     * detail column no longer jumps ~1 screen down and the migration conclusion /
+     * the new asset definition stay where the learner tapped.
+     */
+    setQuery(replacement.businessName)
     setMigrationMessage(`已切换到 ${replacement.technicalName}；新的依赖不再指向 deprecated 资产。`)
   }
 
@@ -541,7 +547,11 @@ function LifecycleLab({ visualization }: { visualization: GovernanceVisualizatio
           </div>
           {selectedAsset ? (
             <div className="governance-detail-column">
-              <DefinitionPanel asset={selectedAsset} />
+              {/*
+                #144 Pattern 1 (F1): the status block owns the switch action, so it
+                is rendered *before* the definition it replaces. The updated asset
+                detail then stays below the control the learner just tapped.
+              */}
               <div className={`governance-lifecycle-callout is-${selectedAsset.lifecycle}`}>
                 <div>
                   <span className="governance-overline">当前状态</span>
@@ -561,12 +571,22 @@ function LifecycleLab({ visualization }: { visualization: GovernanceVisualizatio
                     切换到替代资产
                   </button>
                 )}
+                {/*
+                  #144 Pattern 1: the migration conclusion lives inside the same
+                  block as the switch action, so the result of 切换到替代资产 appears
+                  where the learner tapped instead of one section further down.
+                */}
+                {migrationMessage && (
+                  <p
+                    className="governance-live-message"
+                    data-governance-migration-conclusion
+                    aria-live="polite"
+                  >
+                    {migrationMessage}
+                  </p>
+                )}
               </div>
-              {migrationMessage && (
-                <p className="governance-live-message" aria-live="polite">
-                  {migrationMessage}
-                </p>
-              )}
+              <DefinitionPanel asset={selectedAsset} />
             </div>
           ) : (
             <p className="governance-empty">请选择一项资产查看生命周期。</p>

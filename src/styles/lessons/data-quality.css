@@ -182,9 +182,17 @@
   line-height: 1.5;
 }
 
+/*
+ * #144 a11y floor: this was a bare 177×24 text button — below the 32px touch
+ * target used everywhere else in the workbench. It keeps the quiet text look but
+ * gets a real tap area.
+ */
 .data-quality-text-button {
   justify-self: start;
-  padding: 0;
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 2px;
   border: 0;
   background: transparent;
   color: var(--blue-deep, #1d4f8f);
@@ -328,7 +336,17 @@
 .data-quality-rule-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /*
+   * #144 Pattern 1: the selected rule's evidence panel is a full-width item of
+   * this grid. Dense packing keeps the rule cards in tidy rows and places the
+   * evidence directly under the row that holds the selected rule.
+   */
+  grid-auto-flow: row dense;
   gap: 10px;
+}
+
+.data-quality-rule-grid > .data-quality-focus {
+  grid-column: 1 / -1;
 }
 
 .data-quality-rule {

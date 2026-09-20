@@ -643,10 +643,19 @@
 }
 
 .governance-lifecycle-callout {
-  display: flex;
+  /*
+   * #144 Pattern 1: the callout is a two-column row (state | action) whose
+   * conclusion message spans the full width directly under the action, so the
+   * migration result appears next to the switch control.
+   */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  justify-content: space-between;
+}
+
+.governance-lifecycle-callout > .governance-live-message {
+  grid-column: 1 / -1;
 }
 
 .governance-lifecycle-callout.is-deprecated {

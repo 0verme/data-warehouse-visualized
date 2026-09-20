@@ -145,6 +145,25 @@ function RelationLegend({ relations }: { relations: readonly LakehouseRelationKi
   )
 }
 
+/**
+ * Action-adjacent result (#144 Pattern 1).
+ *
+ * Every variant of this lab mutates several blocks at once (zone graph, pointer
+ * panel, observation table) and the toolbar summary that used to carry the
+ * conclusion sits at the very top of the component — 1.3–1.4 screens above the
+ * button on a phone. This strip renders the conclusion of the current action next
+ * to the control; the full panels stay in their own place. One strategy, three
+ * variants, no variant-specific patch.
+ */
+function ActionResult({ label, items }: { label: string; items: readonly string[] }) {
+  return (
+    <div className="lakehouse-action-result" data-lakehouse-action-result>
+      <span>{label}</span>
+      <p>{items.join(' · ')}</p>
+    </div>
+  )
+}
+
 function LabHeading({
   eyebrow,
   title,
@@ -513,6 +532,14 @@ function ReplicationLab({
               : 'Lake 中的数据仍然只有一份'}
           </span>
         </div>
+        <ActionResult
+          label="本次同步结论"
+          items={[
+            `副本 ${state.replicaCount} 份`,
+            synced ? `已同步 · 完成时间 ${config.syncedAt}` : '尚未同步',
+            `同步后新增责任 ${state.responsibilities.length} 条`,
+          ]}
+        />
         <div
           className="lakehouse-replica-summary"
           aria-live="polite"
@@ -983,6 +1010,15 @@ function TableLayerLab({
           {commitStatus === 'committed' ? '已 Commit v2' : 'Commit：发布 v2'}
         </button>
       </div>
+      <ActionResult
+        label="本次 Commit 结论"
+        items={[
+          `发布指针 v${pointer.publishedVersion}`,
+          `本次查询 v${pointer.queryTargetVersion}`,
+          `已提交文件 ${commitState.committedFileCount}/${commitState.writtenFileCount}`,
+          `可见性：${STATUS_LABELS[commitState.status]}`,
+        ]}
+      />
       <SnapshotPointerPanel state={pointer} commitStatus={commitStatus} />
       <section
         className="lakehouse-version-panel"
@@ -1197,12 +1233,20 @@ function UnityLab({
             <small>同一份 Storage / Table 供多个 Compute 使用</small>
           </button>
         </div>
+        <ActionResult
+          label="本次形态切换结论"
+          items={[
+            `当前：${state.modeLabel}`,
+            `数据副本 ${state.replicaCount} 份`,
+            `需要处理的责任 ${state.responsibilities.length} 条`,
+          ]}
+        />
       </section>
-      <UnityFlow
-        sources={visualization.dataSources}
-        mode={mode}
-        replicaCount={state.replicaCount}
-      />
+      {/*
+        #144 Pattern 1 (F1): the observation table is what the mode switch
+        changes, so it now follows the switcher directly; the zone diagram and the
+        responsibility list stay behind it.
+      */}
       <section
         className="lakehouse-unity-comparison"
         aria-labelledby="lakehouse-unity-comparison-title"
@@ -1235,6 +1279,11 @@ function UnityLab({
           </table>
         </div>
       </section>
+      <UnityFlow
+        sources={visualization.dataSources}
+        mode={mode}
+        replicaCount={state.replicaCount}
+      />
       <section
         className="lakehouse-unity-responsibilities"
         aria-labelledby="lakehouse-unity-responsibilities-title"

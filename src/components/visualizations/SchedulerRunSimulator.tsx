@@ -9,6 +9,7 @@ import type {
   SchedulerRerunMode,
   SchedulerRerunPlan,
   SchedulerRunState,
+  SchedulerRunTrigger,
   SchedulerScenario,
   SchedulerSlaState,
   SchedulerTaskDefinition,
@@ -519,6 +520,35 @@ function EventLogItem({
   )
 }
 
+const SCHEDULER_TRIGGER_LABELS = {
+  schedule: '调度触发 · 日批',
+  'partition-rerun': '局部补数 · partition rerun',
+  'full-rerun': '全链路重跑 · full rerun',
+} satisfies Record<SchedulerRunTrigger, string>
+
+/**
+ * Action-adjacent run conclusion (#144 Pattern 1).
+ *
+ * 执行计划 is the primary action of the `rerun` variant; on a phone the run
+ * evidence (business date / partition / status / events) used to sit ~1 screen
+ * below the plan and the output comparison. This block reports the run that the
+ * plan creates, directly next to the button. The run timeline, the full evidence
+ * and the event log keep their own place (Pattern 2 / 3 territory).
+ */
+function RerunPlanResult({ state }: { state: SchedulerRunState }) {
+  return (
+    <div className="scheduler-rerun__result" data-rerun-result aria-live="polite">
+      <span>本次运行结论</span>
+      <strong>{state.runId}</strong>
+      <p>
+        {SCHEDULER_TRIGGER_LABELS[state.trigger]} ·{' '}
+        {getFocusedRunStatusLabel(state).split(' · ')[0]} · {state.partition.column} ={' '}
+        {state.partition.value}
+      </p>
+    </div>
+  )
+}
+
 function RerunPlanner({
   state,
   visualization,
@@ -629,6 +659,7 @@ function RerunPlanner({
       <button className="button button--primary button--small" type="button" onClick={onApply}>
         执行这个 {mode === 'partial' ? '局部补数' : '全链路重跑'} 计划
       </button>
+      <RerunPlanResult state={state} />
 
       <div className="scheduler-output-comparison">
         <div className="scheduler-subheading">

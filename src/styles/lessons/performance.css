@@ -368,6 +368,43 @@
   margin-top: 15px;
 }
 
+/*
+ * #144 Pattern 1: the selected stage carries its evidence summary directly
+ * under the card, so the tap result stays on screen on a phone. The complete
+ * evidence record keeps its own place further down.
+ */
+.performance-diagnosis__stage-summary {
+  display: grid;
+  gap: 7px;
+  padding: 12px 13px;
+  border: 1px solid var(--info-border, #b9d4f2);
+  border-left: 3px solid var(--blue, #2f6fd0);
+  border-radius: 0 8px 8px 0;
+  background: var(--info-bg, #eef5ff);
+  color: var(--ink-soft, #50617a);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.performance-diagnosis__stage-summary-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.performance-diagnosis__stage-summary p {
+  margin: 0;
+}
+
+.performance-diagnosis__stage-summary strong {
+  color: var(--ink, #152238);
+}
+
+.performance-diagnosis__stage-summary small {
+  color: var(--ink-muted, #75839a);
+}
+
 .performance-diagnosis__evidence {
   margin-top: 25px;
 }

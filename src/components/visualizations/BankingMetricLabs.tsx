@@ -202,6 +202,61 @@ function ExcludedProductsGroup({
   )
 }
 
+/**
+ * Action-adjacent conclusion (#144 Pattern 1).
+ *
+ * Presets and scope chips are the primary actions of this lab. On a phone the
+ * “当前口径” conclusion (name + member count + total + set change) used to sit
+ * ~1.3–2.4 screens below them, at the very end of the lab. This summary is
+ * rendered as the last item of the scope controls, so every preset and every
+ * chip has the conclusion of its own tap next to it. The full member table,
+ * WHERE expression and set-delta detail keep their own place below.
+ */
+function ScopeConclusion({
+  title,
+  label,
+  total,
+  memberCount,
+  currency,
+  delta,
+  amountDelta,
+  previousTotal,
+  currencyChanged,
+}: {
+  title: string
+  label: string
+  total: number
+  memberCount: number
+  currency: string
+  delta: ReturnType<typeof compareBankingMetricScopes> | null
+  amountDelta: number | null
+  previousTotal: number | null
+  currencyChanged: boolean
+}) {
+  return (
+    <div className="banking-metric-scope__conclusion" data-scope-conclusion aria-live="polite">
+      <span className="eyebrow eyebrow--small">当前口径结论 · {label}</span>
+      <strong>
+        {title} · {memberCount} 个账户快照 · {formatBankingMetricYi(total, currency)}
+      </strong>
+      <p>
+        {delta
+          ? `本次变化：+${delta.entered.length} 进入 / −${delta.left.length} 离开`
+          : '还没有发生口径变化；切换预设或条件后这里显示成员进出。'}
+        {delta && previousTotal !== null && (
+          <>
+            {' · '}
+            {currencyChanged
+              ? '币种变化后不再直接相减'
+              : `集合合计 ${formatBankingMetricYi(previousTotal, currency)} → ${formatBankingMetricYi(total, currency)}${amountDelta !== null && amountDelta !== 0 ? `（${amountDelta > 0 ? '+' : '−'}${formatBankingMetricYi(Math.abs(amountDelta), currency)}）` : ''}`}
+          </>
+        )}
+      </p>
+      <small>完整成员表、等价 WHERE 与集合变化明细保留在下方。</small>
+    </div>
+  )
+}
+
 export function BankingMetricScopeLab({
   visualization,
 }: {
@@ -308,7 +363,12 @@ export function BankingMetricScopeLab({
       <div className="visualization-toolbar">
         <div>
           <span className="visualization-toolbar__label">存款余额 · 统计集合与 WHERE</span>
-          <p aria-live="polite">
+          {/*
+           * The conclusion is announced by the action-adjacent summary inside
+           * the scope controls (#144), so this toolbar line is no longer a
+           * second live region repeating the same change.
+           */}
+          <p>
             当前：{scopeTitle} · {calculation.rows.length} 个账户快照 ·{' '}
             {formatBankingMetricYi(calculation.total, filter.currency)}
             {delta && `（本次 +${delta.entered.length} 进入 / −${delta.left.length} 离开）`}
@@ -320,6 +380,7 @@ export function BankingMetricScopeLab({
       </div>
 
       <section className="banking-metric-scope__chooser" aria-labelledby="metric-scope-title">
+        {' '}
         <div className="banking-metric__section-heading">
           <div>
             <span className="eyebrow">THREE ANSWERS · 三组口径</span>
@@ -349,6 +410,17 @@ export function BankingMetricScopeLab({
             )
           })}
         </div>
+        <ScopeConclusion
+          title={scopeTitle}
+          label={scopeLabel}
+          total={calculation.total}
+          memberCount={calculation.rows.length}
+          currency={filter.currency}
+          delta={delta}
+          amountDelta={amountDelta}
+          previousTotal={previousTotal}
+          currencyChanged={currencyChanged}
+        />
       </section>
 
       <section className="banking-metric-scope__workspace" aria-label="口径条件与等价 WHERE">
@@ -401,6 +473,7 @@ export function BankingMetricScopeLab({
           />
         </div>
         <div className="banking-metric-scope__where">
+          {' '}
           <span className="eyebrow eyebrow--small">WHERE · 集合边界</span>
           <h3>当前口径对应的筛选条件</h3>
           <figure>

@@ -139,6 +139,40 @@
   min-width: 0;
 }
 
+/*
+ * #144 Pattern 1: the selected step carries its declaration directly under the
+ * card that produced it, so the answer stays next to the action on a phone. The
+ * block belongs to the wrap (next to the card), not to the section below the
+ * whole chain, and spans both grid columns of the horizontal desktop chain.
+ */
+.loan-process__step-conclusion {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-control);
+  background: var(--info-bg);
+  color: var(--text-secondary);
+}
+
+.loan-process__step-conclusion span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.loan-process__step-conclusion p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.loan-process__step-conclusion b {
+  color: var(--text-primary);
+}
+
 .loan-process__chain-arrow {
   color: var(--border-emphasis);
   font-size: 17px;
