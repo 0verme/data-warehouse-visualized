@@ -183,6 +183,32 @@ function StageTitle({ checkpoint }: { checkpoint: CapstoneCheckpointDefinition }
   )
 }
 
+/**
+ * #144 Pattern 1 (F2): a checkpoint commit control used to sit at the very bottom
+ * of a long stage, while confirming it re-rendered `.capstone-workbench__main`
+ * 1.6–2.3 screens *above* the button — the learner had to scroll up to see the
+ * next checkpoint. The commit action and the decision record it produces are now
+ * grouped directly under the checkpoint heading, next to the block they change.
+ * One shared block, one strategy, every ActionBar stage.
+ */
+function StageHeader({
+  checkpoint,
+  action,
+  feedback,
+}: {
+  checkpoint: CapstoneCheckpointDefinition
+  action?: ReactNode
+  feedback?: ReactNode
+}) {
+  return (
+    <div className="capstone-stage__top">
+      <StageTitle checkpoint={checkpoint} />
+      {action}
+      {feedback}
+    </div>
+  )
+}
+
 function ChoiceButton<T extends string>({
   value,
   label,
@@ -313,7 +339,23 @@ function MissionBriefStage({ visualization, state, review, dispatch }: StageProp
   const decision = getLatestDecision(state, 'mission-brief')
   return (
     <section className="capstone-stage" aria-labelledby="capstone-stage-mission-brief">
-      <StageTitle checkpoint={getCheckpoint(visualization, 'mission-brief')} />
+      <StageHeader
+        checkpoint={getCheckpoint(visualization, 'mission-brief')}
+        action={
+          <ActionBar note="这一步记录的是项目边界，不是技术方案评分。">
+            <button
+              className="capstone-primary-button"
+              type="button"
+              onClick={() => dispatch({ type: 'confirm-mission' })}
+            >
+              {state.checkpointStates['mission-brief'] === 'completed'
+                ? '重新确认 Mission Brief'
+                : '确认 Mission Brief'}
+            </button>
+          </ActionBar>
+        }
+        feedback={<DecisionNote decision={decision} tone="success" />}
+      />
       <div className="capstone-brief-grid">
         <div className="capstone-brief-callout">
           <span className="capstone-eyebrow">今天的交付任务</span>
@@ -369,18 +411,6 @@ function MissionBriefStage({ visualization, state, review, dispatch }: StageProp
           要把核心系统和信贷系统的事实放进同一个分析上下文，最终交付可消费的数据产品。
         </p>
       </div>
-      <ActionBar note="这一步记录的是项目边界，不是技术方案评分。">
-        <button
-          className="capstone-primary-button"
-          type="button"
-          onClick={() => dispatch({ type: 'confirm-mission' })}
-        >
-          {state.checkpointStates['mission-brief'] === 'completed'
-            ? '重新确认 Mission Brief'
-            : '确认 Mission Brief'}
-        </button>
-      </ActionBar>
-      <DecisionNote decision={decision} tone="success" />
     </section>
   )
 }
@@ -515,7 +545,21 @@ function OperateStage({ visualization, state, dispatch }: StageProps) {
   )
   return (
     <section className="capstone-stage" aria-labelledby="capstone-stage-operate">
-      <StageTitle checkpoint={getCheckpoint(visualization, 'operate')} />
+      <StageHeader
+        checkpoint={getCheckpoint(visualization, 'operate')}
+        action={
+          <ActionBar note="确认后进入同一项目中的两个固定数据事故；DAG 不会被另建一套 Capstone Scheduler 替代。">
+            <button
+              className="capstone-primary-button"
+              type="button"
+              onClick={() => dispatch({ type: 'confirm-operate' })}
+            >
+              {state.operateConfirmed ? '重新确认运行证据' : '确认日批运行证据'}
+            </button>
+          </ActionBar>
+        }
+        feedback={<DecisionNote decision={decision} tone="success" />}
+      />
       <div className="capstone-timeline" aria-label="日批关键时间线">
         <article>
           <time>06:30</time>
@@ -580,16 +624,6 @@ function OperateStage({ visualization, state, dispatch }: StageProps) {
           </dl>
         </div>
       </div>
-      <ActionBar note="确认后进入同一项目中的两个固定数据事故；DAG 不会被另建一套 Capstone Scheduler 替代。">
-        <button
-          className="capstone-primary-button"
-          type="button"
-          onClick={() => dispatch({ type: 'confirm-operate' })}
-        >
-          {state.operateConfirmed ? '重新确认运行证据' : '确认日批运行证据'}
-        </button>
-      </ActionBar>
-      <DecisionNote decision={decision} tone="success" />
     </section>
   )
 }
@@ -1064,7 +1098,31 @@ function ScaleStage({ visualization, state, review, dispatch }: StageProps) {
   const diagnosis = visualization.performance.diagnosis.diagnosis
   return (
     <section className="capstone-stage" aria-labelledby="capstone-stage-scale">
-      <StageTitle checkpoint={getCheckpoint(visualization, 'scale')} />
+      <StageHeader
+        checkpoint={getCheckpoint(visualization, 'scale')}
+        action={
+          <ActionBar note="复测必须同时看正确性、SLA / Freshness、成本和维护复杂度。">
+            <button
+              className="capstone-primary-button"
+              type="button"
+              disabled={!state.performanceChoice || state.performanceMeasured}
+              onClick={() => dispatch({ type: 'measure-performance' })}
+            >
+              {state.performanceMeasured ? '已完成 Before / After 复测' : '应用一次修改并复测'}
+            </button>
+          </ActionBar>
+        }
+        feedback={
+          <DecisionNote
+            decision={decision}
+            tone={
+              state.performanceMeasured && state.performanceChoice === 'partition-pruning'
+                ? 'success'
+                : 'warning'
+            }
+          />
+        }
+      />
       <div className="capstone-scale-evidence">
         <div className="capstone-scale-symptom">
           <span className="capstone-eyebrow">事故 3 · 规模上涨</span>
@@ -1124,24 +1182,6 @@ function ScaleStage({ visualization, state, review, dispatch }: StageProps) {
           </article>
         ))}
       </div>
-      <ActionBar note="复测必须同时看正确性、SLA / Freshness、成本和维护复杂度。">
-        <button
-          className="capstone-primary-button"
-          type="button"
-          disabled={!state.performanceChoice || state.performanceMeasured}
-          onClick={() => dispatch({ type: 'measure-performance' })}
-        >
-          {state.performanceMeasured ? '已完成 Before / After 复测' : '应用一次修改并复测'}
-        </button>
-      </ActionBar>
-      <DecisionNote
-        decision={decision}
-        tone={
-          state.performanceMeasured && state.performanceChoice === 'partition-pruning'
-            ? 'success'
-            : 'warning'
-        }
-      />
     </section>
   )
 }
@@ -1173,7 +1213,20 @@ function LaunchReviewStage({ visualization, state, review, dispatch }: StageProp
       className="capstone-stage capstone-launch-review"
       aria-labelledby="capstone-stage-launch-review"
     >
-      <StageTitle checkpoint={getCheckpoint(visualization, 'launch-review')} />
+      <StageHeader
+        checkpoint={getCheckpoint(visualization, 'launch-review')}
+        action={
+          <ActionBar note="评审结果不是单一分数；如果是 BLOCKED，请回到对应 checkpoint 修复并保留新的证据。">
+            <button
+              className="capstone-primary-button"
+              type="button"
+              onClick={() => dispatch({ type: 'complete-launch-review' })}
+            >
+              {state.launchReviewed ? '重新记录 Launch Review' : '记录 Launch Review'}
+            </button>
+          </ActionBar>
+        }
+      />
       <div
         className={`capstone-launch-status capstone-launch-status--${review.status.toLowerCase().replace(/ /g, '-')}`}
       >
@@ -1399,15 +1452,6 @@ function LaunchReviewStage({ visualization, state, review, dispatch }: StageProp
           <ReviewList items={review.nextEvolution} />
         </ReviewSection>
       </div>
-      <ActionBar note="评审结果不是单一分数；如果是 BLOCKED，请回到对应 checkpoint 修复并保留新的证据。">
-        <button
-          className="capstone-primary-button"
-          type="button"
-          onClick={() => dispatch({ type: 'complete-launch-review' })}
-        >
-          {state.launchReviewed ? '重新记录 Launch Review' : '记录 Launch Review'}
-        </button>
-      </ActionBar>
     </section>
   )
 }

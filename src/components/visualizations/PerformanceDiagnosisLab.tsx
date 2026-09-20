@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type {
   PerformanceDiagnosisVisualization,
   PerformanceStageId,
 } from '../../features/performance/types'
 import { getDiagnosisResult } from '../../utils/performance'
+import type { PerformanceDiagnosisResult } from '../../utils/performance'
 import {
   LayerMarker,
   PerformanceMetric,
@@ -21,6 +22,42 @@ const DIAGNOSIS_PATH = [
   '重新测量',
   '检查副作用',
 ]
+
+/**
+ * Action-adjacent evidence summary (#144 Pattern 1).
+ *
+ * The stage cards are the primary action of this lab; on a phone the full
+ * evidence panel sits below the whole stage list and the metric grid, which used
+ * to leave the changed evidence 0.7–1.0 screens away. This summary is rendered
+ * as a sibling *inside* the stage list, directly under the selected card, so the
+ * conclusion of the tap stays next to the control. The complete evidence record
+ * (evidence list + hypothesis + next action) intentionally stays where it is.
+ */
+function StageEvidenceSummary({ result }: { result: PerformanceDiagnosisResult }) {
+  if (!result.selectedStage || !result.finding) {
+    return null
+  }
+
+  return (
+    <div className="performance-diagnosis__stage-summary" data-stage-evidence-summary>
+      <div className="performance-diagnosis__stage-summary-heading">
+        <span className="eyebrow eyebrow--small">证据摘要 · {result.selectedStage.label}</span>
+        <span className={`performance-verdict${result.isPrimaryStage ? ' is-positive' : ''}`}>
+          {result.isPrimaryStage ? '与最长阶段一致' : '还不能下结论'}
+        </span>
+      </div>
+      <p>
+        <strong>看到的证据：</strong>
+        {result.finding.evidence.join('；')}
+      </p>
+      <p>
+        <strong>下一步动作：</strong>
+        {result.finding.nextAction}
+      </p>
+      <small>完整证据记录、待验证假设与重新测量保留在下方。</small>
+    </div>
+  )
+}
 
 export function PerformanceDiagnosisLab({
   visualization,
@@ -83,32 +120,34 @@ export function PerformanceDiagnosisLab({
         />
         <div className="performance-stage-list">
           {data.stages.map((stage, index) => (
-            <button
-              className={`performance-stage${selectedStageId === stage.id ? ' is-selected' : ''}`}
-              type="button"
-              aria-pressed={selectedStageId === stage.id}
-              onClick={() => {
-                setSelectedStageId(stage.id)
-                setIsMeasured(false)
-              }}
-              key={stage.id}
-            >
-              <span className="performance-stage__number">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <span className="performance-stage__body">
-                <strong>{stage.label}</strong>
-                <small>{stage.description}</small>
-                <span className="performance-stage__track" aria-hidden="true">
-                  <i
-                    style={{
-                      width: `${Math.max(4, (stage.durationMinutes / maximumStageMinutes) * 100)}%`,
-                    }}
-                  />
+            <Fragment key={stage.id}>
+              <button
+                className={`performance-stage${selectedStageId === stage.id ? ' is-selected' : ''}`}
+                type="button"
+                aria-pressed={selectedStageId === stage.id}
+                onClick={() => {
+                  setSelectedStageId(stage.id)
+                  setIsMeasured(false)
+                }}
+              >
+                <span className="performance-stage__number">
+                  {String(index + 1).padStart(2, '0')}
                 </span>
-              </span>
-              <b>{stage.durationMinutes} min</b>
-            </button>
+                <span className="performance-stage__body">
+                  <strong>{stage.label}</strong>
+                  <small>{stage.description}</small>
+                  <span className="performance-stage__track" aria-hidden="true">
+                    <i
+                      style={{
+                        width: `${Math.max(4, (stage.durationMinutes / maximumStageMinutes) * 100)}%`,
+                      }}
+                    />
+                  </span>
+                </span>
+                <b>{stage.durationMinutes} min</b>
+              </button>
+              {selectedStageId === stage.id && <StageEvidenceSummary result={result} />}
+            </Fragment>
           ))}
         </div>
 

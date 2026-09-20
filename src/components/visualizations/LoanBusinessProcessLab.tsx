@@ -56,6 +56,34 @@ function ProcessStep({
   )
 }
 
+/**
+ * Action-adjacent conclusion (#144 Pattern 1).
+ *
+ * The step cards are the primary action of this lab: selecting 一个业务环节 decides
+ * which record — and therefore which sentence — the lesson writes. On a phone the
+ * declared sentence (the 同一句问题的结果) used to sit a whole section below the chain,
+ * so the answer left the viewport. It is rendered as a sibling of the selected card
+ * inside the chain; the full record panel and the declaration section keep their
+ * own place (progressive disclosure of the long form).
+ */
+function ProcessStepConclusion({ step }: { step: LoanProcessStep }) {
+  return (
+    <div className="loan-process__step-conclusion" data-loan-step-conclusion>
+      <span>这个环节的声明 · {step.recordCount} 条记录</span>
+      <p>
+        <b>Business Process：</b>
+        {step.businessProcess}
+        <span aria-hidden="true"> · </span>
+        <b>分析对象：</b>
+        {step.analysisObject}
+        <span aria-hidden="true"> · </span>
+        <b>事件：</b>
+        {step.event}
+      </p>
+    </div>
+  )
+}
+
 function ProcessStepDetail({ step }: { step: LoanProcessStep }) {
   return (
     <div className="loan-process__step-detail-panel" aria-live="polite">
@@ -173,6 +201,7 @@ export function LoanBusinessProcessLab({ visualization }: LoanBusinessProcessLab
                   setIsConfirmed(false)
                 }}
               />
+              {step.id === selectedStep.id && <ProcessStepConclusion step={step} />}
             </div>
           ))}
         </div>

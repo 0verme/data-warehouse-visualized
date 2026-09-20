@@ -301,6 +301,29 @@
   margin-bottom: 26px;
 }
 
+/*
+ * #144 Pattern 1: checkpoint heading + its commit action + the decision record
+ * that action creates, grouped at the top of the stage so the control and the
+ * state block it changes are never more than one screen apart.
+ */
+.capstone-stage__top {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.capstone-stage__top .capstone-stage__heading {
+  margin-bottom: 0;
+}
+
+.capstone-stage__top .capstone-action-bar {
+  margin-top: 0;
+}
+
+.capstone-stage__top .capstone-decision-note {
+  margin-top: 0;
+}
+
 .capstone-stage__heading h2 {
   margin: 5px 0 8px;
   color: var(--capstone-ink);

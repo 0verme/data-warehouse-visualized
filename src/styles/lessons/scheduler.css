@@ -826,6 +826,44 @@
   margin-top: 10px;
 }
 
+/*
+ * #144 Pattern 1: the conclusion of 执行计划 sits directly under the button, so
+ * the run that was just created is on screen without hunting for the evidence
+ * block at the end of the lab.
+ */
+.scheduler-rerun__result {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--info-border, #b9d4f2);
+  border-left: 3px solid var(--blue, #2f6fd0);
+  border-radius: 0 9px 9px 0;
+  background: var(--info-bg, #eef5ff);
+}
+
+.scheduler-rerun__result > span {
+  color: var(--ink-muted, #75839a);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scheduler-rerun__result > strong {
+  color: var(--navy, #173b68);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.scheduler-rerun__result > p {
+  margin: 0;
+  color: var(--ink-soft, #50617a);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
 .scheduler-output-comparison {
   margin-top: 19px;
   padding-top: 17px;

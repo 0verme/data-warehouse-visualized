@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type {
   DataQualityVisualization,
   QualityCheckResult,
@@ -240,7 +240,7 @@ function FocusedEvidence({
   }
 
   return (
-    <section className="data-quality-focus" aria-label="当前规则证据">
+    <section className="data-quality-focus" aria-label="当前规则证据" aria-live="polite">
       <div className="data-quality-focus__heading">
         <div>
           <span className="data-quality-overline">当前规则</span>
@@ -391,7 +391,11 @@ function StatusFlow({
           </li>
         ))}
       </ol>
-      <div className="data-quality-status-summary">
+      {/*
+        #144 a11y floor: the RUN → QUALITY → RELEASE summary is the result of
+        *this* view, so it is the live region the lesson was missing.
+      */}
+      <div className="data-quality-status-summary" aria-live="polite">
         <div>
           <span>Scheduler</span>
           <strong>SUCCESS</strong>
@@ -469,23 +473,34 @@ function RuleReasoningLab({
           if (!rule || !check) {
             return null
           }
+          const isSelected = selectedRuleId === ruleId
           return (
-            <RuleResult
-              rule={rule}
-              check={check}
-              selected={selectedRuleId === ruleId}
-              onSelect={() => onSelectRule(ruleId)}
-              key={ruleId}
-            />
+            <Fragment key={ruleId}>
+              <RuleResult
+                rule={rule}
+                check={check}
+                selected={isSelected}
+                onSelect={() => onSelectRule(ruleId)}
+              />
+              {/*
+                #144 Pattern 1: the evidence of the selected rule is rendered as
+                the next item of the same grid, so on a phone the answer stays
+                next to the rule card that produced it instead of 0.9–1.2 screens
+                below the whole grid. The grid uses dense packing so the rule
+                cards keep filling the rows without holes.
+              */}
+              {isSelected && (
+                <FocusedEvidence
+                  rule={activeRule}
+                  check={activeCheck}
+                  thresholdOverride={activeRule ? thresholdOverrides[activeRule.ruleId] : undefined}
+                  onThresholdChange={onThresholdChange}
+                />
+              )}
+            </Fragment>
           )
         })}
       </div>
-      <FocusedEvidence
-        rule={activeRule}
-        check={activeCheck}
-        thresholdOverride={activeRule ? thresholdOverrides[activeRule.ruleId] : undefined}
-        onThresholdChange={onThresholdChange}
-      />
     </div>
   )
 }
