@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, type RefObject } from 'react'
 import type { Lesson } from '../../data/course'
 import type { LessonContent } from '../../content/types'
 import type { CodeHighlightMap } from '../../utils/code-highlight'
 import type { Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
 import { getRoute } from '../../utils/routes'
+import { getLessonAnchorId } from '../../utils/lesson-anchor'
 import { resetLessonViewportScroll } from '../../utils/scroll'
 import type { LessonContentStatus } from './useLessonContent'
 import { LessonContent as LessonBody, LessonHeader, LessonNavigation } from '../lesson'
@@ -21,6 +22,8 @@ interface LessonViewportProps {
   isCompleted: boolean
   onToggleComplete: () => void
   locale: Locale
+  /** Owned by `LearnShell`: reset and anchor positioning share one container ref. */
+  mainScrollRef: RefObject<HTMLDivElement | null>
   mainScrollResetKey: number
   shouldResetMainScroll: boolean
 }
@@ -39,20 +42,28 @@ export function LessonViewport({
   isCompleted,
   onToggleComplete,
   locale,
+  mainScrollRef,
   mainScrollResetKey,
   shouldResetMainScroll,
 }: LessonViewportProps) {
-  const mainScrollRef = useRef<HTMLDivElement | null>(null)
-
   useIsomorphicLayoutEffect(() => {
     if (!shouldResetMainScroll) {
       return
     }
 
-    if (mainScrollRef.current) {
-      resetLessonViewportScroll(mainScrollRef.current)
+    const container = mainScrollRef.current
+    if (!container) {
+      return
     }
-  }, [mainScrollResetKey, shouldResetMainScroll])
+
+    // A fragment navigation is positioned by `useLessonAnchorScroll` once the
+    // target lesson content exists; a reset here would fight that placement.
+    if (getLessonAnchorId(window.location.hash)) {
+      return
+    }
+
+    resetLessonViewportScroll(container)
+  }, [mainScrollRef, mainScrollResetKey, shouldResetMainScroll])
 
   return (
     <main className="learn-main">

@@ -1,6 +1,7 @@
 import type { Lesson } from '../../data/course'
 import { getChapterTitle } from '../../data/course'
 import { getLessonDisplayNumber } from '../../utils/lesson'
+import { getLessonHeadingId } from '../../utils/heading-id'
 import type { LessonContent } from '../../content/types'
 import { DEFAULT_LOCALE, type Locale } from '../../i18n/locale'
 import { getMessage } from '../../i18n/messages'
@@ -31,7 +32,7 @@ export function LessonHeader({
           {lesson.estimatedMinutes} {getMessage('minutes', locale)}
         </span>
       </div>
-      <h1>{lesson.title}</h1>
+      <h1 id={getLessonHeadingId(lesson.id)}>{lesson.title}</h1>
       <p className="lesson-header__subtitle">{content.subtitle}</p>
       <div className="lesson-header__tags" aria-label={getMessage('courseTags', locale)}>
         {lesson.tags.map((tag) => (

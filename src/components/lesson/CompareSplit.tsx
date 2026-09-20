@@ -1,4 +1,5 @@
 import type { LessonComparison } from '../../content/types'
+import { getCompareColumnHeadingId } from '../../utils/heading-id'
 
 export interface CompareSplitProps {
   comparison: LessonComparison
@@ -14,10 +15,10 @@ export function CompareSplit({ comparison, headingId = 'compare-split-title' }: 
         {comparison.intro && <p>{comparison.intro}</p>}
       </div>
       <div className="compare-split__grid">
-        {comparison.columns.map((column) => (
+        {comparison.columns.map((column, columnIndex) => (
           <article className="compare-split__column" key={column.label}>
             <span className="compare-split__label">{column.label}</span>
-            <h3>{column.title}</h3>
+            <h3 id={getCompareColumnHeadingId(headingId, columnIndex)}>{column.title}</h3>
             <ul>
               {column.points.map((point) => (
                 <li key={point}>{point}</li>
