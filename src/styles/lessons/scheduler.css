@@ -979,15 +979,19 @@
 }
 
 .scheduler-focused-controls {
-  display: flex;
-  gap: 18px;
+  display: grid;
+  grid-template-areas:
+    'status actions'
+    'change change';
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 18px;
   align-items: center;
-  justify-content: space-between;
   background: var(--info-bg);
 }
 
 .scheduler-focused-controls > div:first-child {
   display: grid;
+  grid-area: status;
   min-width: 0;
   gap: 3px;
 }
@@ -1006,7 +1010,45 @@
 
 .scheduler-focused-controls .scheduler-toolbar__buttons {
   display: flex;
-  grid-column: auto;
+  grid-area: actions;
+  justify-content: flex-end;
+}
+
+/* #145 Pattern 2：本步变化是 focused 课程的主状态块，放在控件卡内部。 */
+.scheduler-step-change {
+  display: grid;
+  grid-area: change;
+  min-width: 0;
+  gap: 3px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--surface, #fff);
+}
+
+.scheduler-step-change__label {
+  color: var(--ink-muted, #75839a);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.scheduler-step-change__summary {
+  overflow-wrap: anywhere;
+  color: var(--navy, #173b68);
+  font-size: 12px;
+}
+
+.scheduler-step-change__latest {
+  margin: 0;
+  color: var(--ink-soft, #50617a);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.scheduler-step-change > small {
+  color: var(--ink-muted, #75839a);
+  font-size: 10px;
 }
 
 .scheduler-focused-evidence {
@@ -1521,6 +1563,14 @@
   .scheduler-rerun-lesson__date {
     display: grid;
     align-items: stretch;
+  }
+
+  .scheduler-focused-controls {
+    grid-template-areas:
+      'status'
+      'change'
+      'actions';
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .scheduler-focused-controls .scheduler-toolbar__buttons {
