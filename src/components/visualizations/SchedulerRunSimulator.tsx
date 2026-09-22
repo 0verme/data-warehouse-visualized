@@ -873,8 +873,60 @@ function getFocusedRunStatusLabel(state: SchedulerRunState): string {
   return '等待 · 仍在等待运行条件'
 }
 
+/**
+ * Action-adjacent step change summary (#145 Pattern 2).
+ *
+ * The focused timeline controls used to expose only the clock and a coarse run
+ * status: after 单步推进 the learner saw "运行中" plus a changing event count,
+ * while the tasks that actually changed sat 0.4–7 screens away in the DAG,
+ * propagation strip or event log. This block is the declared primary state
+ * block of the four focused scheduler lessons: it names the events the last
+ * action produced and lives inside the control card, so "这一 Step 改变了什么"
+ * is on screen together with the buttons.
+ *
+ * Presentation only: `events` is the suffix of `state.events` that the last
+ * transition appended. It never becomes a second source of business state — a
+ * reset / mode switch clears it and the block falls back to the run's most
+ * recent event.
+ */
+function SchedulerStepChange({
+  state,
+  events,
+}: {
+  state: SchedulerRunState
+  events: readonly SchedulerEvent[]
+}) {
+  const changed = events.length > 0 ? events : state.events.slice(-1)
+  const typeCounts = new Map<SchedulerEventType, number>()
+  for (const event of changed) {
+    typeCounts.set(event.type, (typeCounts.get(event.type) ?? 0) + 1)
+  }
+  const latest = changed.at(-1)
+
+  return (
+    <div
+      className="scheduler-step-change"
+      data-scheduler-step-change
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <span className="scheduler-step-change__label">
+        {events.length > 0 ? '本步变化' : '最近事件'}
+      </span>
+      <strong className="scheduler-step-change__summary">
+        {typeCounts.size === 0
+          ? '尚未产生事件'
+          : [...typeCounts].map(([type, count]) => `${EVENT_LABELS[type]} ×${count}`).join(' · ')}
+      </strong>
+      {latest && <p className="scheduler-step-change__latest">{latest.message}</p>}
+      {events.length > 1 && <small>完整记录见下方事件日志</small>}
+    </div>
+  )
+}
+
 function FocusedRunControls({
   state,
+  stepEvents,
   isPlaying,
   jumpLabel,
   onPlay,
@@ -883,6 +935,7 @@ function FocusedRunControls({
   onReset,
 }: {
   state: SchedulerRunState
+  stepEvents: readonly SchedulerEvent[]
   isPlaying: boolean
   jumpLabel: string
   onPlay: () => void
@@ -897,6 +950,7 @@ function FocusedRunControls({
         <strong>{state.clock}</strong>
         <p aria-live="polite">{getFocusedRunStatusLabel(state)}</p>
       </div>
+      <SchedulerStepChange state={state} events={stepEvents} />
       <div className="scheduler-toolbar__buttons">
         <button className="button button--primary button--small" type="button" onClick={onPlay}>
           {isPlaying ? '暂停时间轴' : '播放时间轴'}
@@ -936,8 +990,10 @@ function DepositBalanceResultSummary({ visualization }: { visualization: Schedul
 }
 
 function FocusedRunEvidence({ state }: { state: SchedulerRunState }) {
+  // Live announcements are consolidated in the control card's SchedulerStepChange:
+  // this block repeats business date / partition / status / event count.
   return (
-    <div className="scheduler-focused-evidence" aria-live="polite">
+    <div className="scheduler-focused-evidence">
       <div>
         <span>业务日期</span>
         <strong>{state.businessDate}</strong>
@@ -1413,6 +1469,12 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
   const [rerunTargetTaskId, setRerunTargetTaskId] = useState<string>(references.ads)
   const [arrivalDelay, setArrivalDelay] = useState(20)
 
+  /**
+   * Presentation-only suffix of `state.events` appended by the last step, read
+   * by `SchedulerStepChange`. Business state stays in `state`.
+   */
+  const [stepEvents, setStepEvents] = useState<readonly SchedulerEvent[]>([])
+
   const rerunPlan = useMemo(
     () =>
       createPartitionRerunPlan(
@@ -1434,7 +1496,11 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     }
 
     const timerId = window.setTimeout(() => {
-      setState((current) => advanceSchedulerRun(current))
+      const next = advanceSchedulerRun(state)
+      setStepEvents(
+        next.events.length > state.events.length ? next.events.slice(state.events.length) : [],
+      )
+      setState(next)
     }, 650)
 
     return () => window.clearTimeout(timerId)
@@ -1444,16 +1510,33 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     return createFocusedRun(visualization, businessDate, overrides)
   }
 
+  function commitStep(previous: SchedulerRunState, next: SchedulerRunState) {
+    if (next === previous) {
+      return
+    }
+
+    setStepEvents(
+      next.events.length > previous.events.length ? next.events.slice(previous.events.length) : [],
+    )
+    setState(next)
+  }
+
+  /** 重置 / 切换条件 / 应用补数计划会整体替换 Run：清空本步变化。 */
+  function commitReplacement(next: SchedulerRunState) {
+    setStepEvents([])
+    setState(next)
+  }
+
   function resetRun() {
     setIsPlaying(false)
-    setState(createRun(state.businessDate, { scenario: initialScenario }))
+    commitReplacement(createRun(state.businessDate, { scenario: initialScenario }))
   }
 
   function selectReadinessMode(mode: ReadinessMode) {
     const option = READINESS_OPTIONS.find((candidate) => candidate.value === mode)!
     setReadinessMode(mode)
     setIsPlaying(false)
-    setState(
+    commitReplacement(
       createRun(state.businessDate, {
         scenario: option.scenario,
         lateDataAvailableAt:
@@ -1473,7 +1556,7 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
   ) {
     setFailureScenario(scenario)
     setIsPlaying(false)
-    setState(createRun(state.businessDate, { scenario }))
+    commitReplacement(createRun(state.businessDate, { scenario }))
   }
 
   function selectRerunKind(kind: RerunTeachingMode) {
@@ -1481,11 +1564,11 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     setIsPlaying(false)
     if (kind === 'retry') {
       const retryRun = createRun(state.businessDate, { scenario: 'dwd-retry' })
-      setState(getRunAtStoryMoment(retryRun, 'failure'))
+      commitStep(retryRun, getRunAtStoryMoment(retryRun, 'failure'))
       return
     }
 
-    setState(createRun(state.businessDate, { scenario: 'happy-path' }))
+    commitReplacement(createRun(state.businessDate, { scenario: 'happy-path' }))
   }
 
   function changeRerunBusinessDate(businessDate: string) {
@@ -1493,23 +1576,28 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     const next = createRun(businessDate, {
       scenario: rerunKind === 'retry' ? 'dwd-retry' : 'happy-path',
     })
-    setState(rerunKind === 'retry' ? getRunAtStoryMoment(next, 'failure') : next)
+    if (rerunKind === 'retry') {
+      commitStep(next, getRunAtStoryMoment(next, 'failure'))
+      return
+    }
+
+    commitReplacement(next)
   }
 
   function advanceOneStep() {
     setIsPlaying(false)
-    setState((current) => advanceSchedulerRun(current))
+    commitStep(state, advanceSchedulerRun(state))
   }
 
   function playTimeline() {
     if (state.status === 'success' || state.status === 'failed') {
       setIsPlaying(false)
-      setState(createRun(state.businessDate, { scenario: state.scenario }))
+      commitReplacement(createRun(state.businessDate, { scenario: state.scenario }))
       return
     }
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setState((current) => getRunAtStoryMoment(current, 'terminal'))
+      commitStep(state, getRunAtStoryMoment(state, 'terminal'))
       setIsPlaying(false)
       return
     }
@@ -1521,14 +1609,14 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     setIsPlaying(false)
     const moment: StoryMoment =
       focus === 'failure' || (focus === 'rerun' && rerunKind === 'retry') ? 'failure' : 'terminal'
-    setState((current) => getRunAtStoryMoment(current, moment))
+    commitStep(state, getRunAtStoryMoment(state, moment))
   }
 
   function applyRerunPlan() {
     setIsPlaying(false)
     const trigger = rerunMode === 'partial' ? 'partition-rerun' : 'full-rerun'
     const runId = getFocusedRunId(state.businessDate, trigger, 2)
-    setState(
+    commitReplacement(
       createRun(state.businessDate, {
         scenario: 'happy-path',
         trigger,
@@ -1541,24 +1629,24 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
   function prepareRetry() {
     setIsPlaying(false)
     const retryRun = createRun(state.businessDate, { scenario: 'dwd-retry' })
-    setState(getRunAtStoryMoment(retryRun, 'failure'))
+    commitStep(retryRun, getRunAtStoryMoment(retryRun, 'failure'))
   }
 
   function continueRetry() {
     setIsPlaying(false)
-    setState((current) => advanceSchedulerRun(current))
+    commitStep(state, advanceSchedulerRun(state))
   }
 
   function recoverTask(taskId: string) {
     setIsPlaying(false)
-    setState((current) => transitionSchedulerRun(current, { type: 'recover-task', taskId }))
+    commitStep(state, transitionSchedulerRun(state, { type: 'recover-task', taskId }))
   }
 
   function changeArrivalDelay(delay: number) {
     setArrivalDelay(delay)
     setIsPlaying(false)
     const arrivalAt = addSchedulerMinutes(visualization.scheduledAt ?? state.scheduledAt, delay)
-    setState(
+    commitReplacement(
       createRun(state.businessDate, {
         scenario: 'upstream-late',
         lateDataAvailableAt: arrivalAt,
@@ -1569,7 +1657,7 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
 
   function runToFinish() {
     setIsPlaying(false)
-    setState((current) => getRunAtStoryMoment(current, 'terminal'))
+    commitStep(state, getRunAtStoryMoment(state, 'terminal'))
   }
 
   const selectedFailureTask =
@@ -1578,6 +1666,7 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
   const controls = (
     <FocusedRunControls
       state={state}
+      stepEvents={stepEvents}
       isPlaying={isActive}
       jumpLabel={
         focus === 'failure' || (focus === 'rerun' && rerunKind === 'retry')
@@ -1625,8 +1714,10 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
         <div className="scheduler-run-simulator scheduler-run-simulator--focused is-failure">
           <FailureModePanel scenario={failureScenario} onScenarioChange={selectFailureScenario} />
           {controls}
-          <FocusedRunEvidence state={state} />
+          {/* #145: the propagation strip is the step's visible change, so it sits
+              directly under the control card; the DAG / event log stay behind. */}
           <FailurePropagation state={state} visualization={visualization} />
+          <FocusedRunEvidence state={state} />
           <DagCanvas
             tasks={visualization.tasks}
             taskRuns={state.taskRuns}

@@ -344,8 +344,16 @@
     grid-template-columns: 1fr;
   }
 
+  /* #145 Pattern 2：移动端把当前 Step 的结果表放到 equation 之后、两张输入表之前，
+     否则 下一步 / 上一步 真正改变的结果会被来源表推到 1 屏之外；
+     DOM 顺序与桌面阅读顺序不变，只有窄容器使用视觉重排。 */
   .join-fanout__result {
+    order: 3;
     padding: 12px;
+  }
+
+  .join-fanout__tables {
+    order: 4;
   }
 }
 
