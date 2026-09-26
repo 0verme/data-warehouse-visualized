@@ -10,6 +10,7 @@ import sqlWorkbenchStylesUrl from '../styles/lessons/sql-workbench.css?url'
 import joinFanoutStylesUrl from '../styles/lessons/join-fanout.css?url'
 import lifecyclePathStylesUrl from '../styles/lessons/lifecycle-path.css?url'
 import schedulerStylesUrl from '../styles/lessons/scheduler.css?url'
+import sensorReadinessStylesUrl from '../styles/lessons/sensor-readiness.css?url'
 import dataQualityStylesUrl from '../styles/lessons/data-quality.css?url'
 import lineageStylesUrl from '../styles/lessons/lineage.css?url'
 import lineageTeachingStylesUrl from '../styles/lessons/lineage-teaching.css?url'
@@ -37,6 +38,7 @@ const lessonStyleUrls = {
   'join-fanout.css': joinFanoutStylesUrl,
   'lifecycle-path.css': lifecyclePathStylesUrl,
   'scheduler.css': schedulerStylesUrl,
+  'sensor-readiness.css': sensorReadinessStylesUrl,
   'data-quality.css': dataQualityStylesUrl,
   'lineage.css': lineageStylesUrl,
   'lineage-teaching.css': lineageTeachingStylesUrl,
@@ -92,7 +94,7 @@ export const visualizationStyleSheets: Record<
   'lifecycle-path': ['lifecycle-path.css'],
   governance: ['governance.css'],
   'performance-lab': ['performance.css'],
-  scheduler: ['scheduler.css'],
+  scheduler: ['scheduler.css', 'sensor-readiness.css'],
   'data-quality': ['data-quality.css'],
   'data-service': ['data-service.css'],
   // Capstone renders the frozen legacy lineage graph, so it only needs the legacy lineage CSS.

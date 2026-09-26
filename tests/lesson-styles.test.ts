@@ -44,7 +44,10 @@ describe('课程 CSS ownership', () => {
     expect(lessonStyleSheets('sql-transformation-join')).toEqual(['join-fanout.css'])
     expect(lessonStyleSheets('lifecycle-path-failure')).toEqual(['lifecycle-path.css'])
     expect(lessonStyleSheets('warehouse-terms')).toEqual(['warehouse-intro.css'])
-    expect(lessonStyleSheets('scheduling-system')).toEqual(['scheduler.css'])
+    expect(lessonStyleSheets('scheduling-system')).toEqual([
+      'scheduler.css',
+      'sensor-readiness.css',
+    ])
     expect(lessonStyleSheets('data-quality')).toEqual(['data-quality.css'])
     expect(lessonStyleSheets('data-lineage')).toEqual(['lineage-teaching.css'])
     expect(lessonStyleSheets('lakehouse')).toEqual(['lakehouse.css'])
@@ -55,6 +58,7 @@ describe('课程 CSS ownership', () => {
   it('普通课程不会带上其它章节 / visualization CSS', () => {
     const unrelated = [
       'scheduler.css',
+      'sensor-readiness.css',
       'lineage.css',
       'lineage-teaching.css',
       'sql-workbench.css',
