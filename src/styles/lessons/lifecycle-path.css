@@ -570,6 +570,378 @@
   outline-offset: 2px;
 }
 
+/* Issue #162 · 局部结果对象生命周期对照，不扩展全局 SQL / simulation 样式。 */
+.object-lifecycle {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.object-lifecycle__intro,
+.object-lifecycle__comparison-heading,
+.object-lifecycle__details-heading,
+.object-lifecycle__event-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.object-lifecycle__intro h3,
+.object-lifecycle__comparison-heading h4,
+.object-lifecycle__details-heading h4,
+.object-lifecycle__event-heading h4 {
+  margin: 3px 0 0;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.object-lifecycle__intro > p,
+.object-lifecycle__comparison-heading > p,
+.object-lifecycle__details-heading > p {
+  flex: 1 1 260px;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.object-lifecycle__strategies,
+.object-lifecycle__snapshots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.object-lifecycle__strategy,
+.object-lifecycle__snapshot {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.object-lifecycle__strategy[data-selected='true'],
+.object-lifecycle__snapshot[data-selected='true'] {
+  border-color: var(--info-border);
+  box-shadow: inset 3px 0 0 var(--info-text);
+}
+
+.object-lifecycle__strategy-select {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 60px;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.object-lifecycle__strategy-select > span,
+.object-lifecycle__snapshot > h4 {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.object-lifecycle__strategy-select > strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.object-lifecycle__strategy-select > small {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.object-lifecycle__strategy pre {
+  min-width: 0;
+  margin: 8px 0 0;
+  padding: 9px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.object-lifecycle__strategy code {
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.object-lifecycle__strategy-select:focus-visible,
+.object-lifecycle__event:focus-visible,
+.object-lifecycle__reset:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.object-lifecycle__event-heading {
+  align-items: center;
+}
+
+.object-lifecycle__reset {
+  min-height: 40px;
+  padding: 7px 12px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.object-lifecycle__events {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.object-lifecycle__event {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  min-height: 64px;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.object-lifecycle__event[aria-pressed='true'] {
+  border-color: var(--info-border);
+  background: var(--info-bg);
+  box-shadow: inset 0 0 0 1px var(--info-border);
+}
+
+.object-lifecycle__event > strong {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.object-lifecycle__event > small {
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.object-lifecycle__comparison,
+.object-lifecycle__details {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.object-lifecycle__comparison-heading {
+  align-items: center;
+}
+
+.object-lifecycle__comparison-heading > p {
+  flex: 0 1 auto;
+  font-weight: 700;
+}
+
+.object-lifecycle__snapshot[data-tone='danger'] {
+  border-color: var(--danger-border);
+}
+
+.object-lifecycle__snapshot[data-tone='caution'] {
+  border-color: var(--warning-border);
+}
+
+.object-lifecycle__snapshot > h4 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.object-lifecycle__snapshot dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.object-lifecycle__snapshot dl > div {
+  display: grid;
+  grid-template-columns: minmax(56px, 0.35fr) minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.object-lifecycle__snapshot dt,
+.object-lifecycle__observations dt {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.object-lifecycle__snapshot dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.object-lifecycle__details[data-tone='danger'] {
+  border-left: 4px solid var(--danger-text);
+}
+
+.object-lifecycle__details[data-tone='success'] {
+  border-left: 4px solid var(--success-text);
+}
+
+.object-lifecycle__details[data-tone='caution'] {
+  border-left: 4px solid var(--warning-text);
+}
+
+.object-lifecycle__details-heading {
+  align-items: center;
+}
+
+.object-lifecycle__details-heading > p {
+  flex: 1 1 240px;
+  font-weight: 700;
+}
+
+.object-lifecycle__operations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.object-lifecycle__operations > li {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+}
+
+.object-lifecycle__operations > li[data-state='failed'] {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.object-lifecycle__operations > li[data-state='pending'] {
+  border-style: dashed;
+}
+
+.object-lifecycle__operations > li > span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.object-lifecycle__operations > li[data-state='failed'] > span {
+  color: var(--danger-text);
+}
+
+.object-lifecycle__operations > li > strong {
+  color: var(--text-primary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.object-lifecycle__operations > li > small {
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.object-lifecycle__observations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0;
+}
+
+.object-lifecycle__observations > div {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+}
+
+.object-lifecycle__observations dd {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+}
+
+.object-lifecycle__observations dd > strong {
+  color: var(--text-primary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.object-lifecycle__observations dd > small {
+  color: var(--text-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.object-lifecycle__transaction-note,
+.object-lifecycle__choice {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.object-lifecycle__transaction-note strong,
+.object-lifecycle__choice strong {
+  color: var(--text-primary);
+}
+
+.object-lifecycle__choice {
+  border-left: 3px solid var(--diagram-accent);
+}
+
 @container visualization (max-width: 660px) {
   .lifecycle-path__inputs {
     grid-template-columns: 1fr;
@@ -595,6 +967,14 @@
   .lifecycle-path__write-unit {
     grid-template-columns: 1fr;
   }
+
+  .object-lifecycle__events {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .object-lifecycle__operations {
+    grid-template-columns: 1fr;
+  }
 }
 
 @container visualization (max-width: 480px) {
@@ -610,6 +990,22 @@
   .lifecycle-path__day,
   .lifecycle-path__panel {
     padding: 12px;
+  }
+
+  .object-lifecycle__strategies,
+  .object-lifecycle__snapshots,
+  .object-lifecycle__observations {
+    grid-template-columns: 1fr;
+  }
+
+  .object-lifecycle__event {
+    min-height: 58px;
+    padding: 7px;
+  }
+
+  .object-lifecycle__comparison,
+  .object-lifecycle__details {
+    padding: 10px;
   }
 }
 

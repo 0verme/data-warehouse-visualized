@@ -298,16 +298,18 @@ describe('生产案例 13-1 · Step Kernel 与 SSR 首屏', () => {
     expect(markup).not.toContain('initialize')
   })
 
-  it('13-1 课程内容只使用 lifecycle-path 一个可视化，并挂在前置课之后', () => {
+  it('13-1 保留单一 lifecycle-path 入口，并补充对象策略对照说明', () => {
     const lesson = getLessonBySlug('lifecycle-path-failure')
     expect(lesson).toBeDefined()
 
     const content = getLessonContent(lesson!)
-    const kinds = content.sections
+    const visualizations = content.sections
       .filter((section) => section.kind === 'visualization')
-      .map((section) => section.visualization.kind)
+      .map((section) => section.visualization)
 
-    expect(kinds).toEqual(['lifecycle-path'])
+    expect(visualizations).toEqual([{ kind: 'lifecycle-path' }])
+    expect(JSON.stringify(content)).toContain('同名目标表，是否还是同一个对象？')
+    expect(JSON.stringify(content)).toContain('CTAS 并非错误')
     expect(getAdjacentLessons(lessons, 'build-a-warehouse').next?.slug).toBe(
       'lifecycle-path-failure',
     )

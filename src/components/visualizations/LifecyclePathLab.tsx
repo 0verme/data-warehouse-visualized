@@ -1,4 +1,5 @@
 import { useMemo, useReducer } from 'react'
+import { ObjectLifecycleLab } from './ObjectLifecycleLab'
 import {
   accountBalanceSnapshotFixture,
   getDayEvidence,
@@ -353,6 +354,7 @@ export function LifecyclePathLab() {
       {highlight.kind === 'fix' && <FixPanel day2={state.day2} />}
       {highlight.reveal.verification && <VerificationPanel state={state} />}
       {highlight.reveal.matrix && <MatrixPanel />}
+      <ObjectLifecycleLab />
     </section>
   )
 }
