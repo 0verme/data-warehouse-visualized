@@ -30,6 +30,7 @@ import {
   createVisualizationPlayer,
   getCurrentVisualizationStep,
 } from '../../utils/visualization-steps'
+import { LineageViewDependencyPanel } from './LineageViewDependencyPanel'
 
 interface LineageTeachingLabProps {
   nodes: LineageNode[]
@@ -1137,6 +1138,7 @@ export function LineageTeachingLab({ nodes, edges, teaching }: LineageTeachingLa
         <ImpactPanel nodes={tableNodes} edges={tableEdges} config={teaching.impact} />
       )}
       {teaching.mode === 'evidence' && <EvidencePanel teaching={teaching} />}
+      {teaching.mode === 'view-dependency' && <LineageViewDependencyPanel />}
     </div>
   )
 }

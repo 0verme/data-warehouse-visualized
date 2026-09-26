@@ -65,7 +65,7 @@ export interface LineageExternalEventAdapter<TEvent> {
 }
 
 export type LineageLessonMode =
-  'overview' | 'field-dependencies' | 'investigation' | 'impact' | 'evidence'
+  'overview' | 'field-dependencies' | 'investigation' | 'impact' | 'evidence' | 'view-dependency'
 
 export type LineageFieldDependencyKind = 'aggregate' | 'rename' | 'filter' | 'join'
 
