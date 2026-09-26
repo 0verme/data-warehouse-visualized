@@ -26,6 +26,8 @@ describe('object lifecycle deterministic teaching model', () => {
     })
     expect(recreated.visibleData).toContain('完整的新结果')
     expect(fixed.visibleData).toContain('完整的新结果')
+    expect(recreated.affectedRows).toContain('SELECT 返回')
+    expect(fixed.affectedRows).toContain('SELECT 结果')
   })
 
   it('failure after object creation leaves an object but does not equate existence with release', () => {
@@ -93,6 +95,7 @@ describe('object lifecycle deterministic teaching model', () => {
     for (const strategy of ['drop-ctas', 'fixed-table'] as const) {
       const result = getObjectLifecycleSnapshot(strategy, 'success')
       const labels = result.observations.map((item) => item.label)
+      expect(labels).toContain('Execution plan')
       expect(labels).toContain('Metadata')
       expect(labels).toContain('权限')
       expect(labels).toContain('Dependency')
@@ -130,6 +133,8 @@ describe('object lifecycle deterministic teaching model', () => {
     expect(markup).toContain('TRUNCATE TABLE ads_deposit_balance_daily')
     expect(markup).toContain('正常成功')
     expect(markup).toContain('Schema stability')
+    expect(markup).toContain('影响行数')
+    expect(markup).toContain('Execution plan')
     expect(markup).toContain('重置实验')
     expect(markup).toContain('依数据库实现而异')
   })

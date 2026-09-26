@@ -49,6 +49,10 @@ function StrategySnapshot({
           <dd>{snapshot.visibleData}</dd>
         </div>
         <div>
+          <dt>影响行数</dt>
+          <dd>{snapshot.affectedRows}</dd>
+        </div>
+        <div>
           <dt>schema</dt>
           <dd>{snapshot.schema}</dd>
         </div>

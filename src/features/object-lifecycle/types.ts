@@ -35,6 +35,7 @@ export interface ObjectLifecycleSnapshot {
   readonly targetExists: boolean
   readonly objectIdentity: string
   readonly visibleData: string
+  readonly affectedRows: string
   readonly schema: string
   readonly operations: readonly ObjectLifecycleOperation[]
   readonly observations: readonly ObjectLifecycleObservation[]

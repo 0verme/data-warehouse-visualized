@@ -60,6 +60,7 @@ interface ObjectLifecycleScenario {
   readonly targetExists: boolean
   readonly objectIdentity: string
   readonly visibleData: string
+  readonly affectedRows: string
   readonly schema: string
   readonly identityDetail: string
   readonly schemaDetail: string
@@ -78,6 +79,12 @@ const STRATEGY_OBSERVATIONS: Record<
       label: 'Metadata',
       value: '需重新核对',
       detail: '新建对象的注释、约束、索引、属性和统计信息是否重建，取决于建表脚本和数据库实现。',
+    },
+    {
+      label: 'Execution plan',
+      value: '检查 CTAS 的 SELECT 计划',
+      detail:
+        'CTAS 会执行 SELECT；检查扫描、分区 / 布局与写入成本，不应把 CTAS 语法本身当作更快的保证。',
     },
     {
       label: '权限',
@@ -109,6 +116,12 @@ const STRATEGY_OBSERVATIONS: Record<
       value: '对象定义保持',
       detail:
         '本模型没有 DROP 表，声明的列、约束、注释与表级属性仍属于同一对象；统计信息可能随写入更新。',
+    },
+    {
+      label: 'Execution plan',
+      value: '分别检查清空与 INSERT SELECT',
+      detail:
+        'TRUNCATE 与 INSERT 是不同阶段；应检查 INSERT 的 SELECT 计划和目标属性，并在相同输入与配置下实测差异。',
     },
     {
       label: '权限',
@@ -146,6 +159,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 新对象代次 #02',
       visibleData: '完整的新结果已写出；仍需通过发布校验。',
+      affectedRows: '旧对象整体被替换；CTAS 写入本次 SELECT 返回的全部行（不设固定数值）。',
       schema: '从 SELECT 结果推导为 Schema v1。',
       identityDetail: '名字相同，不代表逻辑对象代次相同。',
       schemaDetail: '列和类型随查询结果变化；具体推导规则因数据库而异。',
@@ -172,6 +186,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 新对象代次 #02',
       visibleData: '新结果已写出但未通过校验；是否已对读者可见取决于发布门禁。',
+      affectedRows: 'CTAS 已写入查询结果行；行数需独立校验，不等于已验收行数。',
       schema: '新建对象已采用本次查询推导的 Schema v1。',
       identityDetail: '失败发生在创建和写入之后。',
       schemaDetail: 'schema 可以变化，消费者契约仍需单独验证。',
@@ -198,6 +213,7 @@ const SCENARIOS: Record<
       targetExists: false,
       objectIdentity: '目标名暂时没有对象',
       visibleData: '通过该目标名无法读取旧结果；恢复前消费者可能查询失败。',
+      affectedRows: 'DROP 已移除整张旧目标；CTAS 未形成可读的新结果行。',
       schema: '新对象未形成。',
       identityDetail: '旧代次已移除，新代次创建失败。',
       schemaDetail: '需先使 CTAS 成功，才能检查结果形状。',
@@ -225,6 +241,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 新对象代次 #02',
       visibleData: '包含 account_count 的新结果已写出；旧消费者需复核。',
+      affectedRows: '按新增列的 SELECT 结果写入新对象；具体行数取决输入，需独立校验。',
       schema: '从 SELECT 推导为 Schema v2（新增 account_count）。',
       identityDetail: '对象代次变化，即便名字不变。',
       schemaDetail: '查询结果形状变化成为新对象结构。',
@@ -251,6 +268,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 新对象代次 #03',
       visibleData: 'Attempt 2 的完整结果可用；需核对消费者看到的代次。',
+      affectedRows: 'Attempt 1 无完整输出；Attempt 2 再写入 SELECT 返回的结果行。',
       schema: 'Attempt 2 再次从查询结果推导。',
       identityDetail: '#01 → 缺失 → #03；同名对象经历两次代次变化。',
       schemaDetail: '输入或查询变更仍可能改变结果结构。',
@@ -275,6 +293,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 固定对象 #01',
       visibleData: 'TRUNCATE + INSERT 完成；完整的新结果可用。',
+      affectedRows: 'TRUNCATE 清空全目标；INSERT 写入 SELECT 结果（具体计数依工具实现）。',
       schema: '维持预先声明的 Schema v1。',
       identityDetail: '同名、同一声明对象，写入数据替换。',
       schemaDetail: '目标定义稳定；输出不兼容变化需显式处理。',
@@ -297,6 +316,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 固定对象 #01',
       visibleData: '新结果已写出但未通过校验；是否已对读者可见取决于事务 / 发布门禁。',
+      affectedRows: 'INSERT 已写出查询结果行；校验失败，不作为已验收计数。',
       schema: '固定对象仍使用 Schema v1。',
       identityDetail: '表定义未被替换。',
       schemaDetail: '输出列需满足已声明的目标契约。',
@@ -323,6 +343,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 固定对象 #01',
       visibleData: '本案例假设 TRUNCATE 已提交；目标仍存在，但当前没有完整新结果。',
+      affectedRows: 'TRUNCATE 已提交；INSERT 未完成，部分行影响与可见性依事务边界。',
       schema: '固定对象定义保留为 Schema v1。',
       identityDetail: '表对象存在，行数据未完成刷新。',
       schemaDetail: '行数据失败不自动改变对象定义。',
@@ -350,6 +371,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 固定对象 #01',
       visibleData: '未形成可验收的新结果；旧数据是否仍可见取决于清空与事务边界。',
+      affectedRows: '清空范围为目标全表；Schema mismatch 阻止 INSERT，旧 / 部分行取决于事务边界。',
       schema: '目标仍为 Schema v1；需先计划迁移到 Schema v2。',
       identityDetail: '固定对象没有因为查询变化而自动重建。',
       schemaDetail: '须兼容映射或显式迁移，避免静默改变消费者契约。',
@@ -380,6 +402,7 @@ const SCENARIOS: Record<
       targetExists: true,
       objectIdentity: 'ads_deposit_balance_daily · 固定对象 #01',
       visibleData: 'Attempt 2 完成完整刷新；数据通过校验。',
+      affectedRows: 'Attempt 1 中断后，Attempt 2 再次全量清空并写入 SELECT 结果行。',
       schema: '仍为固定 Schema v1。',
       identityDetail: 'Retry 再次写入同一声明对象。',
       schemaDetail: '结构变化仍需要单独迁移。',
