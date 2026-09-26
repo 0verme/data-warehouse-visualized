@@ -89,9 +89,15 @@ describe('认识数据仓库第一章交互', () => {
     const layersMarkup = renderLesson('warehouse-layers')
     const journeyMarkup = renderLesson('report-metric-journey')
 
-    expect(layersMarkup).toContain('分层职责演变图')
+    expect(layersMarkup).toContain('分层职责与生产演进')
+    expect(layersMarkup).toContain('aria-label="架构演进阶段"')
+    expect(layersMarkup).toContain('多年叠加')
+    expect(layersMarkup).toContain('渐进治理')
     expect(layersMarkup).toContain('公共加工')
-    expect(layersMarkup).toContain('同一套规则，被复制 1 次')
+    expect(layersMarkup).toContain('多个下游')
+    expect(layersMarkup).toContain('管理驾驶舱')
+    expect(layersMarkup).toContain('团队治理选择')
+    expect(layersMarkup).toContain('固定层数')
 
     expect(journeyMarkup).toContain('报表数字的数据旅程')
     expect(journeyMarkup).toContain('贷款余额 ÷ 存款余额')
