@@ -9,7 +9,7 @@
 当前已实现：
 
 - `why-data-warehouse.ts`：1-1 核心系统、信贷系统与跨系统分析
-- `warehouse-layers.ts`：1-2 数据职责、公共加工与变化影响
+- `warehouse-layers.ts`：1-2 数据职责、共享加工价值，以及理想分层到生产网状依赖的渐进治理
 - `report-metric-journey.ts`：1-3 存贷比报表数字的数据链路
 - `warehouse-terms.ts`：1-4 OLTP、OLAP、ETL、ELT 与 Data Warehouse 术语
 - `data-modeling.ts`：贷款业务过程选择与 LoanContract / LoanNote / Repayment 最小链路
