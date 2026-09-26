@@ -607,6 +607,7 @@ describe('课程数据与导航', () => {
       getLessonContent(chapterLessons[0]!).sections.map((section) => section.kind ?? 'narrative'),
     ).toEqual([
       'narrative',
+      'narrative',
       'visualization',
       'narrative',
       'narrative',

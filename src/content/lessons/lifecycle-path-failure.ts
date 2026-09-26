@@ -15,9 +15,9 @@ export const lifecyclePathFailureContent: LessonContent = {
     question: '第一次运行成功，究竟验证了哪些执行路径？',
   },
   subtitle:
-    '用 AccountBalanceSnapshot 日批任务的两天对照，看清 initialize 与 maintain 两条生命周期路径的差别。',
+    '用 AccountBalanceSnapshot 日批任务对照 initialize / maintain 路径，再比较固定结果对象与 CTAS 替换的工程影响。',
   quickSummary:
-    '同一个任务在目标对象「不存在」和「已经存在」时走两条不同的路径。Day 1 成功只证明 initialize 路径成立；没有执行过的 maintain 路径，需要另一组运行状态单独验证。',
+    '同一个任务在目标对象「不存在」和「已经存在」时走不同路径；Day 1 成功不证明 maintain 已验证。随后比较固定对象与 CTAS 的 identity、schema、失败恢复和运行边界。',
   concept: {
     term: '生命周期执行路径（Lifecycle Execution Path）',
     definition:
@@ -39,11 +39,24 @@ export const lifecyclePathFailureContent: LessonContent = {
       ],
     },
     {
+      kind: 'narrative',
+      title: '同名目标表，是否还是同一个对象？',
+      paragraphs: [
+        '前面的故障调查聚焦「目标对象当前是否存在」以及 initialize / maintain 路径。这一段换一个问题：加工结果的名字相同，是否意味着结果对象的 identity、schema 和下游契约也保持不变？',
+        '下面用 `ads_deposit_balance_daily` 对照 DROP + CTAS 与固定表 TRUNCATE + INSERT。两者在正常执行时都可能得到正确数据；选择依据应是对象生命周期、schema 稳定性和运行场景，而不是 SQL 风格偏好。',
+      ],
+      bullets: [
+        '通用事实：DROP 后重新 CREATE 是新的对象创建过程；CTAS 的列形状来自查询结果。',
+        '工程实践：固定表把 schema 契约放在目标定义里，但刷新、回滚和迁移仍需设计。',
+        '组织选择：授权恢复、依赖处理、发布门禁和 lineage 记录策略应按团队与平台约定决定。',
+      ],
+    },
+    {
       kind: 'visualization',
-      eyebrow: '生产案例实验 · 7 步证据链',
-      title: '把两天的运行一步步对照',
+      eyebrow: '生产案例实验 · 证据链 + 对象生命周期',
+      title: '先调查执行路径，再比较结果对象策略',
       description:
-        '从现象开始，先看第一批证据，再揭示两天进入的不同生命周期路径，展开 maintain 的准备规则，修正后对同一业务日期 Rerun，并用 5 项数据检查和一条最小测试矩阵收口。',
+        '先沿 7 步证据链对照两天运行，定位 initialize / maintain 差异；完成后继续切换 DROP + CTAS 与固定表刷新，以及正常成功、失败、schema 变化和 Retry 事件。',
       visualization: { kind: 'lifecycle-path' },
     },
     {
@@ -69,17 +82,18 @@ export const lifecyclePathFailureContent: LessonContent = {
     },
     {
       kind: 'engineering-note',
-      title: '案例边界',
-      text: '这是基于真实生产问题模式抽象出来的教学案例，不代表任何具体银行或系统的真实事故。案例只覆盖「目标对象不存在 / 目标对象已经存在 / 同一业务日期重跑」三种生命周期状态，不展开 schema evolution、backfill、迟到数据等其他状态，也不涉及具体数据库的 DDL 与分区语法。',
+      title: '教学模型与数据库行为边界',
+      text: '本案例是基于生产工程取舍的确定性教学模型，不代表具体银行或数据库实现。失败场景明确假设 DROP 或 TRUNCATE 已提交；若 DDL/DML 与后续步骤处于不同事务边界、数据库支持 DDL 回滚或采用原子发布，对象存在性与读者可见结果可能不同。锁、并发、权限、依赖、metadata、lineage 和统计信息也依数据库与工具实现而异；本案例聚焦对象生命周期与工程影响，不模拟所有数据库语义。',
     },
     {
       kind: 'takeaway',
       title: '把两个结论带回自己的任务',
-      text: '任务第一次运行成功，只证明当时进入的那条路径成立。判断一个生命周期任务是否真的写好了，要回到执行路径本身。',
+      text: '任务第一次运行成功，只证明当时进入的执行路径成立；选择结果表刷新方式，还要判断对象 identity 是否需要稳定，以及团队能否承担对应的 schema、发布和恢复责任。',
       bullets: [
         '测试覆盖的是执行路径，而不是代码文件。',
         '首次运行成功，不代表后续生命周期路径已经得到验证。',
-        '生命周期任务的最小检查：目标对象不存在、目标对象已经存在、同一业务日期重跑。',
+        'CTAS 并非错误；一次性派生与稳定生产对象有不同的生命周期要求。',
+        '具体 DDL/事务和并发可见性依数据库实现而异，方案结论应附运行边界。',
       ],
     },
   ],
