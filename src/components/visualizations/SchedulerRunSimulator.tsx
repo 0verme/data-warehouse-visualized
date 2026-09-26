@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SchedulerDateSemanticsExperiment } from './SchedulerDateSemanticsExperiment'
 import type {
   SchedulerDependencyState,
   SchedulerEvent,
@@ -1684,6 +1685,7 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     case 'business-date':
       return (
         <div className="scheduler-run-simulator scheduler-run-simulator--focused is-business-date">
+          <SchedulerDateSemanticsExperiment />
           <BusinessDateTimeline state={state} visualization={visualization} />
           {controls}
           <FocusedRunEvidence state={state} />
