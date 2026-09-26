@@ -1073,6 +1073,46 @@ button.lineage-teaching-flow__node:focus-visible,
   font-size: 12px;
 }
 
+.lineage-view-dependency__perspective {
+  margin-top: 0;
+}
+
+.lineage-view-dependency__source-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 10px;
+}
+
+.lineage-view-dependency__missing {
+  margin: 0 10px 12px;
+  padding: 10px;
+  border: 1px dashed var(--diagram-border);
+  border-radius: 7px;
+  background: var(--diagram-bg);
+}
+
+.lineage-view-dependency__missing > strong {
+  display: block;
+  color: var(--ink);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.lineage-view-dependency__toggle {
+  min-height: 40px;
+}
+
+.lineage-view-dependency__status {
+  min-height: 1.6em;
+  margin: 8px 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.lineage-teaching-flow > li[hidden] {
+  display: none;
+}
+
 @container visualization (max-width: 680px) {
   .lineage-teaching-selection {
     grid-template-columns: repeat(2, minmax(0, 1fr));

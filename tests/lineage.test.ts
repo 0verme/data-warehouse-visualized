@@ -169,7 +169,7 @@ describe('第 07 章数据血缘', () => {
     expect(
       lineageContents.map((content) => content.sections.map((section) => section.kind)),
     ).toEqual([
-      ['visualization'],
+      ['visualization', 'visualization'],
       ['visualization'],
       ['visualization'],
       ['visualization'],

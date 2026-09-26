@@ -17,7 +17,7 @@
 - `star-schema-and-grain.ts`：账户交易字段归位、事实/维度与星型模型
 - `fact-table-types.ts`：Transaction Fact、Periodic Snapshot Fact、Accumulating Snapshot Fact 对照
 - `slowly-changing-dimension.ts`：Customer 覆盖更新与拉链表的历史时间点实验
-- `data-lineage.ts`：7-1 表级血缘
+- `data-lineage.ts`：7-1 表级血缘、数据库 View 与调度依赖 / SQL 血缘对照
 - `data-lineage-fields.ts`：7-2 字段级血缘
 - `data-lineage-investigation.ts`：7-3 Quality Event 调查
 - `data-lineage-impact.ts`：7-4 变更影响范围
