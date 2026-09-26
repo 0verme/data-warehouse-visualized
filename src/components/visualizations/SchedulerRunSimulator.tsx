@@ -16,6 +16,7 @@ import type {
   SchedulerTaskRunRecord,
   SchedulerVisualization,
 } from '../../features/scheduler/types'
+import { DuplicateSchedulerEntryLab } from './DuplicateSchedulerEntryLab'
 import {
   BANKING_DEPOSIT_BALANCE_ARRIVAL_AT,
   BANKING_DEPOSIT_BALANCE_EXPECTED_ARRIVAL_AT,
@@ -808,6 +809,8 @@ function getFocusedInitialScenario(focus: SchedulerLessonFocus): SchedulerScenar
     case 'failure':
       return 'dwd-retry'
     case 'rerun':
+      return 'happy-path'
+    case 'duplicate-entry':
       return 'happy-path'
   }
 }
@@ -1767,6 +1770,8 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
           <FocusedRunEvidence state={state} />
         </div>
       )
+    case 'duplicate-entry':
+      return null
   }
 }
 
@@ -1794,6 +1799,10 @@ function getRunAtStoryMoment(state: SchedulerRunState, moment: StoryMoment): Sch
 }
 
 export function SchedulerRunSimulator({ visualization }: SchedulerRunSimulatorProps) {
+  if (visualization.lessonFocus === 'duplicate-entry') {
+    return <DuplicateSchedulerEntryLab visualization={visualization} />
+  }
+
   return <FocusedSchedulerLab visualization={visualization} />
 }
 

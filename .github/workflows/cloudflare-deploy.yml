@@ -53,6 +53,9 @@ jobs:
       - name: Run browser smoke
         run: npm run test:e2e:smoke -- --skip-build
 
+      - name: Run duplicate scheduler entry browser checks
+        run: npm run test:e2e:duplicate-entry -- --skip-build
+
       - name: Run browser fragment regression
         run: npm run test:e2e:learn-anchor -- --skip-build
 
