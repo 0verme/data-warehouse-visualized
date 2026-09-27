@@ -36,7 +36,7 @@
 - `scheduling-business-date.ts`：业务日期、到达时间和目标分区时间轴
 - `scheduling-readiness.ts`：三种启动条件与 DAG 放行
 - `scheduling-failure.ts`：失败传播、Attempt 与 Retry
-- `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围与幂等
+- `scheduling-rerun.ts`：Retry、Rerun、Backfill、重跑范围、幂等与双入口迁移切换
 - `scheduling-sla.ts`：迟到数据传播与业务 SLA
 - `scheduling-system.ts`：复用存款余额任务契约的时间轴 DAG Run 模拟
 - `data-quality.ts`：6-1 运行状态、质量状态与发布状态

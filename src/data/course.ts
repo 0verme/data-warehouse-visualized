@@ -704,8 +704,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-scheduling-rerun': {
       title: '同样是“再跑一次”，到底有什么不同？',
-      summary: '比较 Retry、Rerun、Backfill 和重跑范围，用重复写入反例理解幂等。',
-      tags: ['Rerun', 'Backfill', '幂等'],
+      summary:
+        '区分 Retry、Rerun、Backfill 与意外双入口；对照幂等和 append 的数据、文件、推送后果，并治理迁移切换。',
+      tags: ['Rerun', 'Backfill', '重复调度', '调度迁移', '幂等'],
     },
     'lesson-scheduling-sla': {
       title: '任务都成功了，为什么数据还是可能迟到？',

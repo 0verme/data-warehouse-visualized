@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "check": "astro check",
     "test:e2e:smoke": "node tests/e2e/release-smoke.mjs",
+    "test:e2e:duplicate-entry": "node tests/e2e/duplicate-scheduler-entry.mjs",
     "test:e2e:learn-scroll": "node tests/e2e/learn-scroll-boundary.mjs",
     "test:e2e:proximity": "node tests/e2e/action-feedback-proximity.mjs",
     "test:e2e:steps": "node tests/e2e/step-player-composition.mjs",

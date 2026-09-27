@@ -16,7 +16,8 @@ export type SchedulerScenario =
   | 'timed-extract'
   | 'dwd-retry'
   | 'dwd-blocked'
-export type SchedulerLessonFocus = 'business-date' | 'readiness' | 'failure' | 'rerun' | 'sla'
+export type SchedulerLessonFocus =
+  'business-date' | 'readiness' | 'failure' | 'rerun' | 'sla' | 'duplicate-entry'
 export type SchedulerRunTrigger = 'schedule' | 'partition-rerun' | 'full-rerun'
 export type SchedulerRerunMode = 'partial' | 'full'
 export type SchedulerRunStatus = 'queued' | 'running' | 'success' | 'failed'
