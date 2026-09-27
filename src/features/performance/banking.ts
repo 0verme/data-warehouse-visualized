@@ -528,6 +528,10 @@ export const performanceVisualizations = {
     focus: 'tradeoffs' as const,
     tradeoffs: tradeoffData,
   },
+  microbatch: {
+    ...baseVisualization,
+    focus: 'microbatch' as const,
+  },
 } satisfies Record<string, PerformanceVisualization>
 
 export function createPerformanceVisualization(
@@ -544,6 +548,8 @@ export function createPerformanceVisualization(
       return performanceVisualizations.firstSeen
     case 'tradeoffs':
       return performanceVisualizations.tradeoffs
+    case 'microbatch':
+      return performanceVisualizations.microbatch
   }
 }
 

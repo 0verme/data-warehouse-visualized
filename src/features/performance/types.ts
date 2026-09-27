@@ -1,5 +1,5 @@
 export type PerformanceLessonFocus =
-  'diagnosis' | 'scan-layout' | 'shuffle-skew' | 'first-seen' | 'tradeoffs'
+  'diagnosis' | 'scan-layout' | 'shuffle-skew' | 'first-seen' | 'tradeoffs' | 'microbatch'
 
 export type PerformanceLayer = 'storage-execution' | 'calculation-plan' | 'business-semantics'
 
@@ -254,9 +254,14 @@ export interface PerformanceTradeoffsVisualization extends PerformanceVisualizat
   tradeoffs: PerformanceTradeoffData
 }
 
+export interface PerformanceMicrobatchVisualization extends PerformanceVisualizationBase {
+  focus: 'microbatch'
+}
+
 export type PerformanceVisualization =
   | PerformanceDiagnosisVisualization
   | PerformanceScanLayoutVisualization
   | PerformanceShuffleSkewVisualization
   | PerformanceFirstSeenVisualization
   | PerformanceTradeoffsVisualization
+  | PerformanceMicrobatchVisualization
