@@ -14,6 +14,38 @@
  * because visibility (desktop collapse vs. mobile drawer) is decided by the learn
  * shell responsive layout.
  */
+.learn-search-entry {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.learn-search-entry__shortcut {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink-muted);
+  font-family: inherit;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.learn-search-trigger {
+  display: inline-flex;
+}
+
+.learn-search-trigger svg {
+  width: 18px;
+  height: 18px;
+}
+
+.learn-search-entry__shortcut {
+  font-variant-numeric: tabular-nums;
+}
+
 .topbar-control {
   width: 36px;
   height: 36px;
@@ -139,6 +171,10 @@ html[data-theme='dark'] .theme-toggle__icon--sun {
  * header layout, for every control button in the row.
  */
 @media (max-width: 900px) {
+  .learn-search-entry--desktop {
+    display: none;
+  }
+
   .topbar-control {
     width: 40px;
     height: 40px;

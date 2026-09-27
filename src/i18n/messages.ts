@@ -37,6 +37,19 @@ export interface MessageDictionary {
   lessonContentLoading: string
   lessonContentLoadError: string
   retry: string
+  searchContent: string
+  closeSearch: string
+  searchPlaceholder: string
+  searchLoading: string
+  searchLoadError: string
+  retrySearch: string
+  searchInitialHint: string
+  searchNoResults: string
+  searchNoResultsHint: string
+  searchResultCount: string
+  searchNoResultsCount: string
+  searchLessonOverview: string
+  searchSectionLabel: string
 }
 
 export const messages: Partial<Record<Locale, MessageDictionary>> = {
@@ -77,6 +90,19 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     lessonContentLoading: '正在加载课程内容…',
     lessonContentLoadError: '课程内容暂时无法加载，请检查网络后重试。',
     retry: '重试',
+    searchContent: '搜索课程内容',
+    closeSearch: '关闭搜索',
+    searchPlaceholder: '输入关键词，如：幂等、数据倾斜、first_seen',
+    searchLoading: '正在加载搜索索引…',
+    searchLoadError: '搜索暂时无法使用，请检查网络后重试。',
+    retrySearch: '重试加载',
+    searchInitialHint: '试试：拉链表、幂等、数据倾斜、first_seen',
+    searchNoResults: '没有找到匹配内容。',
+    searchNoResultsHint: '试试更短的关键词，例如：拉链表、幂等、血缘。',
+    searchResultCount: '条匹配结果',
+    searchNoResultsCount: '没有找到匹配内容',
+    searchLessonOverview: '课程概览',
+    searchSectionLabel: '小节',
   },
   en: {
     siteName: 'Data Warehouse Visualized',
@@ -116,6 +142,19 @@ export const messages: Partial<Record<Locale, MessageDictionary>> = {
     lessonContentLoadError:
       'Lesson content failed to load. Please check your connection and retry.',
     retry: 'Retry',
+    searchContent: 'Search course content',
+    closeSearch: 'Close search',
+    searchPlaceholder: 'Search, e.g. 幂等, 数据倾斜, first_seen',
+    searchLoading: 'Loading search index…',
+    searchLoadError: 'Search is temporarily unavailable. Check your connection and retry.',
+    retrySearch: 'Retry loading',
+    searchInitialHint: 'Try: 拉链表, 幂等, 数据倾斜, first_seen',
+    searchNoResults: 'No matching content found.',
+    searchNoResultsHint: 'Try a shorter query, such as 拉链表, 幂等, or 血缘.',
+    searchResultCount: 'matching results',
+    searchNoResultsCount: 'No matching content found',
+    searchLessonOverview: 'Lesson overview',
+    searchSectionLabel: 'Section',
   },
 }
 

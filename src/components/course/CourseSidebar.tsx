@@ -19,6 +19,8 @@ interface CourseSidebarProps {
   isOpen: boolean
   locale: Locale
   revealRequest: SidebarRevealRequest
+  isSearchOpen: boolean
+  onOpenSearch: (trigger: HTMLButtonElement) => void
   onToggleChapter: (chapterId: string) => void
 }
 
@@ -32,6 +34,8 @@ export function CourseSidebar({
   isOpen,
   locale,
   revealRequest,
+  isSearchOpen,
+  onOpenSearch,
   onToggleChapter,
 }: CourseSidebarProps) {
   const sidebarRef = useRef<HTMLElement | null>(null)
@@ -86,6 +90,27 @@ export function CourseSidebar({
         <h2>从一张表开始</h2>
         <p>沿着数据流动的方向，把抽象概念变成可以观察的步骤。</p>
       </div>
+
+      <button
+        className="course-sidebar__search"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={isSearchOpen}
+        aria-label={getMessage('searchContent', locale)}
+        onClick={(event) => onOpenSearch(event.currentTarget)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
+          <circle cx="10.8" cy="10.8" r="6.3" />
+          <path d="m15.5 15.5 4.2 4.2" />
+        </svg>
+        <span>{getMessage('searchContent', locale)}</span>
+      </button>
 
       <nav className="course-nav">
         {chapters.map((chapter) => {

@@ -6,11 +6,13 @@ import { ThemeToggle } from './course/ThemeToggle'
 
 interface GlobalHeaderActionsProps {
   locale?: Locale
+  leadingAction?: ReactNode
   children?: ReactNode
 }
 
 export function GlobalHeaderActions({
   locale = DEFAULT_LOCALE,
+  leadingAction,
   children,
 }: GlobalHeaderActionsProps) {
   const activeLocale = useSyncExternalStore(
@@ -21,6 +23,7 @@ export function GlobalHeaderActions({
 
   return (
     <div className="learn-topbar__actions">
+      {leadingAction}
       <LocaleSwitcher locale={activeLocale} onLocaleChange={setLocale} />
       <ThemeToggle locale={activeLocale} />
       {children}

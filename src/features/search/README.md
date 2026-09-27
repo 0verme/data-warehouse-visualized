@@ -30,7 +30,7 @@ SearchHit[]（含 heading / anchor / href / snippet segments）→ P1-C 渲染
 interface SearchIndex {
   version: number // SEARCH_INDEX_VERSION，schema 变更时递增
   lessons: SearchLesson[] // 54 条课程元数据（title / subtitle / summary / tags / chapter / number / order）
-  docs: SearchDoc[] // 449 个可跳转 target（当前语料）
+  docs: SearchDoc[] // 457 个可跳转 target（origin/main d27b5a1 当前语料）
 }
 
 interface SearchDoc {
@@ -116,7 +116,17 @@ for (const hit of hits) {
 }
 ```
 
-## 非目标（P1-B 未做）
+## P1-C UI / loading / navigation contract
 
-SearchDialog / Ctrl+K / 顶栏与抽屉入口 / a11y / 搜索历史 / 推荐词 / 同义词表 / 拼音 / 模糊匹配 / 语义检索 / 结果 UI 全部属于 P1-C 或 Phase 2。
-本目录不读取 `localStorage`、不写进度、不触发导航。
+- `LearnShell` 只保留轻量 `React.lazy(() => import('./SearchDialog'))` loader；dialog、匹配器与 dialog CSS 在用户首次打开时才下载。索引由 `load-index.ts` 在首次 mount 后 `fetch(getSearchIndexUrl())`，只缓存当前浏览器会话内的 Promise / 数据；HTTP 或 schema 失败会淘汰缓存，支持对同一端点重试。
+- `SearchDialog` 直接调用 `searchKnowledge(index, query)` 并渲染 `SearchHit`；不在 UI 侧重做 normalization、ranking、snippet 或链接。
+- Desktop ≥901px：搜索按钮在 Learn 顶栏操作组首位并显示 `Ctrl / ⌘ K`；Mobile ≤900px：入口只放在目录抽屉 intro 与课程导航之间，开 dialog 时关闭抽屉。
+- 支持 `Ctrl+K` / `Cmd+K` / `/`，以及 `ArrowUp` / `ArrowDown` / `Home` / `End` / `Enter` / `Escape`。`/` 不拦截输入、文本区域、select、contenteditable 或 role=textbox。
+- 使用原生 modal `<dialog>.showModal()`（浏览器 modal focus containment）并补充 Tab / Shift+Tab 边界循环；打开后 focus input，关闭后回到触发点（移动端抽屉入口退回目录按钮）。搜索结果为 `role=option`，active option 同时有 `aria-selected` 与非颜色图形标记。
+- 空查询显示轻量示例、不展示结果；无结果明确提示且有替代示例；索引加载中 / 失败也有状态与重试。
+- 结果用真实 `<a href={hit.href}>` 执行 P1-A ClientRouter / fragment contract；同课 hash 由浏览器定位，跨课由 `useLessonAnchorScroll` 定位，dialog 不触碰进度状态。
+- Browser regression: `npm run test:e2e:search`（CI release gate），覆盖按需 fetch 与会话缓存、keyboard / focus trap / restore、empty/results/retry、Desktop / Mobile / viewport / theme、当前课与跨课真实 heading 定位、direct load、Back / Forward。
+
+## 明确留给 Phase 2 / 未实现
+
+不做搜索历史 / 最近搜索 / 推荐词 / 个性化、同义词表（包括 `首次交易` → `第一次交易`）、拼音、模糊匹配、AI / 语义搜索、服务端 / 第三方搜索、命令系统或 Learning Paths。搜索 UI 不读写 `localStorage`、不保存用户画像、不修改进度；除真正导航外不更新当前课程。

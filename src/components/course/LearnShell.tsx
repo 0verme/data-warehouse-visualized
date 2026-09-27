@@ -1,4 +1,14 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import type { Lesson } from '../../data/course'
 import { getChapters, getChapterTitle, getLessonBySlug } from '../../data/course'
 import type { LessonContent } from '../../content/types'
@@ -47,10 +57,29 @@ interface LearnShellProps {
 type NavigationKind = 'initial' | 'navigate' | 'traverse'
 
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
+const SearchDialog = lazy(() => import('../../features/search/SearchDialog'))
 
 interface NavigationEvent {
   id: number
   kind: NavigationKind
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+
+  return (
+    target.isContentEditable ||
+    target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]') !== null
+  )
+}
+
+function getSearchFallbackFocusTarget(): HTMLElement | null {
+  if (typeof window === 'undefined') return null
+
+  const selector = window.matchMedia('(max-width: 900px)').matches
+    ? '.sidebar-toggle'
+    : '.learn-search-trigger--desktop'
+  return document.querySelector<HTMLElement>(selector)
 }
 
 function getInitialSidebarCollapsed(): boolean {
@@ -104,6 +133,8 @@ export function LearnShell({
     () => serverPathname,
   )
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const searchReturnFocusRef = useRef<HTMLElement | null>(null)
   const [expandedChapterId, setExpandedChapterId] = useState<string | null>(
     () =>
       getLessonChapterId(lessons, isIndex ? progress.currentLessonId : initialLesson.id) ??
@@ -119,6 +150,41 @@ export function LearnShell({
     lessonId: '',
   })
   const navigationKindRef = useRef<NavigationKind>('navigate')
+
+  const openSearch = useCallback(
+    (trigger: HTMLElement | null = null) => {
+      if (isSearchOpen) return
+
+      const mobile = window.matchMedia('(max-width: 900px)').matches
+      const isMobileDrawerEntry = trigger?.classList.contains('course-sidebar__search')
+      const focusedElement =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null
+      const returnTarget =
+        mobile && isMobileDrawerEntry
+          ? document.querySelector<HTMLElement>('.sidebar-toggle')
+          : (trigger ?? (focusedElement === document.body ? null : focusedElement))
+
+      searchReturnFocusRef.current = returnTarget ?? getSearchFallbackFocusTarget()
+      setIsSidebarOpen(false)
+      setIsSearchOpen(true)
+    },
+    [isSearchOpen],
+  )
+
+  function closeSearch(restoreFocus = true) {
+    setIsSearchOpen(false)
+
+    if (!restoreFocus) return
+
+    window.requestAnimationFrame(() => {
+      const target = searchReturnFocusRef.current
+      if (target?.isConnected && target.getClientRects().length > 0) {
+        target.focus({ preventScroll: true })
+      } else {
+        getSearchFallbackFocusTarget()?.focus({ preventScroll: true })
+      }
+    })
+  }
 
   useEffect(() => {
     document.documentElement.lang = activeLocale
@@ -137,6 +203,7 @@ export function LearnShell({
       const navigationKind = navigationKindRef.current
       navigationKindRef.current = 'navigate'
       setIsSidebarOpen(false)
+      setIsSearchOpen(false)
 
       const nextLesson = getLessonFromPath(window.location.pathname, lessons)
 
@@ -184,6 +251,44 @@ export function LearnShell({
       }
     }
   }, [isSidebarCollapsed])
+
+  useEffect(() => {
+    function handleSearchShortcut(event: KeyboardEvent) {
+      if (isSearchOpen) return
+
+      const key = event.key.toLowerCase()
+      if ((event.metaKey || event.ctrlKey) && key === 'k') {
+        event.preventDefault()
+        const activeElement = document.activeElement
+        openSearch(
+          activeElement instanceof HTMLElement && activeElement !== document.body
+            ? activeElement
+            : null,
+        )
+        return
+      }
+
+      if (
+        event.key === '/' &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !isEditableTarget(event.target)
+      ) {
+        event.preventDefault()
+        const activeElement = document.activeElement
+        openSearch(
+          activeElement instanceof HTMLElement && activeElement !== document.body
+            ? activeElement
+            : null,
+        )
+      }
+    }
+
+    window.addEventListener('keydown', handleSearchShortcut)
+    return () => window.removeEventListener('keydown', handleSearchShortcut)
+  }, [isSearchOpen, openSearch])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -364,8 +469,48 @@ export function LearnShell({
           />
         </div>
 
-        <GlobalHeaderActions locale={activeLocale} />
+        <GlobalHeaderActions
+          locale={activeLocale}
+          leadingAction={
+            <div className="learn-search-entry learn-search-entry--desktop">
+              <button
+                className="topbar-control learn-search-trigger learn-search-trigger--desktop"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={isSearchOpen}
+                aria-label={getMessage('searchContent', activeLocale)}
+                aria-keyshortcuts="Control+K Meta+K"
+                title={`${getMessage('searchContent', activeLocale)} (Ctrl / ⌘ K)`}
+                onClick={(event) => openSearch(event.currentTarget)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="10.8" cy="10.8" r="6.3" />
+                  <path d="m15.5 15.5 4.2 4.2" />
+                </svg>
+              </button>
+              <kbd className="learn-search-entry__shortcut" aria-hidden="true">
+                Ctrl / ⌘ K
+              </kbd>
+            </div>
+          }
+        />
       </header>
+
+      {isSearchOpen && (
+        <Suspense fallback={null}>
+          <SearchDialog
+            locale={activeLocale}
+            onClose={() => closeSearch()}
+            onNavigate={() => closeSearch(false)}
+          />
+        </Suspense>
+      )}
 
       <div className="learn-layout">
         <CourseSidebar
@@ -376,6 +521,8 @@ export function LearnShell({
           isOpen={isSidebarOpen}
           locale={activeLocale}
           revealRequest={sidebarRevealRequest}
+          isSearchOpen={isSearchOpen}
+          onOpenSearch={(trigger) => openSearch(trigger)}
           onToggleChapter={toggleChapter}
         />
 
