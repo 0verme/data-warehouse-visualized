@@ -1454,6 +1454,198 @@
   margin-top: 13px;
 }
 
+.scheduler-date-semantics {
+  display: grid;
+  gap: 13px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line, #dfe6ef);
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  box-shadow: var(--shadow-sm, 0 2px 10px rgb(28 51 84 / 5%));
+}
+
+.scheduler-date-semantics__scenarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.scheduler-date-semantics__scenario {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--line, #dfe6ef);
+  border-radius: 9px;
+  background: var(--surface-muted, #f5f7fb);
+  color: var(--ink, #152238);
+  cursor: pointer;
+  text-align: left;
+}
+
+.scheduler-date-semantics__scenario:hover,
+.scheduler-date-semantics__scenario.is-selected {
+  border-color: rgb(45 108 223 / 48%);
+  background: var(--surface-blue, #f0f6ff);
+}
+
+.scheduler-date-semantics__scenario strong {
+  overflow-wrap: anywhere;
+  color: var(--ink, #152238);
+  font-size: 12px;
+}
+
+.scheduler-date-semantics__scenario small {
+  overflow-wrap: anywhere;
+  color: var(--ink-muted, #75839a);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.scheduler-date-semantics__explanation,
+.scheduler-date-semantics__schedule-note,
+.scheduler-date-semantics__timezone-note {
+  margin: 0;
+  color: var(--ink-soft, #50617a);
+  font-size: 11px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.scheduler-date-semantics__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line, #dfe6ef);
+  border-radius: 10px;
+  background: var(--line, #dfe6ef);
+}
+
+.scheduler-date-semantics__facts > div {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 5px;
+  padding: 11px;
+  background: var(--surface-muted, #f5f7fb);
+}
+
+.scheduler-date-semantics__facts dt,
+.scheduler-date-semantics__partition > div > span {
+  color: var(--ink-muted, #75839a);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.scheduler-date-semantics__facts dd {
+  margin: 0;
+  color: var(--ink, #152238);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.scheduler-date-semantics__schedule-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--blue, #2f6fd0);
+  background: var(--info-bg, #eef5ff);
+}
+
+.scheduler-date-semantics__wrong-map {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #dfe6ef);
+  border-radius: 9px;
+  background: var(--surface-muted, #f5f7fb);
+  color: var(--ink-soft, #50617a);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.scheduler-date-semantics__wrong-map input {
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  accent-color: var(--blue, #2f6fd0);
+}
+
+.scheduler-date-semantics__wrong-map span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scheduler-date-semantics__partition {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--date-result-border, var(--success-border));
+  border-left: 3px solid var(--date-result-accent, var(--success-text));
+  border-radius: 0 9px 9px 0;
+  background: var(--date-result-bg, var(--success-bg));
+}
+
+.scheduler-date-semantics__partition.is-wrong {
+  --date-result-border: var(--danger-border);
+  --date-result-accent: var(--danger-text);
+  --date-result-bg: var(--danger-bg);
+}
+
+.scheduler-date-semantics__partition > div {
+  display: grid;
+  gap: 3px;
+}
+
+.scheduler-date-semantics__partition code {
+  color: var(--ink, #152238);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.scheduler-date-semantics__partition > strong {
+  color: var(--date-result-accent, var(--success-text));
+  font-size: 12px;
+}
+
+.scheduler-date-semantics__partition > p {
+  margin: 0;
+  color: var(--ink-soft, #50617a);
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.scheduler-date-semantics__timezone-note {
+  padding-top: 2px;
+}
+
+@container visualization (max-width: 560px) {
+  .scheduler-date-semantics {
+    padding: 15px;
+  }
+
+  .scheduler-date-semantics .scheduler-panel-heading > button {
+    margin-top: 8px;
+  }
+}
+
+@container visualization (max-width: 360px) {
+  .scheduler-date-semantics__facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @keyframes scheduler-pulse {
   0%,
   100% {

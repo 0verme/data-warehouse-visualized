@@ -689,8 +689,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-06': {
       title: '今天凌晨跑的，为什么是昨天的数据？',
-      summary: '沿一条存款余额日批时间轴，区分业务日期、到达时间、触发时间和目标分区。',
-      tags: ['业务日期', '时间语义', '调度'],
+      summary:
+        '切换日批、迟到 Retry、Rerun 与 Backfill，区分 current_date、schedule_date、biz_date 和目标分区。',
+      tags: ['业务日期', '调度日期', '自然日期', 'Retry', 'Backfill'],
     },
     'lesson-scheduling-readiness': {
       title: '一个任务，到底什么时候才可以开始？',
