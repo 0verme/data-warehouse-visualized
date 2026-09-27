@@ -18,6 +18,7 @@ import type {
   SchedulerVisualization,
 } from '../../features/scheduler/types'
 import { DuplicateSchedulerEntryLab } from './DuplicateSchedulerEntryLab'
+import { SensorReadinessLab } from './SensorReadinessLab'
 import {
   BANKING_DEPOSIT_BALANCE_ARRIVAL_AT,
   BANKING_DEPOSIT_BALANCE_EXPECTED_ARRIVAL_AT,
@@ -1703,6 +1704,7 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
             visualization={visualization}
             onModeChange={selectReadinessMode}
           />
+          <SensorReadinessLab />
           {controls}
           <FocusedRunEvidence state={state} />
           <DagCanvas
