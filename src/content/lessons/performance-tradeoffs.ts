@@ -15,9 +15,9 @@ export const performanceTradeoffsContent: LessonContent = {
     ],
     question: '一个方案让任务更快，却让状态和维护复杂很多，应该直接上线吗？',
   },
-  subtitle: '用 Before / After、迟到数据和“不值得优化”的反例，完成一次性能工程复盘。',
+  subtitle: '用 Before / After、迟到数据和微批重扫 / 增量的对照，完成一次性能工程复盘。',
   quickSummary:
-    '优化验收顺序是结果正确、满足 SLA / Freshness、资源和成本合理、复杂度可维护；增量状态提高性能，也会增加修正与重建责任。',
+    '优化验收顺序是结果正确、满足 SLA / Freshness、资源和成本合理、复杂度可维护；增量状态提高性能，也会增加修正、幂等与重建责任。',
   concept: {
     term: '工程取舍：把收益和代价放在一起',
     definition:
@@ -56,7 +56,16 @@ export const performanceTradeoffsContent: LessonContent = {
         'arrived_at = 2026-09-16，不等于 business_date = 2026-09-10。',
         'first_seen_date 受影响时，历史特征和固定窗口结果也要评估。',
         '回补、重跑和状态重建都是方案的一部分。',
+        '微批窗口宽度、迟到回看范围与重扫频率是具体业务和团队的选择，不是通用规范。',
       ],
+    },
+    {
+      kind: 'visualization',
+      eyebrow: '11-5 · 准实时微批策略',
+      title: '同一批 Transaction，三种策略读到的结果为何不同？',
+      description:
+        '先调整固定窗口边界与迟到交易到达时间，再执行微批并注入迟到交易和既有交易更新；之后可推进、补跑或重试。观察左闭右开的窗口、(last_processed_time, last_processed_id) checkpoint 与 00:00 → now 重扫的读取量、漏数、重复和结果状态。',
+      visualization: performanceVisualizations.microbatch,
     },
     {
       kind: 'compare',

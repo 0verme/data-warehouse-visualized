@@ -86,7 +86,16 @@ describe('第 11 章性能与工程实践课程', () => {
       ['narrative', 'visualization', 'compare', 'takeaway', 'pitfall'],
       ['narrative', 'visualization', 'narrative', 'takeaway', 'pitfall'],
       ['narrative', 'visualization', 'narrative', 'takeaway', 'pitfall'],
-      ['narrative', 'visualization', 'narrative', 'compare', 'takeaway', 'pitfall', 'narrative'],
+      [
+        'narrative',
+        'visualization',
+        'narrative',
+        'visualization',
+        'compare',
+        'takeaway',
+        'pitfall',
+        'narrative',
+      ],
     ])
     expect(
       chapterLessons.map((lesson) => {
@@ -99,6 +108,14 @@ describe('第 11 章性能与工程实践课程', () => {
           : undefined
       }),
     ).toEqual(focuses)
+
+    const microbatchSection = getLessonContent(getLessonBySlug('performance-tradeoffs')!)
+      .sections.filter((section) => section.kind === 'visualization')
+      .at(1)
+    expect(microbatchSection).toMatchObject({
+      kind: 'visualization',
+      visualization: { kind: 'performance-lab', focus: 'microbatch' },
+    })
   })
 
   it('11-1 保留阶段诊断、总运行时间和最长 Task 的确定性证据', () => {
@@ -290,5 +307,9 @@ describe('第 11 章性能与工程实践课程', () => {
       sla: 'SLA = 4 小时',
     })
     expect(data.reflectionQuestion).toContain('任意日期区间内的去重交易对手数')
+    const lessonText = JSON.stringify(getLessonContent(getLessonBySlug('performance-tradeoffs')!))
+    expect(lessonText).toContain('固定窗口')
+    expect(lessonText).toContain('last_processed_time')
+    expect(lessonText).toContain('不是通用规范')
   })
 })

@@ -4,6 +4,7 @@ import { PerformanceScanLab } from './PerformanceScanLab'
 import { PerformanceSkewLab } from './PerformanceSkewLab'
 import { PerformanceStateLab } from './PerformanceStateLab'
 import { PerformanceTradeoffLab } from './PerformanceTradeoffLab'
+import { PerformanceMicrobatchLab } from './PerformanceMicrobatchLab'
 
 export function PerformanceLab({ visualization }: { visualization: PerformanceVisualization }) {
   switch (visualization.focus) {
@@ -17,6 +18,8 @@ export function PerformanceLab({ visualization }: { visualization: PerformanceVi
       return <PerformanceStateLab visualization={visualization} />
     case 'tradeoffs':
       return <PerformanceTradeoffLab visualization={visualization} />
+    case 'microbatch':
+      return <PerformanceMicrobatchLab />
   }
 }
 
@@ -26,4 +29,5 @@ export {
   PerformanceSkewLab,
   PerformanceStateLab,
   PerformanceTradeoffLab,
+  PerformanceMicrobatchLab,
 }

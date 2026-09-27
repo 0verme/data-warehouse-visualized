@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { PerformanceLab } from '../src/components/visualizations/PerformanceLab'
 import { performanceVisualizations } from '../src/features/performance/banking'
 
-describe('第 11 章五种交互实验', () => {
+describe('第 11 章性能与工程交互实验', () => {
   it('11-1 SSR 渲染阶段时间线和诊断流程', () => {
     const markup = renderToStaticMarkup(
       <PerformanceLab visualization={performanceVisualizations.diagnosis} />,
@@ -57,5 +57,18 @@ describe('第 11 章五种交互实验', () => {
     expect(markup).toContain('18 min')
     expect(markup).toContain('2026-09-16')
     expect(markup).toContain('任意日期区间内的去重交易对手数')
+  })
+
+  it('11-5 SSR 展示同一输入、三种微批策略和边界语义', () => {
+    const markup = renderToStaticMarkup(
+      <PerformanceLab visualization={performanceVisualizations.microbatch} />,
+    )
+
+    expect(markup).toContain('Watermark / Checkpoint')
+    expect(markup).toContain('10:00–10:05')
+    expect(markup).toContain('10:05–10:10')
+    expect(markup).toContain('TX-1003')
+    expect(markup).toContain('Append 追加')
+    expect(markup).toContain('Checkpoint 不等于 exactly-once')
   })
 })

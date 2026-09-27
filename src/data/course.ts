@@ -878,8 +878,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-11-tradeoffs': {
       title: '跑快了，就算优化成功了吗？',
-      summary: '用 Before / After、迟到数据和“不值得优化”反例，检查正确性、SLA、成本与维护复杂度。',
-      tags: ['工程取舍', 'SLA', 'Freshness'],
+      summary:
+        '用 Before / After、迟到数据和三种微批策略，检查正确性、幂等、扫描成本与维护复杂度。',
+      tags: ['工程取舍', '微批', 'Watermark', 'Checkpoint', '幂等', '迟到数据'],
     },
     'lesson-12': {
       title: '跨系统分行经营分析数据产品',

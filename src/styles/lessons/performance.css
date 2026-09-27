@@ -1425,6 +1425,407 @@
   line-height: 1.6;
 }
 
+.performance-microbatch__input,
+.performance-microbatch__write-mode,
+.performance-microbatch__engineering-notes {
+  margin-bottom: 20px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.performance-microbatch__input-heading {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.performance-microbatch__input-heading h4,
+.performance-microbatch__strategy-heading h4,
+.performance-microbatch__records h5,
+.performance-microbatch__output h5 {
+  margin: 5px 0 0;
+  color: var(--navy);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.performance-microbatch__input-heading p {
+  max-width: 280px;
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.performance-microbatch__source-list,
+.performance-microbatch__records ul,
+.performance-microbatch__output ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.performance-microbatch__source-list li {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 10px;
+}
+
+.performance-microbatch__source-list li.is-late {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.performance-microbatch__source-list strong {
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.performance-microbatch__boundary-note {
+  margin: 11px 0 0;
+  color: var(--ink-muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.performance-microbatch__boundary-note code,
+.performance-microbatch__engineering-notes code {
+  overflow-wrap: anywhere;
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.95em;
+}
+
+.performance-microbatch__configuration {
+  min-width: 0;
+  margin-bottom: 20px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-muted);
+}
+
+.performance-microbatch__configuration legend {
+  padding: 0 5px;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.performance-microbatch__configuration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.performance-microbatch__configuration-grid label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.performance-microbatch__configuration-grid select {
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--navy);
+  font: inherit;
+}
+
+.performance-microbatch__configuration-grid small {
+  color: var(--ink-muted);
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.performance-microbatch__configuration:disabled {
+  opacity: 0.78;
+}
+
+.performance-microbatch__write-mode {
+  min-width: 0;
+  padding: 12px;
+}
+
+.performance-microbatch__write-mode legend {
+  padding: 0 5px;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.performance-microbatch__write-mode:disabled {
+  opacity: 0.78;
+}
+
+.performance-microbatch__actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.performance-microbatch__action,
+.performance-microbatch__local-action {
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.performance-microbatch__action.is-primary {
+  border-color: var(--blue);
+  background: var(--surface-blue);
+  color: var(--navy);
+}
+
+.performance-microbatch__action.is-reset {
+  border-color: var(--warning-border);
+}
+
+.performance-microbatch__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.performance-microbatch__local-action {
+  width: 100%;
+  margin-top: 10px;
+  border-color: var(--info-border);
+  background: var(--info-bg);
+  color: var(--navy);
+}
+
+.performance-microbatch__feedback {
+  margin: 6px 0 0;
+  padding: 8px;
+  border-left: 2px solid var(--info-border);
+  background: var(--info-bg);
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.performance-microbatch__status {
+  margin: 6px 0 0;
+  padding: 11px 13px;
+  border-left: 3px solid var(--blue);
+  background: var(--surface-blue);
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.performance-microbatch__reset {
+  display: block;
+  width: max-content;
+  margin: 8px 0 18px auto;
+}
+
+.performance-microbatch__strategies {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.performance-microbatch__strategy {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.performance-microbatch__strategy-heading {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-height: 76px;
+  margin-bottom: 10px;
+}
+
+.performance-microbatch__strategy-heading > span {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-blue);
+  color: var(--blue-deep);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.performance-microbatch__strategy-heading h4 {
+  margin-top: 0;
+}
+
+.performance-microbatch__strategy-heading p {
+  margin: 5px 0 0;
+  color: var(--ink-muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.performance-microbatch__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.performance-microbatch__facts > div {
+  min-width: 0;
+  padding: 7px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+}
+
+.performance-microbatch__facts dt {
+  color: var(--ink-muted);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.performance-microbatch__facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.performance-microbatch__facts dd.is-warning {
+  color: var(--warning-text);
+}
+
+.performance-microbatch__records,
+.performance-microbatch__output {
+  margin-top: 12px;
+}
+
+.performance-microbatch__records h5,
+.performance-microbatch__output h5 {
+  margin: 0 0 6px;
+  font-size: 10px;
+}
+
+.performance-microbatch__records li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 7px;
+  border-left: 2px solid var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--ink-soft);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.performance-microbatch__records li strong,
+.performance-microbatch__output li strong {
+  overflow-wrap: anywhere;
+  color: var(--navy);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.performance-microbatch__records li small {
+  color: var(--ink-muted);
+  font-size: 8px;
+}
+
+.performance-microbatch__output li {
+  display: flex;
+  gap: 7px;
+  justify-content: space-between;
+  min-width: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 9px;
+}
+
+.performance-microbatch__output li > * {
+  overflow-wrap: anywhere;
+}
+
+.performance-microbatch__empty {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 9px;
+}
+
+.performance-microbatch__engineering-notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.performance-microbatch__engineering-notes p {
+  min-width: 0;
+  margin: 0;
+}
+
+.performance-microbatch__engineering-notes strong {
+  color: var(--navy);
+}
+
+@container visualization (max-width: 900px) {
+  .performance-microbatch__strategies {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container visualization (max-width: 680px) {
+  .performance-microbatch__facts,
+  .performance-microbatch__engineering-notes,
+  .performance-microbatch__configuration-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .performance-microbatch__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .performance-choice,
   .performance-stage {
@@ -1511,6 +1912,31 @@
 }
 
 @media (max-width: 480px) {
+  .performance-microbatch__input-heading {
+    display: grid;
+    gap: 6px;
+  }
+
+  .performance-microbatch__input-heading p {
+    max-width: none;
+    text-align: left;
+  }
+
+  .performance-microbatch__facts,
+  .performance-microbatch__engineering-notes,
+  .performance-microbatch__actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .performance-microbatch__reset {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .performance-microbatch__strategy-heading {
+    min-height: 0;
+  }
+
   .performance-layer {
     display: grid;
     gap: 3px;
