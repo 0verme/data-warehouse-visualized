@@ -625,11 +625,9 @@
 
 .scheduler-event-log ol {
   display: grid;
-  max-height: 525px;
   gap: 0;
   margin: 14px 0 0;
   padding: 0;
-  overflow-y: auto;
   list-style: none;
 }
 

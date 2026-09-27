@@ -405,16 +405,27 @@ function OverviewPanel({
 
 function FieldPath({ dependency }: { dependency: LineageFieldDependency }) {
   return (
-    <ol className="lineage-teaching-field-path" aria-label={`${dependency.label}依赖路径`}>
-      {dependency.path.map((step, index) => (
-        <li key={`${dependency.id}-${step}-${index}`}>
-          <code className={step === dependency.operation ? 'is-operation' : undefined}>{step}</code>
-          {index < dependency.path.length - 1 && (
-            <span aria-hidden="true">{step === dependency.operation ? '↓' : '→'}</span>
-          )}
-        </li>
-      ))}
-    </ol>
+    <>
+      <p className="pattern3-scroll-hint" aria-hidden="true">
+        横向查看完整字段路径 →
+      </p>
+      <ol
+        className="lineage-teaching-field-path"
+        aria-label={`${dependency.label}依赖路径，可横向滚动查看完整路径`}
+        tabIndex={0}
+      >
+        {dependency.path.map((step, index) => (
+          <li key={`${dependency.id}-${step}-${index}`}>
+            <code className={step === dependency.operation ? 'is-operation' : undefined}>
+              {step}
+            </code>
+            {index < dependency.path.length - 1 && (
+              <span aria-hidden="true">{step === dependency.operation ? '↓' : '→'}</span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </>
   )
 }
 

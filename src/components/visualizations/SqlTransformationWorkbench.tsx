@@ -21,6 +21,7 @@ import {
   getTransformationStepResult,
 } from '../../utils/sql-transformation'
 import { CodeRenderer } from '../lesson/CodeRenderer'
+import { HorizontalScrollRegion } from './HorizontalScrollRegion'
 
 interface SqlTransformationWorkbenchProps {
   visualization: SqlTransformationVisualization
@@ -134,7 +135,10 @@ function SnapshotTable({
   const keyColumns = comparisonColumns ?? table.rowKey
 
   return (
-    <div className="sql-workbench__table-wrap">
+    <HorizontalScrollRegion
+      className="sql-workbench__table-wrap"
+      label={`${caption}，可横向滚动查看完整列`}
+    >
       <table className="sql-workbench__table">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -171,7 +175,7 @@ function SnapshotTable({
           })}
         </tbody>
       </table>
-    </div>
+    </HorizontalScrollRegion>
   )
 }
 

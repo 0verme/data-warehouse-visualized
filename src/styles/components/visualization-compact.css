@@ -1,5 +1,51 @@
 /* Shared container-query primitives for visualization cards. */
 
+.horizontal-scroll-region {
+  min-width: 0;
+}
+
+.horizontal-scroll-region__hint {
+  display: none;
+  gap: 5px;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 0 5px;
+  color: var(--ink-muted);
+  font-size: 10px;
+}
+
+.horizontal-scroll-region__hint span {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.horizontal-scroll-region__viewport:focus-visible,
+.governance-impact-path:focus-visible,
+.lineage-teaching-field-path:focus-visible {
+  outline: 2px solid var(--accent-info, #2d6cdf);
+  outline-offset: 2px;
+}
+
+.pattern3-scroll-hint {
+  display: none;
+}
+
+@container visualization (max-width: 660px) {
+  .pattern3-scroll-hint {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: flex-end;
+    margin: 0 0 7px;
+    color: var(--ink-muted);
+    font-size: 10px;
+  }
+
+  .horizontal-scroll-region__hint {
+    display: flex;
+  }
+}
+
 @container visualization (max-width: 660px) {
   .business-flow .visualization-toolbar {
     align-items: flex-start;
