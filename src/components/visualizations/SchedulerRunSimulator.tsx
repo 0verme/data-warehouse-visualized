@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SchedulerDateSemanticsExperiment } from './SchedulerDateSemanticsExperiment'
 import type {
   SchedulerDependencyState,
   SchedulerEvent,
@@ -16,6 +17,7 @@ import type {
   SchedulerTaskRunRecord,
   SchedulerVisualization,
 } from '../../features/scheduler/types'
+import { DuplicateSchedulerEntryLab } from './DuplicateSchedulerEntryLab'
 import { SensorReadinessLab } from './SensorReadinessLab'
 import {
   BANKING_DEPOSIT_BALANCE_ARRIVAL_AT,
@@ -809,6 +811,8 @@ function getFocusedInitialScenario(focus: SchedulerLessonFocus): SchedulerScenar
     case 'failure':
       return 'dwd-retry'
     case 'rerun':
+      return 'happy-path'
+    case 'duplicate-entry':
       return 'happy-path'
   }
 }
@@ -1685,6 +1689,7 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
     case 'business-date':
       return (
         <div className="scheduler-run-simulator scheduler-run-simulator--focused is-business-date">
+          <SchedulerDateSemanticsExperiment />
           <BusinessDateTimeline state={state} visualization={visualization} />
           {controls}
           <FocusedRunEvidence state={state} />
@@ -1769,6 +1774,8 @@ function FocusedSchedulerLab({ visualization }: SchedulerRunSimulatorProps) {
           <FocusedRunEvidence state={state} />
         </div>
       )
+    case 'duplicate-entry':
+      return null
   }
 }
 
@@ -1796,6 +1803,10 @@ function getRunAtStoryMoment(state: SchedulerRunState, moment: StoryMoment): Sch
 }
 
 export function SchedulerRunSimulator({ visualization }: SchedulerRunSimulatorProps) {
+  if (visualization.lessonFocus === 'duplicate-entry') {
+    return <DuplicateSchedulerEntryLab visualization={visualization} />
+  }
+
   return <FocusedSchedulerLab visualization={visualization} />
 }
 

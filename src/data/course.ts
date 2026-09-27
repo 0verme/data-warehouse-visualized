@@ -689,8 +689,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-06': {
       title: '今天凌晨跑的，为什么是昨天的数据？',
-      summary: '沿一条存款余额日批时间轴，区分业务日期、到达时间、触发时间和目标分区。',
-      tags: ['业务日期', '时间语义', '调度'],
+      summary:
+        '切换日批、迟到 Retry、Rerun 与 Backfill，区分 current_date、schedule_date、biz_date 和目标分区。',
+      tags: ['业务日期', '调度日期', '自然日期', 'Retry', 'Backfill'],
     },
     'lesson-scheduling-readiness': {
       title: '一个任务，到底什么时候才可以开始？',
@@ -704,8 +705,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
     },
     'lesson-scheduling-rerun': {
       title: '同样是“再跑一次”，到底有什么不同？',
-      summary: '比较 Retry、Rerun、Backfill 和重跑范围，用重复写入反例理解幂等。',
-      tags: ['Rerun', 'Backfill', '幂等'],
+      summary:
+        '区分 Retry、Rerun、Backfill 与意外双入口；对照幂等和 append 的数据、文件、推送后果，并治理迁移切换。',
+      tags: ['Rerun', 'Backfill', '重复调度', '调度迁移', '幂等'],
     },
     'lesson-scheduling-sla': {
       title: '任务都成功了，为什么数据还是可能迟到？',

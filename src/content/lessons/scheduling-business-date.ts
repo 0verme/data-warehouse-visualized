@@ -30,6 +30,7 @@ export const schedulingBusinessDateContent: LessonContent = {
       paragraphs: [
         '这次要加工的是 2026-09-30 的 AccountBalanceSnapshot。上游原计划在 10 月 1 日 01:30 到达，日批在 02:00 触发；实际输入到 02:20 才准备好，DWD 在 02:21 开始，最后 ADS 才会完成。',
         '“什么时候发生”与“这批数据属于哪一天”是两条不同的信息。到达晚了，不会把 9 月 30 日的余额变成 10 月 1 日的余额。',
+        '`current_date` 通常描述数据库执行环境按其时区解释的当前日期；`schedule_date` 标识本任务约定的调度实例日期；`biz_date` 才是本次计算的数据业务日期。三者的映射由任务契约决定，不能从凌晨时刻或字段名字自动推导。',
       ],
       bullets: [
         '业务日期（Business Date）：2026-09-30，决定本次加工的数据归属。',
@@ -40,10 +41,10 @@ export const schedulingBusinessDateContent: LessonContent = {
     },
     {
       kind: 'visualization',
-      eyebrow: '时间语义实验 · 一条日批时间轴',
-      title: '推进时间轴，找出真正修改的分区',
+      eyebrow: '时间语义实验 · 日期字段与运行时间',
+      title: '切换运行场景，核对日期字段与目标分区',
       description:
-        '沿着 02:00 触发、02:20 输入到达、02:21 开始加工的时间线推进。观察运行记录中的业务日期始终不变，并回答结果写入哪个分区。',
+        '先切换夜间日批、当日微批、迟到 Retry、次日 Rerun 或跨日 Backfill，观察 Wall Clock、current_date、schedule_date、biz_date 与 snapshot_date。再推进原有时间轴，查看触发、输入到达、实际开始和完成时间。',
       visualization: createBankingSchedulerVisualization('business-date'),
     },
     {
@@ -61,18 +62,18 @@ export const schedulingBusinessDateContent: LessonContent = {
     },
     {
       kind: 'takeaway',
-      title: '先回答：这批数据到底属于哪一天？',
-      text: '面对凌晨任务，先看业务日期，再看到达、触发、开始和完成时间。这个顺序能避免把墙上时间误当成数据日期。',
+      title: '先分清：现在是哪天、实例属于哪轮、数据属于哪天',
+      text: 'Wall Clock 是执行环境的实际时间；schedule_date 和 biz_date 的对应关系由任务契约明示。时间推进到次日，不代表逻辑实例或数据归属必须跟着变。',
       bullets: [
-        '本例最终修改：`snapshot_date = 2026-09-30`。',
-        '02:00 是 Trigger，不代表任务已经 Start。',
-        '迟到输入应该进入同一业务日期的处理链。',
+        '本例存款日批最终修改：`snapshot_date = 2026-09-30`。',
+        'Retry 可沿用原实例日期；Rerun / Backfill 的实例日期与目标业务日期按任务约定记录。',
+        'SQL `current_date` 受数据库引擎和 session 时区语义影响，不是业务日期的替代品。',
       ],
     },
     {
       kind: 'pitfall',
-      title: '不要用到达日期替代业务日期',
-      text: '一条数据 10 月 1 日到达，只能说明它在这天进入系统；它可能描述 9 月 30 日的状态。日期字段的含义要看业务过程，而不是看文件或任务何时被看到。',
+      title: '不要用运行日或到达日替代业务日期',
+      text: '一条数据 10 月 1 日到达，只能说明它在这天进入系统；它可能描述 9 月 30 日的状态。用 `current_date` 填分区也可能把旧业务数据标到新日期。先确认业务日期字段、调度实例参数、时区和目标分区映射，不要把某个团队的 T-1 规则当作行业标准。',
     },
   ],
 }

@@ -7,7 +7,7 @@ export const schedulingRerunContent: LessonContent = {
     eyebrow: '“再跑一次”有三种完全不同的意思',
     title: '同样是“再跑一次”，到底有什么不同？',
     intro:
-      '杭州分行 2026-09-30 的余额结果需要重新执行时，先判断这是 Retry、Rerun 还是 Backfill，再决定日期范围和 DAG 起点。最后用重复写入反例检查重跑是否安全。',
+      '杭州分行 2026-09-30 的余额结果需要重新执行时，先判断这是 Retry、Rerun 还是 Backfill，再决定日期范围和 DAG 起点。还要检查迁移期间是否有两个仍启用的生产入口指向同一逻辑。',
     cards: [
       { label: 'Retry', value: '同一 Run', detail: '失败任务增加一次 Attempt' },
       { label: 'Rerun', value: '一天', detail: '重新计算一个已有业务日期' },
@@ -15,9 +15,9 @@ export const schedulingRerunContent: LessonContent = {
     ],
     question: '9 月 30 日结果错了，应该重试一次、重跑一天，还是补跑一段日期？',
   },
-  subtitle: '用运行历史和日期选择器区分 Retry、Rerun、Backfill，并判断局部或整链重跑范围。',
+  subtitle: '区分 Retry、Rerun、Backfill 与意外双入口；观察运行范围、写入语义和下游副作用。',
   quickSummary:
-    'Retry 处理一次失败的任务实例；Rerun 重算一个业务日期；Backfill 批量补跑历史日期。范围确定后，还要保证相同分区重复执行不会叠加结果。',
+    'Retry 处理一次失败的任务实例；Rerun 明确重算一个业务日期；Backfill 批量补跑历史日期。除此之外，迁移时必须确认同一生产逻辑没有两个意外同时有效的调度入口；SQL 幂等不能消除重复计算与外部副作用。',
   concept: {
     term: '幂等（Idempotency）',
     definition:
@@ -84,19 +84,54 @@ export const schedulingRerunContent: LessonContent = {
       ],
     },
     {
-      kind: 'takeaway',
-      title: '重跑前问两个问题',
-      text: '先选业务日期，再选 DAG 起点；完成后检查相同输入、相同业务日期是否仍然得到同一份目标结果。幂等是加工任务提供的重复执行语义，不是调度器自动附赠的能力。',
+      kind: 'narrative',
+      title: '主动 Rerun，不等于两个入口同时触发',
+      paragraphs: [
+        'Rerun 是明确的运行行为：有人为恢复或纠错而发起一次运行，有目标业务日期、范围和运行记录。它回答“为什么这次要再跑”。',
+        '双入口事故发生在配置层：迁移过程中旧 JOB 未下线、新 JOB 已启用；两个独立定义都认为自己应该在 2026-09-30 执行，于是分别触发同一生产逻辑和目标。它不是一个 Run 的第二次 Attempt，也不必然带有恢复意图。',
+      ],
       bullets: [
-        '这次是 Retry、Rerun 还是 Backfill？',
-        '哪些上游结果可以复用，哪些必须重新计算？',
-        '目标分区重复写入后，结果会保持一份还是叠加？',
+        'Rerun：一个明确的操作意图，检查目标日期、重跑范围、原因和 run history。',
+        '双入口：两个 enabled schedule 各自触发，排查定义状态、ownership、独立 run record 与下游产物。',
+      ],
+    },
+    {
+      kind: 'visualization',
+      eyebrow: '迁移切换实验 · enabled state × target semantics',
+      title: '旧 JOB 和新 JOB 都开着，会发生什么？',
+      description:
+        '先保持两个入口 ON，运行一次 2026-09-30；观察触发、执行、写入和下游产物数量。再比较幂等 / 非幂等目标，并关闭旧入口验证单入口恢复。',
+      visualization: createBankingSchedulerVisualization('duplicate-entry'),
+    },
+    {
+      kind: 'narrative',
+      title: '用 cutover checklist 收敛到唯一生产入口',
+      paragraphs: [
+        '迁移前确认这个业务产物的负责人、生产入口、业务日期和目标；切换时按已约定的顺序 disable 旧入口、enable 新入口，并确认实际 enabled/disabled 状态，而不是只看配置提交成功。',
+        '切换后核对该业务日期的 run history、任务实例和下游证据：生产逻辑实际执行几次、目标分区有几份数据、生成多少文件、发起多少次推送。表结果正确并不能证明没有重复运行或重复副作用。',
+        '有意双跑用于影子比较并非一概禁止，但应由明确 owner 负责，隔离目标并控制通知、文件和外部推送等副作用，记录比较窗口与清理条件。调度平台的去重能力及组织发布门禁各不相同，需按本地约定验证。',
+      ],
+      bullets: [
+        '迁移前：明确唯一生产入口、owner、业务日期和目标。',
+        '切换时：核验旧入口 disabled、新入口 enabled，保留变更与 run history。',
+        '切换后：对照 run record、目标数据、文件与推送证据。',
+      ],
+    },
+    {
+      kind: 'takeaway',
+      title: '调度定义也是数据正确性的一部分',
+      text: '同一业务日期的加工逻辑被两个有效入口触发时，即使下游表按分区覆盖、最终行数仍正确，也可能重复计算、生成文件、调用接口或发送通知。正确性依赖加工写入语义，也依赖生产入口配置。',
+      bullets: [
+        '这次是带目标日期与恢复意图的 Rerun，还是两个生产入口各自触发？',
+        '同一逻辑指向什么目标，实际有几个 trigger / run / write？',
+        '幂等保护了哪些数据结果，哪些文件、推送或通知仍会重复？',
+        '迁移前后，run history 和下游证据是否证明只有预期入口生效？',
       ],
     },
     {
       kind: 'pitfall',
-      title: '不要把 Retry、Rerun、Backfill 混成“重跑”',
-      text: '它们处理的运行对象和日期范围不同。也不要以为调度器发起第二次执行，就能自动修复 INSERT APPEND 带来的重复结果。',
+      title: '不要把 SQL 幂等当成双调度入口的豁免',
+      text: '两个有效入口仍可能重复计算并重复产生文件、推送或通知；也不要把这种配置事故误记成一次有意、有目标日期和恢复记录的 Rerun。',
     },
   ],
 }
