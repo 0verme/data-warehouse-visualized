@@ -541,12 +541,20 @@ async function retryProbe(browser, baseUrl) {
   const context = await browser.newContext({ viewport })
   const page = await context.newPage()
   let attempts = 0
+  let releaseFirstRequest
+  let signalFirstRequest
+  const firstRequestStarted = new Promise((resolve) => {
+    signalFirstRequest = resolve
+  })
 
   try {
     await page.route('**/search-index.json', async (route) => {
       attempts += 1
       if (attempts === 1) {
-        await new Promise((resolve) => setTimeout(resolve, 250))
+        signalFirstRequest()
+        await new Promise((resolve) => {
+          releaseFirstRequest = resolve
+        })
         await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' })
       } else {
         await route.continue()
@@ -556,12 +564,19 @@ async function retryProbe(browser, baseUrl) {
     await page.keyboard.press('Control+k')
     const dialog = page.locator('#learn-search-dialog')
     await dialog.waitFor({ state: 'visible' })
+    const requestReached = await Promise.race([
+      firstRequestStarted.then(() => true),
+      new Promise((resolve) => setTimeout(() => resolve(false), 10_000)),
+    ])
+    check('打开搜索后发出索引请求', requestReached)
     check(
       '索引请求期间显示 loading 状态',
-      (await page.locator('.learn-search-dialog__status').textContent())?.includes(
-        '正在加载搜索索引',
-      ),
+      requestReached &&
+        (await page.locator('.learn-search-dialog__status').textContent())?.includes(
+          '正在加载搜索索引',
+        ),
     )
+    releaseFirstRequest?.()
     await page.getByRole('alert').waitFor({ state: 'visible' })
     check(
       '索引 fetch 失败时显示可恢复错误状态',
@@ -576,6 +591,7 @@ async function retryProbe(browser, baseUrl) {
     )
     check('失败请求被淘汰，重试而非整页刷新', page.url().includes(`/learn/${CROSS_FROM_SLUG}/`))
   } finally {
+    releaseFirstRequest?.()
     await page.close()
     await context.close()
   }
