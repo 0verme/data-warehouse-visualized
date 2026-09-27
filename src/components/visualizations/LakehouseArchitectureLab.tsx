@@ -24,6 +24,7 @@ import {
   getSnapshotPointerState,
   timeTravelTo,
 } from '../../utils/lakehouse'
+import { HorizontalScrollRegion } from './HorizontalScrollRegion'
 
 interface LakehouseArchitectureLabProps {
   visualization: LakehouseVisualization
@@ -1259,7 +1260,11 @@ function UnityLab({
           </div>
           <p aria-live="polite">当前：{state.modeLabel}</p>
         </div>
-        <div className="lakehouse-unity-table-wrap" data-detail-role="comparison">
+        <HorizontalScrollRegion
+          className="lakehouse-unity-table-wrap"
+          dataDetailRole="comparison"
+          label="湖仓一体观察表，可横向滚动查看完整列"
+        >
           <table className="lakehouse-unity-table">
             <caption className="sr-only">异构湖仓与共享基础能力形态的观察维度</caption>
             <thead>
@@ -1277,7 +1282,7 @@ function UnityLab({
               ))}
             </tbody>
           </table>
-        </div>
+        </HorizontalScrollRegion>
       </section>
       <UnityFlow
         sources={visualization.dataSources}

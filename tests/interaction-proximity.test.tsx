@@ -206,9 +206,8 @@ describe('#144 Pattern 1：Primary Action ↔ Primary Feedback 结构契约', ()
     ])
   })
 
-  it('Pattern 1 由信息结构实现：迁移组件不得使用 scrollIntoView / 程序化 focus 抢占 viewport', () => {
+  it('Pattern 1 由信息结构实现：迁移组件不得用页面滚动或程序化 focus 抢占 viewport', () => {
     const migratedComponents = [
-      'CapstoneWorkbench.tsx',
       'DataQualityWorkbench.tsx',
       'GovernanceWorkbench.tsx',
       'LakehouseArchitectureLab.tsx',
@@ -224,5 +223,15 @@ describe('#144 Pattern 1：Primary Action ↔ Primary Feedback 结构契约', ()
       expect(source, `${fileName} 不应使用 scrollTo`).not.toContain('scrollTo(')
       expect(source, `${fileName} 不应主动 focus 控件`).not.toMatch(/\.focus\(\)/)
     }
+
+    // #146 explicitly owns only the nested checkpoint rail's horizontal axis.
+    // It must preserve that rail's vertical offset and never scroll the page.
+    const capstone = componentSource('CapstoneWorkbench.tsx')
+    expect(capstone).not.toContain('scrollIntoView')
+    expect(capstone).not.toMatch(/\.focus\(\)/)
+    expect(capstone).toContain(
+      "nav.scrollTo({ left: nextScrollLeft, top: nav.scrollTop, behavior: 'smooth' })",
+    )
+    expect(capstone).not.toMatch(/(?:window|document|documentElement)\.scrollTo\(/)
   })
 })

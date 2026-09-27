@@ -667,7 +667,14 @@ function ChangeResponsibilityLab({ visualization }: { visualization: GovernanceV
           <strong>{impact.changedField}</strong>
           <span>不重新遍历血缘，直接读取下面这条影响路径。</span>
         </div>
-        <ol className="governance-impact-path" aria-label="已有影响路径">
+        <p className="pattern3-scroll-hint" aria-hidden="true">
+          横向查看完整影响路径 →
+        </p>
+        <ol
+          className="governance-impact-path"
+          aria-label="已有影响路径，可横向滚动查看完整路径"
+          tabIndex={0}
+        >
           {impact.path.map((step, index) => (
             <li key={step}>
               <span>{String(index + 1).padStart(2, '0')}</span>

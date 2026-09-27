@@ -12,6 +12,7 @@ import type {
   BankingMetricTimeMode,
   BankingMetricTimeVisualization,
 } from '../../types'
+import { HorizontalScrollRegion } from './HorizontalScrollRegion'
 import {
   calculateBankingMetric,
   calculateBankingMetricTime,
@@ -47,7 +48,10 @@ function AccountSnapshotTable({
   statuses?: ReadonlyMap<string, ScopeMemberStatus>
 }) {
   return (
-    <div className="banking-lab__table-wrap">
+    <HorizontalScrollRegion
+      className="banking-lab__table-wrap"
+      label={`${caption}，可横向滚动查看完整列`}
+    >
       <table className="banking-lab__table banking-metric__account-table">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -89,7 +93,7 @@ function AccountSnapshotTable({
           })}
         </tbody>
       </table>
-    </div>
+    </HorizontalScrollRegion>
   )
 }
 

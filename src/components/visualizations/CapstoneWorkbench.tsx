@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   getDataServiceApiResponse,
   getDataServiceFileState,
@@ -1500,6 +1500,7 @@ export function CapstoneWorkbench({ visualization }: { visualization: CapstoneVi
   const [state, setState] = useState<CapstoneProjectState>(() =>
     getInitialCapstoneState(fallbackState),
   )
+  const checkpointNavRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     try {
@@ -1508,6 +1509,31 @@ export function CapstoneWorkbench({ visualization }: { visualization: CapstoneVi
       // 学习进度无法写入时，当前项目仍然可以继续完成。
     }
   }, [state])
+
+  useEffect(() => {
+    const nav = checkpointNavRef.current
+    const activeCheckpoint = nav?.querySelector<HTMLElement>('.capstone-checkpoint.is-active')
+    if (!nav || !activeCheckpoint) return
+
+    const navRect = nav.getBoundingClientRect()
+    const activeRect = activeCheckpoint.getBoundingClientRect()
+    let nextScrollLeft = nav.scrollLeft
+
+    if (activeRect.left < navRect.left) {
+      nextScrollLeft += activeRect.left - navRect.left
+    } else if (activeRect.right > navRect.right) {
+      nextScrollLeft += activeRect.right - navRect.right
+    }
+
+    nextScrollLeft = Math.max(0, Math.min(nextScrollLeft, nav.scrollWidth - nav.clientWidth))
+    if (Math.abs(nextScrollLeft - nav.scrollLeft) < 1) return
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      nav.scrollLeft = nextScrollLeft
+    } else {
+      nav.scrollTo({ left: nextScrollLeft, top: nav.scrollTop, behavior: 'smooth' })
+    }
+  }, [state.activeCheckpointId])
 
   const review = useMemo(
     () => getCapstoneLaunchReview(visualization, state),
@@ -1567,7 +1593,14 @@ export function CapstoneWorkbench({ visualization }: { visualization: CapstoneVi
           Grain <strong>business_date × branch_id</strong>
         </span>
       </div>
-      <nav className="capstone-checkpoint-nav" aria-label="Capstone 项目 checkpoint">
+      <p className="pattern3-scroll-hint" aria-hidden="true">
+        横向查看其余 checkpoint →
+      </p>
+      <nav
+        ref={checkpointNavRef}
+        className="capstone-checkpoint-nav"
+        aria-label="Capstone 项目 checkpoint，可横向滚动查看全部 checkpoint"
+      >
         <ol>
           {visualization.checkpoints.map((checkpoint) => {
             const status = state.checkpointStates[checkpoint.id]
