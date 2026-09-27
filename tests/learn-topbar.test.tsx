@@ -50,6 +50,10 @@ describe('学习页顶部工具栏', () => {
   it('渲染仅含地球图标且可访问的语言 Preview 入口与主题按钮', () => {
     const markup = renderLearnShell()
 
+    expect(markup).toContain(
+      'class="topbar-control learn-search-trigger learn-search-trigger--desktop"',
+    )
+    expect(markup).toContain('aria-keyshortcuts="Control+K Meta+K"')
     expect(markup).toContain('class="topbar-control locale-switcher__trigger"')
     expect(markup).toContain('aria-haspopup="menu"')
     expect(markup).toContain('aria-expanded="false"')
@@ -83,6 +87,8 @@ describe('学习页顶部工具栏', () => {
       'class="topbar-control sidebar-toggle"',
       'class="learn-topbar__progress"',
       'class="learn-topbar__actions"',
+      'class="topbar-control learn-search-trigger learn-search-trigger--desktop"',
+      'class="topbar-control locale-switcher__trigger"',
     ]
     const indexes = order.map((token) => topbar.indexOf(token))
 
@@ -111,7 +117,7 @@ describe('学习页顶部工具栏', () => {
     )
 
     expect(topbar).toContain('<path d="M4 7h16M4 12h16M4 17h16"></path>')
-    expect((topbar.match(/topbar-control/g) ?? []).length).toBe(4)
+    expect((topbar.match(/topbar-control/g) ?? []).length).toBe(5)
     expect(stylesheet).toContain('.topbar-control {')
     expect(stylesheet).toContain('justify-content: center;')
     expect(stylesheet).toContain('border-radius: 9px;')

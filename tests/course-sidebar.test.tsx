@@ -33,6 +33,18 @@ function getChapterMarkup(markup: string, chapterId: string): string {
 }
 
 describe('课程 Sidebar Accordion', () => {
+  it('SSR 在目录抽屉 intro 与课程导航之间提供搜索入口', () => {
+    const markup = renderSidebarForLesson('why-data-warehouse')
+    const introEnd = markup.indexOf('</div>', markup.indexOf('class="course-sidebar__intro"'))
+    const searchStart = markup.indexOf('class="course-sidebar__search"')
+    const navStart = markup.indexOf('class="course-nav"')
+
+    expect(searchStart).toBeGreaterThan(introEnd)
+    expect(searchStart).toBeLessThan(navStart)
+    expect(markup).toContain('aria-haspopup="dialog"')
+    expect(markup).toContain('aria-label="搜索课程内容"')
+  })
+
   it('SSR 第一章显示四节课程，隐藏视觉编号并完整展示小节标题', () => {
     const markup = renderSidebarForLesson('why-data-warehouse')
     const chapterMarkup = getChapterMarkup(markup, '01')
