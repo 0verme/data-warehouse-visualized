@@ -1,5 +1,9 @@
 export type MicrobatchStrategyId = 'fixed-window' | 'checkpoint' | 'daily-rescan'
 export type MicrobatchWriteMode = 'upsert' | 'append'
+export const MICRO_BATCH_WINDOW_BOUNDARIES = ['10:04', '10:05', '10:06'] as const
+export const MICRO_BATCH_LATE_ARRIVALS = ['10:08', '10:12'] as const
+export type MicrobatchWindowBoundary = (typeof MICRO_BATCH_WINDOW_BOUNDARIES)[number]
+export type MicrobatchLateArrival = (typeof MICRO_BATCH_LATE_ARRIVALS)[number]
 
 export interface TransactionChange {
   id: string
@@ -40,6 +44,8 @@ export interface MicrobatchStrategyState {
 
 export interface MicrobatchLabState {
   now: string
+  windowBoundary: MicrobatchWindowBoundary
+  lateArrivalTime: MicrobatchLateArrival
   sourceChanges: readonly TransactionChange[]
   writeMode: MicrobatchWriteMode
   hasRunFirstBatch: boolean
@@ -57,12 +63,9 @@ export interface MicrobatchStrategyObservation {
 }
 
 const INITIAL_AS_OF = '10:06'
-const LATE_AS_OF = '10:10'
 const DAY_START = '00:00'
-const FIXED_WINDOWS = [
-  { start: '10:00', end: '10:05' },
-  { start: '10:05', end: '10:10' },
-] as const
+const WINDOW_END = '10:10'
+const NEXT_WINDOW_END = '10:15'
 
 export const INITIAL_TRANSACTION_CHANGES: readonly TransactionChange[] = [
   {
@@ -94,30 +97,46 @@ export const INITIAL_TRANSACTION_CHANGES: readonly TransactionChange[] = [
   },
 ]
 
-export const LATE_TRANSACTION_CHANGES: readonly TransactionChange[] = [
-  {
-    id: 'change-004-v1',
-    transactionId: 'TX-1004',
-    eventTime: '10:04',
-    availableAt: '10:08',
-    revision: 1,
-    amount: 400,
-    kind: 'insert',
-  },
-  {
-    id: 'change-001-v2',
-    transactionId: 'TX-1001',
-    eventTime: '10:02',
-    availableAt: '10:09',
-    revision: 2,
-    amount: 120,
-    kind: 'update',
-  },
-]
+function createLateTransactionChanges(lateArrivalTime: MicrobatchLateArrival): TransactionChange[] {
+  const updateArrivalTime = formatTime(toMinutes(lateArrivalTime) + 1)
+  return [
+    {
+      id: 'change-004-v1',
+      transactionId: 'TX-1004',
+      eventTime: '10:04',
+      availableAt: lateArrivalTime,
+      revision: 1,
+      amount: 400,
+      kind: 'insert',
+    },
+    {
+      id: 'change-001-v2',
+      transactionId: 'TX-1001',
+      eventTime: '10:02',
+      availableAt: updateArrivalTime,
+      revision: 2,
+      amount: 120,
+      kind: 'update',
+    },
+  ]
+}
 
 function toMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number)
   return hours! * 60 + minutes!
+}
+
+function formatTime(minutes: number): string {
+  return `${Math.floor(minutes / 60)
+    .toString()
+    .padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`
+}
+
+function getFixedWindows(windowBoundary: MicrobatchWindowBoundary) {
+  return [
+    { start: '10:00', end: windowBoundary },
+    { start: windowBoundary, end: WINDOW_END },
+  ] as const
 }
 
 function compareTime(left: string, right: string): number {
@@ -145,9 +164,15 @@ function createEmptyStrategyState(): MicrobatchStrategyState {
 
 export function createMicrobatchLabState(
   writeMode: MicrobatchWriteMode = 'upsert',
+  options: {
+    windowBoundary?: MicrobatchWindowBoundary
+    lateArrivalTime?: MicrobatchLateArrival
+  } = {},
 ): MicrobatchLabState {
   return {
     now: INITIAL_AS_OF,
+    windowBoundary: options.windowBoundary ?? '10:05',
+    lateArrivalTime: options.lateArrivalTime ?? '10:08',
     sourceChanges: INITIAL_TRANSACTION_CHANGES,
     writeMode,
     hasRunFirstBatch: false,
@@ -159,6 +184,20 @@ export function createMicrobatchLabState(
       'daily-rescan': createEmptyStrategyState(),
     },
   }
+}
+
+export function setMicrobatchWindowBoundary(
+  state: MicrobatchLabState,
+  windowBoundary: MicrobatchWindowBoundary,
+): MicrobatchLabState {
+  return state.hasRunFirstBatch ? state : { ...state, windowBoundary }
+}
+
+export function setMicrobatchLateArrival(
+  state: MicrobatchLabState,
+  lateArrivalTime: MicrobatchLateArrival,
+): MicrobatchLabState {
+  return state.hasRunFirstBatch ? state : { ...state, lateArrivalTime }
 }
 
 function getAvailableChanges(
@@ -279,7 +318,8 @@ function updateStrategy(
 export function runInitialMicrobatch(state: MicrobatchLabState): MicrobatchLabState {
   if (state.hasRunFirstBatch) return state
 
-  const fixedChanges = FIXED_WINDOWS.flatMap(({ start, end }) =>
+  const fixedWindows = getFixedWindows(state.windowBoundary)
+  const fixedChanges = fixedWindows.flatMap(({ start, end }) =>
     getFixedWindowChanges(state.sourceChanges, start, end, state.now),
   )
   const checkpointChanges = getCheckpointChanges(state.sourceChanges, null, state.now)
@@ -293,7 +333,7 @@ export function runInitialMicrobatch(state: MicrobatchLabState): MicrobatchLabSt
     strategies: {
       'fixed-window': updateStrategy(empty['fixed-window'], fixedChanges, state.writeMode, {
         label: '第一次微批',
-        scope: '10:00–10:05 + 10:05–10:10（左闭右开）',
+        scope: `${fixedWindows[0].start}–${fixedWindows[0].end} + ${fixedWindows[1].start}–${fixedWindows[1].end}（左闭右开）`,
       }),
       checkpoint: updateStrategy(
         empty.checkpoint,
@@ -318,10 +358,12 @@ export function runInitialMicrobatch(state: MicrobatchLabState): MicrobatchLabSt
 export function injectLateTransactionChanges(state: MicrobatchLabState): MicrobatchLabState {
   if (!state.hasRunFirstBatch || state.hasInjectedLateChanges) return state
 
+  const lateChanges = createLateTransactionChanges(state.lateArrivalTime)
+  const latestAvailableAt = lateChanges.at(-1)!.availableAt
   return {
     ...state,
-    now: LATE_AS_OF,
-    sourceChanges: [...state.sourceChanges, ...LATE_TRANSACTION_CHANGES],
+    now: formatTime(toMinutes(latestAvailableAt) + 1),
+    sourceChanges: [...state.sourceChanges, ...lateChanges],
     hasInjectedLateChanges: true,
   }
 }
@@ -330,7 +372,12 @@ export function runNextMicrobatch(state: MicrobatchLabState): MicrobatchLabState
   if (!state.hasInjectedLateChanges || state.hasRunNextBatch) return state
 
   const current = state.strategies
-  const fixedChanges = getFixedWindowChanges(state.sourceChanges, '10:10', '10:15', state.now)
+  const fixedChanges = getFixedWindowChanges(
+    state.sourceChanges,
+    WINDOW_END,
+    NEXT_WINDOW_END,
+    state.now,
+  )
   const checkpointChanges = getCheckpointChanges(
     state.sourceChanges,
     current.checkpoint.checkpoint,
@@ -350,7 +397,7 @@ export function runNextMicrobatch(state: MicrobatchLabState): MicrobatchLabState
     strategies: {
       'fixed-window': updateStrategy(current['fixed-window'], fixedChanges, state.writeMode, {
         label: '只运行下一窗口',
-        scope: '10:10–10:15（左闭右开）',
+        scope: `${WINDOW_END}–${NEXT_WINDOW_END}（左闭右开）`,
       }),
       checkpoint: updateStrategy(
         current.checkpoint,
@@ -376,7 +423,8 @@ export function runNextMicrobatch(state: MicrobatchLabState): MicrobatchLabState
 export function backfillFixedWindows(state: MicrobatchLabState): MicrobatchLabState {
   if (!state.hasInjectedLateChanges) return state
 
-  const changes = FIXED_WINDOWS.flatMap(({ start, end }) =>
+  const fixedWindows = getFixedWindows(state.windowBoundary)
+  const changes = fixedWindows.flatMap(({ start, end }) =>
     getFixedWindowChanges(state.sourceChanges, start, end, state.now),
   )
   const current = state.strategies['fixed-window']
@@ -387,7 +435,7 @@ export function backfillFixedWindows(state: MicrobatchLabState): MicrobatchLabSt
       ...state.strategies,
       'fixed-window': updateStrategy(current, changes, state.writeMode, {
         label: '补跑受影响窗口',
-        scope: '重开 10:00–10:05 + 10:05–10:10',
+        scope: `重开 ${fixedWindows[0].start}–${fixedWindows[0].end} + ${fixedWindows[1].start}–${fixedWindows[1].end}`,
       }),
     },
   }

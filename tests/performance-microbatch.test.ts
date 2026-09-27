@@ -11,6 +11,8 @@ import {
   runInitialMicrobatch,
   runNextMicrobatch,
   simulateCheckpointRetry,
+  setMicrobatchLateArrival,
+  setMicrobatchWindowBoundary,
 } from '../src/features/performance/microbatch'
 
 describe('11-5 microbatch strategy model', () => {
@@ -59,6 +61,31 @@ describe('11-5 microbatch strategy model', () => {
       staleTransactionIds: [],
       duplicateRows: 0,
     })
+  })
+
+  it('可调整窗口边界与迟到程度，并在开始后锁定参数', () => {
+    const configured = setMicrobatchLateArrival(
+      setMicrobatchWindowBoundary(createMicrobatchLabState(), '10:04'),
+      '10:12',
+    )
+    const firstRun = runInitialMicrobatch(configured)
+    const afterArrival = injectLateTransactionChanges(firstRun)
+    const nextRun = runNextMicrobatch(afterArrival)
+
+    expect(firstRun.strategies['fixed-window'].runs[0]?.scope).toBe(
+      '10:00–10:04 + 10:04–10:10（左闭右开）',
+    )
+    expect(
+      firstRun.strategies['fixed-window'].runs[0]?.selectedChanges.map((change) => change.id),
+    ).toEqual(['change-001-v1', 'change-002-v1', 'change-003-v1'])
+    expect(injectLateTransactionChanges(firstRun).now).toBe('10:14')
+    expect(afterArrival.sourceChanges.slice(-2).map((change) => change.availableAt)).toEqual([
+      '10:12',
+      '10:13',
+    ])
+    expect(nextRun.strategies.checkpoint.runs.at(-1)?.selectedChanges).toHaveLength(2)
+    expect(setMicrobatchWindowBoundary(firstRun, '10:06')).toBe(firstRun)
+    expect(setMicrobatchLateArrival(firstRun, '10:08')).toBe(firstRun)
   })
 
   it('固定窗口显式补跑后恢复迟到交易与更新，同时重复扫描旧窗口', () => {

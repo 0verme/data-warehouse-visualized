@@ -94,6 +94,19 @@ async function runUpsertJourney(page, tag) {
       'true',
   )
 
+  const boundarySetting = page.locator('[data-microbatch-window-boundary]')
+  const arrivalSetting = page.locator('[data-microbatch-late-arrival]')
+  await boundarySetting.selectOption('10:04')
+  await arrivalSetting.selectOption('10:12')
+  check(
+    `${tag} window boundary and arrival lateness can be adjusted before execution`,
+    (await boundarySetting.inputValue()) === '10:04' &&
+      (await arrivalSetting.inputValue()) === '10:12' &&
+      (await page.locator('[data-microbatch-boundary]').innerText()).includes('10:00–10:04'),
+  )
+  await boundarySetting.selectOption('10:05')
+  await arrivalSetting.selectOption('10:08')
+
   await first.click()
   check(
     `${tag} first run reads both adjacent fixed windows`,
@@ -111,6 +124,10 @@ async function runUpsertJourney(page, tag) {
     `${tag} checkpoint captures initial time and ID`,
     (await strategy(page, 'checkpoint').locator('[data-microbatch-checkpoint]').innerText()) ===
       '10:05 / change-003-v1',
+  )
+  check(
+    `${tag} strategy parameters lock after first execution`,
+    (await boundarySetting.isDisabled()) && (await arrivalSetting.isDisabled()),
   )
   await checkNoHorizontalOverflow(page, `${tag} first run`)
 

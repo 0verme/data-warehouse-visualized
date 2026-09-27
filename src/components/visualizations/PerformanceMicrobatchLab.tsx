@@ -2,17 +2,23 @@ import { useState } from 'react'
 import {
   backfillFixedWindows,
   createMicrobatchLabState,
+  MICRO_BATCH_LATE_ARRIVALS,
+  MICRO_BATCH_WINDOW_BOUNDARIES,
   formatMicrobatchCheckpoint,
   getMicrobatchObservation,
   injectLateTransactionChanges,
   repeatDailyRescan,
   runInitialMicrobatch,
   runNextMicrobatch,
+  setMicrobatchLateArrival,
+  setMicrobatchWindowBoundary,
   simulateCheckpointRetry,
   type MicrobatchLabState,
   type MicrobatchStrategyId,
   type MicrobatchStrategyState,
   type MicrobatchWriteMode,
+  type MicrobatchLateArrival,
+  type MicrobatchWindowBoundary,
 } from '../../features/performance/microbatch'
 import { LayerMarker, PerformancePanelHeading, SimulationNote } from './PerformanceLabShared'
 
@@ -247,11 +253,23 @@ export function PerformanceMicrobatchLab() {
   const isStarted = lab.hasRunFirstBatch
 
   function selectWriteMode(writeMode: MicrobatchWriteMode) {
-    if (!isStarted) setLab(createMicrobatchLabState(writeMode))
+    if (!isStarted) {
+      setLab(
+        createMicrobatchLabState(writeMode, {
+          windowBoundary: lab.windowBoundary,
+          lateArrivalTime: lab.lateArrivalTime,
+        }),
+      )
+    }
   }
 
   function reset() {
-    setLab(createMicrobatchLabState(lab.writeMode))
+    setLab(
+      createMicrobatchLabState(lab.writeMode, {
+        windowBoundary: lab.windowBoundary,
+        lateArrivalTime: lab.lateArrivalTime,
+      }),
+    )
   }
 
   return (
@@ -262,7 +280,7 @@ export function PerformanceMicrobatchLab() {
       <PerformancePanelHeading
         eyebrow="11-5 · 准实时微批实验"
         title="同一批 Transaction，为什么三种增量策略结果不同？"
-        description="先执行首批，再注入迟到交易与已有交易更新，然后推进一次并观察读取范围、目标状态和 checkpoint。"
+        description="先调整固定窗口边界、迟到到达时间和写入方式，再注入迟到交易与已有交易更新；推进、补跑或重试时观察扫描量与目标状态。"
         id="performance-microbatch-title"
       />
 
@@ -291,12 +309,60 @@ export function PerformanceMicrobatchLab() {
             </li>
           ))}
         </ul>
-        <p className="performance-microbatch__boundary-note">
-          固定窗口是 <code>10:00–10:05</code>、<code>10:05–10:10</code>，采用
-          <code>[start, end)</code> 左闭右开：恰好 <code>10:05</code> 的<code> TX-1003</code>{' '}
-          只属于第二窗，不会和前一窗重叠。
+        <p className="performance-microbatch__boundary-note" data-microbatch-boundary>
+          固定窗口是 <code>10:00–{lab.windowBoundary}</code>、
+          <code>{lab.windowBoundary}–10:10</code>，采用 <code>[start, end)</code>{' '}
+          左闭右开：恰好等于边界的
+          <code> event_time</code> 只属于第二窗，不会和前一窗重叠。
         </p>
       </section>
+
+      <fieldset className="performance-microbatch__configuration" disabled={isStarted}>
+        <legend>可调整的策略参数（开始运行后锁定）</legend>
+        <div className="performance-microbatch__configuration-grid">
+          <label>
+            <span>第一窗口结束边界</span>
+            <select
+              data-microbatch-window-boundary
+              value={lab.windowBoundary}
+              onChange={(event) =>
+                setLab((current) =>
+                  setMicrobatchWindowBoundary(
+                    current,
+                    event.target.value as MicrobatchWindowBoundary,
+                  ),
+                )
+              }
+            >
+              {MICRO_BATCH_WINDOW_BOUNDARIES.map((boundary) => (
+                <option key={boundary} value={boundary}>
+                  {boundary}
+                </option>
+              ))}
+            </select>
+            <small>改变边界后，时间恰好相等的记录应只进入第二窗口。</small>
+          </label>
+          <label>
+            <span>迟到 Transaction 到达时间</span>
+            <select
+              data-microbatch-late-arrival
+              value={lab.lateArrivalTime}
+              onChange={(event) =>
+                setLab((current) =>
+                  setMicrobatchLateArrival(current, event.target.value as MicrobatchLateArrival),
+                )
+              }
+            >
+              {MICRO_BATCH_LATE_ARRIVALS.map((arrival) => (
+                <option key={arrival} value={arrival}>
+                  {arrival}
+                </option>
+              ))}
+            </select>
+            <small>更新在一分钟后到达；改变迟到程度也会推进本轮 as-of 时间。</small>
+          </label>
+        </div>
+      </fieldset>
 
       <fieldset className="performance-microbatch__write-mode" disabled={isStarted}>
         <legend>目标写入语义（所有策略一致，开始运行后锁定）</legend>
