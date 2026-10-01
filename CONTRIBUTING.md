@@ -13,6 +13,8 @@
 
 这套约束同样适用于课程正文中的案例数据、可视化 Demo 的输入和状态，以及课程规划 Issue。它不要求学习者先懂银行业务。
 
+涉及 lesson visualization / teaching interaction 的贡献，请遵守 [`docs/DIAGRAM_VISUAL_GRAMMAR.md` §7.4](docs/DIAGRAM_VISUAL_GRAMMAR.md#74-interaction-quality-principle) 的 Interaction Quality 原则；不要求每节课都有交互。
+
 ## 提交前检查
 
 请根据改动范围运行必要的检查。课程和交互逻辑通常应补充或更新 Vitest 测试；Markdown 和配置改动至少应通过仓库已有的格式检查。
