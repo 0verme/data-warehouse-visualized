@@ -430,6 +430,32 @@ Focus 不创造新的业务关系：影响传播应在原有数据 / 依赖连�
 - `LineageGraph` 的 direct / transitive 影响已经有清晰的教学拆分；teaching wrapper 则使用垂直 flow、候选卡和证据面板。两者应共享语义，不应被迫共享画布。
 - 表格和时间轴通常比全图更适合回答 Grain、Metric、SCD 和性能前后对照；这些实验不需要被改造成节点图。
 
+### 7.4 Interaction Quality Principle
+
+> **Interaction Quality > Interaction Quantity。** 不要求每节课都有交互；不为“页面还没有动画”、覆盖率或视觉丰富度增加控件。交互是否值得存在，按其教学信息判断，而不是按交互数量判断。
+
+新增或实质性修改交互时，review 至少检查以下契约：
+
+1. **有明确教学目标。** 交互至少帮助学习者揭示静态文字难表达的状态变化或过程、理解因果、观察错误操作的后果、比较方案，或观察重要数据变化并据此判断。若静态图、表格或分步讲解更清楚，就不必增加交互。
+2. **操作改变有教学意义的状态。** 说明 `Input → State Transition → Observable Result → Explanation / Evidence`。操作应改变学习者需要理解的数据、状态或关系；仅换文案、高亮或 tab，而没有新的教学信息，不构成有意义的结果。
+3. **结果诚实且可复核。** 声称“运行、验证、修复、复检、模拟、重算”的结果，应来自实际状态转换、确定性计算或明确的数据投影。若只是教学演示，明确标为 `illustration / walkthrough`，不要呈现成真实 `execution / validation`；点击后直接写入 PASS 不是验证。
+4. **主要反馈靠近操作。** 操作后，学习者应能在合理的注意力范围内发现主要结果。优先重排信息、让控件邻近结果、提供局部摘要、渐进披露，并保持当前项可见；不默认依赖 `scrollIntoView()`，也不要求所有组件采用同一种布局。
+5. **按学习过程披露信息。** 不一次展开全部状态、解释和表格。页面较长或需要滚动本身不是缺陷；只有操作与反馈脱节、关键上下文不可见，或信息顺序妨碍理解时，才是 Interaction Quality 问题。
+6. **保留移动端与可访问性底线。** 新增交互需考虑触屏与键盘操作、可辨识的 selected / active 状态、可读的状态反馈、reduced motion，以及窄视口下操作和结果的可达性。动画不是状态或结果的唯一表达；移动端可以重排呈现，但不复制业务状态或业务逻辑。本条是教学交互的最低检查，不替代完整无障碍审计。
+
+**反模式**
+
+| 反模式                     | Review 信号                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| Decorative Interaction     | 有动作，但没有新的教学信息；静态图、对照表或讲解更直接。                       |
+| Fake Verification          | 用户点击“验证”，结果却是写死的 PASS，而非状态或计算结果。                      |
+| Remote Feedback            | 控件与主要反馈相隔数屏，学习者难以发现操作改变了什么。                         |
+| Interaction Homogenization | 仅因已有 Step Player，就把不同教学问题都改成 Step Player。                     |
+| Premature Abstraction      | 场景和边界尚未稳定，就建设 Visualization Engine / Workflow Engine 等通用系统。 |
+| Mobile Fork                | 为手机复制业务状态、fixture 或步骤逻辑，而不是重排共享状态的呈现。             |
+
+本节是新交互的 review 判据，不要求批量改造现有课程，也不重开 #119 已冻结的 Step Kernel primitive；具体图形语义、移动端交互与反馈布局继续遵守本文件既有 Visual Grammar 和 #138 的治理结论。
+
 ## 8. Diagram Semantic Tokens
 
 ### 8.1 现有基础与问题
