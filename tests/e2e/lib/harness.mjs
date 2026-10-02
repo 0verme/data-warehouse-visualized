@@ -145,7 +145,9 @@ export async function startPreview({ root, base = null, skipBuild = false, scrip
     ['astro', 'preview', '--port', String(port), '--host', '127.0.0.1'],
     { cwd: root, stdio: 'ignore', detached: true },
   )
-  await waitForServer(`${baseUrl}/learn/`)
+  const rawBasePath = process.env.BASE_PATH || '/'
+  const basePath = rawBasePath === '/' ? '' : `/${rawBasePath.split('/').filter(Boolean).join('/')}`
+  await waitForServer(`${baseUrl}${basePath}/learn/`)
 
   return {
     baseUrl,

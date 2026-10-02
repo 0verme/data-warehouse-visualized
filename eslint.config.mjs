@@ -32,7 +32,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['tests/e2e/**/*.mjs'],
+    files: ['tests/e2e/**/*.mjs', 'tests/english-seo-build-contract.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,

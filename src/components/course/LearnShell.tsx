@@ -186,10 +186,6 @@ export function LearnShell({
     })
   }
 
-  useEffect(() => {
-    document.documentElement.lang = activeLocale
-  }, [activeLocale])
-
   const routeLesson = getLessonFromPath(pathname, lessons)
   const isCourseIndex = isLearnIndexPath(pathname)
 

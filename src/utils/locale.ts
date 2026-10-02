@@ -35,6 +35,5 @@ export function setLocale(nextLocale: Locale): void {
     return
   }
 
-  document.documentElement.lang = nextLocale
   document.dispatchEvent(new Event('dwv:locale-change'))
 }

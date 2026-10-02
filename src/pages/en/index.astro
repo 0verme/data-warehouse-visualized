@@ -1,0 +1,42 @@
+---
+import EnglishFoundationShell from '../../components/EnglishFoundationShell.astro'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import englishFoundationStylesUrl from '../../styles/layouts/english-foundation.css?url'
+import { getRoute } from '../../utils/routes'
+
+const title = 'English Data Engineering Resources | sql.sb'
+const description =
+  'Explore sql.sb English resources for SQL, data warehousing, and practical data engineering tools. This is an English content entry point, not a translation of the Chinese course library.'
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang="en"
+  ogLocale="en_US"
+  styleUrls={[englishFoundationStylesUrl]}
+>
+  <EnglishFoundationShell active="overview">
+    <main class="english-foundation__main">
+      <p class="english-foundation__eyebrow">English resources from sql.sb</p>
+      <h1 class="english-foundation__title">
+        Learn SQL and data engineering by following the data.
+      </h1>
+      <p class="english-foundation__lede">
+        sql.sb is building focused English-language resources around SQL, data warehousing, and
+        hands-on data engineering. This is an entry point to that content—not a translated version
+        of the Chinese course library.
+      </p>
+      <nav class="english-foundation__cards" aria-label="English resource namespaces">
+        <a class="english-foundation__card" href={getRoute('/en/sql/')}>
+          <strong>SQL</strong>
+          <span>An index for English SQL learning and query problem-solving content.</span>
+        </a>
+        <a class="english-foundation__card" href={getRoute('/en/tools/')}>
+          <strong>Tools</strong>
+          <span>A home for practical, browser-based data engineering tools.</span>
+        </a>
+      </nav>
+    </main>
+  </EnglishFoundationShell>
+</BaseLayout>
