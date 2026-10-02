@@ -1,3 +1,5 @@
+import { getRoute } from '../utils/routes'
+
 const REPOSITORY_URL = 'https://github.com/0verme/data-warehouse-visualized'
 const LICENSE_URL = `${REPOSITORY_URL}/blob/main/LICENSE`
 
@@ -25,6 +27,7 @@ export function SiteFooter({ variant = 'learn' }: SiteFooterProps) {
         <span>
           <code>sql.sb</code>
         </span>
+        <a href={getRoute('/en/')}>English</a>
         <a href={REPOSITORY_URL} target="_blank" rel="noopener noreferrer">
           GitHub ↗
         </a>

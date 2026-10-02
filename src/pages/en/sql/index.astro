@@ -1,0 +1,34 @@
+---
+import EnglishFoundationShell from '../../../components/EnglishFoundationShell.astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import englishFoundationStylesUrl from '../../../styles/layouts/english-foundation.css?url'
+import { getRoute } from '../../../utils/routes'
+
+const title = 'SQL Resources | English Data Engineering | sql.sb'
+const description =
+  'Browse the English SQL content index at sql.sb. This foundation page establishes the namespace for future search-intent articles; no individual keyword pages are published yet.'
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang="en"
+  ogLocale="en_US"
+  styleUrls={[englishFoundationStylesUrl]}
+>
+  <EnglishFoundationShell active="sql">
+    <main class="english-foundation__main">
+      <p class="english-foundation__eyebrow">English namespace · SQL</p>
+      <h1 class="english-foundation__title">SQL resources</h1>
+      <p class="english-foundation__lede">
+        This index will organize English-language SQL learning and query problem-solving content
+        from sql.sb. It establishes the namespace only; focused articles will follow keyword
+        research and are not part of this foundation release.
+      </p>
+      <nav class="english-foundation__related" aria-label="Related English namespaces">
+        <a href={getRoute('/en/')}>English resources overview</a>
+        <a href={getRoute('/en/tools/')}>Explore tools</a>
+      </nav>
+    </main>
+  </EnglishFoundationShell>
+</BaseLayout>

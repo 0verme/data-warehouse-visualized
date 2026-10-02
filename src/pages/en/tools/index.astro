@@ -1,0 +1,33 @@
+---
+import EnglishFoundationShell from '../../../components/EnglishFoundationShell.astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import englishFoundationStylesUrl from '../../../styles/layouts/english-foundation.css?url'
+import { getRoute } from '../../../utils/routes'
+
+const title = 'Data Engineering Tools | sql.sb'
+const description =
+  'Explore the English tools namespace at sql.sb. It provides a stable entry point for future practical, browser-based data engineering tools; no new tool is introduced in this release.'
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang="en"
+  ogLocale="en_US"
+  styleUrls={[englishFoundationStylesUrl]}
+>
+  <EnglishFoundationShell active="tools">
+    <main class="english-foundation__main">
+      <p class="english-foundation__eyebrow">English namespace · Tools</p>
+      <h1 class="english-foundation__title">Tools for working with data</h1>
+      <p class="english-foundation__lede">
+        This namespace is the future English entry point for practical, browser-based data tools. It
+        is an index shell for now and does not add or advertise a tool that is not yet available.
+      </p>
+      <nav class="english-foundation__related" aria-label="Related English namespaces">
+        <a href={getRoute('/en/')}>English resources overview</a>
+        <a href={getRoute('/en/sql/')}>Browse SQL resources</a>
+      </nav>
+    </main>
+  </EnglishFoundationShell>
+</BaseLayout>

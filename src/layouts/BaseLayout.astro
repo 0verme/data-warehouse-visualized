@@ -6,25 +6,38 @@ interface Props {
   title: string
   description: string
   canonical?: string
+  lang?: 'zh-CN' | 'en'
+  ogLocale?: 'zh_CN' | 'en_US'
   /** Page-owned stylesheets (home, learn shell, lesson/visualization styles). */
   styleUrls?: string[]
   /** Optional page-state class on the root element, e.g. `learn-page`. */
   pageClass?: string
 }
 
-const { title, description, canonical, styleUrls = [], pageClass } = Astro.props
+const {
+  title,
+  description,
+  canonical,
+  lang = 'zh-CN',
+  ogLocale = 'zh_CN',
+  styleUrls = [],
+  pageClass,
+} = Astro.props
 const stylesheetUrls = [globalStylesUrl, ...styleUrls]
 const baseUrl = import.meta.env.BASE_URL
-const canonicalPath = Astro.url.pathname.startsWith(baseUrl)
-  ? Astro.url.pathname
-  : `${baseUrl}${Astro.url.pathname.replace(/^\//, '')}`
+const basePath = baseUrl.replace(/\/+$/, '')
+const pathname = Astro.url.pathname || '/'
+const canonicalPath =
+  basePath && (pathname === basePath || pathname.startsWith(`${basePath}/`))
+    ? pathname.slice(basePath.length) || '/'
+    : pathname
 const siteUrl = import.meta.env.PUBLIC_SITE_URL?.replace(/\/+$/, '') || Astro.site?.origin
 const canonicalUrl =
   canonical ?? (siteUrl ? new URL(canonicalPath, `${siteUrl}/`).href : canonicalPath)
 ---
 
 <!doctype html>
-<html lang="zh-CN" data-theme="light" class={pageClass}>
+<html lang={lang} data-theme="light" class={pageClass}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -33,21 +46,17 @@ const canonicalUrl =
     <script is:inline>
       ;(() => {
         const themeStorageKey = 'data-warehouse-visualized:theme'
-        const localeStorageKey = 'data-warehouse-visualized:locale'
 
         function restorePreferences() {
           let theme = 'light'
-          let locale = 'zh-CN'
 
           try {
             theme = localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light'
-            locale = localStorage.getItem(localeStorageKey) === 'en' ? 'en' : 'zh-CN'
           } catch {
-            // localStorage 受限时保留默认偏好。
+            // localStorage 受限时保留默认主题。
           }
 
           document.documentElement.dataset.theme = theme
-          document.documentElement.lang = locale
           document
             .querySelector('meta[name="theme-color"]')
             ?.setAttribute('content', theme === 'dark' ? '#0d1726' : '#f5f7fb')
@@ -60,7 +69,7 @@ const canonicalUrl =
     <link rel="icon" type="image/svg+xml" href={`${baseUrl}favicon.svg`} />
     <link rel="canonical" href={canonicalUrl} />
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:locale" content={ogLocale} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
