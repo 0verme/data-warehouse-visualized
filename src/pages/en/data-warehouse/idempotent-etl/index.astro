@@ -1,0 +1,261 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { IdempotentRerunLab } from '../../../../components/english/IdempotentRerunLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import idempotentEtlStylesUrl from '../../../../styles/layouts/english-idempotent-etl.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'How to Make an ETL Job Idempotent: Examples & Trade-offs | sql.sb'
+const description =
+  'Run the same ETL input twice and compare append, overwrite and merge-upsert: see duplicate rows, inflated totals, retries and backfill behavior.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[idempotentEtlStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Idempotent ETL' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · pipelines</p>
+    <h1 class="english-article__title">How to make an ETL job idempotent</h1>
+    <p class="english-article__lede">
+      An ETL job is idempotent when running it again with the same input for the same business date
+      leaves the same business state. Retries and backfills stop being dangerous only when the write
+      is idempotent, not when the scheduler says “rerun”.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Make the target partition addressable — for example by <code>(branch_id, business_date)</code>{' '}
+      — and write it idempotently: overwrite the partition, or merge/upsert on that key. A plain
+      <code>INSERT APPEND</code> is not idempotent: the same run twice produces two rows for one
+      business date and every downstream sum is inflated.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="example">
+      <h2 id="example">Run the same input twice, change only the write policy</h2>
+      <p>
+        The lab loads one row for branch <code>HZ-01</code> on <code>2026-02-01</code>. Run the job
+        once, then rerun it with the same input and switch between append, overwrite and
+        merge-upsert. Watch the partition row count and <code>SUM(balance)</code> after each
+        execution.
+      </p>
+      <IdempotentRerunLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="definition">
+      <h2 id="definition">What “idempotent” means precisely</h2>
+      <p>
+        Idempotency is a property of the write, not of the scheduler. Three conditions define it:
+      </p>
+      <ul>
+        <li>
+          <strong>Same logical input.</strong> The same source rows for the same business date, even
+          if the execution timestamp or attempt number differs.
+        </li>
+        <li>
+          <strong>Same target.</strong> The same partition, key or row set is addressed each time.
+        </li>
+        <li>
+          <strong>Same business state.</strong> After the second run, the target holds one correct
+          version of the result — not two.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="warning">
+        <strong>A successful run is not proof of idempotency</strong>
+        <p>
+          Both executions can return success while the second one appends a duplicate row. Check the
+          target state, not the run status.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="duplicates">
+      <h2 id="duplicates">Why reruns create duplicates</h2>
+      <ul>
+        <li>
+          <strong>Append writes.</strong> The job inserts a new row every time and never removes the
+          previous result.
+        </li>
+        <li>
+          <strong>Retry after a partial failure.</strong> The first attempt wrote some rows before
+          failing; the retry writes them again.
+        </li>
+        <li>
+          <strong>Overlapping backfills.</strong> Two runs process the same business date range at
+          the same time.
+        </li>
+        <li>
+          <strong>Non-deterministic input.</strong> The query reads <code>NOW()</code>, a moving
+          window or an unpinned source snapshot, so the “same” run is not the same input.
+        </li>
+      </ul>
+      <p>
+        The failure is observable: one business date has more than one row in the target partition,
+        and any measure summed from that partition is too high.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="policies">
+      <h2 id="policies">Write policies compared</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Idempotent and non-idempotent write strategies</caption>
+          <thead>
+            <tr>
+              <th scope="col">Policy</th>
+              <th scope="col">Second run with the same input</th>
+              <th scope="col">Trade-off</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-tone="wrong">
+              <td>
+                <code>INSERT APPEND</code>
+              </td>
+              <td>Two rows for the same business date; sums inflated</td>
+              <td>Simple and fast, but not idempotent</td>
+            </tr>
+            <tr data-tone="right">
+              <td>
+                <code>OVERWRITE PARTITION</code>
+              </td>
+              <td>One row for the business date</td>
+              <td>
+                Needs an atomic replace; briefly exposes an empty partition if it is not atomic
+              </td>
+            </tr>
+            <tr data-tone="right">
+              <td>
+                <code>MERGE / UPSERT</code>
+              </td>
+              <td>One row for the business date, updated if the value changed</td>
+              <td>Requires a reliable unique key and correct update semantics</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Overwrite and merge both make the partition addressable by business date. The choice depends
+        on the table format, the cost of a full partition rewrite and whether deletes must be
+        propagated. In all cases the key that defines “the same row” must be explicit.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="retry">
+      <h2 id="retry">Retry, rerun and backfill are different scopes</h2>
+      <div class="english-compare-grid">
+        <article class="english-compare-card">
+          <span>Retry</span>
+          <h3>The same run, another attempt</h3>
+          <ul>
+            <li>Business date and target do not change.</li>
+            <li>Should be safe even if the first attempt partially wrote.</li>
+            <li>Depends on the write policy, not on the retry count.</li>
+          </ul>
+        </article>
+        <article class="english-compare-card">
+          <span>Rerun</span>
+          <h3>Re-execute one existing business date</h3>
+          <ul>
+            <li>Used for corrections and recovery.</li>
+            <li>Must replace the previous result, not add to it.</li>
+            <li>Keep the run history so the correction is auditable.</li>
+          </ul>
+        </article>
+        <article class="english-compare-card">
+          <span>Backfill</span>
+          <h3>Re-execute a range of business dates</h3>
+          <ul>
+            <li>Idempotency must hold per partition, not just for the range.</li>
+            <li>Overlapping ranges must not write the same date twice.</li>
+            <li>Consider concurrency limits and source read load.</li>
+          </ul>
+        </article>
+        <article class="english-compare-card" data-tone="wrong">
+          <span>Anti-pattern</span>
+          <h3>“Just rerun it”</h3>
+          <ul>
+            <li>Reruns an append job and doubles the partition.</li>
+            <li>Treats a duplicate as a scheduler problem.</li>
+            <li>Hides the failure until an aggregate is visibly wrong.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="limits">
+      <h2 id="limits">What SQL idempotency does not cover</h2>
+      <p>
+        Making the table write idempotent does not automatically make the whole pipeline idempotent.
+        Side effects still run once per execution unless they are made idempotent too:
+      </p>
+      <ul>
+        <li>Files written to object storage, and their partitions or manifests.</li>
+        <li>Notifications, emails and webhook calls.</li>
+        <li>Rows inserted into audit or event tables.</li>
+        <li>External systems updated through an API.</li>
+      </ul>
+      <p>
+        For those, use a deterministic output path or an idempotency key. The task graph view of the
+        pipeline is a separate concern — see
+        <a href={getEnglishRoute('lineageVsTaskDependency')}>data lineage vs task dependency</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="edge-cases">
+      <h2 id="edge-cases">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Failure in the middle of an overwrite.</strong> If delete and insert are not in
+          one transaction, a failed run can leave an empty or partial partition. Prefer an atomic
+          replace or write to a staging table first.
+        </li>
+        <li>
+          <strong>Corrected input.</strong> With overwrite or merge, a rerun with corrected input
+          replaces the old value. With append, both versions remain and the sum is wrong.
+        </li>
+        <li>
+          <strong>Late-arriving data.</strong> The business date of the row does not change; the
+          target partition must be recomputed for that date.
+        </li>
+        <li>
+          <strong>Unique constraints.</strong> A database unique key can reject duplicates, but it
+          turns a silent duplication into a hard failure — useful, but not a substitute for an
+          idempotent write.
+        </li>
+        <li>
+          <strong>Cost.</strong> A full partition overwrite can be more expensive than a merge,
+          while a merge needs a reliable key. Measure both against the real table format.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>Data lineage vs task dependency</a>
+          <p>Why a rerun must follow the data graph, not only the scheduler graph.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+          <p>The row-level decision that makes a partition key possible.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

@@ -1,0 +1,240 @@
+/* Page styles for /en/data-warehouse/idempotent-etl/. */
+
+.etl-lab {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.etl-lab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.etl-lab__toolbar > div {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.etl-lab__overline {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.etl-lab__toolbar p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.etl-lab__policies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+
+.etl-lab__policy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.etl-lab__policy:hover {
+  border-color: var(--border-strong);
+}
+
+.etl-lab__policy.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+}
+
+.etl-lab__policy strong {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.etl-lab__policy span {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.etl-lab__policy:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.etl-lab__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.etl-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  background: var(--surface-1);
+}
+
+.etl-lab__metrics[data-tone='risk'] {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.etl-lab__metrics[data-tone='ok'] {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+}
+
+.etl-lab__metrics > div {
+  min-width: 0;
+}
+
+.etl-lab__metrics span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.etl-lab__metrics strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.etl-lab__metrics > div[data-tone='risk'] strong {
+  color: var(--danger-text);
+}
+
+.etl-lab__tables {
+  display: grid;
+  gap: 14px;
+}
+
+.etl-lab__panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+.etl-lab__panel[data-tone='risk'] {
+  border-color: var(--danger-border);
+}
+
+.etl-lab__panel-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-2);
+}
+
+.etl-lab__panel-heading strong {
+  font-size: 13.5px;
+}
+
+.etl-lab__panel-heading span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.etl-lab__empty {
+  padding: 16px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.etl-lab__table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.etl-lab__table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.etl-lab__table th,
+.etl-lab__table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.etl-lab__table thead th {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.etl-lab__table tbody tr.is-risk {
+  background: var(--danger-bg);
+}
+
+.etl-lab__table td[data-tone='risk'] {
+  color: var(--danger-text);
+  font-weight: 700;
+}
+
+.etl-lab__note {
+  margin: 14px 0 0;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+@media (max-width: 680px) {
+  .etl-lab {
+    padding: 16px 14px;
+  }
+
+  .etl-lab__actions .button {
+    flex: 1 1 auto;
+  }
+}

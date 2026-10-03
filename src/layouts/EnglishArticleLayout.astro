@@ -1,0 +1,31 @@
+---
+import EnglishFoundationShell from '../components/EnglishFoundationShell.astro'
+import englishArticleStylesUrl from '../styles/layouts/english-article.css?url'
+import englishFoundationStylesUrl from '../styles/layouts/english-foundation.css?url'
+import { type EnglishSectionId } from '../utils/english-routes'
+import BaseLayout from './BaseLayout.astro'
+
+interface Props {
+  title: string
+  description: string
+  active: EnglishSectionId
+  /** Additional page-owned stylesheets, loaded after the shared article styles. */
+  styleUrls?: string[]
+}
+
+const { title, description, active, styleUrls = [] } = Astro.props
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang="en"
+  ogLocale="en_US"
+  styleUrls={[englishFoundationStylesUrl, englishArticleStylesUrl, ...styleUrls]}
+>
+  <EnglishFoundationShell active={active}>
+    <main class="english-article">
+      <slot />
+    </main>
+  </EnglishFoundationShell>
+</BaseLayout>

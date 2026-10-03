@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Browser contract for the three static English Foundation routes.
+ * Browser contract for the static English routes.
  *
  * Visits the real built site at desktop and mobile viewports, with a persisted
  * Chinese UI preference, so document language cannot accidentally regress to
  * the user's interface locale during initial load or ClientRouter navigation.
+ * It also checks the page-body internal links that connect the English pages.
  */
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,21 +33,86 @@ const ENGLISH_ROUTES = [
     path: '/en/',
     title: 'English Data Engineering Resources | sql.sb',
     heading: 'Learn SQL and data engineering by following the data.',
-    nextPath: '/en/sql/',
+    links: ['/en/sql/', '/en/data-warehouse/', '/en/tools/'],
   },
   {
     path: '/en/sql/',
     title: 'SQL Resources | English Data Engineering | sql.sb',
     heading: 'SQL resources',
-    nextPath: '/en/tools/',
+    links: ['/en/sql/sql-join-duplicate-rows/', '/en/', '/en/data-warehouse/', '/en/tools/'],
+  },
+  {
+    path: '/en/sql/sql-join-duplicate-rows/',
+    title: 'Why Does a SQL JOIN Duplicate Rows? Examples & Fixes | sql.sb',
+    heading: 'Why does a SQL JOIN duplicate rows?',
+    links: ['/en/', '/en/sql/', '/en/data-warehouse/grain/'],
+  },
+  {
+    path: '/en/data-warehouse/',
+    title: 'Data Warehouse Engineering | English Resources | sql.sb',
+    heading: 'Data warehouse engineering',
+    links: [
+      '/en/data-warehouse/grain/',
+      '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/data-lineage-vs-task-dependency/',
+      '/en/data-warehouse/scd-type-2/',
+      '/en/',
+      '/en/sql/',
+      '/en/tools/',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/grain/',
+    title: 'Data Warehouse Grain: What Does One Row Represent? | sql.sb',
+    heading: 'Data warehouse grain: what does one row represent?',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/sql/sql-join-duplicate-rows/',
+      '/en/data-warehouse/scd-type-2/',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/idempotent-etl/',
+    title: 'How to Make an ETL Job Idempotent: Examples & Trade-offs | sql.sb',
+    heading: 'How to make an ETL job idempotent',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/data-lineage-vs-task-dependency/',
+      '/en/data-warehouse/grain/',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/data-lineage-vs-task-dependency/',
+    title: 'Data Lineage vs Task Dependency: Why the Graphs Differ | sql.sb',
+    heading: 'Data lineage vs task dependency: why the two graphs differ',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/grain/',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/scd-type-2/',
+    title: 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb',
+    heading: 'SCD Type 2 example: effective dates and historical rows',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/grain/',
+      '/en/data-warehouse/idempotent-etl/',
+    ],
   },
   {
     path: '/en/tools/',
     title: 'Data Engineering Tools | sql.sb',
     heading: 'Tools for working with data',
-    nextPath: '/en/',
+    links: ['/en/', '/en/sql/', '/en/data-warehouse/'],
   },
 ]
+const NAV_PATHS = ['/en/', '/en/sql/', '/en/data-warehouse/', '/en/tools/']
 
 const args = process.argv.slice(2)
 const skipBuild = args.includes('--skip-build')
@@ -80,13 +146,17 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       ogDescription: meta('meta[property="og:description"]'),
       ogUrl: meta('meta[property="og:url"]'),
       noindex: /noindex|\bnone\b/i.test(meta('meta[name="robots"]')),
+      hreflang: document.querySelector('link[hreflang]') !== null,
       storedLocale: localStorage.getItem('data-warehouse-visualized:locale'),
       width: documentElement.clientWidth,
       scrollWidth: documentElement.scrollWidth,
       mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
       visibleNavLinks: Array.from(document.querySelectorAll('.english-foundation__nav a'))
         .filter((link) => link.getClientRects().length > 0)
-        .map((link) => ({ href: link.getAttribute('href'), label: link.textContent?.trim() })),
+        .map((link) => link.getAttribute('href')),
+      bodyLinks: Array.from(document.querySelectorAll('main a')).map((link) =>
+        link.getAttribute('href'),
+      ),
       stylesheets: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(
         (link) => link.sheet !== null,
       ),
@@ -117,6 +187,7 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
   check(`${viewportName} ${route.path} Open Graph description`, state.ogDescription.length > 40)
   check(`${viewportName} ${route.path} Open Graph URL`, state.ogUrl === canonical, state.ogUrl)
   check(`${viewportName} ${route.path} is indexable`, !state.noindex)
+  check(`${viewportName} ${route.path} has no hreflang mirror`, !state.hreflang)
   check(
     `${viewportName} ${route.path} no horizontal overflow`,
     state.scrollWidth - state.width <= TOLERANCE && state.mainWidth <= state.width + TOLERANCE,
@@ -124,8 +195,7 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
   )
   check(
     `${viewportName} ${route.path} English navigation links are visible and BASE_PATH-aware`,
-    JSON.stringify(state.visibleNavLinks.map((link) => link.href)) ===
-      JSON.stringify([withBase('/en/'), withBase('/en/sql/'), withBase('/en/tools/')]),
+    JSON.stringify(state.visibleNavLinks) === JSON.stringify(NAV_PATHS.map(withBase)),
     JSON.stringify(state.visibleNavLinks),
   )
   check(
@@ -136,12 +206,13 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
   check(`${viewportName} ${route.path} no pageerror`, errors.length === 0, errors.join(' | '))
   errors.length = 0
 
-  const expectedHref = withBase(route.nextPath)
-  const nextLink = page.locator(`.english-foundation__nav a[href="${expectedHref}"]`).first()
-  check(
-    `${viewportName} ${route.path} has crawlable namespace link`,
-    (await nextLink.count()) === 1,
-  )
+  for (const link of route.links) {
+    check(
+      `${viewportName} ${route.path} links to ${link}`,
+      state.bodyLinks.includes(withBase(link)),
+      JSON.stringify(state.bodyLinks),
+    )
+  }
 }
 
 async function runViewport(browser, viewport, baseUrl) {

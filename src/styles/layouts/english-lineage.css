@@ -1,0 +1,275 @@
+/* Page styles for /en/data-warehouse/data-lineage-vs-task-dependency/. */
+
+.lineage-lab {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.lineage-lab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.lineage-lab__toolbar > div {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.lineage-lab__overline {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lineage-lab__toolbar p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.lineage-lab__scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 14px;
+}
+
+.lineage-lab__scenario {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.lineage-lab__scenario:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.lineage-lab__scenario.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
+.lineage-lab__scenario:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.lineage-lab__question {
+  margin: 0 0 18px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.lineage-lab__question strong {
+  color: var(--text-primary);
+}
+
+.lineage-lab__graphs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.lineage-lab__graph {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.lineage-lab__graph > header {
+  margin-bottom: 14px;
+}
+
+.lineage-lab__graph > header span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lineage-lab__graph > header strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+}
+
+.lineage-lab__flow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lineage-lab__hop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lineage-lab__node {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.lineage-lab__node strong {
+  display: block;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+
+.lineage-lab__node span {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.lineage-lab__node em {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 620;
+}
+
+.lineage-lab__node[data-state='affected'] {
+  border-color: var(--accent);
+  background: var(--success-bg);
+}
+
+.lineage-lab__node[data-state='gap'] {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.lineage-lab__node[data-kind='job'] strong {
+  color: var(--interactive);
+}
+
+.lineage-lab__arrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 12px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+}
+
+.lineage-lab__arrow span {
+  font-size: 13px;
+}
+
+.lineage-lab__arrow[data-state='affected'] {
+  color: var(--accent);
+  font-weight: 620;
+}
+
+.lineage-lab__missing {
+  margin: 14px 0 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.lineage-lab__missing code,
+.lineage-lab__branch code {
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-1);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.lineage-lab__branch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  background: var(--surface-1);
+}
+
+.lineage-lab__branch .lineage-lab__node {
+  flex: 1 1 160px;
+}
+
+.lineage-lab__branch-arrow {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.lineage-lab__conclusion {
+  padding: 16px 18px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+  background: var(--info-bg);
+}
+
+.lineage-lab__conclusion strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.lineage-lab__conclusion p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+@media (max-width: 760px) {
+  .lineage-lab__graphs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .lineage-lab {
+    padding: 16px 14px;
+  }
+}

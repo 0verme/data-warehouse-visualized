@@ -1,0 +1,205 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { LineageVsDependencyLab } from '../../../../components/english/LineageVsDependencyLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import lineageStylesUrl from '../../../../styles/layouts/english-lineage.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Data Lineage vs Task Dependency: Why the Graphs Differ | sql.sb'
+const description =
+  'One workflow, two graphs: scheduler task dependencies and SQL data lineage can disagree. See the missing edge and what it does to impact analysis.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[lineageStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Data lineage vs task dependency' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · lineage</p>
+    <h1 class="english-article__title">
+      Data lineage vs task dependency: why the two graphs differ
+    </h1>
+    <p class="english-article__lede">
+      A scheduler graph answers “which job waits for which job”. A data lineage graph answers “which
+      data produces which data”. They describe the same pipeline, but they are not the same graph —
+      and when they disagree, impact analysis gives different answers.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Task dependency is declared execution order; data lineage is the actual data derivation. A
+      dependency can exist without data flow (a job waits for a signal), and data flow can exist
+      without a declared dependency (a view reads a table no job declares). Use lineage to know what
+      data is affected, and dependencies to know what to re-trigger.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="example">
+      <h2 id="example">One workflow, two graphs</h2>
+      <p>
+        The example below has three jobs and one view. <code>JOB_A</code> loads
+        <code>stg_orders</code>, <code>JOB_REPORT</code> writes <code>report_daily</code> from
+        <code>v_customer_orders</code>, and the view also reads <code>customers</code> — a table
+        loaded by another team. Walk the scenarios and watch what each graph can and cannot see.
+      </p>
+      <LineageVsDependencyLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="why">
+      <h2 id="why">Why the two graphs disagree</h2>
+      <ul>
+        <li>
+          <strong>A view hides its SQL inputs from the scheduler.</strong> The scheduler only sees
+          the jobs and the dependencies someone declared. The view reads
+          <code>stg_orders</code> and <code>customers</code>, but only the job relationship is
+          declared.
+        </li>
+        <li>
+          <strong>A dependency can exist without data flow.</strong> A job may wait for an upstream
+          job that writes nothing it reads — for example a cleanup, a gate or a notification job.
+        </li>
+        <li>
+          <strong>Data can flow without a dependency.</strong> Tables loaded by another team,
+          external sources and manually maintained tables have lineage but no scheduler edge.
+        </li>
+        <li>
+          <strong>Dynamic SQL hides the edges.</strong> A query assembled at runtime can read
+          different tables per execution, so neither static lineage nor declared dependencies fully
+          describe it.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>The two graphs answer different questions</strong>
+        <p>
+          “What runs next?” is an execution question. “Where did this value come from?” is a data
+          question. A single graph cannot answer both without becoming ambiguous.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="impact">
+      <h2 id="impact">What this does to impact analysis</h2>
+      <p>
+        Impact analysis starts from a change — a late table, a corrected value, a failed job — and
+        asks what else is affected. The answer depends on which graph you query:
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Scheduler-only versus lineage-based impact analysis</caption>
+          <thead>
+            <tr>
+              <th scope="col">Change</th>
+              <th scope="col">Scheduler graph</th>
+              <th scope="col">Data lineage graph</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <code>customers</code> arrives late
+              </td>
+              <td data-tone="wrong">No impact path — no declared dependency</td>
+              <td data-tone="right">
+                Finds <code>report_daily</code> as affected
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>JOB_A</code> must be rerun
+              </td>
+              <td data-tone="right">Shows which jobs to re-trigger</td>
+              <td data-tone="right">Shows which tables are rebuilt</td>
+            </tr>
+            <tr>
+              <td>
+                <code>JOB_REPORT</code> is skipped
+              </td>
+              <td data-tone="right">Shows the missed execution</td>
+              <td data-tone="right">Shows which data becomes stale</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The practical rule: use lineage to enumerate affected data objects, then use the scheduler
+        graph to plan the execution — which jobs to rerun and in what order. Neither is a substitute
+        for the other.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="align">
+      <h2 id="align">Keeping the graphs aligned without over-declaring</h2>
+      <ol>
+        <li>
+          <strong>Derive candidate dependencies from lineage.</strong> If a job reads a table that
+          another job writes, that is a candidate <code>depends_on</code> edge. Review it, do not
+          declare it blindly.
+        </li>
+        <li>
+          <strong>Mark external or shared tables explicitly.</strong> If <code>customers</code> is
+          loaded outside the pipeline, record its owner and freshness expectation so the missing
+          scheduler edge is a known decision.
+        </li>
+        <li>
+          <strong>Do not declare every read.</strong> Adding a dependency for every table access can
+          create cycles and unnecessary waits. Declare what must be ready before the job starts.
+        </li>
+        <li>
+          <strong>Test the disagreement.</strong> Periodically compare the declared dependencies
+          with the lineage of the queries. The differences are the places where impact analysis will
+          be wrong.
+        </li>
+      </ol>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="edge-cases">
+      <h2 id="edge-cases">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>View chains.</strong> Each view adds a layer the scheduler does not see. Lineage
+          must expand through the view definition to find the real tables.
+        </li>
+        <li>
+          <strong>Temporary and staging tables.</strong> They create lineage edges that do not map
+          to a durable scheduler dependency; decide whether they belong in the lineage graph.
+        </li>
+        <li>
+          <strong>Cross-team loads.</strong> A table loaded by another team may have an SLA but no
+          job edge in this scheduler; a sensor or freshness check can make the wait explicit.
+        </li>
+        <li>
+          <strong>Column-level lineage.</strong> Table-level lineage answers “is this table
+          affected”. Column-level lineage answers “is this field affected” and is more expensive to
+          maintain.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a>
+          <p>Why a rerun must be safe per business date, not only per task graph.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+          <p>The row-level meaning that determines how data flows between tables.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

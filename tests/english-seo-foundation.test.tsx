@@ -3,13 +3,22 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { SiteFooter } from '../src/components/SiteFooter'
 import { lessons } from '../src/data/course'
-import { getRoute } from '../src/utils/routes'
+import { ENGLISH_PATHS, getEnglishRoute } from '../src/utils/english-routes'
 
 const pagesDirectory = new URL('../src/pages/', import.meta.url)
 const englishRoutes = [
-  { file: 'en/index.astro', route: '/en/' },
-  { file: 'en/sql/index.astro', route: '/en/sql/' },
-  { file: 'en/tools/index.astro', route: '/en/tools/' },
+  { file: 'en/index.astro', route: ENGLISH_PATHS.overview },
+  { file: 'en/sql/index.astro', route: ENGLISH_PATHS.sql },
+  { file: 'en/sql/sql-join-duplicate-rows/index.astro', route: ENGLISH_PATHS.joinDuplicateRows },
+  { file: 'en/data-warehouse/index.astro', route: ENGLISH_PATHS.warehouse },
+  { file: 'en/data-warehouse/grain/index.astro', route: ENGLISH_PATHS.grain },
+  { file: 'en/data-warehouse/idempotent-etl/index.astro', route: ENGLISH_PATHS.idempotentEtl },
+  {
+    file: 'en/data-warehouse/data-lineage-vs-task-dependency/index.astro',
+    route: ENGLISH_PATHS.lineageVsTaskDependency,
+  },
+  { file: 'en/data-warehouse/scd-type-2/index.astro', route: ENGLISH_PATHS.scdType2 },
+  { file: 'en/tools/index.astro', route: ENGLISH_PATHS.tools },
 ]
 const establishedLearnSlugs = `
 build-a-warehouse
@@ -70,8 +79,8 @@ why-data-warehouse
   .trim()
   .split(/\s+/)
 
-describe('English SEO Foundation routing contract', () => {
-  it('defines exactly the three Foundation namespace entry files outside /learn/', () => {
+describe('English SEO routing contract', () => {
+  it('defines exactly the nine English pages outside /learn/', () => {
     const pageFiles = readdirSync(pagesDirectory, { recursive: true }).map(String)
     const englishPageFiles = pageFiles
       .filter((path) => path.startsWith('en/') && path.endsWith('.astro'))
@@ -79,7 +88,17 @@ describe('English SEO Foundation routing contract', () => {
 
     expect(englishPageFiles).toEqual(englishRoutes.map(({ file }) => file).sort())
     expect(pageFiles.some((path) => path.startsWith('zh/'))).toBe(false)
-    expect(englishRoutes.map(({ route }) => route)).toEqual(['/en/', '/en/sql/', '/en/tools/'])
+    expect(englishRoutes.map(({ route }) => route)).toEqual([
+      '/en/',
+      '/en/sql/',
+      '/en/sql/sql-join-duplicate-rows/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/grain/',
+      '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/data-lineage-vs-task-dependency/',
+      '/en/data-warehouse/scd-type-2/',
+      '/en/tools/',
+    ])
   })
 
   it('preserves 54 unique Learn slugs and their existing /learn/ URL shape', () => {
@@ -102,7 +121,8 @@ describe('English SEO Foundation routing contract', () => {
     vi.stubEnv('BASE_URL', '/preview/')
 
     try {
-      expect(getRoute('/en/')).toBe('/preview/en/')
+      expect(getEnglishRoute('overview')).toBe('/preview/en/')
+      expect(getEnglishRoute('scdType2')).toBe('/preview/en/data-warehouse/scd-type-2/')
       expect(renderToStaticMarkup(<SiteFooter variant="home" />)).toContain(
         '<a href="/preview/en/">English</a>',
       )
@@ -111,12 +131,15 @@ describe('English SEO Foundation routing contract', () => {
     }
   })
 
-  it('does not model the namespace as translated Learn routes or hreflang mirrors', () => {
+  it('does not model the English pages as translated Learn routes or hreflang mirrors', () => {
     const source = englishRoutes
       .map(({ file }) => readFileSync(new URL(file, pagesDirectory), 'utf8'))
       .join('\n')
 
     expect(source).not.toContain('/en/learn/')
+    expect(source).not.toContain('/en/blog/')
+    expect(source).not.toContain('/en/tutorial/')
+    expect(source).not.toContain('/en/articles/')
     expect(source).not.toContain('hreflang')
   })
 })
