@@ -105,6 +105,22 @@ const siteTitle = '数据仓库图解首页'
                         {topic.optional && <span class="roadmap-optional">选学 · 可直接进入</span>}
                       </div>
                     )}
+
+                    <div class="roadmap-topic__detail">
+                      <p class="roadmap-topic__why">
+                        <span class="roadmap-topic__detail-label">为什么学</span> {topic.whyLearn}
+                      </p>
+                      <p class="roadmap-topic__outcome">
+                        <span class="roadmap-topic__detail-label">学完应能</span>{' '}
+                        {topic.learningOutcome}
+                      </p>
+                      <p
+                        class="roadmap-topic__time"
+                        data-topic-estimated-minutes={topic.estimatedMinutes}
+                      >
+                        {`预计 ${topic.estimatedMinutes} 分钟 · ${topic.lessons.length} 节`}
+                      </p>
+                    </div>
                   </header>
 
                   <section
