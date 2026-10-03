@@ -256,6 +256,52 @@
   color: var(--warning-text);
 }
 
+/* Topic Detail Lite: why / outcome / derived time stay inside the existing card. */
+.roadmap-topic__detail {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+
+.roadmap-topic__why,
+.roadmap-topic__outcome,
+.roadmap-topic__time {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.roadmap-topic__why,
+.roadmap-topic__outcome {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.roadmap-topic__outcome {
+  color: var(--text-primary);
+}
+
+.roadmap-topic__detail-label {
+  margin-right: 3px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.roadmap-topic__detail-label::after {
+  content: '：';
+}
+
+.roadmap-topic__time {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
 .roadmap-topic__lessons {
   min-width: 0;
   padding: 13px 14px;

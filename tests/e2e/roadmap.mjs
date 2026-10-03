@@ -8,6 +8,8 @@ import { createChecker, launchChromium, startPreview, trackPageErrors } from './
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SCRIPT_NAME = 'roadmap'
 const PROGRESS_STORAGE_KEY = 'data-warehouse-visualized:progress'
+/** Sum of `Lesson.estimatedMinutes` over all 54 available lessons; locks derived Topic time. */
+const TOTAL_ESTIMATED_MINUTES = 665
 const VIEWPORTS = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1280x800', width: 1280, height: 800 },
@@ -187,6 +189,19 @@ async function inspectPage(page, baseUrl, tag, errors) {
         '[data-current-topic]:not([hidden]), [data-current-stage]:not([hidden])',
       ).length,
       continueHidden: document.querySelector('[data-roadmap-continue]')?.hidden ?? true,
+      topicDetailCount: document.querySelectorAll('.roadmap-topic__detail').length,
+      whyLearnTexts: Array.from(document.querySelectorAll('.roadmap-topic__why')).map((node) =>
+        node.textContent?.replace(/\s+/g, ' ').trim(),
+      ),
+      outcomeTexts: Array.from(document.querySelectorAll('.roadmap-topic__outcome')).map((node) =>
+        node.textContent?.replace(/\s+/g, ' ').trim(),
+      ),
+      timeTexts: Array.from(document.querySelectorAll('.roadmap-topic__time')).map((node) =>
+        node.textContent?.trim(),
+      ),
+      estimatedMinutes: Array.from(document.querySelectorAll('.roadmap-topic__time')).map((node) =>
+        Number(node.getAttribute('data-topic-estimated-minutes')),
+      ),
       lessonPointerEvents: Array.from(document.querySelectorAll('[data-lesson-id]')).map(
         (link) => getComputedStyle(link).pointerEvents,
       ),
@@ -275,6 +290,33 @@ async function inspectPage(page, baseUrl, tag, errors) {
   check(
     `${tag} 没有新增 Roadmap localStorage state`,
     documentContract.roadmapStorageKeys.length === 0,
+  )
+  check(
+    `${tag} 32 Topic 均含 why learn / outcome / 时间`,
+    documentContract.topicDetailCount === 32 &&
+      documentContract.whyLearnTexts.length === 32 &&
+      documentContract.outcomeTexts.length === 32 &&
+      documentContract.timeTexts.length === 32,
+    `detail=${documentContract.topicDetailCount} why=${documentContract.whyLearnTexts.length} outcome=${documentContract.outcomeTexts.length} time=${documentContract.timeTexts.length}`,
+  )
+  check(
+    `${tag} why learn / outcome 文案非空且跨 Topic 唯一`,
+    documentContract.whyLearnTexts.every((text) => (text?.length ?? 0) > 8) &&
+      new Set(documentContract.whyLearnTexts).size === 32 &&
+      documentContract.outcomeTexts.every((text) => (text?.length ?? 0) > 8) &&
+      new Set(documentContract.outcomeTexts).size === 32,
+  )
+  check(
+    `${tag} 预计时间格式可读`,
+    documentContract.timeTexts.every((text) => /^预计 \d+ 分钟 · \d+ 节$/.test(text ?? '')),
+    documentContract.timeTexts.find((text) => !/^预计 \d+ 分钟 · \d+ 节$/.test(text ?? '')) ?? '',
+  )
+  check(
+    `${tag} 预计时间由 54 节 Lesson metadata 派生（合计 ${TOTAL_ESTIMATED_MINUTES} 分钟）`,
+    documentContract.estimatedMinutes.every(Number.isFinite) &&
+      documentContract.estimatedMinutes.reduce((sum, minutes) => sum + minutes, 0) ===
+        TOTAL_ESTIMATED_MINUTES,
+    `minutes=${documentContract.estimatedMinutes.reduce((sum, minutes) => sum + minutes, 0)}`,
   )
 
   const themeToggle = page.locator('button.theme-toggle')
@@ -519,6 +561,18 @@ async function runNoJsCheck(browser, baseUrl) {
     (await page
       .locator('[data-topic-progress], [data-stage-progress], [data-roadmap-continue]')
       .count()) === 0,
+  )
+  check(
+    'no-js: Topic 为什么学 / 学完应能 / 预计时间静态可读',
+    (await page.locator('.roadmap-topic__why').count()) === 32 &&
+      (await page.locator('.roadmap-topic__outcome').count()) === 32 &&
+      (await page.locator('.roadmap-topic__time').count()) === 32 &&
+      (await page.getByText('为什么学').first().isVisible()) &&
+      (await page.getByText('学完应能').first().isVisible()) &&
+      (await page
+        .getByText(/^预计 \d+ 分钟/)
+        .first()
+        .isVisible()),
   )
   check(
     'no-js: progress 状态保持 pending',

@@ -1,5 +1,6 @@
 import type { Lesson } from '../../data/course'
 import { getLearningTopicTitle, learningStageTitles } from './presentation'
+import { getLearningTopicDetail } from './topic-details'
 import type { LearningGraph, LearningStageId, RequiredEdgeReason } from './types'
 
 export interface RoadmapLessonView {
@@ -22,6 +23,11 @@ export interface RoadmapTopicView {
   stageId: LearningStageId
   kind: 'concept' | 'synthesis' | 'case'
   optional: boolean
+  /** Topic learning semantics from the presentation SSOT, not from Lesson copy. */
+  whyLearn: string
+  learningOutcome: string
+  /** Sum of the mapped available Lessons' `estimatedMinutes`; never hand-written. */
+  estimatedMinutes: number
   lessons: RoadmapLessonView[]
   requiredPrerequisites: RoadmapTopicRelationView[]
   recommendedPrior: RoadmapTopicRelationView[]
@@ -88,7 +94,8 @@ export function buildRoadmapViewModel(
   }
 
   for (const topic of graph.topics) {
-    const lessons = topic.lessonIds
+    const detail = getLearningTopicDetail(topic.id)
+    const topicLessons = topic.lessonIds
       .map((lessonId) => {
         const lesson = lessonById.get(lessonId)
         if (!lesson) {
@@ -97,11 +104,15 @@ export function buildRoadmapViewModel(
         return lesson
       })
       .sort((left, right) => (lessonOrder.get(left.id) ?? 0) - (lessonOrder.get(right.id) ?? 0))
-      .map((lesson) => ({
-        id: lesson.id,
-        title: lesson.title,
-        href: getLessonHref(lesson.slug),
-      }))
+    const lessons = topicLessons.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      href: getLessonHref(lesson.slug),
+    }))
+    const estimatedMinutes = topicLessons.reduce(
+      (total, lesson) => total + lesson.estimatedMinutes,
+      0,
+    )
 
     const requiredPrerequisites = topic.prerequisites.map((topicId) =>
       relation(topicId, requiredReasonByEdge.get(edgeKey(topicId, topic.id))),
@@ -118,6 +129,9 @@ export function buildRoadmapViewModel(
       stageId: topic.stageId,
       kind: topic.kind ?? 'concept',
       optional: topic.optional ?? false,
+      whyLearn: detail.whyLearn,
+      learningOutcome: detail.learningOutcome,
+      estimatedMinutes,
       lessons,
       requiredPrerequisites,
       recommendedPrior,

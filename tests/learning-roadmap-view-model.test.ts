@@ -38,6 +38,25 @@ describe('Learning Roadmap view model', () => {
     expect(view.stages[0]).toMatchObject({ id: 'foundation', title: '基础认知' })
   })
 
+  it('projects Topic learning semantics and Lesson-derived time into the card contract', () => {
+    const lessonMinutes = new Map(
+      lessons.filter(isLessonAvailable).map(({ id, estimatedMinutes }) => [id, estimatedMinutes]),
+    )
+
+    for (const topic of allTopics) {
+      const graphTopic = learningGraph.topics.find(({ id }) => id === topic.id)
+
+      expect(topic.whyLearn.length).toBeGreaterThan(0)
+      expect(topic.learningOutcome.length).toBeGreaterThan(0)
+      expect(topic.estimatedMinutes).toBe(
+        (graphTopic?.lessonIds ?? []).reduce(
+          (sum, lessonId) => sum + (lessonMinutes.get(lessonId) ?? 0),
+          0,
+        ),
+      )
+    }
+  })
+
   it('joins all canonical Lesson owners to real course titles and getRoute-based URLs once', () => {
     const available = lessons.filter(isLessonAvailable)
     const courseById = new Map(available.map((lesson) => [lesson.id, lesson]))
