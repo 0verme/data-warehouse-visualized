@@ -38,7 +38,7 @@ const siteTitle = '数据仓库图解首页'
       <GlobalHeaderActions client:load />
     </header>
 
-    <main class="roadmap-main" aria-labelledby="roadmap-title">
+    <main class="roadmap-main" aria-labelledby="roadmap-title" data-roadmap-progress="pending">
       <header class="roadmap-intro">
         <p class="roadmap-eyebrow">LEARNING ROADMAP · KNOWLEDGE MAP</p>
         <h1 id="roadmap-title">先看懂知识之间的关系</h1>
@@ -115,7 +115,7 @@ const siteTitle = '数据仓库图解首页'
                     <ul>
                       {topic.lessons.map((lesson) => (
                         <li>
-                          <a href={lesson.href}>
+                          <a href={lesson.href} data-lesson-id={lesson.id}>
                             <span>{lesson.title}</span>
                             <span class="roadmap-topic__lesson-arrow" aria-hidden="true">
                               →
@@ -200,4 +200,10 @@ const siteTitle = '数据仓库图解首页'
 
     <SiteFooter />
   </div>
+
+  <script>
+    import { installRoadmapProgress } from '../../features/learning-roadmap/progress-client'
+
+    installRoadmapProgress()
+  </script>
 </BaseLayout>
