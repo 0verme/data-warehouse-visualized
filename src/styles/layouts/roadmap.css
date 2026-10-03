@@ -393,6 +393,16 @@
   line-height: 1;
 }
 
+/*
+ * Phase 5 (#189): a shared Topic deep link (#roadmap-topic-<id>) gets a visible
+ * landing state. This is pure CSS URL state: it never touches progress, current,
+ * path, kind or optional state, and adds no JS, route or stored state.
+ */
+.roadmap-topic:target {
+  outline: 3px solid var(--interactive);
+  outline-offset: 3px;
+}
+
 /* Topic Detail Lite: why / outcome / derived time stay inside the existing card. */
 .roadmap-topic__detail {
   display: grid;
