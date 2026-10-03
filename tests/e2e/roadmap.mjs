@@ -1061,6 +1061,201 @@ async function runBackJourney(browser, baseUrl) {
   await context.close()
 }
 
+function contrastRatio(foreground, background) {
+  const parse = (value) => {
+    const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(value ?? '')
+    return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null
+  }
+  const luminance = (rgb) => {
+    const [r, g, b] = rgb.map((channel) => {
+      const value = channel / 255
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const fg = parse(foreground)
+  const bg = parse(background)
+  if (!fg || !bg) return null
+  const [high, low] = [fg, bg].map(luminance).sort((a, b) => b - a)
+  return (high + 0.05) / (low + 0.05)
+}
+
+async function readDeepLinkDom(page, topicId, otherTopicId) {
+  return page.evaluate(
+    ({ targetId, otherId }) => {
+      const target = document.getElementById(targetId)
+      const other = document.getElementById(otherId)
+      if (!target || !other) return { missing: true }
+      const targetStyle = getComputedStyle(target)
+      const otherStyle = getComputedStyle(other)
+      const rect = target.getBoundingClientRect()
+      return {
+        hash: window.location.hash,
+        targetTop: rect.top,
+        targetVisible: rect.top >= 0 && rect.top < window.innerHeight && rect.bottom > 0,
+        outlineStyle: targetStyle.outlineStyle,
+        outlineWidth: Number.parseFloat(targetStyle.outlineWidth),
+        outlineColor: targetStyle.outlineColor,
+        background: targetStyle.backgroundColor,
+        otherOutlineStyle: otherStyle.outlineStyle,
+        scrollTop: document.scrollingElement.scrollTop,
+        targetCount: document.querySelectorAll('.roadmap-topic:target').length,
+        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      }
+    },
+    { targetId: `roadmap-topic-${topicId}`, otherId: `roadmap-topic-${otherTopicId}` },
+  )
+}
+
+/** Phase 5 (#189): shared Topic URLs must land with a visible, contract-safe target state. */
+async function runDeepLinkScenarios(browser, baseUrl) {
+  const TOPIC_ID = 'business-process-and-grain'
+  const OTHER_ID = 'warehouse-mental-model'
+  const HASH = `#roadmap-topic-${TOPIC_ID}`
+  const url = `${baseUrl}${route('/roadmap/')}`
+
+  const assertTargetState = (tag, dom, errors) => {
+    check(`${tag}: hash 保留`, dom.hash === HASH, String(dom.hash))
+    check(
+      `${tag}: 目标 Topic 在视口内`,
+      dom.targetVisible === true,
+      JSON.stringify({ top: dom.targetTop, scrollTop: dom.scrollTop }),
+    )
+    check(
+      `${tag}: :target outline 唯一且可见`,
+      dom.outlineStyle === 'solid' && dom.outlineWidth >= 3 && dom.targetCount === 1,
+      `${dom.outlineStyle} ${dom.outlineWidth}px / count=${dom.targetCount}`,
+    )
+    check(
+      `${tag}: 非目标 Topic 无 outline`,
+      dom.otherOutlineStyle === 'none',
+      String(dom.otherOutlineStyle),
+    )
+    const contrast = contrastRatio(dom.outlineColor, dom.background)
+    check(
+      `${tag}: outline 非文本对比度 ≥ 3:1`,
+      (contrast ?? 0) >= 3,
+      `contrast=${contrast?.toFixed(2)} outline=${dom.outlineColor} background=${dom.background}`,
+    )
+    check(`${tag}: 无横向溢出`, dom.overflowX <= 0, `overflowX=${dom.overflowX}`)
+    check(`${tag}: 无 browser error`, errors.length === 0, errors.join(' | '))
+  }
+
+  // 1) Desktop hard load of the exact shared URL.
+  {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+    const page = await context.newPage()
+    const errors = trackPageErrors(page)
+    await page.goto(`${url}${HASH}`, { waitUntil: 'networkidle' })
+    await waitForPathsReady(page)
+    assertTargetState('深链 1280', await readDeepLinkDom(page, TOPIC_ID, OTHER_ID), errors)
+    await context.close()
+  }
+
+  // 2) Same-page relation link + Back / Forward clear and restore :target.
+  {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+    const page = await context.newPage()
+    const errors = trackPageErrors(page)
+    await page.goto(url, { waitUntil: 'networkidle' })
+    await waitForPathsReady(page)
+    const link = page.locator('.roadmap-topic__relations a[href^="#roadmap-topic-"]').first()
+    const relationHash = await link.getAttribute('href')
+    await link.click()
+    // base.css uses `html { scroll-behavior: smooth }`, so the fragment scroll is animated.
+    await page.waitForFunction(
+      (expected) => {
+        if (window.location.hash !== expected) return false
+        const target = document.querySelector('.roadmap-topic:target')
+        if (!target) return false
+        const rect = target.getBoundingClientRect()
+        return rect.top >= 0 && rect.top < window.innerHeight && rect.bottom > 0
+      },
+      relationHash,
+      { timeout: 10_000 },
+    )
+    const clicked = await page.evaluate(() => {
+      const target = document.querySelector('.roadmap-topic:target')
+      const rect = target?.getBoundingClientRect()
+      return {
+        count: document.querySelectorAll('.roadmap-topic:target').length,
+        visible: rect ? rect.top >= 0 && rect.top < window.innerHeight : false,
+        outlineStyle: target ? getComputedStyle(target).outlineStyle : 'none',
+      }
+    })
+    check(
+      '深链 同页: relation 点击后 :target 唯一且可见',
+      clicked.count === 1 && clicked.visible && clicked.outlineStyle === 'solid',
+      JSON.stringify(clicked),
+    )
+    await page.goBack()
+    await page.waitForFunction(() => window.location.hash === '')
+    check(
+      '深链 同页: Back 后 :target 清除',
+      (await page.evaluate(() => document.querySelectorAll('.roadmap-topic:target').length)) === 0,
+    )
+    await page.goForward()
+    await page.waitForFunction((expected) => window.location.hash === expected, relationHash)
+    check(
+      '深链 同页: Forward 后 :target 恢复',
+      (await page.evaluate(() => document.querySelectorAll('.roadmap-topic:target').length)) === 1,
+    )
+    check('深链 同页: 无 browser error', errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
+  // 3) Dark theme contrast for the same target state.
+  {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+      colorScheme: 'dark',
+    })
+    const page = await context.newPage()
+    const errors = trackPageErrors(page)
+    await page.goto(`${url}${HASH}`, { waitUntil: 'networkidle' })
+    await waitForPathsReady(page)
+    assertTargetState('深链 dark', await readDeepLinkDom(page, TOPIC_ID, OTHER_ID), errors)
+    await context.close()
+  }
+
+  // 4) Reduced motion keeps the target state visible without adding animation.
+  {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+      reducedMotion: 'reduce',
+    })
+    const page = await context.newPage()
+    await page.goto(`${url}${HASH}`, { waitUntil: 'networkidle' })
+    await waitForPathsReady(page)
+    const dom = await readDeepLinkDom(page, TOPIC_ID, OTHER_ID)
+    check(
+      '深链 reduced-motion: :target outline 可见',
+      dom.outlineStyle === 'solid' && dom.outlineWidth >= 3,
+      `${dom.outlineStyle} ${dom.outlineWidth}px`,
+    )
+    await context.close()
+  }
+
+  // 5) Representative phone widths.
+  for (const width of [390, 320]) {
+    const height = width === 390 ? 844 : 720
+    const context = await browser.newContext({ viewport: { width, height } })
+    const page = await context.newPage()
+    const errors = trackPageErrors(page)
+    await page.goto(`${url}${HASH}`, { waitUntil: 'networkidle' })
+    await waitForPathsReady(page)
+    const dom = await readDeepLinkDom(page, TOPIC_ID, OTHER_ID)
+    check(
+      `深链 ${width}: 目标 Topic 有 :target outline 且在视口内`,
+      dom.outlineStyle === 'solid' && dom.outlineWidth >= 3 && dom.targetVisible === true,
+      JSON.stringify({ top: dom.targetTop, outline: dom.outlineStyle }),
+    )
+    check(`深链 ${width}: 无横向溢出`, dom.overflowX <= 0, `overflowX=${dom.overflowX}`)
+    check(`深链 ${width}: 无 browser error`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+}
+
 async function main() {
   const preview = await startPreview({
     root: ROOT,
@@ -1140,6 +1335,7 @@ async function main() {
     await runPathKeyboardAndTheme(browser, preview.baseUrl)
     await runNoJsCheck(browser, preview.baseUrl)
     await runBackJourney(browser, preview.baseUrl)
+    await runDeepLinkScenarios(browser, preview.baseUrl)
 
     const homeContext = await browser.newContext({ viewport: { width: 1280, height: 800 } })
     const homePage = await homeContext.newPage()
