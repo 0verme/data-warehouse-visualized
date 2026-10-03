@@ -56,6 +56,9 @@ jobs:
       - name: Run browser smoke
         run: npm run test:e2e:smoke -- --skip-build
 
+      - name: Run Roadmap browser contract
+        run: npm run test:e2e:roadmap -- --skip-build
+
       - name: Run English Foundation browser contract
         run: npm run test:e2e:english-foundation -- --skip-build
 
@@ -73,6 +76,7 @@ jobs:
           BASE_PATH=/seo-base-path/ npm run build
           npm run test:english-seo-build -- --base-path /seo-base-path/
           BASE_PATH=/seo-base-path/ npm run test:e2e:english-foundation -- --skip-build
+          BASE_PATH=/seo-base-path/ npm run test:e2e:roadmap -- --skip-build
 
       - name: Restore production root build
         run: npm run build

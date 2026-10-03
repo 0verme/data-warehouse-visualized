@@ -7,6 +7,7 @@ import { chapters, isLessonAvailable, lessons } from '../data/course'
 import { HERO_METRIC_SQL_EXAMPLE } from '../data/code-examples'
 import { getMessage } from '../i18n/messages'
 import { buildCodeHighlightMap } from '../utils/build-code-highlight'
+import { getRoute } from '../utils/routes'
 import { getChapterDisplayNumber } from '../utils/lesson'
 import homeStylesUrl from '../styles/layouts/home.css?url'
 
@@ -181,6 +182,12 @@ const baseUrl = import.meta.env.BASE_URL
           <a class="home-text-link" href={`${baseUrl}learn/`}>
             进入学习空间 <span aria-hidden="true">→</span>
           </a>
+          <p class="home-course-map__roadmap-entry">
+            不确定从哪里开始？{' '}
+            <a class="home-text-link" href={getRoute('/roadmap/')}>
+              按知识关系浏览 Roadmap <span aria-hidden="true">→</span>
+            </a>
+          </p>
         </div>
         <ol class="home-course-map__list">
           {chapters.map((chapter) => {

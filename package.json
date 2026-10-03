@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "check": "astro check",
     "test:e2e:smoke": "node tests/e2e/release-smoke.mjs",
+    "test:e2e:roadmap": "node tests/e2e/roadmap.mjs",
     "test:e2e:english-foundation": "node tests/e2e/english-foundation.mjs",
     "test:english-seo-build": "node tests/english-seo-build-contract.mjs",
     "test:e2e:duplicate-entry": "node tests/e2e/duplicate-scheduler-entry.mjs",

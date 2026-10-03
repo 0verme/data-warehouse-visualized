@@ -1,0 +1,203 @@
+---
+import { GlobalHeaderActions } from '../../components/GlobalHeaderActions'
+import { SiteFooter } from '../../components/SiteFooter'
+import { isLessonAvailable, lessons } from '../../data/course'
+import { learningGraph, requiredEdgeReasons } from '../../features/learning-roadmap/graph'
+import { buildRoadmapViewModel } from '../../features/learning-roadmap/view-model'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import roadmapStylesUrl from '../../styles/layouts/roadmap.css?url'
+import { getRoute } from '../../utils/routes'
+
+const roadmap = buildRoadmapViewModel(
+  learningGraph,
+  lessons.filter(isLessonAvailable),
+  requiredEdgeReasons,
+  (slug) => getRoute(`/learn/${slug}/`),
+)
+const siteTitle = '数据仓库图解首页'
+---
+
+<BaseLayout
+  title="数据仓库学习路线图｜数据仓库图解"
+  description="按 Stage 浏览数据仓库知识主题，了解主题之间的知识前置、推荐先看与相关关系，并进入对应的真实课程。"
+  styleUrls={[roadmapStylesUrl]}
+>
+  <div class="site-shell roadmap-page">
+    <header class="site-header roadmap-header">
+      <a class="brand" href={getRoute('/')} aria-label={siteTitle}>
+        <span class="brand__mark" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span class="brand__text">
+          <strong>数据仓库图解</strong>
+          <small>交互式教材</small>
+        </span>
+      </a>
+      <GlobalHeaderActions client:load />
+    </header>
+
+    <main class="roadmap-main" aria-labelledby="roadmap-title">
+      <header class="roadmap-intro">
+        <p class="roadmap-eyebrow">LEARNING ROADMAP · KNOWLEDGE MAP</p>
+        <h1 id="roadmap-title">先看懂知识之间的关系</h1>
+        <p class="roadmap-intro__summary">
+          从主题而不是课程序号出发，浏览数据仓库知识如何相互支撑。每个 Topic
+          都连接到现有课程，关系用于学习参考，不限制访问。
+        </p>
+        <p class="roadmap-intro__contract">
+          Stage 只是内容分组，顺序不代表前置；只有 Topic 关系表达知识依赖。所有课程都可以直接打开。
+        </p>
+      </header>
+
+      <section class="roadmap-legend" aria-labelledby="roadmap-legend-title">
+        <h2 id="roadmap-legend-title">如何阅读关系</h2>
+        <ul>
+          <li>
+            <span class="roadmap-relation-label roadmap-relation-label--required">知识前置</span>
+            <span>理解当前 Topic 前应先了解；不是课程锁定条件。</span>
+          </li>
+          <li>
+            <span class="roadmap-relation-label roadmap-relation-label--recommended">推荐先看</span>
+            <span>有帮助，但不是理解当前 Topic 的必要条件。</span>
+          </li>
+          <li>
+            <span class="roadmap-relation-label roadmap-relation-label--related">相关主题</span>
+            <span>横向关联，不表示依赖或先后顺序。</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="roadmap-stages">
+        {roadmap.stages.map((stage) => (
+          <section
+            class="roadmap-stage"
+            aria-labelledby={`roadmap-stage-${stage.id}`}
+            data-stage-id={stage.id}
+          >
+            <header class="roadmap-stage__heading">
+              <p class="roadmap-stage__eyebrow">
+                STAGE {String(stage.order).padStart(2, '0')} · 浏览分组
+              </p>
+              <h2 id={`roadmap-stage-${stage.id}`}>{stage.title}</h2>
+            </header>
+
+            <div class="roadmap-topic-grid">
+              {stage.topics.map((topic) => (
+                <article
+                  class:list={['roadmap-topic', `roadmap-topic--${topic.kind}`]}
+                  id={topic.anchorId}
+                  aria-labelledby={`${topic.anchorId}-title`}
+                  data-topic-id={topic.id}
+                  data-topic-kind={topic.kind}
+                >
+                  <header class="roadmap-topic__header">
+                    <p class="roadmap-topic__stage">所属 Stage · {stage.title}</p>
+                    <h3 id={`${topic.anchorId}-title`}>{topic.title}</h3>
+                    {(topic.kind !== 'concept' || topic.optional) && (
+                      <div class="roadmap-topic__badges">
+                        {topic.kind !== 'concept' && (
+                          <span class={`roadmap-kind roadmap-kind--${topic.kind}`}>
+                            {topic.kind === 'synthesis' ? '综合实践' : '生产案例'}
+                          </span>
+                        )}
+                        {topic.optional && <span class="roadmap-optional">选学 · 可直接进入</span>}
+                      </div>
+                    )}
+                  </header>
+
+                  <section
+                    class="roadmap-topic__lessons"
+                    aria-labelledby={`${topic.anchorId}-lessons`}
+                  >
+                    <h4 id={`${topic.anchorId}-lessons`}>对应课程</h4>
+                    <ul>
+                      {topic.lessons.map((lesson) => (
+                        <li>
+                          <a href={lesson.href}>
+                            <span>{lesson.title}</span>
+                            <span class="roadmap-topic__lesson-arrow" aria-hidden="true">
+                              →
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+
+                  <div class="roadmap-topic__relations">
+                    <section
+                      class="roadmap-relation-group roadmap-relation-group--required"
+                      aria-labelledby={`${topic.anchorId}-required`}
+                    >
+                      <h4 id={`${topic.anchorId}-required`}>
+                        <span class="roadmap-relation-label roadmap-relation-label--required">
+                          知识前置
+                        </span>
+                      </h4>
+                      {topic.requiredPrerequisites.length > 0 ? (
+                        <ul>
+                          {topic.requiredPrerequisites.map((relation) => (
+                            <li>
+                              <a href={relation.href}>{relation.title}</a>
+                              {relation.reason && <p>{relation.reason}</p>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p class="roadmap-relation-group__empty">本主题没有必需的前置主题。</p>
+                      )}
+                    </section>
+
+                    {topic.recommendedPrior.length > 0 && (
+                      <section
+                        class="roadmap-relation-group roadmap-relation-group--recommended"
+                        aria-labelledby={`${topic.anchorId}-recommended`}
+                      >
+                        <h4 id={`${topic.anchorId}-recommended`}>
+                          <span class="roadmap-relation-label roadmap-relation-label--recommended">
+                            推荐先看 · 非必需
+                          </span>
+                        </h4>
+                        <ul>
+                          {topic.recommendedPrior.map((relation) => (
+                            <li>
+                              <a href={relation.href}>{relation.title}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
+                    {topic.relatedTopics.length > 0 && (
+                      <section
+                        class="roadmap-relation-group roadmap-relation-group--related"
+                        aria-labelledby={`${topic.anchorId}-related`}
+                      >
+                        <h4 id={`${topic.anchorId}-related`}>
+                          <span class="roadmap-relation-label roadmap-relation-label--related">
+                            相关主题 · 非依赖
+                          </span>
+                        </h4>
+                        <ul>
+                          {topic.relatedTopics.map((relation) => (
+                            <li>
+                              <a href={relation.href}>{relation.title}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </main>
+
+    <SiteFooter />
+  </div>
+</BaseLayout>

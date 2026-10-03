@@ -1123,6 +1123,18 @@
   margin-bottom: 23px;
 }
 
+.home-course-map__roadmap-entry {
+  margin: 14px 0 0;
+  color: var(--home-ink-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.home-course-map__roadmap-entry .home-text-link {
+  display: inline;
+  font-size: inherit;
+}
+
 .home-course-map__meta {
   display: flex;
   flex-wrap: wrap;
