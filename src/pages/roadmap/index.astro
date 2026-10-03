@@ -3,6 +3,11 @@ import { GlobalHeaderActions } from '../../components/GlobalHeaderActions'
 import { SiteFooter } from '../../components/SiteFooter'
 import { isLessonAvailable, lessons } from '../../data/course'
 import { learningGraph, requiredEdgeReasons } from '../../features/learning-roadmap/graph'
+import {
+  assertLearningPathPresentationCoverage,
+  getLearningPathPresentation,
+} from '../../features/learning-roadmap/path-presentation'
+import { learningPaths } from '../../features/learning-roadmap/paths'
 import { buildRoadmapViewModel } from '../../features/learning-roadmap/view-model'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import roadmapStylesUrl from '../../styles/layouts/roadmap.css?url'
@@ -14,6 +19,8 @@ const roadmap = buildRoadmapViewModel(
   requiredEdgeReasons,
   (slug) => getRoute(`/learn/${slug}/`),
 )
+const roadmapTopicCount = roadmap.stages.reduce((total, stage) => total + stage.topics.length, 0)
+assertLearningPathPresentationCoverage()
 const siteTitle = '数据仓库图解首页'
 ---
 
@@ -38,7 +45,12 @@ const siteTitle = '数据仓库图解首页'
       <GlobalHeaderActions client:load />
     </header>
 
-    <main class="roadmap-main" aria-labelledby="roadmap-title" data-roadmap-progress="pending">
+    <main
+      class="roadmap-main"
+      aria-labelledby="roadmap-title"
+      data-roadmap-progress="pending"
+      data-roadmap-paths="pending"
+    >
       <header class="roadmap-intro">
         <p class="roadmap-eyebrow">LEARNING ROADMAP · KNOWLEDGE MAP</p>
         <h1 id="roadmap-title">先看懂知识之间的关系</h1>
@@ -50,6 +62,45 @@ const siteTitle = '数据仓库图解首页'
           Stage 只是内容分组，顺序不代表前置；只有 Topic 关系表达知识依赖。所有课程都可以直接打开。
         </p>
       </header>
+
+      <fieldset class="roadmap-paths">
+        <legend class="roadmap-paths__legend">学习路线</legend>
+        <p class="roadmap-paths__hint">
+          选择一条路线查看建议入口与重点主题；其他主题仍然保留，可直接浏览和进入课程。
+        </p>
+        <div class="roadmap-paths__options">
+          <label class="roadmap-path-option" data-roadmap-path-label="all">
+            <input
+              type="radio"
+              name="roadmap-path"
+              value="all"
+              class="sr-only"
+              data-roadmap-path-option
+              checked
+            />
+            <span class="roadmap-path-option__dot" aria-hidden="true" />
+            <span class="roadmap-path-option__label">全部</span>
+          </label>
+          {learningPaths.map((path) => (
+            <label class="roadmap-path-option" data-roadmap-path-label={path.id}>
+              <input
+                type="radio"
+                name="roadmap-path"
+                value={path.id}
+                class="sr-only"
+                data-roadmap-path-option
+              />
+              <span class="roadmap-path-option__dot" aria-hidden="true" />
+              <span class="roadmap-path-option__label">
+                {getLearningPathPresentation(path.id).title}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p class="roadmap-paths__status" data-roadmap-path-status role="status">
+          {`当前显示全部知识：${roadmapTopicCount} 个主题、${roadmap.stages.length} 个 Stage。选择路线可查看建议入口与重点主题。`}
+        </p>
+      </fieldset>
 
       <section class="roadmap-legend" aria-labelledby="roadmap-legend-title">
         <h2 id="roadmap-legend-title">如何阅读关系</h2>
@@ -219,7 +270,9 @@ const siteTitle = '数据仓库图解首页'
 
   <script>
     import { installRoadmapProgress } from '../../features/learning-roadmap/progress-client'
+    import { installRoadmapPaths } from '../../features/learning-roadmap/path-client'
 
     installRoadmapProgress()
+    installRoadmapPaths()
   </script>
 </BaseLayout>

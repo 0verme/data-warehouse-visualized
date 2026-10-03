@@ -26,6 +26,10 @@ export type LearningGraphValidationErrorCode =
   | 'duplicate-related-reference'
   | 'unknown-path-topic-reference'
   | 'duplicate-path-topic-reference'
+  | 'duplicate-path-id'
+  | 'empty-path-entry'
+  | 'empty-path-highlight'
+  | 'entry-not-highlighted'
   | 'missing-required-edge-reason'
   | 'duplicate-required-edge-reason'
   | 'unknown-reason-topic-reference'
@@ -64,6 +68,9 @@ export interface LearningGraphValidationSummary {
   requiredRootCount: number
   orphanTopicCount: number
   unreviewedInversionCount: number
+  pathCount: number
+  pathEntryReferenceCount: number
+  pathHighlightReferenceCount: number
 }
 
 export interface LearningGraphValidationResult {
@@ -121,6 +128,9 @@ export function validateLearningGraph(
     requiredRootCount: 0,
     orphanTopicCount: 0,
     unreviewedInversionCount: 0,
+    pathCount: paths.length,
+    pathEntryReferenceCount: 0,
+    pathHighlightReferenceCount: 0,
   }
   const addError = (code: LearningGraphValidationErrorCode, message: string): void => {
     errors.push({ code, message })
@@ -467,7 +477,31 @@ export function validateLearningGraph(
     }
   }
 
+  const pathIds = new Set<string>()
   for (const path of paths) {
+    if (pathIds.has(path.id)) {
+      addError('duplicate-path-id', `LearningPath ID "${path.id}" is declared more than once.`)
+    }
+    pathIds.add(path.id)
+    if (path.entryTopicIds.length === 0) {
+      addError('empty-path-entry', `LearningPath "${path.id}" has no entry Topics.`)
+    }
+    if (path.highlightTopicIds.length === 0) {
+      addError('empty-path-highlight', `LearningPath "${path.id}" has no highlight Topics.`)
+    }
+    summary.pathEntryReferenceCount += path.entryTopicIds.length
+    summary.pathHighlightReferenceCount += path.highlightTopicIds.length
+
+    const highlightedTopicIds = new Set(path.highlightTopicIds)
+    for (const entryTopicId of path.entryTopicIds) {
+      if (!highlightedTopicIds.has(entryTopicId)) {
+        addError(
+          'entry-not-highlighted',
+          `LearningPath "${path.id}" entry Topic "${entryTopicId}" is not in highlightTopicIds.`,
+        )
+      }
+    }
+
     for (const [field, references] of [
       ['entryTopicIds', path.entryTopicIds],
       ['highlightTopicIds', path.highlightTopicIds],

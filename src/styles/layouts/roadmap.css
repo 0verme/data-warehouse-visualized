@@ -66,6 +66,89 @@
   line-height: 1.65;
 }
 
+.roadmap-paths {
+  max-width: 900px;
+  min-width: 0;
+  margin: 0 auto 26px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.roadmap-paths__legend {
+  padding: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.roadmap-paths__hint {
+  margin: 9px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.roadmap-paths__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.roadmap-path-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 680;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.roadmap-path-option__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.roadmap-path-option:hover {
+  border-color: var(--border-strong);
+}
+
+.roadmap-path-option:has(input:checked) {
+  border-color: var(--interactive);
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.roadmap-path-option:has(input:checked) .roadmap-path-option__dot {
+  background: currentColor;
+}
+
+.roadmap-path-option:has(input:focus-visible) {
+  outline: 2px solid var(--interactive);
+  outline-offset: 2px;
+}
+
+.roadmap-paths__status {
+  margin: 13px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
 .roadmap-legend {
   max-width: 900px;
   margin: 0 auto 42px;
@@ -254,6 +337,60 @@
   border-style: dashed;
   border-color: var(--warning-border);
   color: var(--warning-text);
+}
+
+/* Learning Paths (Phase 4): overlay states stay orthogonal to progress / current / kind. */
+.roadmap-topic {
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.roadmap-topic[data-path-state='highlighted'] {
+  border-color: var(--interactive);
+  box-shadow:
+    inset 3px 0 0 var(--interactive),
+    var(--shadow-sm);
+}
+
+.roadmap-topic[data-path-state='dimmed'] {
+  border-color: var(--border);
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.roadmap-topic[data-path-state='dimmed'] h3 {
+  color: var(--text-secondary);
+}
+
+.roadmap-topic[data-path-state='dimmed'] .roadmap-topic__stage {
+  color: var(--text-secondary);
+}
+
+.roadmap-topic[data-path-entry='true'] {
+  border-color: var(--interactive);
+}
+
+.roadmap-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 23px;
+  padding: 3px 8px;
+  border: 1px solid var(--interactive);
+  border-radius: 5px;
+  background: var(--info-bg);
+  color: var(--info-text);
+  font-size: 11px;
+  font-weight: 730;
+  line-height: 1.35;
+}
+
+.roadmap-entry::before {
+  content: '▸';
+  font-size: 10px;
+  line-height: 1;
 }
 
 /* Topic Detail Lite: why / outcome / derived time stay inside the existing card. */
@@ -598,6 +735,25 @@
   .roadmap-legend {
     margin-bottom: 30px;
     padding: 15px;
+  }
+
+  .roadmap-paths {
+    margin-bottom: 22px;
+    padding: 15px;
+  }
+
+  .roadmap-paths__options {
+    gap: 7px;
+  }
+
+  .roadmap-path-option {
+    min-height: 36px;
+    padding: 6px 11px;
+    font-size: 12px;
+  }
+
+  .roadmap-paths__status {
+    font-size: 11.5px;
   }
 
   .roadmap-legend ul {
