@@ -10,6 +10,31 @@ const SCRIPT_NAME = 'roadmap'
 const PROGRESS_STORAGE_KEY = 'data-warehouse-visualized:progress'
 /** Sum of `Lesson.estimatedMinutes` over all 54 available lessons; locks derived Topic time. */
 const TOTAL_ESTIMATED_MINUTES = 665
+/** Frozen Phase 4 Path fixtures; mirrors `src/features/learning-roadmap/paths.ts`. */
+const PATH_FIXTURES = {
+  systematic: {
+    highlighted: 30,
+    dimmed: 2,
+    entries: ['warehouse-mental-model'],
+    audienceKeyword: '第一次系统学习数据仓库',
+  },
+  'sql-etl': {
+    highlighted: 23,
+    dimmed: 9,
+    entries: ['business-process-and-grain', 'metric-definition-and-scope'],
+    audienceKeyword: 'SQL / ETL 基础',
+  },
+  production: {
+    highlighted: 22,
+    dimmed: 10,
+    entries: [
+      'quality-batch-and-evidence',
+      'failure-and-recovery',
+      'performance-diagnosis-and-scan',
+    ],
+    audienceKeyword: '数据仓库生产经验',
+  },
+}
 const VIEWPORTS = [
   { name: '1440x900', width: 1440, height: 900 },
   { name: '1280x800', width: 1280, height: 800 },
@@ -35,6 +60,28 @@ async function waitForProgressReady(page, timeout = 10_000) {
         ?.getAttribute('data-roadmap-progress') === 'ready',
     undefined,
     { timeout },
+  )
+}
+
+async function waitForPathsReady(page, timeout = 10_000) {
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('.roadmap-main[data-roadmap-paths]')
+        ?.getAttribute('data-roadmap-paths') === 'ready',
+    undefined,
+    { timeout },
+  )
+}
+
+async function selectPath(page, pathId) {
+  await page.locator(`label[data-roadmap-path-label="${pathId}"]`).click()
+  await page.waitForFunction(
+    (id) =>
+      document
+        .querySelector('.roadmap-main[data-roadmap-paths]')
+        ?.getAttribute('data-active-path') === id,
+    pathId,
   )
 }
 
@@ -88,6 +135,81 @@ async function readProgressDom(page) {
   })
 }
 
+async function readPathDom(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('.roadmap-main[data-roadmap-paths]')
+    const cards = Array.from(document.querySelectorAll('.roadmap-topic[data-topic-id]'))
+    const parseColor = (value) => {
+      const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(value)
+      return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null
+    }
+    const luminance = (rgb) => {
+      const [r, g, b] = rgb.map((channel) => {
+        const value = channel / 255
+        return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const contrast = (foreground, background) => {
+      const [high, low] = [foreground, background].map(luminance).sort((a, b) => b - a)
+      return (high + 0.05) / (low + 0.05)
+    }
+
+    return {
+      state: root?.getAttribute('data-roadmap-paths') ?? null,
+      activePath: root?.getAttribute('data-active-path') ?? null,
+      checked: Array.from(document.querySelectorAll('input[data-roadmap-path-option]'))
+        .filter((input) => input.checked)
+        .map((input) => input.value),
+      status: document.querySelector('[data-roadmap-path-status]')?.textContent?.trim() ?? '',
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+      documentHeight: document.documentElement.scrollHeight,
+      topics: cards.map((card) => {
+        const title = card.querySelector('h3')
+        const cardStyle = getComputedStyle(card)
+        const titleStyle = title ? getComputedStyle(title) : null
+        const background = parseColor(cardStyle.backgroundColor)
+        const foreground = titleStyle ? parseColor(titleStyle.color) : null
+        return {
+          id: card.getAttribute('data-topic-id'),
+          pathState: card.getAttribute('data-path-state'),
+          pathEntry: card.getAttribute('data-path-entry') === 'true',
+          entryText: card.querySelector('[data-topic-entry]')?.textContent?.trim() ?? null,
+          progressState:
+            card.querySelector('[data-topic-progress]')?.getAttribute('data-progress-state') ??
+            null,
+          progressLabel:
+            card.querySelector('.roadmap-topic__progress-text')?.textContent?.trim() ?? null,
+          current: card.querySelector('[data-current-topic]')?.hidden === false,
+          display: cardStyle.display,
+          visibility: cardStyle.visibility,
+          opacity: Number(cardStyle.opacity),
+          contrast: background && foreground ? contrast(foreground, background) : null,
+          lessonPointerEvents: Array.from(card.querySelectorAll('[data-lesson-id]')).map(
+            (link) => getComputedStyle(link).pointerEvents,
+          ),
+          lessonHrefs: Array.from(card.querySelectorAll('[data-lesson-id]')).map((link) =>
+            link.getAttribute('href'),
+          ),
+          relationTargets: Array.from(
+            card.querySelectorAll('.roadmap-topic__relations a[href^="#roadmap-topic-"]'),
+          ).map((link) => link.getAttribute('href')),
+        }
+      }),
+      stageLabels: Array.from(document.querySelectorAll('[data-stage-progress-text]')).map(
+        (node) => node.textContent?.trim() ?? '',
+      ),
+      continueHref:
+        document.querySelector('[data-roadmap-continue-link]')?.getAttribute('href') ?? null,
+      continueHidden: document.querySelector('[data-roadmap-continue]')?.hidden ?? null,
+      roadmapStorageKeys: Object.keys(localStorage).filter((key) =>
+        key.toLowerCase().includes('roadmap'),
+      ),
+    }
+  })
+}
+
 function topicOf(dom, topicId) {
   const topic = dom.topics.find((candidate) => candidate.id === topicId)
   if (!topic) throw new Error(`Missing Topic in DOM summary: ${topicId}`)
@@ -119,6 +241,7 @@ async function openRoadmapContext(browser, baseUrl, viewport, rawProgress) {
   const errors = trackPageErrors(page)
   await page.goto(`${baseUrl}${route('/roadmap/')}`, { waitUntil: 'networkidle' })
   await waitForProgressReady(page)
+  await waitForPathsReady(page)
   return { context, page, errors }
 }
 
@@ -134,6 +257,7 @@ async function inspectPage(page, baseUrl, tag, errors) {
   )
   await page.locator('.roadmap-topic[data-topic-id]').first().waitFor({ state: 'visible' })
   await waitForProgressReady(page)
+  await waitForPathsReady(page)
 
   const documentContract = await page.evaluate(() => {
     const doc = document.documentElement
@@ -202,6 +326,29 @@ async function inspectPage(page, baseUrl, tag, errors) {
       estimatedMinutes: Array.from(document.querySelectorAll('.roadmap-topic__time')).map((node) =>
         Number(node.getAttribute('data-topic-estimated-minutes')),
       ),
+      pathState:
+        document
+          .querySelector('.roadmap-main[data-roadmap-paths]')
+          ?.getAttribute('data-roadmap-paths') ?? null,
+      pathActive:
+        document
+          .querySelector('.roadmap-main[data-roadmap-paths]')
+          ?.getAttribute('data-active-path') ?? null,
+      pathOptions: Array.from(document.querySelectorAll('input[data-roadmap-path-option]')).map(
+        (input) => ({
+          value: input.value,
+          checked: input.checked,
+          label:
+            input
+              .closest('label')
+              ?.querySelector('.roadmap-path-option__label')
+              ?.textContent?.trim() ?? '',
+        }),
+      ),
+      pathStatus: document.querySelector('[data-roadmap-path-status]')?.textContent?.trim() ?? '',
+      pathStateCount: document.querySelectorAll('.roadmap-topic[data-path-state]').length,
+      pathEntryCount: document.querySelectorAll('.roadmap-topic[data-path-entry]').length,
+      entryBadgeCount: document.querySelectorAll('[data-topic-entry]').length,
       lessonPointerEvents: Array.from(document.querySelectorAll('[data-lesson-id]')).map(
         (link) => getComputedStyle(link).pointerEvents,
       ),
@@ -290,6 +437,31 @@ async function inspectPage(page, baseUrl, tag, errors) {
   check(
     `${tag} 没有新增 Roadmap localStorage state`,
     documentContract.roadmapStorageKeys.length === 0,
+  )
+  check(
+    `${tag} Path enhancer 就绪且默认全部`,
+    documentContract.pathState === 'ready' &&
+      documentContract.pathActive === 'all' &&
+      documentContract.pathStateCount === 0 &&
+      documentContract.pathEntryCount === 0 &&
+      documentContract.entryBadgeCount === 0,
+    `state=${documentContract.pathState} active=${documentContract.pathActive} states=${documentContract.pathStateCount}`,
+  )
+  check(
+    `${tag} Path selector 4 个选项与默认选中`,
+    documentContract.pathOptions.length === 4 &&
+      documentContract.pathOptions.filter((option) => option.checked).length === 1 &&
+      documentContract.pathOptions.find((option) => option.checked)?.value === 'all' &&
+      documentContract.pathOptions.map((option) => option.label).join('|') ===
+        '全部|系统入门|已有 SQL / ETL|生产经验',
+    documentContract.pathOptions.map((option) => `${option.value}:${option.checked}`).join(' '),
+  )
+  check(
+    `${tag} 默认状态文本说明全部知识`,
+    documentContract.pathStatus.includes('当前显示全部知识') &&
+      documentContract.pathStatus.includes('32 个主题') &&
+      documentContract.pathStatus.includes('8 个 Stage'),
+    documentContract.pathStatus,
   )
   check(
     `${tag} 32 Topic 均含 why learn / outcome / 时间`,
@@ -539,6 +711,250 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
   }
 }
 
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+async function runPathScenarios(browser, baseUrl, viewport) {
+  const tag = `path ${viewport.name}`
+  const { context, page, errors } = await openRoadmapContext(
+    browser,
+    baseUrl,
+    viewport,
+    JSON.stringify({ completedLessonIds: ['lesson-01'], currentLessonId: 'lesson-03' }),
+  )
+
+  const baseline = await readPathDom(page)
+  check(
+    `${tag} 默认全部：无 Path 覆盖状态`,
+    baseline.activePath === 'all' &&
+      baseline.topics.length === 32 &&
+      baseline.topics.every((topic) => topic.pathState === null && !topic.pathEntry),
+    `active=${baseline.activePath}`,
+  )
+
+  const selectedPaths =
+    viewport.width === 1280 ? ['systematic', 'sql-etl', 'production'] : ['systematic', 'production']
+  for (const pathId of selectedPaths) {
+    await selectPath(page, pathId)
+    const dom = await readPathDom(page)
+    const fixture = PATH_FIXTURES[pathId]
+    const highlighted = dom.topics.filter((topic) => topic.pathState === 'highlighted')
+    const dimmed = dom.topics.filter((topic) => topic.pathState === 'dimmed')
+    const entries = dom.topics.filter((topic) => topic.pathEntry)
+
+    check(
+      `${tag} ${pathId}: 重点 ${fixture.highlighted} / 弱化 ${fixture.dimmed}`,
+      dom.activePath === pathId &&
+        highlighted.length === fixture.highlighted &&
+        dimmed.length === fixture.dimmed &&
+        highlighted.length + dimmed.length === 32,
+      `active=${dom.activePath} highlighted=${highlighted.length} dimmed=${dimmed.length}`,
+    )
+    check(
+      `${tag} ${pathId}: 建议入口与文本标记`,
+      entries
+        .map((topic) => topic.id)
+        .sort()
+        .join('|') === [...fixture.entries].sort().join('|') &&
+        entries.every((topic) => topic.entryText === '建议入口'),
+      entries.map((topic) => `${topic.id}:${topic.entryText}`).join(' '),
+    )
+    check(
+      `${tag} ${pathId}: 状态文本包含适合人群与重点数量`,
+      dom.status.includes(fixture.audienceKeyword) &&
+        dom.status.includes(`重点 ${fixture.highlighted} 个主题`) &&
+        dom.status.includes('仍然保留'),
+      dom.status,
+    )
+    check(
+      `${tag} ${pathId}: 非路线 Topic 未被隐藏且保持可读`,
+      dimmed.every(
+        (topic) =>
+          topic.display !== 'none' &&
+          topic.visibility !== 'hidden' &&
+          topic.opacity >= 0.6 &&
+          (topic.contrast ?? 0) >= 4.5,
+      ),
+      dimmed
+        .filter(
+          (topic) =>
+            topic.display === 'none' ||
+            topic.visibility === 'hidden' ||
+            topic.opacity < 0.6 ||
+            (topic.contrast ?? 0) < 4.5,
+        )
+        .map(
+          (topic) =>
+            `${topic.id}:${topic.display}/${topic.visibility}/${topic.opacity}/${topic.contrast}`,
+        )
+        .join(' '),
+    )
+    check(
+      `${tag} ${pathId}: 所有 Lesson link 仍然可点击`,
+      dom.topics.every((topic) => topic.lessonPointerEvents.every((value) => value !== 'none')),
+    )
+    check(
+      `${tag} ${pathId}: Graph relation 保持完整`,
+      sameJson(
+        dom.topics.map((topic) => topic.relationTargets),
+        baseline.topics.map((topic) => topic.relationTargets),
+      ),
+    )
+    check(
+      `${tag} ${pathId}: Progress 与 Current 正交`,
+      sameJson(
+        dom.topics.map((topic) => [topic.progressState, topic.progressLabel, topic.current]),
+        baseline.topics.map((topic) => [topic.progressState, topic.progressLabel, topic.current]),
+      ),
+    )
+    check(
+      `${tag} ${pathId}: Stage Progress 与 Continue Learning 不变`,
+      sameJson(dom.stageLabels, baseline.stageLabels) &&
+        dom.continueHref === baseline.continueHref &&
+        dom.continueHidden === baseline.continueHidden,
+    )
+    check(
+      `${tag} ${pathId}: 无横向溢出且未写 Roadmap storage`,
+      dom.documentWidth <= dom.viewportWidth + 1 && dom.roadmapStorageKeys.length === 0,
+      `scrollWidth=${dom.documentWidth} viewport=${dom.viewportWidth}`,
+    )
+  }
+
+  await selectPath(page, 'all')
+  const restored = await readPathDom(page)
+  check(
+    `${tag} 切回全部：覆盖状态完全清除`,
+    restored.activePath === 'all' &&
+      restored.topics.every((topic) => topic.pathState === null && !topic.pathEntry) &&
+      restored.status.includes('当前显示全部知识'),
+  )
+
+  await page.reload({ waitUntil: 'networkidle' })
+  await waitForProgressReady(page)
+  await waitForPathsReady(page)
+  const reloaded = await readPathDom(page)
+  check(
+    `${tag} 刷新不持久化 selectedPath`,
+    reloaded.activePath === 'all' &&
+      reloaded.checked.join('|') === 'all' &&
+      reloaded.topics.every((topic) => topic.pathState === null),
+  )
+  check(`${tag} 无 browser error`, errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
+async function runPathKeyboardAndTheme(browser, baseUrl) {
+  const tag = 'path keyboard/dark 1280x800'
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
+  const page = await context.newPage()
+  const errors = trackPageErrors(page)
+  await page.goto(`${baseUrl}${route('/roadmap/')}`, { waitUntil: 'networkidle' })
+  await waitForProgressReady(page)
+  await waitForPathsReady(page)
+
+  let focus = { reached: false, outlineStyle: 'none', outlineWidth: '0px' }
+  for (let tab = 0; tab < 40 && !focus.reached; tab += 1) {
+    await page.keyboard.press('Tab')
+    focus = await page.evaluate(() => {
+      const input = document.activeElement
+      const label = input?.closest?.('label')
+      const style = label ? getComputedStyle(label) : null
+      return {
+        reached: Boolean(input?.matches?.('input[data-roadmap-path-option]')),
+        outlineStyle: style?.outlineStyle ?? 'none',
+        outlineWidth: style?.outlineWidth ?? '0px',
+      }
+    })
+  }
+  check(`${tag} 键盘可到达 Path radio`, focus.reached)
+  check(
+    `${tag} 焦点在 Path option 上可见`,
+    focus.outlineStyle !== 'none' && Number.parseFloat(focus.outlineWidth) >= 2,
+    `${focus.outlineStyle} ${focus.outlineWidth}`,
+  )
+
+  await page.keyboard.press('ArrowRight')
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('.roadmap-main[data-roadmap-paths]')
+        ?.getAttribute('data-active-path') === 'systematic',
+  )
+  const arrowOne = await readPathDom(page)
+  check(
+    `${tag} ArrowRight 选中系统入门`,
+    arrowOne.activePath === 'systematic' && arrowOne.checked.join('|') === 'systematic',
+  )
+
+  await page.keyboard.press('ArrowRight')
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('.roadmap-main[data-roadmap-paths]')
+        ?.getAttribute('data-active-path') === 'sql-etl',
+  )
+  const arrowTwo = await readPathDom(page)
+  check(
+    `${tag} ArrowRight 选中 SQL / ETL`,
+    arrowTwo.activePath === 'sql-etl' && arrowTwo.checked.join('|') === 'sql-etl',
+  )
+
+  await page.keyboard.press('ArrowLeft')
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('.roadmap-main[data-roadmap-paths]')
+        ?.getAttribute('data-active-path') === 'systematic',
+  )
+  check(`${tag} ArrowLeft 回到系统入门`, (await readPathDom(page)).activePath === 'systematic')
+
+  await selectPath(page, 'sql-etl')
+  const themeToggle = page.locator('button.theme-toggle')
+  await themeToggle.waitFor({ state: 'visible', timeout: 10_000 })
+  await themeToggle.click()
+  await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark')
+  await page.waitForTimeout(200)
+  const dark = await readPathDom(page)
+  const darkDimmed = dark.topics.filter((topic) => topic.pathState === 'dimmed')
+  check(
+    `${tag} dark：非路线 Topic 保持可读`,
+    darkDimmed.length === PATH_FIXTURES['sql-etl'].dimmed &&
+      darkDimmed.every((topic) => topic.display !== 'none' && (topic.contrast ?? 0) >= 4.5),
+    darkDimmed.map((topic) => `${topic.id}:${topic.contrast?.toFixed(2)}`).join(' '),
+  )
+  check(
+    `${tag} dark：Path 状态完整应用`,
+    dark.topics.filter((topic) => topic.pathState === 'highlighted').length ===
+      PATH_FIXTURES['sql-etl'].highlighted,
+  )
+
+  // Dark-mode representative checks at both contracted phone widths (no full matrix).
+  for (const viewport of [
+    { name: '390x844', width: 390, height: 844 },
+    { name: '320x720', width: 320, height: 720 },
+  ]) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await selectPath(page, 'production')
+    const mobileDark = await readPathDom(page)
+    const mobileDimmed = mobileDark.topics.filter((topic) => topic.pathState === 'dimmed')
+    check(
+      `path dark ${viewport.name}: 无横向溢出`,
+      mobileDark.documentWidth <= mobileDark.viewportWidth + 1,
+      `scrollWidth=${mobileDark.documentWidth} viewport=${mobileDark.viewportWidth}`,
+    )
+    check(
+      `path dark ${viewport.name}: 非路线 Topic 保持可读`,
+      mobileDimmed.length === PATH_FIXTURES.production.dimmed &&
+        mobileDimmed.every((topic) => topic.display !== 'none' && (topic.contrast ?? 0) >= 4.5),
+      mobileDimmed.map((topic) => `${topic.id}:${topic.contrast?.toFixed(2)}`).join(' '),
+    )
+  }
+
+  check(`${tag} 无 browser error`, errors.length === 0, errors.join(' | '))
+  await context.close()
+}
+
 async function runNoJsCheck(browser, baseUrl) {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -577,6 +993,18 @@ async function runNoJsCheck(browser, baseUrl) {
   check(
     'no-js: progress 状态保持 pending',
     (await page.locator('.roadmap-main').getAttribute('data-roadmap-progress')) === 'pending',
+  )
+  check(
+    'no-js: Path selector 4 个选项静态可读',
+    (await page.locator('input[data-roadmap-path-option]').count()) === 4 &&
+      (await page.locator('input[data-roadmap-path-option][value="all"]').isChecked()) &&
+      (await page.getByText('学习路线').first().isVisible()),
+  )
+  check(
+    'no-js: 没有 Path 覆盖状态与建议入口 badge',
+    (await page.locator('.roadmap-topic[data-path-state]').count()) === 0 &&
+      (await page.locator('[data-topic-entry]').count()) === 0 &&
+      (await page.locator('.roadmap-main').getAttribute('data-roadmap-paths')) === 'pending',
   )
   check('no-js: 关系文本可见', await page.getByText('知识前置').first().isVisible())
   await context.close()
@@ -706,8 +1134,10 @@ async function main() {
 
     for (const viewport of PROGRESS_VIEWPORTS) {
       await runProgressScenarios(browser, preview.baseUrl, viewport)
+      await runPathScenarios(browser, preview.baseUrl, viewport)
     }
 
+    await runPathKeyboardAndTheme(browser, preview.baseUrl)
     await runNoJsCheck(browser, preview.baseUrl)
     await runBackJourney(browser, preview.baseUrl)
 

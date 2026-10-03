@@ -318,6 +318,50 @@ describe('Learning Graph validator', () => {
     expect(errorCodes(result)).toContain('duplicate-path-topic-reference')
   })
 
+  it('flags duplicate Path IDs, empty reference lists and entries outside highlights', () => {
+    const valid: LearningPath = {
+      id: 'valid-path',
+      entryTopicIds: ['warehouse-mental-model'],
+      highlightTopicIds: ['warehouse-mental-model'],
+    }
+
+    const duplicate = validateLearningGraph({ paths: [valid, { ...valid }] })
+    expect(errorCodes(duplicate)).toContain('duplicate-path-id')
+
+    const emptyEntry = validateLearningGraph({
+      paths: [
+        { id: 'empty-entry', entryTopicIds: [], highlightTopicIds: ['data-flow-and-layers'] },
+      ],
+    })
+    expect(errorCodes(emptyEntry)).toContain('empty-path-entry')
+
+    const emptyHighlight = validateLearningGraph({
+      paths: [
+        { id: 'empty-highlight', entryTopicIds: ['warehouse-mental-model'], highlightTopicIds: [] },
+      ],
+    })
+    expect(errorCodes(emptyHighlight)).toContain('empty-path-highlight')
+    expect(errorCodes(emptyHighlight)).toContain('entry-not-highlighted')
+
+    const notHighlighted = validateLearningGraph({
+      paths: [
+        {
+          id: 'entry-outside-highlight',
+          entryTopicIds: ['warehouse-mental-model'],
+          highlightTopicIds: ['data-flow-and-layers'],
+        },
+      ],
+    })
+    expect(errorCodes(notHighlighted)).toContain('entry-not-highlighted')
+
+    const validResult = validateLearningGraph({ paths: [valid] })
+    expect(validResult.summary.pathCount).toBe(1)
+    expect(validResult.summary.pathEntryReferenceCount).toBe(1)
+    expect(validResult.summary.pathHighlightReferenceCount).toBe(1)
+    expect(errorCodes(validResult)).not.toContain('entry-not-highlighted')
+    expect(errorCodes(validResult)).not.toContain('duplicate-path-id')
+  })
+
   it('flags later-to-earlier required edges unless explicitly reviewed', () => {
     const graph = makeInversionGraph()
     const unreviewed = validateLearningGraph({
