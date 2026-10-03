@@ -2,7 +2,7 @@
 import EnglishFoundationShell from '../../components/EnglishFoundationShell.astro'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import englishFoundationStylesUrl from '../../styles/layouts/english-foundation.css?url'
-import { getRoute } from '../../utils/routes'
+import { getEnglishRoute } from '../../utils/english-routes'
 
 const title = 'English Data Engineering Resources | sql.sb'
 const description =
@@ -28,11 +28,15 @@ const description =
         of the Chinese course library.
       </p>
       <nav class="english-foundation__cards" aria-label="English resource namespaces">
-        <a class="english-foundation__card" href={getRoute('/en/sql/')}>
+        <a class="english-foundation__card" href={getEnglishRoute('sql')}>
           <strong>SQL</strong>
-          <span>An index for English SQL learning and query problem-solving content.</span>
+          <span>English SQL pages about query behavior, unexpected results and debugging.</span>
         </a>
-        <a class="english-foundation__card" href={getRoute('/en/tools/')}>
+        <a class="english-foundation__card" href={getEnglishRoute('warehouse')}>
+          <strong>Data warehouse</strong>
+          <span>Modeling, grain, pipeline semantics, lineage and scheduling concepts.</span>
+        </a>
+        <a class="english-foundation__card" href={getEnglishRoute('tools')}>
           <strong>Tools</strong>
           <span>A home for practical, browser-based data engineering tools.</span>
         </a>

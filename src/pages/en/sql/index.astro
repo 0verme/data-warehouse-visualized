@@ -2,11 +2,11 @@
 import EnglishFoundationShell from '../../../components/EnglishFoundationShell.astro'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import englishFoundationStylesUrl from '../../../styles/layouts/english-foundation.css?url'
-import { getRoute } from '../../../utils/routes'
+import { getEnglishRoute } from '../../../utils/english-routes'
 
 const title = 'SQL Resources | English Data Engineering | sql.sb'
 const description =
-  'Browse the English SQL content index at sql.sb. This foundation page establishes the namespace for future search-intent articles; no individual keyword pages are published yet.'
+  'Practical English SQL pages about query behavior, unexpected results and debugging. Start with why a JOIN duplicates rows, inflated SUM and COUNT, and the fixes that keep the original grain.'
 ---
 
 <BaseLayout
@@ -21,13 +21,22 @@ const description =
       <p class="english-foundation__eyebrow">English namespace · SQL</p>
       <h1 class="english-foundation__title">SQL resources</h1>
       <p class="english-foundation__lede">
-        This index will organize English-language SQL learning and query problem-solving content
-        from sql.sb. It establishes the namespace only; focused articles will follow keyword
-        research and are not part of this foundation release.
+        English pages about SQL behavior, query results and debugging. Each page starts from a real
+        query problem and shows the observable rows behind it.
       </p>
+      <nav class="english-foundation__cards" aria-label="English SQL pages">
+        <a class="english-foundation__card" href={getEnglishRoute('joinDuplicateRows')}>
+          <strong>Why does a SQL JOIN duplicate rows?</strong>
+          <span>
+            Row multiplication from 1:N and M:N keys, inflated SUM and COUNT, why DISTINCT hides the
+            symptom, and the fixes that keep the order grain intact.
+          </span>
+        </a>
+      </nav>
       <nav class="english-foundation__related" aria-label="Related English namespaces">
-        <a href={getRoute('/en/')}>English resources overview</a>
-        <a href={getRoute('/en/tools/')}>Explore tools</a>
+        <a href={getEnglishRoute('overview')}>English resources overview</a>
+        <a href={getEnglishRoute('warehouse')}>Data warehouse pages</a>
+        <a href={getEnglishRoute('tools')}>Explore tools</a>
       </nav>
     </main>
   </EnglishFoundationShell>

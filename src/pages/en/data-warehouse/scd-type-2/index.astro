@@ -1,0 +1,239 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { ScdTimelineLab } from '../../../../components/english/ScdTimelineLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import scdStylesUrl from '../../../../styles/layouts/english-scd.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb'
+const description =
+  'A concrete SCD Type 2 example with before/after rows, effective_from and effective_to, the current flag, and the historical join at a boundary date.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[scdStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'SCD Type 2' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · dimension history</p>
+    <h1 class="english-article__title">SCD Type 2 example: effective dates and historical rows</h1>
+    <p class="english-article__lede">
+      Slowly changing dimension Type 2 keeps one row per version of a business entity. Each row
+      carries an effective date range and a current flag, so a historical fact can join to the
+      attributes that were true on its own business date.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      On an attribute change, close the old row and insert a new one. Use the half-open range
+      <code>[effective_from, effective_to)</code>: the start date belongs to the new version, the
+      end date does not. Keep a stable business key (<code>customer_id</code>) plus a surrogate key
+      (<code>customer_sk</code>) that identifies one version, and a current flag for “today”.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="example">
+      <h2 id="example">Before and after: customer C-100 moves from Standard to Premium</h2>
+      <p>
+        Customer <code>C-100</code> is Standard / Austin in 2025. On <code>2026-03-01</code> the
+        level becomes Premium and the branch becomes Denver. Loan <code>LN-77</code> was disbursed
+        on <code>2025-11-15</code>. Move the date cursor, switch between overwrite and version rows,
+        and watch which attributes the historical loan reads.
+      </p>
+      <ScdTimelineLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="rows">
+      <h2 id="rows">The rows an SCD Type 2 update writes</h2>
+      <p>
+        The update touches two rows. The old row is closed, and a new row is inserted. Nothing is
+        deleted, so the history remains queryable:
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Customer dimension after the 2026-03-01 change</caption>
+          <thead>
+            <tr>
+              <th scope="col">customer_sk</th>
+              <th scope="col">customer_id</th>
+              <th scope="col">level</th>
+              <th scope="col">branch</th>
+              <th scope="col">effective_from</th>
+              <th scope="col">effective_to</th>
+              <th scope="col">is_current</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1001</td>
+              <td>C-100</td>
+              <td>Standard</td>
+              <td>Austin</td>
+              <td>2025-01-01</td>
+              <td>2026-03-01</td>
+              <td>false</td>
+            </tr>
+            <tr data-tone="right">
+              <td>2002</td>
+              <td>C-100</td>
+              <td>Premium</td>
+              <td>Denver</td>
+              <td>2026-03-01</td>
+              <td>open</td>
+              <td>true</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <code>customer_id</code> stays the same because it identifies the customer.
+        <code>customer_sk</code> changes because it identifies one version of that customer.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundary">
+      <h2 id="boundary">Boundary semantics: why the range is half-open</h2>
+      <ul>
+        <li>
+          <strong>2026-02-28</strong> is before <code>effective_from</code>, so it matches the old
+          version: Standard / Austin.
+        </li>
+        <li>
+          <strong>2026-03-01</strong> is the change date. Because the start is inclusive, it matches
+          the new version: Premium / Denver.
+        </li>
+        <li>
+          The old row ends at <code>2026-03-01</code>, but the end is exclusive, so the two versions
+          never overlap.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="warning">
+        <strong>Pick one convention and enforce it</strong>
+        <p>
+          Mixing inclusive and exclusive end dates creates either gaps or overlaps. Overlaps are
+          worse: a historical fact can join to two dimension rows at once and duplicate the fact.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="query">
+      <h2 id="query">The historical query pattern</h2>
+      <p>
+        The fact table stores the business date (or timestamp) that determines the version. Join the
+        fact to the dimension row whose range contains that date:
+      </p>
+      <pre><code>{`SELECT l.note_id,
+       l.disbursed_date,
+       c.customer_sk,
+       c.level,
+       c.branch
+FROM loan_note AS l
+JOIN customer AS c
+  ON c.customer_id = l.customer_id
+ AND l.disbursed_date >= c.effective_from
+ AND l.disbursed_date <  c.effective_to;
+
+-- customer_sk 1001 → Standard / Austin for a 2025-11-15 disbursement`}</code></pre>
+      <p>
+        The current row is simply the one with <code>is_current = true</code> (or the row whose
+        <code>effective_to</code> is the open sentinel). Do not use the current flag for historical
+        analysis — it answers “what is true today”, not “what was true then”.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="strategies">
+      <h2 id="strategies">Type 1, Type 2 and when each fits</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Dimension history strategies</caption>
+          <thead>
+            <tr>
+              <th scope="col">Strategy</th>
+              <th scope="col">What it keeps</th>
+              <th scope="col">Use when</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Type 1</strong> — overwrite
+              </td>
+              <td>One row, current attributes only</td>
+              <td>History does not matter (for example fixing a typo)</td>
+            </tr>
+            <tr data-tone="right">
+              <td>
+                <strong>Type 2</strong> — version rows
+              </td>
+              <td>Every version with effective dates</td>
+              <td>Historical facts must be interpreted with the attributes of their time</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Type 3</strong> — previous value column
+              </td>
+              <td>Current and one previous value</td>
+              <td>Only the last change is ever needed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="edge-cases">
+      <h2 id="edge-cases">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Several changes on the same day.</strong> The range must still be unambiguous.
+          Decide whether same-day changes collapse into one version or use timestamps instead of
+          dates.
+        </li>
+        <li>
+          <strong>Late corrections to history.</strong> A backdated change may require splitting an
+          existing version. Treat it as a new version with explicit effective dates, not an in-place
+          edit.
+        </li>
+        <li>
+          <strong>Only version what needs history.</strong> Every versioned attribute adds rows and
+          join complexity. Keep attributes that nobody queries historically in the current row only.
+        </li>
+        <li>
+          <strong>Query cost.</strong> Range joins benefit from an index on
+          <code>(customer_id, effective_from)</code>. The current flag alone is not enough for
+          historical queries.
+        </li>
+        <li>
+          <strong>Unknown values.</strong> Facts can reference a customer that did not exist yet at
+          the business date. Decide whether to use an “unknown” dimension row or reject the fact.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+          <p>Why “one row per version” is a grain decision, not a column choice.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a>
+          <p>Loading dimension versions safely across retries and backfills.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

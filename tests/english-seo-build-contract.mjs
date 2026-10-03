@@ -21,8 +21,51 @@ const expectedEnglishPages = [
     file: 'en/sql/index.html',
     title: 'SQL Resources | English Data Engineering | sql.sb',
   },
+  {
+    route: '/en/sql/sql-join-duplicate-rows/',
+    file: 'en/sql/sql-join-duplicate-rows/index.html',
+    title: 'Why Does a SQL JOIN Duplicate Rows? Examples & Fixes | sql.sb',
+  },
+  {
+    route: '/en/data-warehouse/',
+    file: 'en/data-warehouse/index.html',
+    title: 'Data Warehouse Engineering | English Resources | sql.sb',
+  },
+  {
+    route: '/en/data-warehouse/grain/',
+    file: 'en/data-warehouse/grain/index.html',
+    title: 'Data Warehouse Grain: What Does One Row Represent? | sql.sb',
+  },
+  {
+    route: '/en/data-warehouse/idempotent-etl/',
+    file: 'en/data-warehouse/idempotent-etl/index.html',
+    title: 'How to Make an ETL Job Idempotent: Examples & Trade-offs | sql.sb',
+  },
+  {
+    route: '/en/data-warehouse/data-lineage-vs-task-dependency/',
+    file: 'en/data-warehouse/data-lineage-vs-task-dependency/index.html',
+    title: 'Data Lineage vs Task Dependency: Why the Graphs Differ | sql.sb',
+  },
+  {
+    route: '/en/data-warehouse/scd-type-2/',
+    file: 'en/data-warehouse/scd-type-2/index.html',
+    title: 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
+
+function decodeEntities(value) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+}
+
+function getTitle(html) {
+  return decodeEntities(html.match(/<title>([^<]+)<\/title>/)?.[1] ?? '')
+}
 
 function addBase(path) {
   return `${basePath}${path}`
@@ -50,7 +93,7 @@ function getTagAttribute(html, tagPattern, attribute) {
 function getMeta(html, selector) {
   const tag = html.match(selector)?.[0]
   assert.ok(tag, `Missing metadata tag ${selector}`)
-  return tag.match(/\bcontent="([^"]*)"/)?.[1] ?? ''
+  return decodeEntities(tag.match(/\bcontent="([^"]*)"/)?.[1] ?? '')
 }
 
 function getUrls(xml) {
@@ -85,7 +128,7 @@ for (const page of expectedEnglishPages) {
   const html = readPage(page.file)
   const canonical = `${siteOrigin}${page.route}`
   assert.equal(getTagAttribute(html, /<html\b[^>]*>/i, 'lang'), 'en', `${page.route} lang`)
-  assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], page.title, `${page.route} title`)
+  assert.equal(getTitle(html), page.title, `${page.route} title`)
   assert.ok(getMeta(html, /<meta\b[^>]*\bname="description"[^>]*>/i), `${page.route} description`)
   assert.equal(
     getTagAttribute(html, /<link\b[^>]*\brel="canonical"[^>]*>/i, 'href'),
@@ -109,6 +152,7 @@ for (const page of expectedEnglishPages) {
   )
   assert.ok(getMeta(html, /<meta\b[^>]*\bproperty="og:description"[^>]*>/i))
   assert.match(html, /<h1\b[^>]*>/, `${page.route} must render its page heading`)
+  assert.doesNotMatch(html, /hreflang=/i, `${page.route} must not emit hreflang`)
   checkPageIndexability(html, page.route)
 
   const expectedAssetPrefix = `${basePath}/_astro/`

@@ -1,0 +1,29 @@
+---
+import { type EnglishPageKey, getEnglishRoute } from '../../utils/english-routes'
+
+interface BreadcrumbItem {
+  label: string
+  /** Present on linked ancestors; the current page omits it. */
+  key?: EnglishPageKey
+}
+
+interface Props {
+  items: BreadcrumbItem[]
+}
+
+const { items } = Astro.props
+---
+
+<nav class="english-article__breadcrumb" aria-label="Breadcrumb">
+  <ol>
+    {items.map((item) => (
+      <li>
+        {item.key ? (
+          <a href={getEnglishRoute(item.key)}>{item.label}</a>
+        ) : (
+          <span aria-current="page">{item.label}</span>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>

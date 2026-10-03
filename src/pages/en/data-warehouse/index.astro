@@ -1,0 +1,64 @@
+---
+import EnglishFoundationShell from '../../../components/EnglishFoundationShell.astro'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+import englishFoundationStylesUrl from '../../../styles/layouts/english-foundation.css?url'
+import { getEnglishRoute } from '../../../utils/english-routes'
+
+const title = 'Data Warehouse Engineering | English Resources | sql.sb'
+const description =
+  'English data warehouse pages about grain, idempotent ETL, data lineage versus task dependency, and SCD Type 2 history. Each page works through a concrete engineering problem.'
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  lang="en"
+  ogLocale="en_US"
+  styleUrls={[englishFoundationStylesUrl]}
+>
+  <EnglishFoundationShell active="warehouse">
+    <main class="english-foundation__main">
+      <p class="english-foundation__eyebrow">English namespace · Data warehouse</p>
+      <h1 class="english-foundation__title">Data warehouse engineering</h1>
+      <p class="english-foundation__lede">
+        Modeling, pipeline semantics and data reliability. Each page starts from a concrete failure
+        or decision and shows the rows and state transitions behind it — not just definitions.
+      </p>
+      <nav class="english-foundation__cards" aria-label="English data warehouse pages">
+        <a class="english-foundation__card" href={getEnglishRoute('grain')}>
+          <strong>Data warehouse grain</strong>
+          <span>
+            What does one row represent? Why grain comes first, and how a wrong grain inflates a
+            measure after a join.
+          </span>
+        </a>
+        <a class="english-foundation__card" href={getEnglishRoute('idempotentEtl')}>
+          <strong>Idempotent ETL</strong>
+          <span>
+            Run the same input twice and compare append, overwrite and merge-upsert: duplicate rows,
+            retries and backfills.
+          </span>
+        </a>
+        <a class="english-foundation__card" href={getEnglishRoute('lineageVsTaskDependency')}>
+          <strong>Data lineage vs task dependency</strong>
+          <span>
+            One workflow, two graphs: why scheduler dependencies and SQL lineage disagree, and what
+            that does to impact analysis.
+          </span>
+        </a>
+        <a class="english-foundation__card" href={getEnglishRoute('scdType2')}>
+          <strong>SCD Type 2</strong>
+          <span>
+            Effective dates, historical rows, the current flag and the boundary semantics of
+            <code>[effective_from, effective_to)</code>.
+          </span>
+        </a>
+      </nav>
+      <nav class="english-foundation__related" aria-label="Related English namespaces">
+        <a href={getEnglishRoute('overview')}>English resources overview</a>
+        <a href={getEnglishRoute('sql')}>SQL pages</a>
+        <a href={getEnglishRoute('tools')}>Explore tools</a>
+      </nav>
+    </main>
+  </EnglishFoundationShell>
+</BaseLayout>

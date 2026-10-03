@@ -1,23 +1,25 @@
 ---
 import { getRoute } from '../utils/routes'
+import { type EnglishSectionId, getEnglishRoute } from '../utils/english-routes'
 
 interface Props {
-  active: 'overview' | 'sql' | 'tools'
+  active: EnglishSectionId
 }
 
 const { active } = Astro.props
 const navigation = [
-  { id: 'overview', label: 'Overview', path: '/en/' },
-  { id: 'sql', label: 'SQL', path: '/en/sql/' },
-  { id: 'tools', label: 'Tools', path: '/en/tools/' },
-] as const
+  { id: 'overview', label: 'Overview' },
+  { id: 'sql', label: 'SQL' },
+  { id: 'warehouse', label: 'Data warehouse' },
+  { id: 'tools', label: 'Tools' },
+] as const satisfies readonly { id: EnglishSectionId; label: string }[]
 ---
 
 <div class="english-foundation">
   <header class="english-foundation__header">
     <a
       class="english-foundation__brand"
-      href={getRoute('/en/')}
+      href={getEnglishRoute('overview')}
       aria-label="sql.sb English resources"
     >
       <strong>sql.sb</strong>
@@ -25,7 +27,7 @@ const navigation = [
     </a>
     <nav class="english-foundation__nav" aria-label="English content">
       {navigation.map((item) => (
-        <a href={getRoute(item.path)} aria-current={active === item.id ? 'page' : undefined}>
+        <a href={getEnglishRoute(item.id)} aria-current={active === item.id ? 'page' : undefined}>
           {item.label}
         </a>
       ))}
@@ -35,7 +37,7 @@ const navigation = [
   <slot />
 
   <footer class="english-foundation__footer">
-    <span>sql.sb · English SEO Foundation</span>
+    <span>sql.sb · English resources</span>
     <a href={getRoute('/')}>Chinese home</a>
   </footer>
 </div>

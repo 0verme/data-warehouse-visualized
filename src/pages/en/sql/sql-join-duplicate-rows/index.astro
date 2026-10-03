@@ -1,0 +1,300 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { JoinDuplicatesLab } from '../../../../components/english/JoinDuplicatesLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import joinDuplicatesStylesUrl from '../../../../styles/layouts/english-join-duplicates.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Why Does a SQL JOIN Duplicate Rows? Examples & Fixes | sql.sb'
+const description =
+  'See how a JOIN duplicates rows when the join key is not unique, why SUM and COUNT get inflated, and how pre-aggregation or EXISTS keeps the original grain.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="sql"
+  styleUrls={[joinDuplicatesStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'SQL', key: 'sql' },
+      { label: 'SQL JOIN duplicate rows' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">SQL · join behavior</p>
+    <h1 class="english-article__title">Why does a SQL JOIN duplicate rows?</h1>
+    <p class="english-article__lede">
+      A JOIN duplicates rows when the join key is not unique on one or both sides. Every matching
+      pair becomes a row, so a parent row is copied once per child row — and <code>SUM</code>,
+      <code>COUNT</code> and <code>AVG</code> then run over the copies.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Check the number of rows per join key before you join. If one side repeats the key, the other
+      side's columns are repeated too. Fix the query by joining at the grain you want: pre-aggregate
+      the many side, use <code>EXISTS</code> when you only filter, or join on a genuinely unique
+      key. <code>DISTINCT</code> usually hides the symptom instead of repairing the grain.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="walkthrough">
+      <h2 id="walkthrough">A concrete example: 2 orders, 3 payments, 3 shipments</h2>
+      <p>
+        The lab below uses one parent table and two child tables. <code>orders.order_id</code> is
+        unique, while <code>payments.order_id</code> and <code>shipments.order_id</code> both repeat
+        for <code>O-1001</code>. Walk the steps and watch the returned row count, the distinct order
+        count and <code>SUM(order_amount)</code> change together.
+      </p>
+      <JoinDuplicatesLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="why">
+      <h2 id="why">Why the duplication happens</h2>
+      <p>
+        A JOIN is not a "paste columns together" operation. It is a matching operation: for every
+        pair of rows where the <code>ON</code> condition is true, the database emits one output row.
+        The database does not know that <code>order_amount</code> describes an order rather than a
+        payment.
+      </p>
+      <h3>One-to-many: the parent is copied</h3>
+      <p>
+        When the parent key is unique and the child key repeats, one parent row matches several
+        child rows. The parent columns are copied into each match:
+      </p>
+      <pre><code>{`-- orders: 1 row for O-1001, order_amount = 300
+-- payments: 2 rows for O-1001
+SELECT *
+FROM orders AS o
+JOIN payments AS p ON p.order_id = o.order_id
+WHERE o.order_id = 'O-1001';
+
+-- 2 rows: order_amount = 300 appears twice`}</code></pre>
+      <h3>Many-to-many: two repeating keys multiply</h3>
+      <p>
+        When both sides repeat the same key — or you join two child tables on that key — the matches
+        cross each other. In the lab, joining <code>payments</code> and <code>shipments</code> on
+        <code>order_id</code> gives <code>O-1001</code> 2 × 2 = 4 rows, and its order amount is
+        copied four times.
+      </p>
+      <div class="english-callout" data-tone="warning">
+        <strong>The row count is a property of the data, not of the query syntax</strong>
+        <p>
+          <code>JOIN</code> never reports an error for this. The only way to see it is to compare
+          the row count, the distinct key count and the measure you are aggregating.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="numbers">
+      <h2 id="numbers">How duplication shows up in your numbers</h2>
+      <p>
+        The tell is always the same: a measure whose grain is finer than the result row's grain gets
+        summed once per matching row.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Joined result versus the actual order facts</caption>
+          <thead>
+            <tr>
+              <th scope="col">Expression</th>
+              <th scope="col">Result</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-tone="wrong">
+              <td>
+                <code>COUNT(*)</code>
+              </td>
+              <td>3 (or 5 with shipments)</td>
+              <td>Counts joined rows, not orders</td>
+            </tr>
+            <tr>
+              <td>
+                <code>COUNT(DISTINCT order_id)</code>
+              </td>
+              <td>2</td>
+              <td>Counts the real orders</td>
+            </tr>
+            <tr data-tone="wrong">
+              <td>
+                <code>SUM(order_amount)</code>
+              </td>
+              <td>$1,100 (or $1,700)</td>
+              <td>Adds the copied order amount</td>
+            </tr>
+            <tr data-tone="right">
+              <td>Actual order total</td>
+              <td>$800</td>
+              <td>300 + 500, one row per order</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        A single inflated number is easy to miss in a dashboard. Compare the result row count with
+        the row count of the table whose grain you meant to report: if they differ, stop and check
+        the join key before trusting any aggregate.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="distinct">
+      <h2 id="distinct">
+        Why <code>DISTINCT</code> is usually the wrong fix
+      </h2>
+      <p>
+        <code>DISTINCT</code> removes duplicate result rows. It does not restore the grain you
+        intended, and it often does not remove anything at all.
+      </p>
+      <ul>
+        <li>
+          <strong>
+            <code>SELECT DISTINCT *</code> still returns every joined row
+          </strong>{' '}
+          when any selected column differs — for example <code>payment_id</code> is different for
+          the two
+          <code>O-1001</code> payments.
+        </li>
+        <li>
+          <strong>
+            Removing columns until <code>DISTINCT</code> collapses rows silently changes the
+            question.
+          </strong>{' '}
+          The query no longer returns the payment detail you selected it for, and two genuinely
+          identical payments collapse into one row.
+        </li>
+        <li>
+          <strong>
+            <code>SUM(DISTINCT order_amount)</code> is not a repair.
+          </strong>{' '}
+          If two orders legitimately share the same amount, the second one disappears:
+          <code>SELECT SUM(DISTINCT order_amount) FROM orders</code> returns 300 for two $300
+          orders.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>DISTINCT is acceptable only when you actually want distinct combinations</strong>
+        <p>
+          If the business question is "how many distinct (order, payment) pairs exist", then
+          <code>DISTINCT</code> or <code>GROUP BY</code> is the right tool. It is not a way to make
+          a measure safe while keeping a wrong join.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="fixes">
+      <h2 id="fixes">Fixes that keep the grain correct</h2>
+      <div class="english-compare-grid">
+        <article class="english-compare-card" data-tone="right">
+          <span>Fix 1</span>
+          <h3>Pre-aggregate the many side, then join</h3>
+          <ul>
+            <li>Aggregate each child table to one row per order first.</li>
+            <li>
+              The join returns one row per order and <code>SUM(order_amount)</code> is safe.
+            </li>
+            <li>
+              Child totals such as <code>payments_total</code> stay separate measures.
+            </li>
+          </ul>
+        </article>
+        <article class="english-compare-card" data-tone="right">
+          <span>Fix 2</span>
+          <h3>Use EXISTS when you only filter</h3>
+          <ul>
+            <li>
+              <code>EXISTS</code> tests the child table without adding columns.
+            </li>
+            <li>The parent grain never changes, so no measure is copied.</li>
+            <li>
+              Prefer <code>NOT EXISTS</code> over a join plus <code>IS NULL</code> anti-join.
+            </li>
+          </ul>
+        </article>
+        <article class="english-compare-card">
+          <span>Fix 3</span>
+          <h3>Join on the key that is actually unique</h3>
+          <ul>
+            <li>If the real grain is (order_id, payment_id), include both columns.</li>
+            <li>Do not assume a column named like an id is unique in every table.</li>
+            <li>
+              Confirm uniqueness with <code>COUNT(*)</code> versus <code>COUNT(DISTINCT key)</code>.
+            </li>
+          </ul>
+        </article>
+        <article class="english-compare-card">
+          <span>Fix 4</span>
+          <h3>Aggregate at the target grain after the join</h3>
+          <ul>
+            <li>
+              Add <code>GROUP BY order_id</code> when the output should be one row per order.
+            </li>
+            <li>If multiple child tables fan out, group each child in its own CTE first.</li>
+            <li>
+              A <code>GROUP BY</code> alone cannot repair measures copied by a wrong join.
+            </li>
+          </ul>
+        </article>
+      </div>
+      <p>
+        The right fix depends on the target grain. Decide what one output row must represent, then
+        choose the join shape that produces exactly that — this is the same decision described in
+        <a href={getEnglishRoute('grain')}>data warehouse grain</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="edge-cases">
+      <h2 id="edge-cases">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Intentional fan-out.</strong> A line-item fact table is supposed to have one row
+          per line item. Fan-out is a bug only when the result row's grain is finer than the measure
+          you aggregate.
+        </li>
+        <li>
+          <strong>
+            <code>LEFT JOIN</code> with no match.
+          </strong>{' '}
+          An unmatched parent produces one row with <code>NULL</code> child columns; it does not
+          duplicate, but later aggregations must handle <code>NULL</code>.
+        </li>
+        <li>
+          <strong>Two child tables on the same key.</strong> Joining both in one query creates a
+          cross product per key. Aggregate each child to the target grain in separate CTEs and join
+          the CTEs.
+        </li>
+        <li>
+          <strong>Pre-aggregation cost.</strong> Pre-aggregating scans the child table and can be
+          more expensive than sorting for <code>DISTINCT</code>, but it produces a correct result.
+          Measure both on realistic data.
+        </li>
+        <li>
+          <strong>Data model choice.</strong> If duplicated joins keep appearing, the model may be
+          missing a key or a bridge table rather than a query hint.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain: what does one row represent?</a>
+          <p>Why deciding the grain first prevents this class of join bug.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('sql')}>English SQL resources</a>
+          <p>More SQL behavior and query-debugging pages.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

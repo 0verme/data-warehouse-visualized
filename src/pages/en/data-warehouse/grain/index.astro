@@ -1,0 +1,172 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { GrainChooserLab } from '../../../../components/english/GrainChooserLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import grainStylesUrl from '../../../../styles/layouts/english-grain.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Data Warehouse Grain: What Does One Row Represent? | sql.sb'
+const description =
+  'A practical grain example: declare what one row represents, test the key, and see how a wrong grain lets a JOIN double a contract amount in SUM.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[grainStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Grain' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · modeling</p>
+    <h1 class="english-article__title">Data warehouse grain: what does one row represent?</h1>
+    <p class="english-article__lede">
+      Grain is the explicit answer to “what does one row represent?”. It decides the identity of a
+      row, which measures belong on it, and which questions the table can answer without a join.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Write the sentence “one row = …” before choosing dimensions, measures or keys. If you cannot
+      say it in one sentence, the grain is not decided yet. A grain is correct when the key is
+      unique at that level, every measure belongs to that level, and the join behavior follows from
+      the statement.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="example">
+      <h2 id="example">One loan chain, three different grains</h2>
+      <p>
+        Contract <code>CT-1001</code> is worth 600,000. It has two disbursements (<code>LN-01</code>
+        , <code>LN-02</code>) and three repayments (<code>RP-01</code>,<code>RP-02</code>,{' '}
+        <code>RP-03</code>). The same business relationship can be stored at the contract grain, the
+        disbursement grain or the repayment grain — and each choice changes what the numbers mean.
+      </p>
+      <GrainChooserLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="why-first">
+      <h2 id="why-first">Why grain comes before dimensions and measures</h2>
+      <p>
+        Dimensions describe the context of a row, and measures quantify it. Both depend on what the
+        row is. If the grain is “one disbursement”, then <code>disbursed_principal</code> is a valid
+        measure and <code>contract_amount</code> is not: the contract amount belongs to the
+        contract, not to each disbursement.
+      </p>
+      <ul>
+        <li>
+          <strong>Identity.</strong> The primary key follows the grain: <code>contract_id</code>,
+          <code>note_id</code> or <code>repayment_id</code>.
+        </li>
+        <li>
+          <strong>Measure validity.</strong> A measure is safe only when it is defined at the same
+          level as the row.
+        </li>
+        <li>
+          <strong>Join behavior.</strong> Knowing the grain tells you whether a join will multiply
+          rows before you run it.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>A grain is a contract with the reader</strong>
+        <p>
+          Every downstream query relies on it. When the grain is implicit, each analyst guesses
+          differently and the same table produces different totals in different reports.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="wrong-grain">
+      <h2 id="wrong-grain">What a wrong grain looks like in numbers</h2>
+      <p>
+        The demo above joins the contract amount to the two disbursements and then sums it. The
+        result is 1,200,000 instead of 600,000, because the same contract row was counted once per
+        disbursement.
+      </p>
+      <p>
+        This is the same failure mode as a SQL join duplicating rows. The grain error is the root
+        cause; the inflated <code>SUM</code> is only the symptom. A query-level workaround such as
+        <code>DISTINCT</code> hides the symptom and usually keeps the modeling error in place.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="decide">
+      <h2 id="decide">How to decide and test the grain</h2>
+      <ol>
+        <li>
+          <strong>Name the business event.</strong> Is a row a contract, a disbursement, a
+          repayment, a daily snapshot or a monthly balance?
+        </li>
+        <li>
+          <strong>Write the sentence.</strong> “One row = one actual disbursement under one
+          contract.” Keep it short and specific.
+        </li>
+        <li>
+          <strong>Test the key.</strong> Compare <code>COUNT(*)</code> with
+          <code>COUNT(DISTINCT key)</code>. If they differ, the key does not define the grain.
+        </li>
+        <li>
+          <strong>Audit the measures.</strong> For each measure, ask whether it can be repeated per
+          row without changing its meaning. If not, it belongs to a different grain.
+        </li>
+        <li>
+          <strong>Check the questions.</strong> List the questions the table must answer. A grain
+          that cannot answer them will be joined or aggregated anyway — often incorrectly.
+        </li>
+      </ol>
+      <p>
+        If two grains are genuinely needed, model them as two tables or use a bridge table. Storing
+        both in one table creates a mixed-grain table where no aggregate is safe.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="edge-cases">
+      <h2 id="edge-cases">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Transaction grain vs periodic snapshot grain.</strong> A balance snapshot has one
+          row per account per day; a transaction fact has one row per event. Mixing them in one
+          table makes <code>SUM(balance)</code> and <code>COUNT(*)</code> mean different things per
+          row.
+        </li>
+        <li>
+          <strong>Aggregated tables.</strong> A summary table has its own grain, such as “one row
+          per branch per day”. It must be declared too, and it cannot be joined to detail rows
+          without re-aggregating first.
+        </li>
+        <li>
+          <strong>Late-arriving facts.</strong> The grain stays the same when a fact arrives late;
+          the loading strategy changes, not the row meaning.
+        </li>
+        <li>
+          <strong>Bridge tables.</strong> Many-to-many relationships between dimensions belong in a
+          bridge table with an explicit grain, not in a fact table with duplicated measures.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('joinDuplicateRows')}>Why does a SQL JOIN duplicate rows?</a>
+          <p>The query-level view of the same row-multiplication problem.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('scdType2')}>SCD Type 2 example: effective dates and history</a>
+          <p>How a dimension keeps several versions of one business key over time.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>
