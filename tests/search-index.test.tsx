@@ -27,6 +27,7 @@ const ANCHORED_KINDS: SearchDocKind[] = [
   'sql',
   'visualization',
   'takeaway',
+  'sql-sandbox',
 ]
 
 const ANCHORLESS_KINDS: SearchDocKind[] = ['summary', 'pitfall', 'engineering-note']

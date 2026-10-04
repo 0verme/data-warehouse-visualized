@@ -102,6 +102,21 @@ export interface LessonPitfallSection {
 }
 
 /**
+ * 课程末尾的 optional 进阶实验入口（Issue #35 Stage 1）。
+ *
+ * 折叠时只渲染标题 / 说明和入口按钮；展开后才动态加载真实的
+ * SQL Sandbox UI。数据类型刻意只包含文案，不引用 DuckDB 类型。
+ */
+export interface LessonSqlSandboxSection {
+  kind: 'sql-sandbox'
+  eyebrow: string
+  title: string
+  description: string
+  /** 折叠态入口按钮文案；缺省时渲染「打开进阶实验」。 */
+  cta?: string
+}
+
+/**
  * A lesson can compose different teaching intentions in any order.
  * The optional kind on LessonNarrativeSection keeps existing lesson data valid.
  */
@@ -113,6 +128,7 @@ export type LessonSection =
   | LessonTakeawaySection
   | LessonEngineeringNoteSection
   | LessonPitfallSection
+  | LessonSqlSandboxSection
 
 export type LessonVisualization =
   | {

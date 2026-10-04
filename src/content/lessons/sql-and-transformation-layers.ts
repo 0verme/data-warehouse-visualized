@@ -72,5 +72,13 @@ export const sqlTransformationLayersContent: LessonContent = {
         'ADS 只发布指标卡对应的一行，不把 DWS 的其他分组误当成目标结果。',
       ],
     },
+    {
+      kind: 'sql-sandbox',
+      eyebrow: '可选进阶实验 · 真实 SQL',
+      title: '亲手写一遍这条聚合 SQL',
+      description:
+        '在浏览器里用真实 SQL 引擎（DuckDB）复现 DWD → DWS 聚合：改 WHERE 看统计范围，改 GROUP BY 看一行代表什么，并用确定性参考快照对照结果。默认折叠，不打开就不加载 SQL 引擎。',
+      cta: '打开进阶实验',
+    },
   ],
 }

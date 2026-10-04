@@ -7,7 +7,9 @@
  *   2. 普通课程页面（`/learn/*`）的静态 import 闭包不得包含 DuckDB 运行时；
  *   3. 隐藏 harness 的静态闭包不得包含 DuckDB 运行时，运行时必须只通过
  *      dynamic import 出现；
- *   4. 默认构建产物不得包含 duckdb wasm / worker 资产（CDN 策略）。
+ *   4. Stage 1：目标课程的 Sandbox lab（折叠占位）只能通过 dynamic import 加载，
+ *      自身静态闭包不得包含 DuckDB 运行时；
+ *   5. 默认构建产物不得包含 duckdb wasm / worker 资产（CDN 策略）。
  *
  * 这是 Stage 0 的最小验证，不替代浏览器 Network 证据。
  *
@@ -20,6 +22,9 @@ import { dirname, resolve } from 'node:path'
 
 const distDir = resolve(process.cwd(), 'dist')
 const asJson = process.argv.includes('--json')
+const rawBasePath =
+  process.env.BASE_PATH && process.env.BASE_PATH !== '/' ? process.env.BASE_PATH : ''
+const basePath = rawBasePath ? `/${rawBasePath.split('/').filter(Boolean).join('/')}` : ''
 
 const RUNTIME_MARKERS = ['apache-arrow', 'cdn.jsdelivr.net/npm/', 'DuckDBAccessMode', 'AsyncDuckDB']
 
@@ -47,6 +52,12 @@ function readText(file) {
   return readFileSync(file, 'utf8')
 }
 
+/** 去掉 BASE_PATH 前缀，得到相对 dist/ 的路径。 */
+function toDistRelative(url) {
+  const withoutBase = basePath && url.startsWith(basePath) ? url.slice(basePath.length) : url
+  return `/${withoutBase.replace(/^\//u, '')}`
+}
+
 function htmlEntries(html) {
   const urls = [...html.matchAll(/(?:component-url|renderer-url)="([^"]+)"/gu)].map(
     (match) => match[1],
@@ -54,7 +65,7 @@ function htmlEntries(html) {
   const scripts = [...html.matchAll(/<script type="module" src="([^"]+)"/gu)].map(
     (match) => match[1],
   )
-  return [...urls, ...scripts].filter((url) => url.startsWith('/'))
+  return [...urls, ...scripts].filter((url) => url.startsWith('/')).map(toDistRelative)
 }
 
 /** 跟随静态 import（`from "./x.js"` / `import "./x.js"`）构建闭包。 */
@@ -118,12 +129,17 @@ if (!existsSync(distDir)) {
   const nonDevHtml = htmlFiles.filter((file) => !file.slice(distDir.length + 1).startsWith('dev/'))
   const learnHtml = htmlFiles.filter((file) => file.slice(distDir.length + 1).startsWith('learn/'))
 
-  // 1. 非 /dev/ 页面不得出现 duckdb。
+  // 1. 非 /dev/ 页面不得引用 duckdb 资源（课程文案中的 “DuckDB” 不算）。
   for (const file of nonDevHtml) {
     const relative = file.slice(distDir.length + 1)
     const html = readText(file)
-    if (/duckdb/iu.test(html)) {
-      fail(`非实验页面出现 duckdb 引用: ${relative}`)
+    const references = [
+      ...[...html.matchAll(/(?:component-url|renderer-url|src|href)="([^"]+)"/gu)].map(
+        (match) => match[1],
+      ),
+    ]
+    if (references.some((reference) => /duckdb/iu.test(reference))) {
+      fail(`非实验页面引用 duckdb 资源: ${relative}`)
     }
   }
 
@@ -183,7 +199,71 @@ if (!existsSync(distDir)) {
     }
   }
 
-  // 4. 默认构建不得包含 duckdb wasm / worker 资产。
+  // 4. Stage 1 目标课程：折叠占位 → dynamic import Sandbox lab → dynamic import runtime。
+  const lessonHtml = htmlFiles.find((file) =>
+    file.slice(distDir.length + 1).startsWith('learn/sql-transformation-layers/'),
+  )
+  if (!lessonHtml) {
+    fail('未找到目标课程 dist/learn/sql-transformation-layers/index.html')
+  } else {
+    const lessonRelative = lessonHtml.slice(distDir.length + 1)
+    const closure = staticClosure(htmlEntries(readText(lessonHtml)))
+
+    for (const entry of closure) {
+      const absolute = resolve(distDir, entry.replace(/^\//u, ''))
+      if (!existsSync(absolute)) continue
+      const code = readText(absolute)
+      if (code.includes('sql-sandbox-lab')) {
+        fail(`sql-sandbox lab 进入了目标课程静态闭包（必须保持折叠 lazy）: ${entry}`)
+      }
+      if (containsRuntimeMarker(code)) {
+        fail(`目标课程静态闭包包含 DuckDB 运行时: ${entry}`)
+      }
+    }
+
+    const dynamicTargets = [...dynamicImports(closure)]
+    const labChunk = dynamicTargets.find((target) => {
+      const absolute = resolve(distDir, target.replace(/^\//u, ''))
+      return existsSync(absolute) && readText(absolute).includes('sql-sandbox-lab')
+    })
+
+    if (!labChunk) {
+      fail('目标课程没有找到只通过 dynamic import 加载的 sql-sandbox lab chunk')
+    } else {
+      const labClosure = staticClosure([labChunk])
+      for (const entry of labClosure) {
+        const absolute = resolve(distDir, entry.replace(/^\//u, ''))
+        if (!existsSync(absolute)) continue
+        if (containsRuntimeMarker(readText(absolute))) {
+          fail(`sql-sandbox lab 静态闭包包含 DuckDB 运行时（必须改为 dynamic import）: ${entry}`)
+        }
+      }
+
+      const labDynamicTargets = [...dynamicImports(labClosure)]
+      const labRuntimeChunk = labDynamicTargets.find((target) => {
+        const absolute = resolve(distDir, target.replace(/^\//u, ''))
+        return existsSync(absolute) && containsRuntimeMarker(readText(absolute))
+      })
+
+      if (!labRuntimeChunk) {
+        fail('sql-sandbox lab 没有找到只通过 dynamic import 加载的 DuckDB runtime chunk')
+      } else {
+        const labBytes = statSync(resolve(distDir, labChunk.replace(/^\//u, ''))).size
+        const runtimeBytes = statSync(resolve(distDir, labRuntimeChunk.replace(/^\//u, ''))).size
+        notes.push(`sql-sandbox lab chunk: ${labChunk} (${labBytes} B)`)
+        notes.push(`lesson runtime chunk: ${labRuntimeChunk} (${runtimeBytes} B)`)
+        notes.push(`目标课程: ${lessonRelative}`)
+      }
+    }
+
+    const lessonBytes = [...closure].reduce((total, entry) => {
+      const absolute = resolve(distDir, entry.replace(/^\//u, ''))
+      return existsSync(absolute) ? total + statSync(absolute).size : total
+    }, 0)
+    notes.push(`sql-transformation-layers 静态闭包: ${lessonBytes} B / ${closure.size} 个文件`)
+  }
+
+  // 5. 默认构建不得包含 duckdb wasm / worker 资产。
   for (const file of files) {
     const relative = file.slice(distDir.length + 1)
     if (/duckdb.*\.wasm$/u.test(relative) || /duckdb-browser-.*worker.*\.js$/u.test(relative)) {

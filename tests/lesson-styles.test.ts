@@ -8,6 +8,7 @@ import {
   getLessonStyleSheets,
   getVisualizationStyleSheets,
   learnSharedStyleUrls,
+  sqlSandboxStyleSheet,
   visualizationStyleSheets,
   type LessonVisualizationKind,
 } from '../src/utils/lesson-styles'
@@ -42,6 +43,10 @@ describe('课程 CSS ownership', () => {
   it('代表课程只加载自己需要的 lesson CSS', () => {
     expect(lessonStyleSheets('why-data-warehouse')).toEqual([])
     expect(lessonStyleSheets('sql-transformation-join')).toEqual(['join-fanout.css'])
+    expect(lessonStyleSheets('sql-transformation-layers')).toEqual([
+      'sql-workbench.css',
+      'sql-sandbox.css',
+    ])
     expect(lessonStyleSheets('lifecycle-path-failure')).toEqual(['lifecycle-path.css'])
     expect(lessonStyleSheets('warehouse-terms')).toEqual(['warehouse-intro.css'])
     expect(lessonStyleSheets('scheduling-system')).toEqual([
@@ -78,7 +83,7 @@ describe('课程 CSS ownership', () => {
   })
 
   it('所有 lesson stylesheet 都有归属，不存在孤儿 CSS', () => {
-    const referenced = new Set<string>()
+    const referenced = new Set<string>([sqlSandboxStyleSheet])
     for (const sheets of Object.values(visualizationStyleSheets)) {
       for (const sheet of sheets) {
         referenced.add(sheet)

@@ -19,6 +19,7 @@ import lakehouseStylesUrl from '../styles/lessons/lakehouse.css?url'
 import dataServiceStylesUrl from '../styles/lessons/data-service.css?url'
 import performanceStylesUrl from '../styles/lessons/performance.css?url'
 import capstoneStylesUrl from '../styles/lessons/capstone.css?url'
+import sqlSandboxStylesUrl from '../styles/lessons/sql-sandbox.css?url'
 import type { LessonContent, LessonVisualization } from '../content/types'
 
 export type LessonVisualizationKind = LessonVisualization['kind']
@@ -47,9 +48,16 @@ const lessonStyleUrls = {
   'data-service.css': dataServiceStylesUrl,
   'performance.css': performanceStylesUrl,
   'capstone.css': capstoneStylesUrl,
+  'sql-sandbox.css': sqlSandboxStylesUrl,
 } as const
 
 export type LessonStyleSheet = keyof typeof lessonStyleUrls
+
+/**
+ * Issue #35 Stage 1：optional SQL Sandbox section 的专属样式。
+ * 只被带 `kind: 'sql-sandbox'` section 的课程链接。
+ */
+export const sqlSandboxStyleSheet: LessonStyleSheet = 'sql-sandbox.css'
 
 /**
  * Styles owned by every lesson page: the learn shell chrome, the shared lesson
@@ -127,6 +135,10 @@ function collectVisualizationKinds(content: LessonContent): LessonVisualizationK
   return [...kinds]
 }
 
+function hasSqlSandboxSection(content: LessonContent): boolean {
+  return content.sections.some((section) => section.kind === 'sql-sandbox')
+}
+
 export function getLessonStyleSheets(content: LessonContent): LessonStyleSheet[] {
   const sheets = new Set<LessonStyleSheet>()
 
@@ -134,6 +146,10 @@ export function getLessonStyleSheets(content: LessonContent): LessonStyleSheet[]
     for (const sheet of getVisualizationStyleSheets(kind)) {
       sheets.add(sheet)
     }
+  }
+
+  if (hasSqlSandboxSection(content)) {
+    sheets.add(sqlSandboxStyleSheet)
   }
 
   return [...sheets]

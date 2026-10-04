@@ -46,6 +46,7 @@ const SECTION_HEADING_KINDS: Record<string, SectionHeadingKind | undefined> = {
   sql: 'sql',
   visualization: 'visualization',
   takeaway: 'takeaway',
+  'sql-sandbox': 'sql-sandbox',
   pitfall: undefined,
   'engineering-note': undefined,
 }
@@ -57,6 +58,7 @@ const SECTION_DOC_KINDS: Record<string, SearchDocKind> = {
   sql: 'sql',
   visualization: 'visualization',
   takeaway: 'takeaway',
+  'sql-sandbox': 'sql-sandbox',
   pitfall: 'pitfall',
   'engineering-note': 'engineering-note',
 }
@@ -95,6 +97,8 @@ function getSectionText(section: LessonSection): string {
       return section.description
     case 'takeaway':
       return joinSearchText([section.text, section.bullets?.join(' ')])
+    case 'sql-sandbox':
+      return section.description
     case 'engineering-note':
     case 'pitfall':
       return section.text
