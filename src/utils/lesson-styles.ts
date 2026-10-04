@@ -9,6 +9,7 @@ import metricStylesUrl from '../styles/lessons/metric.css?url'
 import sqlWorkbenchStylesUrl from '../styles/lessons/sql-workbench.css?url'
 import joinFanoutStylesUrl from '../styles/lessons/join-fanout.css?url'
 import lifecyclePathStylesUrl from '../styles/lessons/lifecycle-path.css?url'
+import deliveryInvestigationStylesUrl from '../styles/lessons/delivery-investigation.css?url'
 import schedulerStylesUrl from '../styles/lessons/scheduler.css?url'
 import sensorReadinessStylesUrl from '../styles/lessons/sensor-readiness.css?url'
 import dataQualityStylesUrl from '../styles/lessons/data-quality.css?url'
@@ -38,6 +39,7 @@ const lessonStyleUrls = {
   'sql-workbench.css': sqlWorkbenchStylesUrl,
   'join-fanout.css': joinFanoutStylesUrl,
   'lifecycle-path.css': lifecyclePathStylesUrl,
+  'delivery-investigation.css': deliveryInvestigationStylesUrl,
   'scheduler.css': schedulerStylesUrl,
   'sensor-readiness.css': sensorReadinessStylesUrl,
   'data-quality.css': dataQualityStylesUrl,
@@ -100,6 +102,7 @@ export const visualizationStyleSheets: Record<
   'sql-transformation': ['sql-workbench.css'],
   'join-fanout': ['join-fanout.css'],
   'lifecycle-path': ['lifecycle-path.css'],
+  'delivery-investigation': ['delivery-investigation.css'],
   governance: ['governance.css'],
   'performance-lab': ['performance.css'],
   scheduler: ['scheduler.css', 'sensor-readiness.css'],

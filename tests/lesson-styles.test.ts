@@ -48,6 +48,7 @@ describe('课程 CSS ownership', () => {
       'sql-sandbox.css',
     ])
     expect(lessonStyleSheets('lifecycle-path-failure')).toEqual(['lifecycle-path.css'])
+    expect(lessonStyleSheets('delivery-completion-signal')).toEqual(['delivery-investigation.css'])
     expect(lessonStyleSheets('warehouse-terms')).toEqual(['warehouse-intro.css'])
     expect(lessonStyleSheets('scheduling-system')).toEqual([
       'scheduler.css',

@@ -282,12 +282,17 @@ describe('验收查询（真实语料，#148 P1-B）', () => {
     expect(hits[0].href).toBe('/learn/slowly-changing-dimension/#lesson-scd-type-2-title')
   })
 
-  it('幂等：scheduling-rerun 排第一，命中跨 3 节课', () => {
+  it('幂等：scheduling-rerun 排第一，命中跨 4 节课', () => {
     const hits = searchKnowledge(REAL_INDEX, '幂等').hits
 
     expect(hits[0].slug).toBe('scheduling-rerun')
     expect(new Set(hits.map((hit) => hit.slug))).toEqual(
-      new Set(['scheduling-rerun', 'performance-tradeoffs', 'lifecycle-path-failure']),
+      new Set([
+        'scheduling-rerun',
+        'performance-tradeoffs',
+        'lifecycle-path-failure',
+        'delivery-completion-signal',
+      ]),
     )
   })
 
