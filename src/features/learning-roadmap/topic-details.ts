@@ -183,8 +183,8 @@ export const learningTopicDetails: readonly LearningTopicDetail[] = [
   {
     topicId: 'production-lifecycle-debugging',
     whyLearn:
-      '只凭「昨天成功了」判断今天应该成功时，目标对象存在与不存在的路径差异会在第二天才暴露。',
-    learningOutcome: '从两天运行证据定位生命周期路径差异，完成排查与复盘。',
+      '只凭「昨天成功了」或「任务 SUCCESS」判断问题时，生命周期路径差异与交付契约缺口都会在运行期才暴露。',
+    learningOutcome: '从运行证据与交付链证据定位数据停在生产、完成、传输、识别还是消费边界。',
   },
 ]
 

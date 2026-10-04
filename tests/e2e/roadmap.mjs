@@ -8,8 +8,8 @@ import { createChecker, launchChromium, startPreview, trackPageErrors } from './
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SCRIPT_NAME = 'roadmap'
 const PROGRESS_STORAGE_KEY = 'data-warehouse-visualized:progress'
-/** Sum of `Lesson.estimatedMinutes` over all 54 available lessons; locks derived Topic time. */
-const TOTAL_ESTIMATED_MINUTES = 665
+/** Sum of `Lesson.estimatedMinutes` over all 55 available lessons; locks derived Topic time. */
+const TOTAL_ESTIMATED_MINUTES = 683
 /** Frozen Phase 4 Path fixtures; mirrors `src/features/learning-roadmap/paths.ts`. */
 const PATH_FIXTURES = {
   systematic: {
@@ -378,8 +378,8 @@ async function inspectPage(page, baseUrl, tag, errors) {
     `topics=${documentContract.topicCount}`,
   )
   check(
-    `${tag} Topic 映射 54 个不重复的真实 Lesson link`,
-    documentContract.lessonCount === 54 && documentContract.uniqueLessonCount === 54,
+    `${tag} Topic 映射 55 个不重复的真实 Lesson link`,
+    documentContract.lessonCount === 55 && documentContract.uniqueLessonCount === 55,
     `links=${documentContract.lessonCount} unique=${documentContract.uniqueLessonCount}`,
   )
   check(
@@ -484,7 +484,7 @@ async function inspectPage(page, baseUrl, tag, errors) {
     documentContract.timeTexts.find((text) => !/^预计 \d+ 分钟 · \d+ 节$/.test(text ?? '')) ?? '',
   )
   check(
-    `${tag} 预计时间由 54 节 Lesson metadata 派生（合计 ${TOTAL_ESTIMATED_MINUTES} 分钟）`,
+    `${tag} 预计时间由 55 节 Lesson metadata 派生（合计 ${TOTAL_ESTIMATED_MINUTES} 分钟）`,
     documentContract.estimatedMinutes.every(Number.isFinite) &&
       documentContract.estimatedMinutes.reduce((sum, minutes) => sum + minutes, 0) ===
         TOTAL_ESTIMATED_MINUTES,
@@ -604,7 +604,7 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
     await context.close()
   }
 
-  // All 54 available Lessons completed.
+  // All 55 available Lessons completed.
   {
     const { context, page, errors } = await openRoadmapContext(browser, baseUrl, viewport)
     const allLessonIds = await page.evaluate(() => [
@@ -614,7 +614,7 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
         ),
       ),
     ])
-    check(`${tag} all: 收集到 54 个唯一 Lesson identity`, allLessonIds.length === 54)
+    check(`${tag} all: 收集到 55 个唯一 Lesson identity`, allLessonIds.length === 55)
     await page.evaluate(
       ([key, ids]) =>
         localStorage.setItem(
@@ -643,8 +643,8 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
       all.stages.map((stage) => `${stage.id}:${stage.label}`).join(' | '),
     )
     check(
-      `${tag} all: Stage 分母无重复且合计 54`,
-      stageTotalSum === 54 && stageCompletedSum === 54,
+      `${tag} all: Stage 分母无重复且合计 55`,
+      stageTotalSum === 55 && stageCompletedSum === 55,
       `completed=${stageCompletedSum} total=${stageTotalSum}`,
     )
     check(
@@ -971,7 +971,7 @@ async function runNoJsCheck(browser, baseUrl) {
     'no-js: 32 Topic 静态可读',
     (await page.locator('.roadmap-topic[data-topic-id]').count()) === 32,
   )
-  check('no-js: 54 Lesson link 静态可读', (await page.locator('[data-lesson-id]').count()) === 54)
+  check('no-js: 55 Lesson link 静态可读', (await page.locator('[data-lesson-id]').count()) === 55)
   check(
     'no-js: 没有 Progress 增强节点',
     (await page

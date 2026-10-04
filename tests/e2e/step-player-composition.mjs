@@ -172,6 +172,7 @@ const JOURNEYS = [
   // Pattern 2 No Change rows: #145 only guards that the measured distances did
   // not grow (baseline: grain 0.08 / impact 0.22 / lifecycle 0.46 screens); the
   // layouts themselves are untouched, so no visibility requirement is added.
+  // #191 adds a fourth row for the delivery chain (13-2).
   {
     id: 'grain-no-change',
     slug: 'grain',
@@ -208,6 +209,20 @@ const JOURNEYS = [
     control: '.lifecycle-path__toolbar',
     actions: [{ role: 'button', name: '下一步', exact: true }],
     feedback: [{ selector: '.lifecycle-path__days', label: 'Day 执行路径', maxScreens: 0.5 }],
+  },
+  {
+    id: 'delivery-investigation-no-change',
+    slug: 'delivery-completion-signal',
+    component: 'DeliveryInvestigationLab (No Change)',
+    control: '.delivery-investigation__toolbar',
+    actions: [{ role: 'button', name: '下一步', exact: true }],
+    feedback: [
+      {
+        selector: '.delivery-investigation__chain',
+        label: 'Producer → Exchange → Consumer 交付链',
+        maxScreens: 0.5,
+      },
+    ],
   },
 ]
 

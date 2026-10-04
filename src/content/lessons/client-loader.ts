@@ -97,6 +97,8 @@ const lessonContentLoaders: Record<string, () => Promise<LessonContent>> = {
     import('./performance-tradeoffs').then((m) => m.performanceTradeoffsContent),
   'lifecycle-path-failure': () =>
     import('./lifecycle-path-failure').then((m) => m.lifecyclePathFailureContent),
+  'delivery-completion-signal': () =>
+    import('./delivery-investigation').then((m) => m.deliveryInvestigationContent),
 }
 
 const lessonContentCache = new Map<string, LessonContent>()

@@ -594,15 +594,22 @@ describe('课程数据与导航', () => {
     expect(chapterText).toContain('12000000000')
   })
 
-  it('第 13 章新增生产实践案例 13-1，并接在 Capstone 之后作为课程终点', () => {
+  it('第 13 章注册生产实践案例 13-1 / 13-2，并接在 Capstone 之后作为课程终点', () => {
     const chapterLessons = lessons.filter((lesson) => lesson.chapter === '13')
 
     expect(getChapterTitle('13')).toBe('生产实践案例')
-    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual(['lifecycle-path-failure'])
+    expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
+      'lifecycle-path-failure',
+      'delivery-completion-signal',
+    ])
     expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
       '13-1',
+      '13-2',
     ])
-    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual(['lifecycle-path'])
+    expect(chapterLessons.map((lesson) => lesson.demo)).toEqual([
+      'lifecycle-path',
+      'delivery-investigation',
+    ])
     expect(
       getLessonContent(chapterLessons[0]!).sections.map((section) => section.kind ?? 'narrative'),
     ).toEqual([
@@ -614,11 +621,31 @@ describe('课程数据与导航', () => {
       'engineering-note',
       'takeaway',
     ])
+    expect(
+      getLessonContent(chapterLessons[1]!).sections.map((section) => section.kind ?? 'narrative'),
+    ).toEqual([
+      'narrative',
+      'visualization',
+      'narrative',
+      'narrative',
+      'engineering-note',
+      'pitfall',
+      'takeaway',
+    ])
     expect(getLessonBySlug('lifecycle-path-failure')).toMatchObject({
       id: 'lesson-13-1',
       slug: 'lifecycle-path-failure',
       chapter: '13',
       title: '上线当天明明成功了，为什么第二天才失败？',
+    })
+    expect(getLessonBySlug('delivery-completion-signal')).toMatchObject({
+      id: 'lesson-13-2',
+      slug: 'delivery-completion-signal',
+      chapter: '13',
+      order: 200,
+      difficulty: 'advanced',
+      estimatedMinutes: 18,
+      title: '任务 SUCCESS，为什么下游没有拿到数据？',
     })
     expect(getAdjacentLessons(lessons, 'build-a-warehouse').next?.slug).toBe(
       'lifecycle-path-failure',
@@ -626,6 +653,13 @@ describe('课程数据与导航', () => {
     expect(getAdjacentLessons(lessons, 'lifecycle-path-failure').previous?.slug).toBe(
       'build-a-warehouse',
     )
+    expect(getAdjacentLessons(lessons, 'lifecycle-path-failure').next?.slug).toBe(
+      'delivery-completion-signal',
+    )
+    expect(getAdjacentLessons(lessons, 'delivery-completion-signal').previous?.slug).toBe(
+      'lifecycle-path-failure',
+    )
+    expect(getAdjacentLessons(lessons, 'delivery-completion-signal').next).toBeUndefined()
   })
 
   it('首尾课程不会产生越界导航', () => {

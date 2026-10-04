@@ -43,6 +43,7 @@ data-service-api
 data-service-choice
 data-service-file
 data-service-report
+delivery-completion-signal
 deposit-metric-definition
 deposit-metric-derivations
 deposit-metric-time
@@ -101,14 +102,14 @@ describe('English SEO routing contract', () => {
     ])
   })
 
-  it('preserves 54 unique Learn slugs and their existing /learn/ URL shape', () => {
+  it('preserves 55 unique Learn slugs and their existing /learn/ URL shape', () => {
     const slugs = lessons.map(({ slug }) => slug)
 
-    expect(slugs).toHaveLength(54)
-    expect(new Set(slugs).size).toBe(54)
+    expect(slugs).toHaveLength(55)
+    expect(new Set(slugs).size).toBe(55)
     expect([...slugs].sort()).toEqual(establishedLearnSlugs)
     expect(slugs.every((slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))).toBe(true)
-    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(54)
+    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(55)
   })
 
   it('exposes the English namespace from the existing shared footer as a real link', () => {

@@ -29,8 +29,8 @@ SearchHit[]（含 heading / anchor / href / snippet segments）→ P1-C 渲染
 ```ts
 interface SearchIndex {
   version: number // SEARCH_INDEX_VERSION，schema 变更时递增
-  lessons: SearchLesson[] // 54 条课程元数据（title / subtitle / summary / tags / chapter / number / order）
-  docs: SearchDoc[] // 457 个可跳转 target（origin/main d27b5a1 当前语料）
+  lessons: SearchLesson[] // 55 条课程元数据（title / subtitle / summary / tags / chapter / number / order）
+  docs: SearchDoc[] // 469 个可跳转 target（origin/main e4d089f 当前语料）
 }
 
 interface SearchDoc {

@@ -243,7 +243,7 @@ export const learningGraph: LearningGraph = {
     {
       id: 'production-lifecycle-debugging',
       stageId: 'serving-production',
-      lessonIds: ['lesson-13-1'],
+      lessonIds: ['lesson-13-1', 'lesson-13-2'],
       prerequisites: [
         'star-schema-and-fact-types',
         'business-date-and-readiness',

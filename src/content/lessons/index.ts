@@ -56,6 +56,7 @@ import { sqlTransformationContractContent } from './sql-and-transformation-contr
 import { sqlTransformationJoinContent } from './sql-and-transformation-join'
 import { sqlTransformationLayersContent } from './sql-and-transformation-layers'
 import { lifecyclePathFailureContent } from './lifecycle-path-failure'
+import { deliveryInvestigationContent } from './delivery-investigation'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { warehouseTermsContent } from './warehouse-terms'
@@ -117,6 +118,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'performance-first-seen': performanceFirstSeenContent,
   'performance-tradeoffs': performanceTradeoffsContent,
   'lifecycle-path-failure': lifecyclePathFailureContent,
+  'delivery-completion-signal': deliveryInvestigationContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

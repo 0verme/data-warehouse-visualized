@@ -316,6 +316,8 @@ describe('生产案例 13-1 · Step Kernel 与 SSR 首屏', () => {
     expect(getAdjacentLessons(lessons, 'lifecycle-path-failure').previous?.slug).toBe(
       'build-a-warehouse',
     )
-    expect(getAdjacentLessons(lessons, 'lifecycle-path-failure').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'lifecycle-path-failure').next?.slug).toBe(
+      'delivery-completion-signal',
+    )
   })
 })
