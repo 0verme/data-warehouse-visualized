@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /dev/
 Allow: /
 
 Sitemap: https://sql.sb/sitemap-index.xml

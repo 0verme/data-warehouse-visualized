@@ -116,7 +116,14 @@ function checkPageIndexability(html, name) {
 
 assert.ok(existsSync(dist), 'Missing dist/. Run npm run build first.')
 const robots = readFileSync(join(dist, 'robots.txt'), 'utf8')
-assert.match(robots, /^User-agent:\s*\*\s*\nAllow:\s*\/\s*$/m)
+assert.match(robots, /^User-agent:\s*\*\s*$/m, 'robots.txt must target all user agents')
+assert.match(robots, /^Allow:\s*\/\s*$/m, 'robots.txt must allow crawling the site')
+const disallowRules = Array.from(robots.matchAll(/^Disallow:\s*(\S+)\s*$/gm), (match) => match[1])
+assert.deepEqual(
+  disallowRules,
+  ['/dev/'],
+  'robots.txt may only disallow the experimental /dev/ area',
+)
 const robotsSitemap = robots.match(/^Sitemap:\s*(\S+)\s*$/m)?.[1]
 assert.ok(robotsSitemap, 'robots.txt must advertise a sitemap')
 assert.equal(new URL(robotsSitemap).origin, siteOrigin)

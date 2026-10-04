@@ -24,6 +24,7 @@
     "test:e2e:layers": "node tests/e2e/layer-network-evolution.mjs",
     "test:e2e:learn-anchor": "node tests/e2e/learn-anchor-fragment.mjs",
     "test:e2e:search": "node tests/e2e/knowledge-search.mjs",
+    "test:e2e:sql-sandbox-stage0": "node tests/e2e/sql-sandbox-stage0.mjs",
     "deploy": "wrangler deploy",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -32,6 +33,7 @@
   "dependencies": {
     "@astrojs/react": "^6.0.5",
     "@astrojs/sitemap": "^3.7.4",
+    "@duckdb/duckdb-wasm": "1.32.0",
     "astro": "^7.3.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

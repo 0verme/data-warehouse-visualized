@@ -43,6 +43,7 @@ const canonicalUrl =
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f5f7fb" />
+    <slot name="head" />
     <script is:inline>
       ;(() => {
         const themeStorageKey = 'data-warehouse-visualized:theme'
