@@ -1,5 +1,7 @@
 ---
 import { GlobalHeaderActions } from '../components/GlobalHeaderActions'
+import { HomeStartPaths } from '../components/HomeStartPaths'
+import { PrimaryNav } from '../components/PrimaryNav'
 import { HeroDataFlow } from '../components/visualizations/HeroDataFlow'
 import { SiteFooter } from '../components/SiteFooter'
 import BaseLayout from '../layouts/BaseLayout.astro'
@@ -37,6 +39,7 @@ const baseUrl = import.meta.env.BASE_URL
           <code>sql.sb</code>
         </span>
       </a>
+      <PrimaryNav current="home" />
       <GlobalHeaderActions client:load />
     </header>
 
@@ -78,6 +81,8 @@ const baseUrl = import.meta.env.BASE_URL
           <HeroDataFlow client:load codeHighlights={codeHighlights} />
         </div>
       </section>
+
+      <HomeStartPaths />
 
       <section class="home-data-lesson" id="data-lesson" aria-labelledby="data-lesson-title">
         <div class="home-section-heading">

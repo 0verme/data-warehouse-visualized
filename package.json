@@ -24,6 +24,7 @@
     "test:e2e:layers": "node tests/e2e/layer-network-evolution.mjs",
     "test:e2e:learn-anchor": "node tests/e2e/learn-anchor-fragment.mjs",
     "test:e2e:search": "node tests/e2e/knowledge-search.mjs",
+    "test:e2e:home": "node tests/e2e/home-onboarding.mjs",
     "test:e2e:sql-sandbox-stage0": "node tests/e2e/sql-sandbox-stage0.mjs",
     "test:e2e:sql-sandbox": "node tests/e2e/sql-sandbox-stage1.mjs",
     "deploy": "wrangler deploy",
