@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import { SqlSandboxStage0Harness } from '../../features/sql-sandbox-experiment/harness/SqlSandboxStage0Harness'
+---
+
+<BaseLayout
+  title="SQL Sandbox Stage 0 · 内部验证"
+  description="Issue #35 Stage 0 DuckDB-WASM 技术验证的隐藏开发入口，不属于正式产品。"
+>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+  </Fragment>
+  <main class="stage0-page">
+    <h1>SQL Sandbox Stage 0 · 内部验证</h1>
+    <p>
+      该页面只用于验证 DuckDB-WASM 在当前 Astro / Vite / Cloudflare / BASE_PATH / ClientRouter
+      架构下的可行性：不进入课程导航、不进入 sitemap、不作为正式产品能力。
+    </p>
+    <SqlSandboxStage0Harness client:only="react" />
+  </main>
+</BaseLayout>
+
+<style>
+  .stage0-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+</style>

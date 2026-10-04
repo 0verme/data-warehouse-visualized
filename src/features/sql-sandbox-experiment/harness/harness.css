@@ -1,0 +1,124 @@
+/* Stage 0 隐藏 harness 的局部样式。仅由 /dev/sql-sandbox-poc 使用。 */
+.stage0-harness {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.stage0-harness__controls,
+.stage0-harness__queries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.stage0-harness__field {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.stage0-harness__sql textarea {
+  width: min(100%, 720px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.stage0-harness__field input {
+  min-width: 260px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.stage0-harness button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.stage0-harness button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stage0-harness__status[data-status='error'] {
+  color: var(--warning-text);
+}
+
+.stage0-harness__status[data-status='ready'] {
+  color: var(--success-text);
+}
+
+.stage0-harness__error {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.stage0-harness__reference {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.stage0-harness__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+}
+
+.stage0-harness__summary dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.stage0-harness__summary dd {
+  margin: 0;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage0-harness__table-wrap {
+  overflow-x: auto;
+}
+
+.stage0-harness table {
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage0-harness th,
+.stage0-harness td {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.stage0-harness__evidence pre {
+  max-height: 320px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 12px;
+}
+
+.stage0-harness__nav a {
+  color: var(--interactive);
+}

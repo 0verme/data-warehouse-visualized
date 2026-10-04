@@ -47,6 +47,10 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      # Issue #35 Stage 0：静态验证普通课程 0 DuckDB、harness 仅 dynamic import。
+      - name: Verify DuckDB isolation
+        run: node scripts/check-duckdb-isolation.mjs
+
       - name: Verify built SEO and sitemap contract
         run: npm run test:english-seo-build
 
