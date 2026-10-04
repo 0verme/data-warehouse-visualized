@@ -13,7 +13,8 @@
  */
 
 /** Sections that render a heading with an anchor id. */
-export type SectionHeadingKind = 'narrative' | 'compare' | 'sql' | 'visualization' | 'takeaway'
+export type SectionHeadingKind =
+  'narrative' | 'compare' | 'sql' | 'visualization' | 'takeaway' | 'sql-sandbox'
 
 /** Deprecated top-level blocks that still render a heading. */
 export type LegacyHeadingKind = 'visualization' | 'compare' | 'code'

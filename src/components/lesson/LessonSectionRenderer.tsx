@@ -1,8 +1,9 @@
-import { Component, lazy, Suspense, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useState, type ReactNode } from 'react'
 import type {
   LessonCodeExample,
   LessonComparison,
   LessonSection,
+  LessonSqlSandboxSection,
   LessonVisualization,
 } from '../../content/types'
 import type { Lesson } from '../../data/course'
@@ -142,6 +143,12 @@ const LazyStarSchemaFlow = lazy(() =>
   })),
 )
 
+const LazySqlSandboxLab = lazy(() =>
+  import('../visualizations/SqlSandboxLab').then(({ SqlSandboxLab }) => ({
+    default: SqlSandboxLab,
+  })),
+)
+
 type LazyVisualizationKind =
   | 'lineage'
   | 'lakehouse'
@@ -163,6 +170,7 @@ type LazyVisualizationKind =
   | 'loan-grain'
   | 'metric-definition'
   | 'star-schema'
+  | 'sql-sandbox'
 
 function VisualizationLoading() {
   return (
@@ -439,6 +447,55 @@ function VisualizationBlock({
   )
 }
 
+/**
+ * 课程末尾的 optional advanced lab（Issue #35 Stage 1）。
+ *
+ * 折叠态只渲染标题 / 说明 / 入口，不加载 SqlSandboxLab chunk，
+ * 因此普通浏览路径不会请求 DuckDB runtime / worker / wasm。
+ */
+function SqlSandboxSectionBlock({
+  section,
+  headingId,
+}: {
+  section: LessonSqlSandboxSection
+  headingId: string
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const labId = `${headingId}-lab`
+
+  return (
+    <section
+      className="sql-sandbox-section"
+      aria-labelledby={headingId}
+      data-sandbox-state={expanded ? 'expanded' : 'collapsed'}
+    >
+      <div className="section-heading">
+        <span className="eyebrow">{section.eyebrow}</span>
+        <h2 id={headingId}>{section.title}</h2>
+        <p>{section.description}</p>
+      </div>
+      <div className="sql-sandbox-section__body" id={labId}>
+        {expanded ? (
+          <VisualizationLoadBoundary kind="sql-sandbox">
+            <LazySqlSandboxLab />
+          </VisualizationLoadBoundary>
+        ) : (
+          <button
+            type="button"
+            className="button button--quiet button--small sql-sandbox-section__open"
+            data-testid="sql-sandbox-open"
+            aria-expanded={false}
+            aria-controls={labId}
+            onClick={() => setExpanded(true)}
+          >
+            {section.cta ?? '打开进阶实验'}
+          </button>
+        )}
+      </div>
+    </section>
+  )
+}
+
 function getLegacyVisualizationCopy(visualization: LessonVisualization) {
   switch (visualization.kind) {
     case 'star-schema':
@@ -617,6 +674,14 @@ function renderSection(
           bullets={section.bullets}
           headingId={getSectionHeadingId(lessonId, index, 'takeaway')}
           key={`takeaway-${index}`}
+        />
+      )
+    case 'sql-sandbox':
+      return (
+        <SqlSandboxSectionBlock
+          section={section}
+          headingId={getSectionHeadingId(lessonId, index, 'sql-sandbox')}
+          key={`sql-sandbox-${index}`}
         />
       )
     case 'engineering-note':

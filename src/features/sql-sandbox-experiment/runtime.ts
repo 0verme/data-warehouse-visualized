@@ -38,6 +38,9 @@ export interface SqlSandboxRuntimeHandle {
   engineVersion: string
 }
 
+/** 结束 busy worker 前等待优雅关闭的上限；空闲路径通常立即完成。 */
+export const TERMINATE_GRACE_MS = 250
+
 function buildBundles(strategy: SqlSandboxStrategy, selfHost?: SelfHostAssetUrls): DuckDBBundles {
   if (strategy === 'cdn') {
     return getJsDelivrBundles()
@@ -128,11 +131,21 @@ export async function runRuntimeQuery(
   return arrowTableToResult(table as unknown as ArrowTableLike)
 }
 
+/**
+ * 终止实验实例。
+ *
+ * 查询正在执行时 worker 不会处理 DISCONNECT 消息，`connection.close()` 会无限
+ * 等待。因此先限时等待优雅关闭（正常空闲路径下立即返回），然后直接 hard
+ * terminate worker；宁可重建实例，也不留下失控查询或挂起的关闭流程。
+ */
 export async function terminateRuntime(handle: SqlSandboxRuntimeHandle): Promise<void> {
   try {
-    await handle.connection.close()
+    await Promise.race([
+      handle.connection.close(),
+      new Promise((resolve) => setTimeout(resolve, TERMINATE_GRACE_MS)),
+    ])
   } catch {
-    // worker 可能已经退出；terminate 仍然是必须执行的动作。
+    // 关闭失败无关紧要；下面的 terminate 才是真正的回收动作。
   }
 
   await handle.db.terminate()

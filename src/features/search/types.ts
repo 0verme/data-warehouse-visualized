@@ -24,7 +24,7 @@ export const SEARCH_INDEX_VERSION = 1
  *
  * - `lesson` / `summary`: lesson-level metadata and the "一句话速览" block.
  * - `opening` / `concept`: the header blocks of a lesson.
- * - `narrative` / `compare` / `sql` / `visualization` / `takeaway`: typed
+ * - `narrative` / `compare` / `sql` / `visualization` / `takeaway` / `sql-sandbox`: typed
  *   `sections[]` entries that own a heading id.
  * - `pitfall` / `engineering-note`: teaching asides. The renderer gives these
  *   no heading id, so their `anchor` stays `null` and the deep link degrades to
@@ -40,6 +40,7 @@ export type SearchDocKind =
   | 'sql'
   | 'visualization'
   | 'takeaway'
+  | 'sql-sandbox'
   | 'pitfall'
   | 'engineering-note'
 
