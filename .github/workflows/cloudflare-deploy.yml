@@ -75,12 +75,16 @@ jobs:
       - name: Run Knowledge Search browser checks
         run: npm run test:e2e:search -- --skip-build
 
+      - name: Run homepage navigation browser checks
+        run: npm run test:e2e:home -- --skip-build
+
       - name: Verify BASE_PATH build contract
         run: |
           BASE_PATH=/seo-base-path/ npm run build
           npm run test:english-seo-build -- --base-path /seo-base-path/
           BASE_PATH=/seo-base-path/ npm run test:e2e:english-foundation -- --skip-build
           BASE_PATH=/seo-base-path/ npm run test:e2e:roadmap -- --skip-build
+          BASE_PATH=/seo-base-path/ npm run test:e2e:home -- --skip-build
 
       - name: Restore production root build
         run: npm run build

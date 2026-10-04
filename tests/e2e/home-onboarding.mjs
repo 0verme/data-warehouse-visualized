@@ -1,0 +1,319 @@
+#!/usr/bin/env node
+/**
+ * Browser contract for the homepage primary navigation and the "从哪里开始？"
+ * onboarding router (Issue #195).
+ *
+ * Visits the built homepage at 1440×900 / 1280×800 / 390×844 / 320×720 in both
+ * themes and asserts the release-relevant paths:
+ *
+ *   1. the header renders the five content entries in a stable order;
+ *   2. exactly one entry carries `aria-current="page"` (首页);
+ *   3. locale / theme utility controls stay outside the content navigation;
+ *   4. the "从哪里开始？" block sits between the hero and `#data-lesson`,
+ *      with the same three paths and links on every viewport;
+ *   5. three cards share a row on desktop and stack on mobile without
+ *      horizontal overflow;
+ *   6. the 实验 anchor reaches the homepage data flow and 学习 reaches
+ *      `/learn/` (BASE_PATH aware).
+ *
+ * Usage:
+ *   npm run test:e2e:home                  # build + preview + checks
+ *   npm run test:e2e:home -- --skip-build  # reuse existing dist/
+ *   BASE_PATH=/x/ npm run build && BASE_PATH=/x/ npm run test:e2e:home -- --skip-build
+ *   npm run test:e2e:home -- --base http://127.0.0.1:4321
+ *
+ * Requires Chromium: `npx playwright install chromium` (CI installs it).
+ */
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+  TOLERANCE,
+  createChecker,
+  launchChromium,
+  startPreview,
+  trackPageErrors,
+} from './lib/harness.mjs'
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const SCRIPT_NAME = 'home-onboarding'
+
+const rawBasePath = process.env.BASE_PATH || '/'
+const mountPath = rawBasePath === '/' ? '' : `/${rawBasePath.split('/').filter(Boolean).join('/')}`
+const withBase = (path) => `${mountPath}${path}` || '/'
+
+const VIEWPORTS = [
+  { name: 'desktop-1440x900', width: 1440, height: 900 },
+  { name: 'desktop-1280x800', width: 1280, height: 800 },
+  { name: 'mobile-390x844', width: 390, height: 844 },
+  { name: 'mobile-320x720', width: 320, height: 720 },
+]
+const THEMES = ['light', 'dark']
+
+const NAV_CONTRACT = [
+  { label: '首页', href: withBase('/') },
+  { label: '学习', href: withBase('/learn/') },
+  { label: '实验', href: `${withBase('/')}#data-lesson` },
+  { label: '案例', href: withBase('/learn/lifecycle-path-failure/') },
+  { label: '关于', href: 'https://github.com/0verme/data-warehouse-visualized' },
+]
+const START_CONTRACT = [
+  { audience: '第一次学数据仓库', cta: '从基础开始', href: withBase('/learn/') },
+  {
+    audience: '已经会 SQL，想系统理解数仓',
+    cta: '进入进阶路线',
+    href: withBase('/learn/data-modeling/'),
+  },
+  {
+    audience: '已经在做数据工程',
+    cta: '看生产实践',
+    href: withBase('/learn/lifecycle-path-failure/'),
+  },
+]
+
+const args = process.argv.slice(2)
+const skipBuild = args.includes('--skip-build')
+const baseArgIndex = args.indexOf('--base')
+const externalBase = baseArgIndex >= 0 ? args[baseArgIndex + 1] : null
+const { check, report } = createChecker()
+
+function overlaps(a, b) {
+  return Boolean(
+    a &&
+    b &&
+    a.x < b.right - TOLERANCE &&
+    b.x < a.right - TOLERANCE &&
+    a.y < b.bottom - TOLERANCE &&
+    b.y < a.bottom - TOLERANCE,
+  )
+}
+
+async function inspectPage(page) {
+  return page.evaluate(() => {
+    const rect = (element) => {
+      if (!element) return null
+      const r = element.getBoundingClientRect()
+      return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }
+    }
+    const header = document.querySelector('header.site-header')
+    const nav = header?.querySelector('nav.site-header__nav')
+    const brand = header?.querySelector('.brand')
+    const actions = header?.querySelector('.learn-topbar__actions')
+    const links = nav ? Array.from(nav.querySelectorAll(':scope > a')) : []
+    const current = nav ? Array.from(nav.querySelectorAll('[aria-current="page"]')) : []
+    const hero = document.querySelector('main.home-main > .home-hero')
+    const start = document.querySelector('main.home-main > .home-start')
+    const dataLesson = document.querySelector('main.home-main > #data-lesson')
+    const cards = Array.from(document.querySelectorAll('.home-start-path'))
+
+    return {
+      theme: document.documentElement.dataset.theme ?? '',
+      docScrollWidth: document.documentElement.scrollWidth,
+      innerWidth: window.innerWidth,
+      nav: {
+        present: Boolean(nav),
+        ariaLabel: nav?.getAttribute('aria-label') ?? '',
+        labels: links.map((link) => (link.textContent ?? '').trim()),
+        hrefs: links.map((link) => link.getAttribute('href')),
+        currentCount: current.length,
+        currentText: (current[0]?.textContent ?? '').trim(),
+        utilityControlsInside: nav ? nav.querySelectorAll('.topbar-control').length : 0,
+      },
+      utilityControls: actions ? actions.querySelectorAll('.topbar-control').length : 0,
+      headerRects: {
+        brand: rect(brand),
+        nav: rect(nav),
+        actions: rect(actions),
+      },
+      navLinkHeights: links.map((link) => link.getBoundingClientRect().height),
+      sectionOrder: {
+        heroPresent: Boolean(hero),
+        startPresent: Boolean(start),
+        dataLessonPresent: Boolean(dataLesson),
+        heroBeforeStart: Boolean(
+          hero && start && hero.compareDocumentPosition(start) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+        startBeforeDataLesson: Boolean(
+          start &&
+          dataLesson &&
+          start.compareDocumentPosition(dataLesson) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      },
+      startHeading: document.querySelector('#home-start-title')?.textContent?.trim() ?? '',
+      startCards: cards.map((card) => ({
+        audience: card.querySelector('.home-start-path__audience')?.textContent?.trim() ?? '',
+        cta: (card.querySelector('.home-start-path__cta')?.textContent ?? '')
+          .replace(/\s*→\s*$/, '')
+          .trim(),
+        href: card.getAttribute('href'),
+        rect: rect(card),
+      })),
+    }
+  })
+}
+
+async function runTheme(browser, viewport, theme, baseUrl) {
+  const context = await browser.newContext({
+    viewport: { width: viewport.width, height: viewport.height },
+  })
+  const page = await context.newPage()
+  const errors = trackPageErrors(page)
+  const tag = `${viewport.name} ${theme}`
+
+  await page.addInitScript((storedTheme) => {
+    localStorage.setItem('data-warehouse-visualized:theme', storedTheme)
+  }, theme)
+
+  try {
+    const response = await page.goto(`${baseUrl}${withBase('/')}`, { waitUntil: 'networkidle' })
+    check(`${tag} 首页响应 200`, response?.status() === 200, `status=${response?.status()}`)
+
+    const state = await inspectPage(page)
+
+    check(`${tag} 主题生效`, state.theme === theme, `theme=${state.theme}`)
+    check(
+      `${tag} 一级导航存在且有可访问名称`,
+      state.nav.present && state.nav.ariaLabel === '主导航',
+      JSON.stringify(state.nav),
+    )
+    check(
+      `${tag} 导航顺序为 首页 / 学习 / 实验 / 案例 / 关于`,
+      state.nav.labels.length === 5 &&
+        state.nav.labels.every((label, index) => label.startsWith(NAV_CONTRACT[index].label)),
+      JSON.stringify(state.nav.labels),
+    )
+    check(
+      `${tag} 导航 href 与契约一致`,
+      JSON.stringify(state.nav.hrefs) === JSON.stringify(NAV_CONTRACT.map((item) => item.href)),
+      JSON.stringify(state.nav.hrefs),
+    )
+    check(
+      `${tag} 仅首页带 aria-current="page"`,
+      state.nav.currentCount === 1 && state.nav.currentText.startsWith('首页'),
+      `count=${state.nav.currentCount} text=${state.nav.currentText}`,
+    )
+    check(
+      `${tag} 内容导航与 utility 控件分离`,
+      state.nav.utilityControlsInside === 0 && state.utilityControls >= 2,
+      `navControls=${state.nav.utilityControlsInside} utility=${state.utilityControls}`,
+    )
+    check(
+      `${tag} Header 不重叠`,
+      !overlaps(state.headerRects.brand, state.headerRects.nav) &&
+        !overlaps(state.headerRects.brand, state.headerRects.actions) &&
+        !overlaps(state.headerRects.nav, state.headerRects.actions),
+      JSON.stringify(state.headerRects),
+    )
+    const minNavHeight = Math.min(...state.navLinkHeights)
+    const minTarget = viewport.width <= 560 ? 32 : 24
+    check(
+      `${tag} 导航链接可点击高度 ${minTarget}px+`,
+      minNavHeight >= minTarget,
+      `minHeight=${minNavHeight}`,
+    )
+
+    check(
+      `${tag} 「从哪里开始」位于 Hero 与 Data Flow 之间`,
+      state.sectionOrder.heroPresent &&
+        state.sectionOrder.startPresent &&
+        state.sectionOrder.dataLessonPresent &&
+        state.sectionOrder.heroBeforeStart &&
+        state.sectionOrder.startBeforeDataLesson,
+      JSON.stringify(state.sectionOrder),
+    )
+    check(`${tag} 显示「从哪里开始？」`, state.startHeading === '从哪里开始？', state.startHeading)
+    check(
+      `${tag} 三路径内容与目标稳定`,
+      state.startCards.length === 3 &&
+        state.startCards.every(
+          (card, index) =>
+            card.audience === START_CONTRACT[index].audience &&
+            card.cta === START_CONTRACT[index].cta &&
+            card.href === START_CONTRACT[index].href,
+        ),
+      JSON.stringify(state.startCards.map(({ audience, cta, href }) => ({ audience, cta, href }))),
+    )
+
+    const cardRects = state.startCards.map((card) => card.rect)
+    const isStacked = viewport.width <= 560
+    check(
+      `${tag} 三路径${isStacked ? '纵向堆叠' : '同排展示'}`,
+      cardRects.length === 3 &&
+        (isStacked
+          ? cardRects[0].bottom <= cardRects[1].y + TOLERANCE &&
+            cardRects[1].bottom <= cardRects[2].y + TOLERANCE
+          : Math.abs(cardRects[0].y - cardRects[1].y) <= TOLERANCE &&
+            Math.abs(cardRects[1].y - cardRects[2].y) <= TOLERANCE),
+      JSON.stringify(cardRects.map(({ x, y, bottom, right }) => ({ x, y, bottom, right }))),
+    )
+    check(
+      `${tag} 路径卡片不横向溢出`,
+      cardRects.every((card) => card.right <= state.innerWidth + TOLERANCE),
+      JSON.stringify(cardRects),
+    )
+    check(
+      `${tag} 无文档级横向滚动`,
+      state.docScrollWidth - state.innerWidth <= TOLERANCE,
+      `scrollWidth=${state.docScrollWidth} innerWidth=${state.innerWidth}`,
+    )
+
+    if (theme === 'light') {
+      await page.click('header.site-header nav.site-header__nav > a[href$="#data-lesson"]')
+      await page.waitForFunction(() => window.location.hash === '#data-lesson')
+      const anchorReached = await page
+        .waitForFunction(
+          () => {
+            const anchor = document.querySelector('#data-lesson')
+            if (!anchor) return false
+            const rect = anchor.getBoundingClientRect()
+            return rect.top >= -1 && rect.top < window.innerHeight
+          },
+          { timeout: 5_000 },
+        )
+        .then(() => true)
+        .catch(() => false)
+      check(`${tag} 实验导航到达首页数据链路区`, anchorReached)
+
+      await page.click('header.site-header nav.site-header__nav > a[href$="/learn/"]')
+      await page.waitForURL((url) => url.pathname === withBase('/learn/'), { timeout: 15_000 })
+      check(`${tag} 学习导航进入学习空间`, page.url().includes(withBase('/learn/')))
+      await page.goBack({ waitUntil: 'networkidle' })
+    }
+
+    check(`${tag} 无 pageerror`, errors.length === 0, errors.join(' | '))
+  } finally {
+    await page.close()
+    await context.close()
+  }
+}
+
+async function main() {
+  const browser = await launchChromium()
+  let preview = null
+
+  try {
+    preview = await startPreview({
+      root: ROOT,
+      base: externalBase,
+      skipBuild,
+      scriptName: SCRIPT_NAME,
+    })
+    console.log(`[${SCRIPT_NAME}] checking the homepage against ${preview.baseUrl}`)
+
+    for (const viewport of VIEWPORTS) {
+      for (const theme of THEMES) {
+        await runTheme(browser, viewport, theme, preview.baseUrl)
+      }
+      console.log(`[${SCRIPT_NAME}] ${viewport.name} done`)
+    }
+  } finally {
+    preview?.stop()
+    await browser.close()
+  }
+
+  if (report(SCRIPT_NAME) > 0) process.exitCode = 1
+}
+
+main().catch((error) => {
+  console.error(`[${SCRIPT_NAME}] ERROR`, error)
+  process.exitCode = 1
+})
