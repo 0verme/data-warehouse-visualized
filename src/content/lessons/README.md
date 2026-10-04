@@ -51,3 +51,4 @@
 - `performance-first-seen.ts`：11-4 customer-counterparty first_seen 增量状态与固定窗口特征
 - `performance-tradeoffs.ts`：11-5 Before / After、迟到数据、固定窗口 / checkpoint / 当日重扫的幂等与工程取舍
 - `lifecycle-path-failure.ts`：13-1 生产实践案例 · 生命周期执行路径（Day 1 成功 / Day 2 失败）
+- `delivery-investigation.ts`：13-2 生产实践案例 · 交付链调查（Producer SUCCESS 但 Consumer 无数据）

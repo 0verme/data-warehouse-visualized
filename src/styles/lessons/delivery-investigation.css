@@ -1,0 +1,845 @@
+/* 生产实践案例 13-2 · 交付链调查（Flow 主 + State / Evidence 辅）。
+   只使用既有 diagram / semantic token；见 docs/DIAGRAM_VISUAL_GRAMMAR.md。 */
+
+.delivery-investigation {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.delivery-investigation__toolbar-main {
+  min-width: 0;
+}
+
+.delivery-investigation__toolbar .visualization-toolbar__label {
+  display: inline-block;
+  margin-bottom: 3px;
+}
+
+.delivery-investigation__toolbar p strong {
+  color: var(--ink);
+}
+
+/* 保留多行说明高度，避免切换步骤时控件与进度条跳动。 */
+.delivery-investigation__toolbar p {
+  min-height: 5.1em;
+}
+
+.delivery-investigation__progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--progress-track);
+}
+
+.delivery-investigation__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--diagram-accent);
+  transition: width var(--motion-standard) ease;
+}
+
+/* ---------- 一条共享 Delivery Chain ---------- */
+
+.delivery-investigation__chain {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.delivery-investigation__node {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.delivery-investigation__node[data-status='running'] {
+  box-shadow: inset 0 3px 0 var(--diagram-accent);
+}
+
+.delivery-investigation__node[data-status='done'] {
+  border-color: var(--success-border);
+}
+
+.delivery-investigation__node[data-status='blocked'] {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.delivery-investigation__node[data-status='waiting'] {
+  border-color: var(--warning-border);
+}
+
+.delivery-investigation__node[data-status='unknown'] {
+  border-style: dashed;
+}
+
+.delivery-investigation__node[data-focus='context'] {
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.delivery-investigation__node[data-focus='primary'] {
+  box-shadow: inset 3px 0 0 var(--diagram-accent);
+}
+
+.delivery-investigation__node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.delivery-investigation__node-role {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.delivery-investigation__node-badge {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.delivery-investigation__node-badge[data-tone='success'] {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.delivery-investigation__node-badge[data-tone='warning'] {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.delivery-investigation__node-badge[data-tone='muted'] {
+  color: var(--text-muted);
+}
+
+.delivery-investigation__node-task {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__node-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.delivery-investigation__node-facts > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.delivery-investigation__node-facts dt {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.delivery-investigation__node-facts dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__node-facts dd[data-state='success'] {
+  color: var(--success-text);
+  font-weight: 700;
+}
+
+.delivery-investigation__node-facts dd[data-state='danger'] {
+  color: var(--danger-text);
+  font-weight: 700;
+}
+
+.delivery-investigation__node-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.delivery-investigation__connector {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  align-self: stretch;
+  padding: 0 2px;
+  color: var(--diagram-connection-muted);
+}
+
+.delivery-investigation__connector::before {
+  content: '→';
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.delivery-investigation__connector[data-state='done'] {
+  color: var(--success-text);
+}
+
+.delivery-investigation__connector[data-state='blocked'] {
+  color: var(--danger-text);
+}
+
+.delivery-investigation__connector > span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Evidence Panel ---------- */
+
+.delivery-investigation__evidence {
+  display: grid;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-control);
+  background: var(--diagram-surface);
+}
+
+.delivery-investigation__evidence-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.delivery-investigation__evidence-row:last-child {
+  border-bottom: 0;
+}
+
+.delivery-investigation__evidence dt {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.delivery-investigation__evidence dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__evidence dd[data-state='success'] {
+  color: var(--success-text);
+}
+
+.delivery-investigation__evidence dd[data-state='danger'] {
+  color: var(--danger-text);
+}
+
+.delivery-investigation__evidence dd[data-state='warning'] {
+  color: var(--warning-text);
+}
+
+.delivery-investigation__evidence dd[data-state='accent'] {
+  color: var(--info-text);
+}
+
+.delivery-investigation__evidence dd[data-state='muted'] {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* ---------- Panels ---------- */
+
+.delivery-investigation__panel {
+  display: grid;
+  gap: 11px;
+  padding: 14px 16px;
+  border: 1px solid var(--diagram-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.delivery-investigation__panel[data-panel='producer-evidence'] {
+  border-left-color: var(--success-text);
+}
+
+.delivery-investigation__panel[data-panel='elimination'],
+.delivery-investigation__panel[data-panel='localization'] {
+  border-left-color: var(--danger-text);
+  background: var(--danger-bg);
+}
+
+.delivery-investigation__panel[data-panel='consumer-observations'] {
+  border-left-color: var(--warning-text);
+  background: var(--warning-bg);
+}
+
+.delivery-investigation__panel[data-panel='repair'] {
+  border-left-color: var(--info-text);
+  background: var(--info-bg);
+}
+
+.delivery-investigation__panel[data-panel='verification'] {
+  border-left-color: var(--success-text);
+  background: var(--success-bg);
+}
+
+.delivery-investigation__panel[data-panel='contract'] {
+  border-left-color: var(--info-text);
+}
+
+.delivery-investigation__panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.delivery-investigation__panel-header > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.delivery-investigation__panel-header > strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.delivery-investigation__panel[data-panel='elimination']
+  .delivery-investigation__panel-header
+  > strong,
+.delivery-investigation__panel[data-panel='localization']
+  .delivery-investigation__panel-header
+  > strong {
+  color: var(--danger-text);
+}
+
+.delivery-investigation__panel[data-panel='consumer-observations']
+  .delivery-investigation__panel-header
+  > strong {
+  color: var(--warning-text);
+}
+
+.delivery-investigation__panel[data-panel='repair'] .delivery-investigation__panel-header > strong {
+  color: var(--info-text);
+}
+
+.delivery-investigation__panel[data-panel='verification']
+  .delivery-investigation__panel-header
+  > strong {
+  color: var(--success-text);
+}
+
+.delivery-investigation__panel > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+/* Producer rename 过程 */
+
+.delivery-investigation__rename {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery-investigation__rename > li {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+}
+
+.delivery-investigation__rename code {
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__rename small {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* 排除清单 */
+
+.delivery-investigation__eliminations {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery-investigation__eliminations > li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.delivery-investigation__elimination-mark {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid var(--danger-border);
+  border-radius: 999px;
+  background: var(--diagram-surface);
+  color: var(--danger-text);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.delivery-investigation__eliminations
+  > li[data-eliminated='false']
+  .delivery-investigation__elimination-mark {
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+
+.delivery-investigation__eliminations strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.delivery-investigation__eliminations small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* Consumer 观察证据 */
+
+.delivery-investigation__observations {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery-investigation__observations > li {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--diagram-surface);
+}
+
+.delivery-investigation__observations > li > span {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.delivery-investigation__observations > li > strong {
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.delivery-investigation__observations > li > small {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+/* 批次键与契约表 */
+
+.delivery-investigation__key-scroll {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.delivery-investigation__keys,
+.delivery-investigation__contract {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.delivery-investigation__keys caption,
+.delivery-investigation__contract caption {
+  padding-bottom: 7px;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-align: left;
+}
+
+.delivery-investigation__keys th,
+.delivery-investigation__keys td,
+.delivery-investigation__contract th,
+.delivery-investigation__contract td {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.delivery-investigation__keys thead th,
+.delivery-investigation__contract thead th {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.delivery-investigation__keys code,
+.delivery-investigation__contract code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__keys tr[data-matches='false'] td:last-child {
+  color: var(--danger-text);
+  font-weight: 850;
+}
+
+.delivery-investigation__keys tr[data-matches='true'] td:last-child {
+  color: var(--success-text);
+  font-weight: 850;
+}
+
+/* 五状态阶梯 */
+
+.delivery-investigation__ladder {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: delivery-ladder;
+}
+
+.delivery-investigation__ladder > li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--diagram-surface);
+  counter-increment: delivery-ladder;
+}
+
+.delivery-investigation__ladder > li[data-status='current'] {
+  border-color: var(--danger-border);
+  background: var(--diagram-surface);
+  box-shadow: inset 3px 0 0 var(--danger-text);
+}
+
+.delivery-investigation__ladder > li[data-status='open'] {
+  border-style: dashed;
+}
+
+.delivery-investigation__ladder-mark {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.delivery-investigation__ladder > li[data-status='current'] .delivery-investigation__ladder-mark {
+  color: var(--danger-text);
+}
+
+.delivery-investigation__ladder strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.delivery-investigation__ladder small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.delivery-investigation__ladder-status {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.delivery-investigation__ladder > li[data-status='current'] .delivery-investigation__ladder-status {
+  color: var(--danger-text);
+}
+
+/* failure boundary 结论 */
+
+.delivery-investigation__boundary {
+  display: grid;
+  gap: 4px;
+  padding: 11px 13px;
+  border: 1px solid var(--danger-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-control);
+  background: var(--diagram-surface);
+}
+
+.delivery-investigation__boundary > span {
+  color: var(--danger-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.delivery-investigation__boundary > strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.delivery-investigation__boundary > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+/* 修复步骤 */
+
+.delivery-investigation__repair-steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery-investigation__repair-steps > li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-control);
+  background: var(--diagram-surface);
+}
+
+.delivery-investigation__repair-steps > li[data-step-state='failed'] {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+}
+
+.delivery-investigation__repair-steps > li[data-step-state='pending'] {
+  border-style: dashed;
+}
+
+.delivery-investigation__repair-steps strong {
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.delivery-investigation__repair-steps span {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__repair-steps code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+}
+
+/* 验证 / artifact checklist */
+
+.delivery-investigation__checks {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.delivery-investigation__checks > li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.delivery-investigation__check-mark {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 1px solid var(--success-border);
+  border-radius: 999px;
+  background: var(--success-bg);
+  color: var(--success-text);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.delivery-investigation__checks > li[data-passed='false'] .delivery-investigation__check-mark {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.delivery-investigation__checks strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.delivery-investigation__checks small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.delivery-investigation__blast-radius,
+.delivery-investigation__pitfall,
+.delivery-investigation__blocked {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--warning-border);
+  border-left-width: 3px;
+  border-radius: var(--radius-control);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.delivery-investigation__blast-radius {
+  border-color: var(--info-border);
+  background: var(--diagram-surface);
+  color: var(--text-secondary);
+}
+
+.delivery-investigation__blocked {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  font-weight: 700;
+}
+
+.delivery-investigation__review {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+@container visualization (max-width: 660px) {
+  .delivery-investigation__chain {
+    grid-template-columns: 1fr;
+  }
+
+  .delivery-investigation__connector {
+    padding: 2px 0;
+  }
+
+  .delivery-investigation__connector::before {
+    content: '↓';
+  }
+
+  /* 390px 下最长的步骤说明约 9em；与基础 5.1em 的差异用于稳定按钮位置。 */
+  .delivery-investigation__toolbar p {
+    min-height: 9em;
+  }
+
+  .delivery-investigation__observations {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container visualization (max-width: 480px) {
+  .delivery-investigation {
+    gap: 13px;
+  }
+
+  /* 320px 下最长的步骤说明需要约 12.5em；预留高度避免切换步骤时按钮跳动。 */
+  .delivery-investigation__toolbar p {
+    min-height: 12.5em;
+  }
+
+  .delivery-investigation__node,
+  .delivery-investigation__panel {
+    padding: 12px;
+  }
+
+  .delivery-investigation__keys,
+  .delivery-investigation__contract {
+    min-width: 360px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delivery-investigation__progress > span {
+    transition: none;
+  }
+}

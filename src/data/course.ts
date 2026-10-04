@@ -30,6 +30,7 @@ export type LessonDemo =
   | 'data-service'
   | 'capstone'
   | 'lifecycle-path'
+  | 'delivery-investigation'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -585,6 +586,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 18,
     demo: 'lifecycle-path',
   },
+  {
+    id: 'lesson-13-2',
+    slug: 'delivery-completion-signal',
+    chapter: '13',
+    order: 200,
+    difficulty: 'advanced',
+    estimatedMinutes: 18,
+    demo: 'delivery-investigation',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -893,6 +903,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '同一个任务、同一段代码，因为目标对象「不存在 / 已存在」进入两条生命周期路径；用两天证据链定位 maintain.prepare 的规则缺口。',
       tags: ['生产案例', '生命周期路径', '判断链', 'Rerun'],
+    },
+    'lesson-13-2': {
+      title: '任务 SUCCESS，为什么下游没有拿到数据？',
+      summary:
+        'Producer Job 成功不等于交付完成；沿 Producer → Exchange → Consumer 交付链排除假设，定位完成信号边界，再验证恰好一次消费。',
+      tags: ['生产案例', '交付链', '完成信号', '判断链', '幂等'],
     },
   },
 }

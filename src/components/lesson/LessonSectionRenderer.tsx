@@ -65,6 +65,12 @@ const LazyLifecyclePathLab = lazy(() =>
   })),
 )
 
+const LazyDeliveryInvestigationLab = lazy(() =>
+  import('../visualizations/DeliveryInvestigationLab').then(({ DeliveryInvestigationLab }) => ({
+    default: DeliveryInvestigationLab,
+  })),
+)
+
 const LazyDataQualityWorkbench = lazy(() =>
   import('../visualizations/DataQualityWorkbench').then(({ DataQualityWorkbench }) => ({
     default: DataQualityWorkbench,
@@ -155,6 +161,7 @@ type LazyVisualizationKind =
   | 'sql-transformation'
   | 'join-fanout'
   | 'lifecycle-path'
+  | 'delivery-investigation'
   | 'data-quality'
   | 'governance'
   | 'performance-lab'
@@ -381,6 +388,12 @@ function VisualizationBody({
       return (
         <VisualizationLoadBoundary key={lessonId} kind="lifecycle-path">
           <LazyLifecyclePathLab />
+        </VisualizationLoadBoundary>
+      )
+    case 'delivery-investigation':
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="delivery-investigation">
+          <LazyDeliveryInvestigationLab />
         </VisualizationLoadBoundary>
       )
     case 'governance':

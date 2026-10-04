@@ -101,6 +101,7 @@ const INTERACTION_LESSONS = [
   'sql-transformation-join',
   'grain',
   'lifecycle-path-failure',
+  'delivery-completion-signal',
 ]
 const SHORT_LESSON = 'why-data-warehouse'
 
