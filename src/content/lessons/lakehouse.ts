@@ -496,7 +496,7 @@ export const lakehouseUnityContent: LessonContent = {
   subtitle:
     '对照异构湖仓与共享基础能力的形态，逐项观察 Storage、Table、Metadata、Catalog、Compute 和治理边界。',
   quickSummary:
-    '湖仓一体试图共享更多基础能力、减少割裂和复制；它不等于一个集群、一个组件，也不保证所有 Compute 合并。',
+    '湖仓一体不是把数据湖和数据仓库简单拼在一起，而是在存储、表语义、元数据 / 目录等基础能力上按需共享，减少数据割裂与重复副本；不同计算引擎仍可并存，治理和运维责任也不会消失。',
   concept: {
     term: '湖仓一体：共享基础能力，不抹平所有差异',
     definition:

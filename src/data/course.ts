@@ -833,9 +833,9 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       tags: ['Table Layer', 'Schema Evolution', 'Time Travel'],
     },
     'lesson-10-unity': {
-      title: '湖仓一体到底“一体”了什么？',
+      title: '湖仓一体是什么？到底“一体”了什么？',
       summary:
-        '对照异构体系与共享基础能力，观察 Storage、Table、Metadata、Catalog、Compute 和副本边界。',
+        '湖仓一体是什么？通过异构湖仓与共享基础能力的架构对照，理解存储、表语义、元数据、计算引擎与数据副本如何协作，以及共享后的治理与运维边界。',
       tags: ['湖仓一体', '存算分离', '架构取舍'],
     },
     'lesson-data-service': {
