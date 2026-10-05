@@ -1050,7 +1050,7 @@ html.learn-page body {
   }
 
   .learn-main > .lesson-nav {
-    padding: 10px 16px 14px;
+    padding: 6px 16px 14px;
     padding-bottom: max(14px, env(safe-area-inset-bottom));
   }
 

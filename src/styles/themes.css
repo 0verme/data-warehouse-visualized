@@ -211,3 +211,11 @@ html[data-theme='dark'] .learn-app .capstone-workbench .capstone-scale-symptom {
   background: var(--surface);
   color: var(--capstone-ink);
 }
+
+@media (max-width: 680px) {
+  html[data-theme='dark'] .learn-app .lesson-nav__link,
+  html[data-theme='dark'] .learn-app .lesson-nav__link:hover {
+    border-color: transparent;
+    background: transparent;
+  }
+}
