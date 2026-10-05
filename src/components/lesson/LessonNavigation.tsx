@@ -50,7 +50,11 @@ export function LessonNavigation({
   locale = DEFAULT_LOCALE,
 }: LessonNavigationProps) {
   return (
-    <nav className="lesson-nav" aria-label={getMessage('courseNavigation', locale)}>
+    <nav
+      className="lesson-nav"
+      aria-label={getMessage('courseNavigation', locale)}
+      data-boundary={!previous ? 'first' : !next ? 'last' : undefined}
+    >
       <LessonLink lesson={previous} direction="previous" locale={locale} />
       <button
         className={`complete-button${isCompleted ? ' is-completed' : ''}`}
