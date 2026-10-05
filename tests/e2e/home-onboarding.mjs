@@ -3,8 +3,8 @@
  * Browser contract for the homepage primary navigation and the "从哪里开始？"
  * onboarding router (Issue #195).
  *
- * Visits the built homepage at 1440×900 / 1280×800 / 390×844 / 320×720 in both
- * themes and asserts the release-relevant paths:
+ * Visits the built homepage at desktop, tablet, breakpoint-edge, and mobile
+ * viewports in both themes and asserts the release-relevant paths:
  *
  *   1. the header renders the five content entries in a stable order;
  *   2. exactly one entry carries `aria-current="page"` (首页);
@@ -44,6 +44,11 @@ const withBase = (path) => `${mountPath}${path}` || '/'
 const VIEWPORTS = [
   { name: 'desktop-1440x900', width: 1440, height: 900 },
   { name: 'desktop-1280x800', width: 1280, height: 800 },
+  { name: 'desktop-1024x768', width: 1024, height: 768 },
+  { name: 'tablet-768x800', width: 768, height: 800 },
+  { name: 'breakpoint-601x800', width: 601, height: 800 },
+  { name: 'breakpoint-600x800', width: 600, height: 800 },
+  { name: 'breakpoint-561x800', width: 561, height: 800 },
   { name: 'mobile-390x844', width: 390, height: 844 },
   { name: 'mobile-320x720', width: 320, height: 720 },
 ]
@@ -120,7 +125,9 @@ async function inspectPage(page) {
       },
       utilityControls: actions ? actions.querySelectorAll('.topbar-control').length : 0,
       headerRects: {
+        header: rect(header),
         brand: rect(brand),
+        brandDomain: rect(brand?.querySelector('.home-brand__domain')),
         nav: rect(nav),
         actions: rect(actions),
       },
@@ -191,6 +198,48 @@ async function runTheme(browser, viewport, theme, baseUrl) {
       state.nav.currentCount === 1 && state.nav.currentText.startsWith('首页'),
       `count=${state.nav.currentCount} text=${state.nav.currentText}`,
     )
+    const activeNavStyle = await page
+      .locator('header.site-header nav.site-header__nav > a[aria-current="page"]')
+      .evaluate((link) => {
+        const style = getComputedStyle(link)
+        return {
+          fontWeight: style.fontWeight,
+          borderBottomWidth: style.borderBottomWidth,
+          borderBottomStyle: style.borderBottomStyle,
+          borderBottomColor: style.borderBottomColor,
+        }
+      })
+    check(
+      `${tag} active 导航视觉状态保持`,
+      activeNavStyle.fontWeight === '700' &&
+        activeNavStyle.borderBottomWidth === '2px' &&
+        activeNavStyle.borderBottomStyle === 'solid' &&
+        activeNavStyle.borderBottomColor !== 'rgba(0, 0, 0, 0)',
+      JSON.stringify(activeNavStyle),
+    )
+    const hoverLink = page.locator('header.site-header nav.site-header__nav > a[href$="/learn/"]')
+    const baseLinkColor = await hoverLink.evaluate((link) => getComputedStyle(link).color)
+    await hoverLink.hover()
+    await page.waitForTimeout(200)
+    const hoverLinkColor = await hoverLink.evaluate((link) => getComputedStyle(link).color)
+    check(`${tag} 导航 hover 样式保持`, hoverLinkColor !== baseLinkColor, hoverLinkColor)
+    await page.keyboard.press('Tab')
+    await page.keyboard.press('Tab')
+    const keyboardFocus = await page.evaluate(() => {
+      const style = getComputedStyle(document.activeElement)
+      return {
+        isCurrentNav: document.activeElement?.getAttribute('aria-current') === 'page',
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+      }
+    })
+    check(
+      `${tag} 键盘可聚焦主导航且保留 focus ring`,
+      keyboardFocus.isCurrentNav &&
+        keyboardFocus.outlineStyle === 'solid' &&
+        keyboardFocus.outlineWidth === '3px',
+      JSON.stringify(keyboardFocus),
+    )
     check(
       `${tag} 内容导航与 utility 控件分离`,
       state.nav.utilityControlsInside === 0 && state.utilityControls >= 2,
@@ -203,8 +252,35 @@ async function runTheme(browser, viewport, theme, baseUrl) {
         !overlaps(state.headerRects.nav, state.headerRects.actions),
       JSON.stringify(state.headerRects),
     )
+    if (viewport.width > 560) {
+      check(
+        `${tag} sql.sb 保留在品牌区`,
+        state.headerRects.brandDomain.width > 0,
+        JSON.stringify(state.headerRects.brandDomain),
+      )
+    }
+    if (viewport.width > 600) {
+      const { header, brand, brandDomain, nav, actions } = state.headerRects
+      const navActionsGap = actions.x - nav.right
+      check(
+        `${tag} 主导航靠右并与全局操作保持 24px 间距`,
+        nav.x > brand.right && Math.abs(navActionsGap - 24) <= TOLERANCE,
+        JSON.stringify({ brand, brandDomain, nav, actions, navActionsGap }),
+      )
+      check(`${tag} 桌面 Header 高度保持 76px`, header.height === 76, `height=${header.height}`)
+    } else {
+      const firstRowBottom = Math.max(
+        state.headerRects.brand.bottom,
+        state.headerRects.actions.bottom,
+      )
+      check(
+        `${tag} 主导航仍在 Header 第二行`,
+        state.headerRects.nav.y >= firstRowBottom - TOLERANCE,
+        JSON.stringify(state.headerRects),
+      )
+    }
     const minNavHeight = Math.min(...state.navLinkHeights)
-    const minTarget = viewport.width <= 560 ? 32 : 24
+    const minTarget = viewport.width <= 600 ? 32 : 24
     check(
       `${tag} 导航链接可点击高度 ${minTarget}px+`,
       minNavHeight >= minTarget,
@@ -234,7 +310,7 @@ async function runTheme(browser, viewport, theme, baseUrl) {
     )
 
     const cardRects = state.startCards.map((card) => card.rect)
-    const isStacked = viewport.width <= 560
+    const isStacked = viewport.width <= 760
     check(
       `${tag} 三路径${isStacked ? '纵向堆叠' : '同排展示'}`,
       cardRects.length === 3 &&
@@ -257,6 +333,23 @@ async function runTheme(browser, viewport, theme, baseUrl) {
     )
 
     if (theme === 'light') {
+      await page.locator('.locale-switcher__trigger').click()
+      await page.locator('.locale-switcher__option').nth(1).click()
+      await page.waitForFunction(
+        () => localStorage.getItem('data-warehouse-visualized:locale') === 'en',
+      )
+      const englishPreview = await inspectPage(page)
+      const englishNavActionsGap =
+        englishPreview.headerRects.actions.x - englishPreview.headerRects.nav.right
+      check(
+        `${tag} English preview 不改变 Header 布局`,
+        englishPreview.docScrollWidth <= englishPreview.innerWidth + TOLERANCE &&
+          (viewport.width <= 600 ||
+            (englishPreview.headerRects.nav.x > englishPreview.headerRects.brand.right &&
+              Math.abs(englishNavActionsGap - 24) <= TOLERANCE)),
+        JSON.stringify(englishPreview.headerRects),
+      )
+
       await page.click('header.site-header nav.site-header__nav > a[href$="#data-lesson"]')
       await page.waitForFunction(() => window.location.hash === '#data-lesson')
       const anchorReached = await page
