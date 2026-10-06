@@ -1,6 +1,7 @@
 import { type ReactNode, useSyncExternalStore } from 'react'
 import { DEFAULT_LOCALE, type Locale } from '../i18n/locale'
 import { getLocaleSnapshot, setLocale, subscribeToLocaleChanges } from '../utils/locale'
+import { getRoute } from '../utils/routes'
 import { LocaleSwitcher } from './course/LocaleSwitcher'
 import { ThemeToggle } from './course/ThemeToggle'
 
@@ -24,6 +25,9 @@ export function GlobalHeaderActions({
   return (
     <div className="learn-topbar__actions">
       {leadingAction}
+      <a className="english-entry-link" href={getRoute('/en/')} aria-label="English resources">
+        EN
+      </a>
       <LocaleSwitcher locale={activeLocale} onLocaleChange={setLocale} />
       <ThemeToggle locale={activeLocale} />
       {children}
