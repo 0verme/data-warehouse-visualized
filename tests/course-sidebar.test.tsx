@@ -45,6 +45,14 @@ describe('课程 Sidebar Accordion', () => {
     expect(markup).toContain('aria-label="搜索课程内容"')
   })
 
+  it('SSR 在移动端目录抽屉提供指向英文内容中心的普通链接', () => {
+    const markup = renderSidebarForLesson('why-data-warehouse')
+
+    expect(markup).toContain(
+      '<a class="course-sidebar__english-link" href="/en/" aria-label="English resources">English</a>',
+    )
+  })
+
   it('SSR 第一章显示四节课程，隐藏视觉编号并完整展示小节标题', () => {
     const markup = renderSidebarForLesson('why-data-warehouse')
     const chapterMarkup = getChapterMarkup(markup, '01')

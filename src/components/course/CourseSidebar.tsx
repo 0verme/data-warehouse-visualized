@@ -112,6 +112,14 @@ export function CourseSidebar({
         <span>{getMessage('searchContent', locale)}</span>
       </button>
 
+      <a
+        className="course-sidebar__english-link"
+        href={getRoute('/en/')}
+        aria-label="English resources"
+      >
+        English
+      </a>
+
       <nav className="course-nav">
         {chapters.map((chapter) => {
           const completedLessonCount = chapter.lessons.filter((lesson) =>

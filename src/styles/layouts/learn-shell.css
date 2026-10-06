@@ -321,7 +321,8 @@ html.learn-page body {
   line-height: 1.6;
 }
 
-.course-sidebar__search {
+.course-sidebar__search,
+.course-sidebar__english-link {
   display: none;
 }
 
@@ -935,15 +936,34 @@ html.learn-page body {
   }
 
   .course-sidebar__search:hover,
-  .course-sidebar__search:focus-visible {
+  .course-sidebar__search:focus-visible,
+  .course-sidebar__english-link:hover,
+  .course-sidebar__english-link:focus-visible {
     border-color: var(--line-strong);
     background: var(--surface-muted);
     color: var(--ink);
   }
 
-  .course-sidebar__search:focus-visible {
+  .course-sidebar__search:focus-visible,
+  .course-sidebar__english-link:focus-visible {
     outline: 3px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+
+  .course-sidebar__english-link {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    padding: 0 11px;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--ink-muted);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
   }
 
   .course-sidebar__search svg {
