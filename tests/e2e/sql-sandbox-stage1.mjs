@@ -274,6 +274,9 @@ async function collectLessonResources(page) {
   return {
     labChunks: resources.filter((entry) => /SqlSandboxLab/iu.test(entry.name)),
     runtimeChunks: resources.filter((entry) => /\/runtime\.[A-Za-z0-9_-]+\.js$/u.test(entry.name)),
+    diagnosticChunks: resources.filter((entry) =>
+      /\/diagnostics\.[A-Za-z0-9_-]+\.js$/u.test(entry.name),
+    ),
     duckdb: resources.filter((entry) => /duckdb|\.wasm|worker/iu.test(entry.name)),
     scripts: resources.filter((entry) => entry.name.endsWith('.js')),
   }
@@ -296,6 +299,10 @@ async function checkIsolation(browser, baseUrl) {
   checker.check(
     '目标课程折叠态没有加载 SqlSandboxLab chunk',
     (await collectLessonResources(page)).labChunks.length === 0,
+  )
+  checker.check(
+    '目标课程折叠态没有加载 runtime diagnostics chunk',
+    (await collectLessonResources(page)).diagnosticChunks.length === 0,
   )
   checker.check(
     '目标课程默认折叠',
@@ -351,7 +358,17 @@ async function runDesktop(baseUrl) {
   checker.check('桌面：展开后仍 0 worker', (await waitForWorkerCount(cdp, 0)) === 0)
   const expandedResources = await collectLessonResources(page)
   checker.check('桌面：展开后加载 SqlSandboxLab chunk', expandedResources.labChunks.length > 0)
+  checker.check(
+    '桌面：展开后加载 runtime diagnostics chunk',
+    expandedResources.diagnosticChunks.length > 0,
+  )
   checker.check('桌面：展开后未加载 runtime chunk', expandedResources.runtimeChunks.length === 0)
+  checker.check(
+    '桌面：运行诊断面板默认折叠',
+    (await page
+      .locator('[data-testid="sql-sandbox-diagnostics"]')
+      .evaluate((node) => node.open)) === false,
+  )
 
   const defaultSql = await page.inputValue('[data-testid="sql-sandbox-editor"]')
   const defaultRun = await runSql(page, SQL.select1)
@@ -359,6 +376,90 @@ async function runDesktop(baseUrl) {
     '桌面：运行 SELECT 1 返回真实 1 行',
     defaultRun.rows === 1,
     JSON.stringify(defaultRun),
+  )
+  await page.locator('[data-testid="sql-sandbox-diagnostics"] > summary').click()
+  const diagnosticPhases = await page
+    .locator('[data-testid="sql-sandbox-diagnostics-phases"] code')
+    .allTextContents()
+  const requiredDiagnosticPhases = [
+    'dynamic-import',
+    'feature-detect',
+    'select-bundle',
+    'create-worker',
+    'instantiate',
+    'open',
+    'connect',
+    'get-version',
+    'seed-runtime',
+    'ready',
+    'query',
+  ]
+  const orderedDiagnosticPhases = requiredDiagnosticPhases.every(
+    (phase, index) =>
+      diagnosticPhases.indexOf(phase) >= 0 &&
+      (index === 0 ||
+        diagnosticPhases.indexOf(phase) >
+          diagnosticPhases.indexOf(requiredDiagnosticPhases[index - 1])),
+  )
+  checker.check(
+    '桌面：诊断面板记录完整 runtime 阶段顺序',
+    orderedDiagnosticPhases,
+    diagnosticPhases.join(' → '),
+  )
+  const diagnosticMetadata = await page
+    .locator('.sql-sandbox-lab__diagnostics-metadata')
+    .first()
+    .innerText()
+  checker.check(
+    '桌面：诊断显示真实 DuckDB package 与 engine version',
+    /DuckDB package[\s\S]*1\.32\.0/u.test(diagnosticMetadata) &&
+      /DuckDB engine[\s\S]*v1\.4\.3/u.test(diagnosticMetadata),
+    diagnosticMetadata,
+  )
+  const diagnosticBundle = await textOrNull(page, '[data-testid="sql-sandbox-diagnostic-bundle"]')
+  checker.check(
+    '桌面：诊断显示真实选中 bundle',
+    /^(EH|MVP|COI)$/u.test(diagnosticBundle?.trim() ?? ''),
+    diagnosticBundle ?? '',
+  )
+  checker.check(
+    '桌面：诊断显示实际 worker / wasm URL 与 feature detection',
+    /duckdb-browser-.*worker\.js/u.test(diagnosticMetadata) &&
+      /duckdb-.*\.wasm/u.test(diagnosticMetadata) &&
+      /wasmExceptions/u.test(diagnosticMetadata),
+    diagnosticMetadata,
+  )
+  const lifecycleText = await page
+    .locator('[data-testid="sql-sandbox-diagnostics-lifecycle"]')
+    .innerText()
+  checker.check(
+    '桌面：诊断记录 pageshow 与 navigation type',
+    lifecycleText.includes('pageshow') && lifecycleText.includes('navigation:'),
+    lifecycleText,
+  )
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text) => {
+          window.__sqlSandboxDiagnosticCopy = text
+        },
+      },
+    })
+  })
+  await page.click('[data-testid="sql-sandbox-copy-diagnostics"]')
+  await page.waitForFunction(() =>
+    document
+      .querySelector('[data-testid="sql-sandbox-diagnostics"] [role="status"]')
+      ?.textContent?.includes('已复制'),
+  )
+  const copiedDiagnostics = await page.evaluate(() => window.__sqlSandboxDiagnosticCopy ?? '')
+  checker.check(
+    '桌面：复制纯文本包含阶段且不包含 SQL / 结果',
+    copiedDiagnostics.includes('SQL Sandbox Diagnostics') &&
+      copiedDiagnostics.includes('Current phase: query') &&
+      !copiedDiagnostics.includes('SELECT 1') &&
+      !copiedDiagnostics.includes('300000'),
   )
   checker.check('桌面：运行后 worker 数量 = 1', (await waitForWorkerCount(cdp, 1)) === 1)
   const engineText = await textOrNull(page, '[data-testid="sql-sandbox-engine"]')
@@ -646,10 +747,41 @@ async function runMobile(browser, baseUrl) {
     const geometry = await checkGeometry(page, label)
     const run = await runSql(page, SQL.select1)
     checker.check(`${label}：真实执行成功`, run.rows === 1, JSON.stringify(run))
+    await page.locator('[data-testid="sql-sandbox-diagnostics"] > summary').click()
+    const diagnosticsGeometry = await page.evaluate(() => {
+      const panel = document.querySelector('[data-testid="sql-sandbox-diagnostics"]')
+      const rect = panel?.getBoundingClientRect()
+      const fields = [
+        ...document.querySelectorAll(
+          '[data-testid="sql-sandbox-diagnostic-current"], [data-testid="sql-sandbox-diagnostic-last-completed"], [data-testid="sql-sandbox-diagnostic-bundle"]',
+        ),
+      ]
+      return {
+        documentScrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+        panelLeft: rect?.left ?? null,
+        panelRight: rect?.right ?? null,
+        coreFieldsFit: fields.every((field) => {
+          const fieldRect = field.getBoundingClientRect()
+          return fieldRect.left >= -1 && fieldRect.right <= window.innerWidth + 1
+        }),
+      }
+    })
+    checker.check(
+      `${label}：展开运行诊断后无横向溢出且核心字段可读`,
+      diagnosticsGeometry.documentScrollWidth <= diagnosticsGeometry.innerWidth + 1 &&
+        diagnosticsGeometry.panelLeft !== null &&
+        diagnosticsGeometry.panelLeft >= -1 &&
+        diagnosticsGeometry.panelRight !== null &&
+        diagnosticsGeometry.panelRight <= diagnosticsGeometry.innerWidth + 1 &&
+        diagnosticsGeometry.coreFieldsFit,
+      JSON.stringify(diagnosticsGeometry),
+    )
     checker.check(`${label}：0 pageerror`, pageErrors.length === 0, pageErrors.join('; '))
 
     results[`w${viewport.width}`] = {
       geometry,
+      diagnosticsGeometry,
       run,
       duckdbRequestCount: responses.length,
     }

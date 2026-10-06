@@ -19,6 +19,12 @@ import {
   type DuckDBBundle,
   type DuckDBBundles,
 } from '@duckdb/duckdb-wasm'
+import {
+  runWithDiagnosticPhase,
+  type SqlSandboxDiagnosticPhaseListener,
+  type SqlSandboxRuntimeMetadataListener,
+  type SqlSandboxRuntimePhase,
+} from './diagnostics'
 import { arrowTableToResult, type ArrowTableLike } from './result'
 import type { SelfHostAssetUrls, SqlQueryResult, SqlSandboxStrategy } from './types'
 
@@ -27,6 +33,9 @@ export interface CreateRuntimeOptions {
   selfHost?: SelfHostAssetUrls
   /** 打开 DuckDB ConsoleLogger，仅用于本地调试。 */
   verbose?: boolean
+  /** Local-only observer; listener failures never affect runtime initialization. */
+  onDiagnosticPhase?: SqlSandboxDiagnosticPhaseListener
+  onDiagnosticMetadata?: SqlSandboxRuntimeMetadataListener
 }
 
 export interface SqlSandboxRuntimeHandle {
@@ -76,32 +85,93 @@ export async function createRuntime(
   options: CreateRuntimeOptions,
 ): Promise<SqlSandboxRuntimeHandle> {
   const bundles = buildBundles(options.strategy, options.selfHost)
-  const features = await getPlatformFeatures()
-
-  if (!features.wasmExceptions && !(bundles.mvp.mainModule && bundles.mvp.mainWorker)) {
-    throw new Error('当前浏览器不支持 WebAssembly exception handling，且自托管 mvp bundle 不可用')
+  const diagnosticPhase = options.onDiagnosticPhase
+  const runObservedPhase = <T>(
+    phase: SqlSandboxRuntimePhase,
+    action: () => Promise<T>,
+  ): Promise<T> =>
+    diagnosticPhase ? runWithDiagnosticPhase(phase, diagnosticPhase, action) : action()
+  const notifyMetadata = (
+    metadata: Parameters<NonNullable<CreateRuntimeOptions['onDiagnosticMetadata']>>[0],
+  ) => {
+    try {
+      options.onDiagnosticMetadata?.(metadata)
+    } catch {
+      // A diagnostic listener must not alter DuckDB initialization.
+    }
+  }
+  const validateFeatures = (features: Awaited<ReturnType<typeof getPlatformFeatures>>) => {
+    if (!features.wasmExceptions && !(bundles.mvp.mainModule && bundles.mvp.mainWorker)) {
+      throw new Error('当前浏览器不支持 WebAssembly exception handling，且自托管 mvp bundle 不可用')
+    }
   }
 
-  const selected = await selectBundle(bundles)
-  if (!selected.mainWorker) {
-    throw new Error('DuckDB bundle 没有可用的 worker 入口')
+  notifyMetadata({ packageVersion: PACKAGE_VERSION })
+  let features: Awaited<ReturnType<typeof getPlatformFeatures>>
+  if (diagnosticPhase) {
+    features = await runWithDiagnosticPhase('feature-detect', diagnosticPhase, async () => {
+      const detected = await getPlatformFeatures()
+      notifyMetadata({ packageVersion: PACKAGE_VERSION, featureDetection: { ...detected } })
+      validateFeatures(detected)
+      return detected
+    })
+  } else {
+    features = await getPlatformFeatures()
+    notifyMetadata({ packageVersion: PACKAGE_VERSION, featureDetection: { ...features } })
+    validateFeatures(features)
   }
 
-  const worker = await createWorker(selected.mainWorker)
+  let selected: DuckDBBundle
+  if (diagnosticPhase) {
+    selected = await runWithDiagnosticPhase('select-bundle', diagnosticPhase, async () => {
+      const bundle = await selectBundle(bundles)
+      if (!bundle.mainWorker) {
+        throw new Error('DuckDB bundle 没有可用的 worker 入口')
+      }
+      return bundle
+    })
+  } else {
+    selected = await selectBundle(bundles)
+    if (!selected.mainWorker) {
+      throw new Error('DuckDB bundle 没有可用的 worker 入口')
+    }
+  }
+  const selectedBundle = describeBundle(selected, bundles)
+  notifyMetadata({
+    packageVersion: PACKAGE_VERSION,
+    featureDetection: { ...features },
+    selectedBundle,
+    workerUrl: selected.mainWorker ?? undefined,
+    wasmUrl: selected.mainModule,
+    pthreadWorkerUrl: selected.pthreadWorker,
+  })
+
+  const worker = await runObservedPhase('create-worker', () => createWorker(selected.mainWorker!))
   const logger = options.verbose ? new ConsoleLogger() : new VoidLogger()
-  const db = new AsyncDuckDB(logger, worker)
+  let db: AsyncDuckDB
+  if (diagnosticPhase) {
+    db = await runWithDiagnosticPhase('instantiate', diagnosticPhase, async () => {
+      const database = new AsyncDuckDB(logger, worker)
+      await database.instantiate(selected.mainModule, selected.pthreadWorker)
+      return database
+    })
+  } else {
+    db = new AsyncDuckDB(logger, worker)
+    await db.instantiate(selected.mainModule, selected.pthreadWorker)
+  }
+  await runObservedPhase('open', () =>
+    db.open({ path: ':memory:', accessMode: DuckDBAccessMode.READ_WRITE }),
+  )
 
-  await db.instantiate(selected.mainModule, selected.pthreadWorker)
-  await db.open({ path: ':memory:', accessMode: DuckDBAccessMode.READ_WRITE })
-
-  const connection = await db.connect()
-  const engineVersion = await db.getVersion()
+  const connection = await runObservedPhase('connect', () => db.connect())
+  const engineVersion = await runObservedPhase('get-version', () => db.getVersion())
+  notifyMetadata({ engineVersion })
 
   return {
     db,
     connection,
     strategy: options.strategy,
-    selectedBundle: describeBundle(selected, bundles),
+    selectedBundle,
     packageVersion: PACKAGE_VERSION,
     engineVersion,
   }
