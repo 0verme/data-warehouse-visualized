@@ -27,6 +27,7 @@ const rawBasePath =
 const basePath = rawBasePath ? `/${rawBasePath.split('/').filter(Boolean).join('/')}` : ''
 
 const RUNTIME_MARKERS = ['apache-arrow', 'cdn.jsdelivr.net/npm/', 'DuckDBAccessMode', 'AsyncDuckDB']
+const DIAGNOSTICS_MARKER = 'SQL Sandbox Diagnostics'
 
 const failures = []
 const notes = []
@@ -154,8 +155,14 @@ if (!existsSync(distDir)) {
       const absolute = resolve(distDir, entry.replace(/^\//u, ''))
       if (!existsSync(absolute)) continue
       pageBytes += statSync(absolute).size
-      if (containsRuntimeMarker(readText(absolute))) {
+      const code = readText(absolute)
+      if (containsRuntimeMarker(code)) {
         fail(`普通课程静态闭包包含 DuckDB 运行时: ${file.slice(distDir.length + 1)} → ${entry}`)
+      }
+      if (code.includes(DIAGNOSTICS_MARKER)) {
+        fail(
+          `普通课程静态闭包包含 SQL Sandbox runtime diagnostics: ${file.slice(distDir.length + 1)} → ${entry}`,
+        )
       }
     }
     if (pageBytes > learnClosureMaxBytes) {
@@ -231,12 +238,18 @@ if (!existsSync(distDir)) {
       fail('目标课程没有找到只通过 dynamic import 加载的 sql-sandbox lab chunk')
     } else {
       const labClosure = staticClosure([labChunk])
+      let diagnosticsInLabClosure = false
       for (const entry of labClosure) {
         const absolute = resolve(distDir, entry.replace(/^\//u, ''))
         if (!existsSync(absolute)) continue
-        if (containsRuntimeMarker(readText(absolute))) {
+        const code = readText(absolute)
+        if (containsRuntimeMarker(code)) {
           fail(`sql-sandbox lab 静态闭包包含 DuckDB 运行时（必须改为 dynamic import）: ${entry}`)
         }
+        if (code.includes(DIAGNOSTICS_MARKER)) diagnosticsInLabClosure = true
+      }
+      if (!diagnosticsInLabClosure) {
+        fail('SQL Sandbox runtime diagnostics 不在 SqlSandboxLab 的 lazy-loaded 静态闭包中')
       }
 
       const labDynamicTargets = [...dynamicImports(labClosure)]

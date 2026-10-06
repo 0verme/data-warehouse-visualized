@@ -75,7 +75,7 @@ describe('SQL Sandbox · 依赖隔离（#35 Stage 1）', () => {
   it('lesson 状态机只在运行时动态 import runtime，不做静态引用', () => {
     const source = readFileSync(join(sandboxDir, 'use-lesson-sql-sandbox.ts'), 'utf8')
 
-    expect(source).toContain("await import('./runtime')")
+    expect(source).toMatch(/import\(['"]\.\/runtime['"]\)/)
     expect(source).not.toMatch(/from\s+['"]\.\/runtime['"]/)
   })
 })

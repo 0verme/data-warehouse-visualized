@@ -11,6 +11,21 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  applySqlSandboxDiagnosticPhase,
+  applySqlSandboxLifecycleEvent,
+  applySqlSandboxRuntimeMetadata,
+  createInitialSqlSandboxDiagnostics,
+  createSqlSandboxLifecycleEvent,
+  getSqlSandboxNavigationType,
+  persistSqlSandboxLifecycleEvent,
+  runWithDiagnosticPhase,
+  updateRunningPhaseElapsed,
+  withSqlSandboxPreflightCapabilities,
+  type SqlSandboxDiagnosticPhaseListener,
+  type SqlSandboxDiagnosticsState,
+  type SqlSandboxRuntimeMetadataListener,
+} from './diagnostics'
+import {
   SQL_SANDBOX_QUERY_TIMEOUT_MS,
   SqlSandboxTimeoutError,
   getGuardFailure,
@@ -41,6 +56,7 @@ export interface LessonSqlSandboxState {
 }
 
 export interface LessonSqlSandboxResult extends LessonSqlSandboxState {
+  diagnostics: SqlSandboxDiagnosticsState
   runSequence: number
   /** 守卫 → 按需启动 runtime → 真实执行；失败不抛出到 UI。 */
   run: (sql: string) => Promise<void>
@@ -130,7 +146,15 @@ function getCachedReference(): SqlSandboxReference {
 
 export function useLessonSqlSandbox(): LessonSqlSandboxResult {
   const [state, setState] = useState<LessonSqlSandboxState>(createLessonSandboxState)
+  const [diagnostics, setDiagnostics] = useState(createInitialSqlSandboxDiagnostics)
   const [runSequence, setRunSequence] = useState(0)
+
+  const onDiagnosticPhase = useCallback<SqlSandboxDiagnosticPhaseListener>((phase) => {
+    setDiagnostics((previous) => applySqlSandboxDiagnosticPhase(previous, phase))
+  }, [])
+  const onDiagnosticMetadata = useCallback<SqlSandboxRuntimeMetadataListener>((metadata) => {
+    setDiagnostics((previous) => applySqlSandboxRuntimeMetadata(previous, metadata))
+  }, [])
 
   const handleRef = useRef<import('./runtime').SqlSandboxRuntimeHandle | null>(null)
   const runtimeRef = useRef<typeof import('./runtime') | null>(null)
@@ -169,7 +193,21 @@ export function useLessonSqlSandbox(): LessonSqlSandboxResult {
       return null
     }
 
-    if (typeof WebAssembly === 'undefined' || typeof Worker === 'undefined') {
+    const preflightCapabilities = {
+      webAssembly: typeof WebAssembly !== 'undefined',
+      worker: typeof Worker !== 'undefined',
+    }
+    setDiagnostics((previous) =>
+      withSqlSandboxPreflightCapabilities(previous, preflightCapabilities),
+    )
+    if (!preflightCapabilities.webAssembly || !preflightCapabilities.worker) {
+      try {
+        await runWithDiagnosticPhase('feature-detect', onDiagnosticPhase, async () => {
+          throw new Error('WebAssembly or Worker API unavailable')
+        })
+      } catch {
+        // Keep the existing unsupported-environment UI and control flow.
+      }
       setState((previous) => ({
         ...previous,
         status: 'unsupported',
@@ -183,27 +221,42 @@ export function useLessonSqlSandbox(): LessonSqlSandboxResult {
     setState((previous) => ({ ...previous, status: 'loading', failure: null }))
 
     try {
-      const runtimeModule = await import('./runtime')
-      const handle = await runtimeModule.createRuntime({ strategy: 'cdn' })
+      const runtimeModule = await runWithDiagnosticPhase(
+        'dynamic-import',
+        onDiagnosticPhase,
+        () => import('./runtime'),
+      )
+      const handle = await runtimeModule.createRuntime({
+        strategy: 'cdn',
+        onDiagnosticPhase,
+        onDiagnosticMetadata,
+      })
       const seed = buildSeedScript()
-      await runtimeModule.seedRuntime(handle, seed.statements)
+      await runWithDiagnosticPhase(
+        'seed-runtime',
+        onDiagnosticPhase,
+        () => runtimeModule.seedRuntime(handle, seed.statements),
+        { redactErrorMessage: true },
+      )
 
       if (generation !== generationRef.current || cancelledRef.current) {
         await runtimeModule.terminateRuntime(handle)
         return null
       }
 
-      runtimeRef.current = runtimeModule
-      handleRef.current = handle
-      setState((previous) => ({
-        ...previous,
-        status: 'ready',
-        engine: {
-          engineVersion: handle.engineVersion,
-          selectedBundle: handle.selectedBundle,
-          strategy: 'cdn',
-        },
-      }))
+      await runWithDiagnosticPhase('ready', onDiagnosticPhase, async () => {
+        runtimeRef.current = runtimeModule
+        handleRef.current = handle
+        setState((previous) => ({
+          ...previous,
+          status: 'ready',
+          engine: {
+            engineVersion: handle.engineVersion,
+            selectedBundle: handle.selectedBundle,
+            strategy: 'cdn',
+          },
+        }))
+      })
       return handle
     } catch (error) {
       if (generation === generationRef.current && !cancelledRef.current) {
@@ -213,7 +266,7 @@ export function useLessonSqlSandbox(): LessonSqlSandboxResult {
     } finally {
       loadingRef.current = false
     }
-  }, [])
+  }, [onDiagnosticMetadata, onDiagnosticPhase])
 
   const run = useCallback(
     async (sql: string) => {
@@ -246,9 +299,15 @@ export function useLessonSqlSandbox(): LessonSqlSandboxResult {
           }
 
           const startedAt = performance.now()
-          const result = await withTimeout(
-            runtimeModule.runRuntimeQuery(handle, guarded.normalizedSql),
-            SQL_SANDBOX_QUERY_TIMEOUT_MS,
+          const result = await runWithDiagnosticPhase(
+            'query',
+            onDiagnosticPhase,
+            () =>
+              withTimeout(
+                runtimeModule.runRuntimeQuery(handle, guarded.normalizedSql),
+                SQL_SANDBOX_QUERY_TIMEOUT_MS,
+              ),
+            { redactErrorMessage: true },
           )
           if (requestId !== requestIdRef.current) {
             return
@@ -277,7 +336,7 @@ export function useLessonSqlSandbox(): LessonSqlSandboxResult {
         setRunSequence((sequence) => sequence + 1)
       }
     },
-    [startInternal, terminateInternal],
+    [onDiagnosticPhase, startInternal, terminateInternal],
   )
 
   const clearRun = useCallback(() => {
@@ -290,26 +349,59 @@ export function useLessonSqlSandbox(): LessonSqlSandboxResult {
   }, [terminateInternal])
 
   useEffect(() => {
-    const handlePageHide = () => {
+    const navigationType = getSqlSandboxNavigationType()
+    const recordLifecycle = (
+      event: 'pageshow' | 'pagehide' | 'visibilitychange',
+      persisted?: boolean,
+    ) => {
+      const entry = createSqlSandboxLifecycleEvent(event, navigationType, { persisted })
+      persistSqlSandboxLifecycleEvent(entry)
+      setDiagnostics((previous) => applySqlSandboxLifecycleEvent(previous, entry))
+    }
+
+    // pageshow may have fired before this lazily loaded component mounts. Record
+    // the current page entry and navigation type without storing its URL.
+    recordLifecycle('pageshow')
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      recordLifecycle('pageshow', event.persisted)
+    }
+    const handlePageHide = (event: PageTransitionEvent) => {
+      recordLifecycle('pagehide', event.persisted)
       void terminateInternal()
     }
+    const handleVisibilityChange = () => recordLifecycle('visibilitychange')
     const handleBeforeSwap = () => {
       void terminateInternal()
     }
 
+    window.addEventListener('pageshow', handlePageShow)
     window.addEventListener('pagehide', handlePageHide)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     document.addEventListener('astro:before-swap', handleBeforeSwap)
 
     return () => {
       cancelledRef.current = true
+      window.removeEventListener('pageshow', handlePageShow)
       window.removeEventListener('pagehide', handlePageHide)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       document.removeEventListener('astro:before-swap', handleBeforeSwap)
       void terminateInternal()
     }
   }, [terminateInternal])
 
+  const hasRunningDiagnosticPhase = diagnostics.phases.some((phase) => phase.status === 'running')
+  useEffect(() => {
+    if (!hasRunningDiagnosticPhase) return
+    const timer = window.setInterval(() => {
+      setDiagnostics((previous) => updateRunningPhaseElapsed(previous))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [hasRunningDiagnosticPhase])
+
   return {
     ...state,
+    diagnostics,
     runSequence,
     run,
     clearRun,

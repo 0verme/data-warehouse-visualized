@@ -7,6 +7,13 @@
  * `useLessonSqlSandbox` 动态 import 的运行时中。
  */
 import { useCallback, useMemo, useState, type KeyboardEvent } from 'react'
+import {
+  formatSqlSandboxDiagnostics,
+  getCurrentSqlSandboxPhase,
+  getLastCompletedSqlSandboxPhase,
+  getLatestSqlSandboxDiagnosticError,
+  type SqlSandboxDiagnosticsState,
+} from '../../features/sql-sandbox-experiment/diagnostics'
 import { compareSummaryToReference } from '../../features/sql-sandbox-experiment/comparison'
 import { getSqlSandboxReference } from '../../features/sql-sandbox-experiment/reference'
 import {
@@ -25,6 +32,186 @@ function formatCell(value: unknown): string {
 
 function formatNumber(value: number | null): string {
   return value === null ? '—' : String(value)
+}
+
+function formatElapsed(elapsedMs: number): string {
+  return `${(elapsedMs / 1000).toFixed(1)} s`
+}
+
+async function copyText(text: string): Promise<void> {
+  if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+    throw new Error('Clipboard access is unavailable')
+  }
+  await navigator.clipboard.writeText(text)
+}
+
+function RuntimeDiagnosticsPanel({ diagnostics }: { diagnostics: SqlSandboxDiagnosticsState }) {
+  const [copyStatus, setCopyStatus] = useState('')
+  const current = getCurrentSqlSandboxPhase(diagnostics)
+  const lastCompleted = getLastCompletedSqlSandboxPhase(diagnostics)
+  const error = getLatestSqlSandboxDiagnosticError(diagnostics)
+  const stalled = current?.status === 'running' && current.elapsedMs >= 10_000
+
+  const handleCopy = async () => {
+    try {
+      await copyText(formatSqlSandboxDiagnostics(diagnostics))
+      setCopyStatus('诊断信息已复制')
+    } catch {
+      setCopyStatus('复制失败，请检查浏览器剪贴板权限')
+    }
+  }
+
+  return (
+    <details className="sql-sandbox-lab__diagnostics" data-testid="sql-sandbox-diagnostics">
+      <summary>运行诊断</summary>
+      <div className="sql-sandbox-lab__diagnostics-content">
+        <p className="sql-sandbox-lab__diagnostics-privacy">
+          仅在页面内存与本标签页 sessionStorage 记录诊断；不记录 SQL、查询结果或 seed
+          内容，不上传遥测。
+        </p>
+        <dl className="sql-sandbox-lab__diagnostics-summary">
+          <dt>状态</dt>
+          <dd data-testid="sql-sandbox-diagnostic-status">
+            {current?.status === 'running'
+              ? '正在初始化 / 运行'
+              : current?.status === 'failed'
+                ? '阶段失败'
+                : current
+                  ? '阶段已完成'
+                  : '等待运行'}
+          </dd>
+          <dt>当前阶段</dt>
+          <dd data-testid="sql-sandbox-diagnostic-current">
+            {current ? `${current.phase} · ${current.status}` : '尚未开始'}
+          </dd>
+          <dt>阶段耗时</dt>
+          <dd data-testid="sql-sandbox-diagnostic-elapsed">
+            {current ? formatElapsed(current.elapsedMs) : '—'}
+          </dd>
+          <dt>上一步</dt>
+          <dd data-testid="sql-sandbox-diagnostic-last-completed">
+            {lastCompleted ? `${lastCompleted.phase} ✓ (${lastCompleted.elapsedMs} ms)` : '暂无'}
+          </dd>
+          <dt>Bundle</dt>
+          <dd data-testid="sql-sandbox-diagnostic-bundle">
+            {diagnostics.runtime.selectedBundle?.toUpperCase() ?? '尚未选择'}
+          </dd>
+        </dl>
+
+        {stalled ? (
+          <p className="sql-sandbox-lab__diagnostics-stalled" role="status">
+            Potentially stalled：此阶段仍在等待，当前提示不会中止、重试或切换 runtime。
+          </p>
+        ) : null}
+
+        <div className="sql-sandbox-lab__diagnostics-section">
+          <h4>Runtime metadata</h4>
+          <dl className="sql-sandbox-lab__diagnostics-metadata">
+            <dt>UA</dt>
+            <dd>{diagnostics.browser.userAgent}</dd>
+            <dt>Platform</dt>
+            <dd>{diagnostics.browser.platform}</dd>
+            <dt>crossOriginIsolated</dt>
+            <dd>{String(diagnostics.browser.crossOriginIsolated)}</dd>
+            <dt>DuckDB package</dt>
+            <dd>{diagnostics.runtime.packageVersion ?? '尚未加载'}</dd>
+            <dt>DuckDB engine</dt>
+            <dd>{diagnostics.runtime.engineVersion ?? '尚未初始化'}</dd>
+            <dt>Feature detection</dt>
+            <dd>
+              {diagnostics.runtime.featureDetection
+                ? Object.entries(diagnostics.runtime.featureDetection)
+                    .map(([name, supported]) => `${name}: ${supported}`)
+                    .join(' · ')
+                : `WebAssembly: ${diagnostics.browser.preflightCapabilities?.webAssembly ?? '未检测'} · Worker: ${diagnostics.browser.preflightCapabilities?.worker ?? '未检测'}`}
+            </dd>
+            <dt>Worker</dt>
+            <dd>{diagnostics.runtime.workerUrl ?? '尚未选择'}</dd>
+            <dt>WASM</dt>
+            <dd>{diagnostics.runtime.wasmUrl ?? '尚未选择'}</dd>
+            <dt>pthread worker</dt>
+            <dd>{diagnostics.runtime.pthreadWorkerUrl ?? '无'}</dd>
+          </dl>
+        </div>
+
+        <div className="sql-sandbox-lab__diagnostics-section">
+          <h4>阶段记录</h4>
+          {diagnostics.phases.length ? (
+            <ol
+              className="sql-sandbox-lab__diagnostics-phases"
+              data-testid="sql-sandbox-diagnostics-phases"
+            >
+              {diagnostics.phases.map((phase, index) => (
+                <li key={`${phase.startedAt}-${phase.phase}-${index}`} data-status={phase.status}>
+                  <code>{phase.phase}</code>
+                  <span>{phase.status}</span>
+                  <span>{phase.elapsedMs} ms</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>尚未运行 runtime。</p>
+          )}
+        </div>
+
+        <div className="sql-sandbox-lab__diagnostics-section">
+          <h4>错误</h4>
+          {error ? (
+            <dl className="sql-sandbox-lab__diagnostics-metadata">
+              <dt>阶段</dt>
+              <dd>{error.phase}</dd>
+              <dt>耗时</dt>
+              <dd>{error.elapsedMs} ms</dd>
+              <dt>名称</dt>
+              <dd>{error.errorName}</dd>
+              <dt>信息</dt>
+              <dd>{error.errorMessage}</dd>
+            </dl>
+          ) : (
+            <p>暂无</p>
+          )}
+        </div>
+
+        <div className="sql-sandbox-lab__diagnostics-section">
+          <h4>Lifecycle</h4>
+          {diagnostics.lifecycle.length ? (
+            <ol
+              className="sql-sandbox-lab__diagnostics-lifecycle"
+              data-testid="sql-sandbox-diagnostics-lifecycle"
+            >
+              {diagnostics.lifecycle.map((event, index) => (
+                <li key={`${event.occurredAt}-${event.event}-${index}`}>
+                  <code>{event.event}</code>
+                  <span>{event.occurredAt}</span>
+                  <span>navigation: {event.navigationType}</span>
+                  <span>visibility: {event.visibilityState}</span>
+                  {event.persisted === undefined ? null : (
+                    <span>persisted: {String(event.persisted)}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p>暂无页面生命周期事件</p>
+          )}
+        </div>
+
+        <div className="sql-sandbox-lab__diagnostics-actions">
+          <button
+            type="button"
+            className="button button--quiet button--small"
+            data-testid="sql-sandbox-copy-diagnostics"
+            onClick={() => void handleCopy()}
+          >
+            复制诊断信息
+          </button>
+          <span role="status" aria-live="polite">
+            {copyStatus}
+          </span>
+        </div>
+      </div>
+    </details>
+  )
 }
 
 function getStatusText(
@@ -56,6 +243,7 @@ export function SqlSandboxLab() {
   const seed = useMemo(() => buildSeedScript(), [])
   const {
     status,
+    diagnostics,
     engine,
     result,
     summary,
@@ -189,6 +377,8 @@ export function SqlSandboxLab() {
           ) : null}
         </div>
       ) : null}
+
+      <RuntimeDiagnosticsPanel diagnostics={diagnostics} />
 
       <div className="sql-sandbox-lab__results">
         {result ? (
