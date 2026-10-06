@@ -361,7 +361,9 @@ async function runTheme(browser, viewport, theme, baseUrl) {
               Math.abs(englishNavActionsGap - 24) <= TOLERANCE)),
         JSON.stringify(englishPreview.headerRects),
       )
+    }
 
+    if (theme === 'dark' && [1440, 390].includes(viewport.width)) {
       await page.click(
         `header.site-header nav.site-header__nav > a[href="${withBase('/roadmap/')}"]`,
       )
