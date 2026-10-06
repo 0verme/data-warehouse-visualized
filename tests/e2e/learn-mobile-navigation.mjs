@@ -323,7 +323,7 @@ async function runMobile(browser, viewport, theme, lesson, baseUrl) {
       check(
         `${tag} completion 仍更新现有课程进度`,
         (await page.locator('[data-progress-count]').innerText()).replace(/\s+/g, ' ').trim() ===
-          '1 / 55',
+          '1 / 56',
         await page.locator('[data-progress-count]').innerText(),
       )
       await page.locator('.complete-button').click()
@@ -331,7 +331,7 @@ async function runMobile(browser, viewport, theme, lesson, baseUrl) {
       check(
         `${tag} completion 可按现有行为撤销`,
         (await page.locator('[data-progress-count]').innerText()).replace(/\s+/g, ' ').trim() ===
-          '0 / 55',
+          '0 / 56',
       )
 
       await page.locator('.lesson-nav__link--previous').click()

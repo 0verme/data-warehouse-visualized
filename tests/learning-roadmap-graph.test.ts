@@ -16,8 +16,8 @@ describe('Learning Graph v1 baseline', () => {
     expect(result.summary).toMatchObject({
       stageCount: 8,
       topicCount: 32,
-      availableLessonCount: 55,
-      coveredAvailableLessonCount: 55,
+      availableLessonCount: 56,
+      coveredAvailableLessonCount: 56,
       requiredEdgeCount: 48,
       recommendedEdgeCount: 17,
       relatedReferenceCount: 1,
@@ -33,7 +33,7 @@ describe('Learning Graph v1 baseline', () => {
       orphanTopicCount: 0,
       unreviewedInversionCount: 0,
     })
-    expect(lessonDefinitions.filter(isLessonAvailable)).toHaveLength(55)
+    expect(lessonDefinitions.filter(isLessonAvailable)).toHaveLength(56)
     expect(requiredEdgeReasons).toHaveLength(48)
     expect(prerequisiteInversionReviews).toEqual([
       expect.objectContaining({
@@ -55,7 +55,7 @@ describe('Learning Graph v1 baseline', () => {
     expect(topicIds).not.toContain('data-service-contract-and-choice')
   })
 
-  it('marks the capstone and production case by knowledge kind', () => {
+  it('marks optional synthesis and production cases without adding roadmap nodes', () => {
     expect(learningGraph.topics.find(({ id }) => id === 'capstone-delivery')).toMatchObject({
       kind: 'synthesis',
       optional: true,
@@ -63,5 +63,8 @@ describe('Learning Graph v1 baseline', () => {
     expect(
       learningGraph.topics.find(({ id }) => id === 'production-lifecycle-debugging'),
     ).toMatchObject({ kind: 'case', optional: true })
+    expect(
+      learningGraph.topics.find(({ id }) => id === 'performance-tradeoffs')?.lessonIds,
+    ).toContain('lesson-11-streaming-golden')
   })
 })

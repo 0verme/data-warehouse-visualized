@@ -71,6 +71,12 @@ const LazyDeliveryInvestigationLab = lazy(() =>
   })),
 )
 
+const LazyStreamingGoldenLab = lazy(() =>
+  import('../visualizations/StreamingGoldenLab').then(({ StreamingGoldenLab }) => ({
+    default: StreamingGoldenLab,
+  })),
+)
+
 const LazyDataQualityWorkbench = lazy(() =>
   import('../visualizations/DataQualityWorkbench').then(({ DataQualityWorkbench }) => ({
     default: DataQualityWorkbench,
@@ -162,6 +168,7 @@ type LazyVisualizationKind =
   | 'join-fanout'
   | 'lifecycle-path'
   | 'delivery-investigation'
+  | 'streaming-golden'
   | 'data-quality'
   | 'governance'
   | 'performance-lab'
@@ -394,6 +401,12 @@ function VisualizationBody({
       return (
         <VisualizationLoadBoundary key={lessonId} kind="delivery-investigation">
           <LazyDeliveryInvestigationLab />
+        </VisualizationLoadBoundary>
+      )
+    case 'streaming-golden':
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="streaming-golden">
+          <LazyStreamingGoldenLab />
         </VisualizationLoadBoundary>
       )
     case 'governance':

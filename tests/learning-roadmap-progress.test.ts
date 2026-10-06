@@ -81,9 +81,9 @@ describe('Lesson Progress projection', () => {
     const progress = { completedLessonIds: ['lesson-12'], currentLessonId: 'lesson-12' }
     const stage = stageProgress(progress, 'serving-production')
 
-    expect(stage.totalLessons).toBe(13)
+    expect(stage.totalLessons).toBe(14)
     expect(stage.completedLessons).toBe(1)
-    expect(stage.progress).toBeCloseTo((1 / 13) * 100)
+    expect(stage.progress).toBeCloseTo((1 / 14) * 100)
     expect(topicProgress(progress, 'capstone-delivery').state).toBe('completed')
   })
 
