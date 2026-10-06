@@ -13,8 +13,8 @@
  *      with the same three paths and links on every viewport;
  *   5. three cards share a row on desktop and stack on mobile without
  *      horizontal overflow;
- *   6. the 实验 anchor reaches the homepage data flow and 学习 reaches
- *      `/learn/` (BASE_PATH aware).
+ *   6. 路线 and the homepage Roadmap CTA share `/roadmap/`; the route opens
+ *      with 路线 active, and 学习 still reaches `/learn/` (BASE_PATH aware).
  *
  * Usage:
  *   npm run test:e2e:home                  # build + preview + checks
@@ -57,7 +57,7 @@ const THEMES = ['light', 'dark']
 const NAV_CONTRACT = [
   { label: '首页', href: withBase('/') },
   { label: '学习', href: withBase('/learn/') },
-  { label: '实验', href: `${withBase('/')}#data-lesson` },
+  { label: '路线', href: withBase('/roadmap/') },
   { label: '案例', href: withBase('/learn/lifecycle-path-failure/') },
   { label: '关于', href: 'https://github.com/0verme/data-warehouse-visualized' },
 ]
@@ -123,6 +123,8 @@ async function inspectPage(page) {
         currentText: (current[0]?.textContent ?? '').trim(),
         utilityControlsInside: nav ? nav.querySelectorAll('.topbar-control').length : 0,
       },
+      roadmapCtaHref:
+        document.querySelector('.home-course-map__roadmap-entry a')?.getAttribute('href') ?? null,
       utilityControls: actions ? actions.querySelectorAll('.topbar-control').length : 0,
       headerRects: {
         header: rect(header),
@@ -183,7 +185,7 @@ async function runTheme(browser, viewport, theme, baseUrl) {
       JSON.stringify(state.nav),
     )
     check(
-      `${tag} 导航顺序为 首页 / 学习 / 实验 / 案例 / 关于`,
+      `${tag} 导航顺序为 首页 / 学习 / 路线 / 案例 / 关于`,
       state.nav.labels.length === 5 &&
         state.nav.labels.every((label, index) => label.startsWith(NAV_CONTRACT[index].label)),
       JSON.stringify(state.nav.labels),
@@ -192,6 +194,11 @@ async function runTheme(browser, viewport, theme, baseUrl) {
       `${tag} 导航 href 与契约一致`,
       JSON.stringify(state.nav.hrefs) === JSON.stringify(NAV_CONTRACT.map((item) => item.href)),
       JSON.stringify(state.nav.hrefs),
+    )
+    check(
+      `${tag} 路线导航与首页 Roadmap CTA href 一致`,
+      state.nav.hrefs[2] === state.roadmapCtaHref,
+      JSON.stringify({ nav: state.nav.hrefs[2], cta: state.roadmapCtaHref }),
     )
     check(
       `${tag} 仅首页带 aria-current="page"`,
@@ -338,6 +345,11 @@ async function runTheme(browser, viewport, theme, baseUrl) {
       await page.waitForFunction(
         () => localStorage.getItem('data-warehouse-visualized:locale') === 'en',
       )
+      await page.waitForFunction(() =>
+        document
+          .querySelector('.locale-switcher__option[aria-checked="true"]')
+          ?.textContent?.includes('English · Preview'),
+      )
       const englishPreview = await inspectPage(page)
       const englishNavActionsGap =
         englishPreview.headerRects.actions.x - englishPreview.headerRects.nav.right
@@ -350,26 +362,33 @@ async function runTheme(browser, viewport, theme, baseUrl) {
         JSON.stringify(englishPreview.headerRects),
       )
 
-      await page.click('header.site-header nav.site-header__nav > a[href$="#data-lesson"]')
-      await page.waitForFunction(() => window.location.hash === '#data-lesson')
-      const anchorReached = await page
-        .waitForFunction(
-          () => {
-            const anchor = document.querySelector('#data-lesson')
-            if (!anchor) return false
-            const rect = anchor.getBoundingClientRect()
-            return rect.top >= -1 && rect.top < window.innerHeight
-          },
-          { timeout: 5_000 },
-        )
-        .then(() => true)
-        .catch(() => false)
-      check(`${tag} 实验导航到达首页数据链路区`, anchorReached)
+      await page.click(
+        `header.site-header nav.site-header__nav > a[href="${withBase('/roadmap/')}"]`,
+      )
+      await page.waitForURL((url) => url.pathname === withBase('/roadmap/'), { timeout: 15_000 })
+      const activeRoute = page.locator(
+        'header.roadmap-header nav.site-header__nav > a[aria-current="page"]',
+      )
+      check(
+        `${tag} 路线导航进入 Roadmap 且正确高亮`,
+        (await activeRoute.textContent())?.trim().startsWith('路线') === true,
+      )
 
-      await page.click('header.site-header nav.site-header__nav > a[href$="/learn/"]')
+      await page.click(
+        `header.roadmap-header nav.site-header__nav > a[href="${withBase('/learn/')}"]`,
+      )
       await page.waitForURL((url) => url.pathname === withBase('/learn/'), { timeout: 15_000 })
       check(`${tag} 学习导航进入学习空间`, page.url().includes(withBase('/learn/')))
       await page.goBack({ waitUntil: 'networkidle' })
+      await page.waitForURL((url) => url.pathname === withBase('/roadmap/'), { timeout: 15_000 })
+      await page.click(
+        `header.roadmap-header nav.site-header__nav > a[href="${withBase('/learn/lifecycle-path-failure/')}"]`,
+      )
+      await page.waitForURL((url) => url.pathname === withBase('/learn/lifecycle-path-failure/'), {
+        timeout: 15_000,
+      })
+      await page.locator('.lesson-header h1').waitFor({ state: 'visible', timeout: 15_000 })
+      check(`${tag} 案例导航进入现有案例课程`, page.url().includes('lifecycle-path-failure'))
     }
 
     check(`${tag} 无 pageerror`, errors.length === 0, errors.join(' | '))

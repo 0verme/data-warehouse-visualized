@@ -50,6 +50,13 @@ const externalBase = baseArgIndex >= 0 ? args[baseArgIndex + 1] : null
 const rawBasePath = process.env.BASE_PATH || '/'
 const basePath = `/${rawBasePath.split('/').filter(Boolean).join('/')}`.replace(/^\/$/, '')
 const route = (path) => `${basePath}${path}`
+const NAV_CONTRACT = [
+  { label: '首页', href: route('/') },
+  { label: '学习', href: route('/learn/') },
+  { label: '路线', href: route('/roadmap/') },
+  { label: '案例', href: route('/learn/lifecycle-path-failure/') },
+  { label: '关于', href: 'https://github.com/0verme/data-warehouse-visualized' },
+]
 const { check, report } = createChecker()
 
 async function waitForProgressReady(page, timeout = 10_000) {
@@ -261,6 +268,23 @@ async function inspectPage(page, baseUrl, tag, errors) {
 
   const documentContract = await page.evaluate(() => {
     const doc = document.documentElement
+    const nav = document.querySelector('header.roadmap-header nav.site-header__nav')
+    const navLinks = nav ? Array.from(nav.querySelectorAll(':scope > a')) : []
+    const activeNav = nav?.querySelector(':scope > a[aria-current="page"]') ?? null
+    const brand = document.querySelector('header.roadmap-header > .brand')
+    const actions = document.querySelector('header.roadmap-header .learn-topbar__actions')
+    const rect = (element) => {
+      if (!element) return null
+      const value = element.getBoundingClientRect()
+      return {
+        x: value.x,
+        y: value.y,
+        right: value.right,
+        bottom: value.bottom,
+        width: value.width,
+      }
+    }
+    const activeStyle = activeNav ? getComputedStyle(activeNav) : null
     const topicCards = Array.from(document.querySelectorAll('.roadmap-topic[data-topic-id]'))
     const stages = Array.from(document.querySelectorAll('.roadmap-stage[data-stage-id]'))
     const lessonLinks = Array.from(document.querySelectorAll('.roadmap-topic__lessons a'))
@@ -297,6 +321,27 @@ async function inspectPage(page, baseUrl, tag, errors) {
       h1Count: headings.filter((tagName) => tagName === 'H1').length,
       documentWidth: doc.scrollWidth,
       viewportWidth: window.innerWidth,
+      nav: {
+        present: Boolean(nav),
+        labels: navLinks.map((link) => (link.textContent ?? '').trim()),
+        hrefs: navLinks.map((link) => link.getAttribute('href')),
+        activeCount: nav?.querySelectorAll(':scope > a[aria-current="page"]').length ?? 0,
+        activeText: (activeNav?.textContent ?? '').trim(),
+        activeStyle: activeStyle
+          ? {
+              fontWeight: activeStyle.fontWeight,
+              borderBottomWidth: activeStyle.borderBottomWidth,
+              borderBottomStyle: activeStyle.borderBottomStyle,
+              borderBottomColor: activeStyle.borderBottomColor,
+            }
+          : null,
+        headerRects: { brand: rect(brand), nav: rect(nav), actions: rect(actions) },
+        linksInViewport: navLinks.every((link) => {
+          const bounds = link.getBoundingClientRect()
+          return bounds.x >= -1 && bounds.right <= window.innerWidth + 1
+        }),
+        linksUnclipped: navLinks.every((link) => link.scrollWidth <= link.clientWidth + 1),
+      },
       disabledLessonLinks: lessonLinks.filter((link) => link.matches(':disabled')).length,
       progressState: document
         .querySelector('.roadmap-main[data-roadmap-progress]')
@@ -399,6 +444,69 @@ async function inspectPage(page, baseUrl, tag, errors) {
     documentContract.relationLinks > 0 && documentContract.missingTopicTargets.length === 0,
   )
   check(`${tag} 单一 H1`, documentContract.h1Count === 1, `h1=${documentContract.h1Count}`)
+  check(
+    `${tag} 顶部导航顺序和 href 稳定`,
+    documentContract.nav.present &&
+      documentContract.nav.labels.length === NAV_CONTRACT.length &&
+      documentContract.nav.labels.every((label, index) =>
+        label.startsWith(NAV_CONTRACT[index].label),
+      ) &&
+      JSON.stringify(documentContract.nav.hrefs) ===
+        JSON.stringify(NAV_CONTRACT.map((item) => item.href)),
+    JSON.stringify(documentContract.nav),
+  )
+  check(
+    `${tag} 路线是唯一 active 导航项`,
+    documentContract.nav.activeCount === 1 && documentContract.nav.activeText.startsWith('路线'),
+    JSON.stringify({
+      count: documentContract.nav.activeCount,
+      text: documentContract.nav.activeText,
+    }),
+  )
+  check(
+    `${tag} active 导航视觉状态正确`,
+    documentContract.nav.activeStyle?.fontWeight === '700' &&
+      documentContract.nav.activeStyle.borderBottomWidth === '2px' &&
+      documentContract.nav.activeStyle.borderBottomStyle === 'solid' &&
+      documentContract.nav.activeStyle.borderBottomColor !== 'rgba(0, 0, 0, 0)',
+    JSON.stringify(documentContract.nav.activeStyle),
+  )
+  check(
+    `${tag} 导航链接完整可见且不截断`,
+    documentContract.nav.linksInViewport && documentContract.nav.linksUnclipped,
+    JSON.stringify({
+      inViewport: documentContract.nav.linksInViewport,
+      unclipped: documentContract.nav.linksUnclipped,
+    }),
+  )
+  const headerBoxes = Object.values(documentContract.nav.headerRects).filter(Boolean)
+  const headerDoesNotOverlap = headerBoxes.every((box, index) =>
+    headerBoxes
+      .slice(index + 1)
+      .every(
+        (other) =>
+          box.right <= other.x + 1 ||
+          other.right <= box.x + 1 ||
+          box.bottom <= other.y + 1 ||
+          other.bottom <= box.y + 1,
+      ),
+  )
+  check(
+    `${tag} Roadmap Header 品牌 / 导航 / 操作控件不重叠`,
+    headerDoesNotOverlap,
+    JSON.stringify(documentContract.nav.headerRects),
+  )
+  if (documentContract.viewportWidth <= 390) {
+    const firstRowBottom = Math.max(
+      documentContract.nav.headerRects.brand?.bottom ?? 0,
+      documentContract.nav.headerRects.actions?.bottom ?? 0,
+    )
+    check(
+      `${tag} 移动端导航位于品牌 / 操作控件下方`,
+      (documentContract.nav.headerRects.nav?.y ?? -1) >= firstRowBottom - 1,
+      JSON.stringify(documentContract.nav.headerRects),
+    )
+  }
   check(
     `${tag} 无 document 横向溢出`,
     documentContract.documentWidth <= documentContract.viewportWidth + 1,
@@ -1341,7 +1449,9 @@ async function main() {
     const homePage = await homeContext.newPage()
     const homeErrors = trackPageErrors(homePage)
     await homePage.goto(`${preview.baseUrl}${route('/')}`, { waitUntil: 'networkidle' })
-    const entry = homePage.locator(`a[href="${route('/roadmap/')}"]`).first()
+    const entry = homePage.locator(
+      `.home-course-map__roadmap-entry a[href="${route('/roadmap/')}"]`,
+    )
     await entry.waitFor({ state: 'visible' })
     await entry.click()
     await homePage.waitForURL((url) => url.pathname.endsWith('/roadmap/'), { timeout: 15_000 })

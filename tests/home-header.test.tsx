@@ -42,14 +42,25 @@ describe('首页 Header', () => {
   it('一级导航固定为五个内容入口且顺序稳定', () => {
     const items = getPrimaryNavItems()
 
-    expect(items.map((item) => item.label)).toEqual(['首页', '学习', '实验', '案例', '关于'])
+    expect(items.map((item) => item.label)).toEqual(['首页', '学习', '路线', '案例', '关于'])
     expect(items.map((item) => item.href)).toEqual([
       '/',
       '/learn/',
-      '/#data-lesson',
+      '/roadmap/',
       '/learn/lifecycle-path-failure/',
       'https://github.com/0verme/data-warehouse-visualized',
     ])
+    expect(items.some((item) => item.label === '实验')).toBe(false)
+  })
+
+  it('路线导航与首页 Roadmap CTA 指向同一个既有 route', () => {
+    const roadmapItem = getPrimaryNavItems().find((item) => item.id === 'roadmap')
+    const ctaTarget = homepage.match(
+      /<a class="home-text-link" href={getRoute\('([^']+)'\)}>\s*按知识关系浏览 Roadmap/,
+    )?.[1]
+
+    expect(ctaTarget).toBe('/roadmap/')
+    expect(roadmapItem?.href).toBe(ctaTarget)
   })
 
   it('导航目标是真实存在的稳定入口，没有空壳链接', () => {
@@ -78,5 +89,19 @@ describe('首页 Header', () => {
     expect(anchors[4]).toContain('target="_blank"')
     expect(anchors[4]).toContain('rel="noopener noreferrer"')
     expect(anchors[4]).toContain('sr-only')
+  })
+
+  it('路线当前页高亮，且学习 / 案例 active IDs 保持可用', () => {
+    for (const [current, activeIndex] of [
+      ['roadmap', 2],
+      ['learn', 1],
+      ['case', 3],
+    ] as const) {
+      const markup = renderToStaticMarkup(<PrimaryNav current={current} />)
+      const anchors = markup.split('<a ').slice(1)
+
+      expect(anchors.filter((anchor) => anchor.includes('aria-current="page"'))).toHaveLength(1)
+      expect(anchors[activeIndex]).toContain('aria-current="page"')
+    }
   })
 })
