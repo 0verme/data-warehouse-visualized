@@ -171,19 +171,23 @@ describe('课程 Sidebar Accordion', () => {
     expect(shellSource).not.toContain('scrollIntoView')
   })
 
-  it('SSR 展开第 11 章时显示五节性能与工程实践课程', () => {
+  it('SSR 展开第 11 章时显示五节性能课及一节进阶选学', () => {
     const markup = renderSidebarForLesson('performance-and-practice')
     const chapterMarkup = getChapterMarkup(markup, '11')
 
     expect(chapterMarkup).toContain('aria-expanded="true"')
-    expect(chapterMarkup).toContain('>0/5</span>')
+    expect(chapterMarkup).toContain('>0/6</span>')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-scan-layout"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-shuffle-skew"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-first-seen"')
     expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-tradeoffs"')
+    expect(chapterMarkup).toContain('data-progress-lesson-link="lesson-11-streaming-golden"')
     expect(chapterMarkup).toContain('>任务变慢了，我们先看哪里？</span>')
     expect(chapterMarkup).toContain('>跑快了，就算优化成功了吗？</span>')
+    expect(chapterMarkup).toContain(
+      '>同一批交易，为什么批处理、微批和流处理会得到不同的当前答案？</span>',
+    )
   })
 
   it('桌面端把图标折叠按钮渲染在品牌区域右侧，支持无障碍属性和双图标状态', () => {

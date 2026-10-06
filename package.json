@@ -23,6 +23,7 @@
     "test:e2e:steps": "node tests/e2e/step-player-composition.mjs",
     "test:e2e:scroll-ownership": "node tests/e2e/nested-scroll-ownership.mjs",
     "test:e2e:date-semantics": "node tests/e2e/scheduler-date-semantics.mjs",
+    "test:e2e:streaming-golden": "node tests/e2e/streaming-golden.mjs",
     "test:e2e:layers": "node tests/e2e/layer-network-evolution.mjs",
     "test:e2e:learn-anchor": "node tests/e2e/learn-anchor-fragment.mjs",
     "test:e2e:search": "node tests/e2e/knowledge-search.mjs",

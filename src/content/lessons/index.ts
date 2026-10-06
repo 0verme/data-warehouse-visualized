@@ -44,6 +44,7 @@ import { performanceFirstSeenContent } from './performance-first-seen'
 import { performanceScanLayoutContent } from './performance-scan-layout'
 import { performanceShuffleSkewContent } from './performance-shuffle-skew'
 import { performanceTradeoffsContent } from './performance-tradeoffs'
+import { streamingWarehouseGoldenContent } from './streaming-warehouse-golden'
 import { slowlyChangingDimensionContent } from './slowly-changing-dimension'
 import { schedulingBusinessDateContent } from './scheduling-business-date'
 import { schedulingFailureContent } from './scheduling-failure'
@@ -117,6 +118,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'performance-shuffle-skew': performanceShuffleSkewContent,
   'performance-first-seen': performanceFirstSeenContent,
   'performance-tradeoffs': performanceTradeoffsContent,
+  'streaming-warehouse-golden': streamingWarehouseGoldenContent,
   'lifecycle-path-failure': lifecyclePathFailureContent,
   'delivery-completion-signal': deliveryInvestigationContent,
 }

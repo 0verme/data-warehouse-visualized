@@ -221,7 +221,7 @@ export const learningGraph: LearningGraph = {
     {
       id: 'performance-tradeoffs',
       stageId: 'serving-production',
-      lessonIds: ['lesson-11-tradeoffs'],
+      lessonIds: ['lesson-11-tradeoffs', 'lesson-11-streaming-golden'],
       prerequisites: ['performance-skew-and-incremental-state', 'sla-and-data-availability'],
       recommendedPrior: ['quality-release-decision'],
     },

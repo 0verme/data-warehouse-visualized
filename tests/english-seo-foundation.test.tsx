@@ -73,6 +73,7 @@ sql-transformation-contract
 sql-transformation-join
 sql-transformation-layers
 star-schema-and-grain
+streaming-warehouse-golden
 warehouse-layers
 warehouse-terms
 why-data-warehouse
@@ -102,14 +103,14 @@ describe('English SEO routing contract', () => {
     ])
   })
 
-  it('preserves 55 unique Learn slugs and their existing /learn/ URL shape', () => {
+  it('preserves 56 unique Learn slugs and their existing /learn/ URL shape', () => {
     const slugs = lessons.map(({ slug }) => slug)
 
-    expect(slugs).toHaveLength(55)
-    expect(new Set(slugs).size).toBe(55)
+    expect(slugs).toHaveLength(56)
+    expect(new Set(slugs).size).toBe(56)
     expect([...slugs].sort()).toEqual(establishedLearnSlugs)
     expect(slugs.every((slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))).toBe(true)
-    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(55)
+    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(56)
   })
 
   it('exposes the English namespace from the existing shared footer as a real link', () => {

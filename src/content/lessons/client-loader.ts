@@ -95,6 +95,8 @@ const lessonContentLoaders: Record<string, () => Promise<LessonContent>> = {
     import('./performance-first-seen').then((m) => m.performanceFirstSeenContent),
   'performance-tradeoffs': () =>
     import('./performance-tradeoffs').then((m) => m.performanceTradeoffsContent),
+  'streaming-warehouse-golden': () =>
+    import('./streaming-warehouse-golden').then((m) => m.streamingWarehouseGoldenContent),
   'lifecycle-path-failure': () =>
     import('./lifecycle-path-failure').then((m) => m.lifecyclePathFailureContent),
   'delivery-completion-signal': () =>

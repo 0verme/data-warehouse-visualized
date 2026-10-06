@@ -50,5 +50,6 @@
 - `performance-shuffle-skew.ts`：11-3 开户机构 Shuffle Key 倾斜、Worker 长尾与通用处理方向
 - `performance-first-seen.ts`：11-4 customer-counterparty first_seen 增量状态与固定窗口特征
 - `performance-tradeoffs.ts`：11-5 Before / After、迟到数据、固定窗口 / checkpoint / 当日重扫的幂等与工程取舍
+- `streaming-warehouse-golden.ts`：11-6 Advanced Golden Lesson · 同一银行交易输入下的 T+1 / microbatch / continuous stream、event-time window、watermark、recovery 与 reconciliation
 - `lifecycle-path-failure.ts`：13-1 生产实践案例 · 生命周期执行路径（Day 1 成功 / Day 2 失败）
 - `delivery-investigation.ts`：13-2 生产实践案例 · 交付链调查（Producer SUCCESS 但 Consumer 无数据）

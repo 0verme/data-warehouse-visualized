@@ -31,6 +31,7 @@ export type LessonDemo =
   | 'capstone'
   | 'lifecycle-path'
   | 'delivery-investigation'
+  | 'streaming-golden'
   | 'coming-soon'
 
 /** Language-neutral fields that identify and arrange a lesson. */
@@ -569,6 +570,15 @@ export const lessonDefinitions = [
     demo: 'performance-lab',
   },
   {
+    id: 'lesson-11-streaming-golden',
+    slug: 'streaming-warehouse-golden',
+    chapter: '11',
+    order: 600,
+    difficulty: 'advanced',
+    estimatedMinutes: 20,
+    demo: 'streaming-golden',
+  },
+  {
     id: 'lesson-12',
     slug: 'build-a-warehouse',
     chapter: '12',
@@ -891,6 +901,19 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '用 Before / After、迟到数据和三种微批策略，检查正确性、幂等、扫描成本与维护复杂度。',
       tags: ['工程取舍', '微批', 'Watermark', 'Checkpoint', '幂等', '迟到数据'],
+    },
+    'lesson-11-streaming-golden': {
+      title: '同一批交易，为什么批处理、微批和流处理会得到不同的当前答案？',
+      summary:
+        '进阶选学 Golden Lesson：用固定银行交易流对比 T+1、微批与 continuous stream，追踪事件时间窗口、迟到修订、watermark、恢复契约与 cutoff 对账。',
+      tags: [
+        '进阶选学',
+        'Golden Lesson',
+        'Event Time',
+        'Watermark',
+        'Exactly-once',
+        'Reconciliation',
+      ],
     },
     'lesson-12': {
       title: '跨系统分行经营分析数据产品',

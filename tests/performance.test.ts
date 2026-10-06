@@ -15,16 +15,17 @@ import {
 import { getAdjacentLessons, getLessonDisplayNumber } from '../src/utils/lesson'
 
 describe('第 11 章性能与工程实践课程', () => {
-  it('注册为五节独立 Lesson，并保留 11-1 的旧 slug 和 id', () => {
+  it('保留 11-1 至 11-5，并将 Advanced Golden Lesson 追加为 11-6', () => {
     const chapterLessons = lessons.filter((lesson) => lesson.chapter === '11')
 
-    expect(chapterLessons).toHaveLength(5)
+    expect(chapterLessons).toHaveLength(6)
     expect(chapterLessons.map((lesson) => lesson.slug)).toEqual([
       'performance-and-practice',
       'performance-scan-layout',
       'performance-shuffle-skew',
       'performance-first-seen',
       'performance-tradeoffs',
+      'streaming-warehouse-golden',
     ])
     expect(chapterLessons.map((lesson) => getLessonDisplayNumber(lesson, lessons))).toEqual([
       '11-1',
@@ -32,6 +33,7 @@ describe('第 11 章性能与工程实践课程', () => {
       '11-3',
       '11-4',
       '11-5',
+      '11-6',
     ])
     expect(chapterLessons.map((lesson) => lesson.id)).toEqual([
       'lesson-11',
@@ -39,21 +41,30 @@ describe('第 11 章性能与工程实践课程', () => {
       'lesson-11-shuffle-skew',
       'lesson-11-first-seen',
       'lesson-11-tradeoffs',
+      'lesson-11-streaming-golden',
     ])
-    expect(chapterLessons.every((lesson) => lesson.demo === 'performance-lab')).toBe(true)
+    expect(chapterLessons.slice(0, 5).every((lesson) => lesson.demo === 'performance-lab')).toBe(
+      true,
+    )
+    expect(chapterLessons[5]).toMatchObject({
+      demo: 'streaming-golden',
+      difficulty: 'advanced',
+      estimatedMinutes: 20,
+    })
     expect(getLessonBySlug('performance-and-practice')).toMatchObject({
       id: 'lesson-11',
       chapter: '11',
     })
   })
 
-  it('11-1 到 11-5、12-1 和 13-1 / 13-2 的正向、反向导航连续', () => {
+  it('11-1 到 11-6、12-1 和 13-1 / 13-2 的正向、反向导航连续', () => {
     const expectedSlugs = [
       'performance-and-practice',
       'performance-scan-layout',
       'performance-shuffle-skew',
       'performance-first-seen',
       'performance-tradeoffs',
+      'streaming-warehouse-golden',
       'build-a-warehouse',
       'lifecycle-path-failure',
       'delivery-completion-signal',
@@ -74,14 +85,14 @@ describe('第 11 章性能与工程实践课程', () => {
     })
   })
 
-  it('五节 Lesson 分别绑定五种教学表现，而不是只注册一份正文', () => {
+  it('11-1 至 11-5 分别绑定各自的教学表现，保留既有内容契约', () => {
     const focuses = ['diagnosis', 'scan-layout', 'shuffle-skew', 'first-seen', 'tradeoffs'] as const
     const chapterLessons = lessons.filter((lesson) => lesson.chapter === '11')
 
     expect(
-      chapterLessons.map((lesson) =>
-        getLessonContent(lesson).sections.map((section) => section.kind),
-      ),
+      chapterLessons
+        .slice(0, 5)
+        .map((lesson) => getLessonContent(lesson).sections.map((section) => section.kind)),
     ).toEqual([
       ['narrative', 'visualization', 'narrative', 'takeaway', 'pitfall'],
       ['narrative', 'visualization', 'compare', 'takeaway', 'pitfall'],
@@ -99,7 +110,7 @@ describe('第 11 章性能与工程实践课程', () => {
       ],
     ])
     expect(
-      chapterLessons.map((lesson) => {
+      chapterLessons.slice(0, 5).map((lesson) => {
         const visualization = getLessonContent(lesson).sections.find(
           (section) => section.kind === 'visualization',
         )
