@@ -1,5 +1,6 @@
 ---
 import { GlobalHeaderActions } from '../../components/GlobalHeaderActions'
+import { PrimaryNav } from '../../components/PrimaryNav'
 import { SiteFooter } from '../../components/SiteFooter'
 import { isLessonAvailable, lessons } from '../../data/course'
 import { learningGraph, requiredEdgeReasons } from '../../features/learning-roadmap/graph'
@@ -42,6 +43,7 @@ const siteTitle = '数据仓库图解首页'
           <small>交互式教材</small>
         </span>
       </a>
+      <PrimaryNav current="roadmap" />
       <GlobalHeaderActions client:load />
     </header>
 
