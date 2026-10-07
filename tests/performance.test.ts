@@ -51,6 +51,9 @@ describe('第 11 章性能与工程实践课程', () => {
       difficulty: 'advanced',
       estimatedMinutes: 20,
     })
+    expect(chapterLessons[5]?.summary).not.toContain('选学')
+    expect(chapterLessons[5]?.tags).not.toContain('进阶选学')
+    expect(getLessonContent(chapterLessons[5]!).eyebrow).not.toContain('选学')
     expect(getLessonBySlug('performance-and-practice')).toMatchObject({
       id: 'lesson-11',
       chapter: '11',

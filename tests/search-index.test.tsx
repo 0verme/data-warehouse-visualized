@@ -81,6 +81,28 @@ describe('搜索索引构建（#148 P1-B）', () => {
     }
   })
 
+  it('Watermark 指向 event-time 课程，source cursor / checkpoint 仍可发现 11-5', () => {
+    const index = buildRealIndex()
+    const lesson11_5 = index.lessons.find(({ id }) => id === 'lesson-11-tradeoffs')
+    expect(lesson11_5?.tags).toContain('Source Cursor')
+    expect(lesson11_5?.tags).toContain('增量游标')
+    expect(lesson11_5?.tags).toContain('Checkpoint')
+    expect(lesson11_5?.tags).not.toContain('Watermark')
+
+    const watermarkHits = searchKnowledge(index, 'Watermark').hits
+    expect(watermarkHits[0]?.lessonId).toBe('lesson-11-streaming-golden')
+    expect([...new Set(watermarkHits.map(({ lessonId }) => lessonId))]).toEqual([
+      'lesson-11-streaming-golden',
+    ])
+
+    for (const query of ['游标', 'cursor', 'checkpoint']) {
+      expect(
+        searchKnowledge(index, query).hits.map(({ lessonId }) => lessonId),
+        `${query} should discover 11-5`,
+      ).toContain('lesson-11-tradeoffs')
+    }
+  })
+
   it('每节课的文档数 = 元数据 + 头部块 + sections + legacy 教学块', () => {
     const index = buildRealIndex()
 
