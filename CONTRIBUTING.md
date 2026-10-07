@@ -13,6 +13,8 @@
 
 这套约束同样适用于课程正文中的案例数据、可视化 Demo 的输入和状态，以及课程规划 Issue。它不要求学习者先懂银行业务。
 
+新增或修改课程正文、标题、metadata、search tags 或实验说明时，也请核对 [`docs/TERMINOLOGY.md`](docs/TERMINOLOGY.md) 中适用的技术语义。PR 模板中的「技术语义审阅」是简短 review checklist；只审阅新增或实际触及的内容，不要求迁移历史课程。
+
 涉及 lesson visualization / teaching interaction 的贡献，请遵守 [`docs/DIAGRAM_VISUAL_GRAMMAR.md` §7.4](docs/DIAGRAM_VISUAL_GRAMMAR.md#74-interaction-quality-principle) 的 Interaction Quality 原则；不要求每节课都有交互。
 
 ## 提交前检查
