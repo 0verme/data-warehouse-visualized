@@ -123,7 +123,7 @@ ODS、DWD、DWS、ADS 是常见的分层叫法，不是所有团队都必须照�
 - 改善课程学习体验
 - 修正文案、无障碍或工程问题
 
-提交代码或课程修改前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和[统一银行教学业务域说明](docs/BANKING_TEACHING_DOMAIN.md)。
+提交代码或课程修改前，请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)、[统一银行教学业务域说明](docs/BANKING_TEACHING_DOMAIN.md) 和[课程术语契约](docs/TERMINOLOGY.md)。
 
 ## 本地运行
 
