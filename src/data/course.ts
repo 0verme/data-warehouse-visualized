@@ -900,14 +900,14 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       title: '跑快了，就算优化成功了吗？',
       summary:
         '用 Before / After、迟到数据和三种微批策略，检查正确性、幂等、扫描成本与维护复杂度。',
-      tags: ['工程取舍', '微批', 'Watermark', 'Checkpoint', '幂等', '迟到数据'],
+      tags: ['工程取舍', '微批', 'Source Cursor', '增量游标', 'Checkpoint', '幂等', '迟到数据'],
     },
     'lesson-11-streaming-golden': {
       title: '同一批交易，为什么批处理、微批和流处理会得到不同的当前答案？',
       summary:
-        '进阶选学 Golden Lesson：用固定银行交易流对比 T+1、微批与 continuous stream，追踪事件时间窗口、迟到修订、watermark、恢复契约与 cutoff 对账。',
+        'Advanced Golden Lesson：用固定银行交易流对比 T+1、微批与 continuous stream，追踪事件时间窗口、迟到修订、watermark、恢复契约与 cutoff 对账。',
       tags: [
-        '进阶选学',
+        '进阶专题',
         'Golden Lesson',
         'Event Time',
         'Watermark',

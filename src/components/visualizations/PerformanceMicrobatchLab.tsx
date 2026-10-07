@@ -37,7 +37,7 @@ const STRATEGIES: readonly {
   {
     id: 'checkpoint',
     letter: 'B',
-    title: 'Watermark / Checkpoint',
+    title: 'Source Cursor / Checkpoint',
     description: '按源变更时间与 ID 游标读取新增 / 更新；需要持久化游标并与结果写入协调。',
   },
   {

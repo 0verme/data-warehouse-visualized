@@ -64,7 +64,8 @@ describe('第 11 章性能与工程交互实验', () => {
       <PerformanceLab visualization={performanceVisualizations.microbatch} />,
     )
 
-    expect(markup).toContain('Watermark / Checkpoint')
+    expect(markup).toContain('Source Cursor / Checkpoint')
+    expect(markup).not.toContain('Watermark / Checkpoint')
     expect(markup).toContain('10:00–10:05')
     expect(markup).toContain('10:05–10:10')
     expect(markup).toContain('TX-1003')

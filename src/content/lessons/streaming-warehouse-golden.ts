@@ -6,7 +6,7 @@ export const streamingGoldenVisualization: StreamingGoldenVisualization = {
 }
 
 export const streamingWarehouseGoldenContent: LessonContent = {
-  eyebrow: '进阶选学 · Advanced Golden Lesson',
+  eyebrow: '进阶专题 · Advanced Golden Lesson',
   opening: {
     eyebrow: '同一批交易，为什么会得到不同的“当前答案”？',
     title: '同一批交易，为什么批处理、微批和流处理会得到不同的当前答案？',
@@ -74,7 +74,7 @@ export const streamingWarehouseGoldenContent: LessonContent = {
       paragraphs: [
         'offset 3 的 event_time=10:04 先于 offset 4 的 10:03 到达。watermark 到 10:05 后，旧窗口已 emit，但仍有两分钟允许迟到；offset 5 在 10:06 到达，event_time 仍是 10:04。它被接受后，把 HZ001 同一窗口从 300 修订为 450，而不是创建一笔“今天”的交易。',
         '本例在 event-time watermark=10:05 时 emit [10:00,10:05)；10:08 将 watermark 推到 10:07 后，该窗 final。TX-008 的 event_time 是 10:03，却在 10:09 才到，因此进入 side / late evidence，不改变在线 450。Watermark 是对 event-time completeness 的策略性估计，不是绝无迟到承诺。',
-        '特别区分术语：11-5 的 Watermark / Checkpoint 指 source-visible high-water cursor（按可见时间 + 唯一 change ID 前进），回答 source 读到哪里；本课 Watermark 用于 emit、revision 与 finalization。Source High-water Cursor != Event-time Watermark。',
+        '特别区分术语：11-5 的 Source Cursor / Checkpoint 指 source-visible high-water cursor（按可见时间 + 唯一 change ID 前进），回答 source 读到哪里；本课 Watermark 用于 emit、revision 与 finalization。Source High-water Cursor != Event-time Watermark。',
         'offset 7 与 offset 6 的 transaction_id 都是 TX-006：这是无故障时也可能发生的业务重复投递，按稳定 transaction identity 去重；它不同于稍后 checkpoint recovery 造成的 replay。',
       ],
       bullets: [

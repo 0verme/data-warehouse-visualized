@@ -171,7 +171,7 @@ describe('课程 Sidebar Accordion', () => {
     expect(shellSource).not.toContain('scrollIntoView')
   })
 
-  it('SSR 展开第 11 章时显示五节性能课及一节进阶选学', () => {
+  it('SSR 展开第 11 章时显示五节性能课及一节进阶专题课', () => {
     const markup = renderSidebarForLesson('performance-and-practice')
     const chapterMarkup = getChapterMarkup(markup, '11')
 
