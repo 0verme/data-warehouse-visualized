@@ -57,6 +57,9 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Verify custom 404 Workers and browser contract
+        run: npm run test:e2e:smart-404
+
       - name: Run browser smoke
         run: npm run test:e2e:smoke -- --skip-build
 

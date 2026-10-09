@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "check": "astro check",
     "test:e2e:smoke": "node tests/e2e/release-smoke.mjs",
+    "test:e2e:smart-404": "node tests/e2e/smart-404.mjs",
     "test:e2e:roadmap": "node tests/e2e/roadmap.mjs",
     "test:e2e:english-foundation": "node tests/e2e/english-foundation.mjs",
     "test:e2e:english-discovery": "node tests/e2e/english-header-discovery.mjs",

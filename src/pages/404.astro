@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import notFoundStylesUrl from '../styles/layouts/not-found.css?url'
+import { getEnglishRoute } from '../utils/english-routes'
+import { getRoute } from '../utils/routes'
+
+const title = '页面未找到 | sql.sb'
+const description = '这个地址没有对应的学习页面。返回首页或从课程目录继续探索。'
+const homeHref = getRoute('/')
+const learnHref = getRoute('/learn/')
+const englishHref = getEnglishRoute('overview')
+
+// Keep the error page crawlable; the real HTTP 404 is the indexing signal.
+// Do not derive metadata or markup from the untrusted request path.
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={null}
+  styleUrls={[notFoundStylesUrl]}
+>
+  <div class="not-found-page">
+    <header class="not-found__header">
+      <a class="brand not-found__brand" href={homeHref} aria-label="sql.sb 首页">
+        <span class="brand__mark" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span class="brand__text">
+          <strong>sql.sb</strong>
+          <small>交互式数据工程教材</small>
+        </span>
+      </a>
+      <a class="not-found__language-link" href={englishHref} lang="en" data-404-link="english">
+        English
+      </a>
+    </header>
+
+    <main class="not-found__main">
+      <section class="not-found__card" aria-labelledby="not-found-title">
+        <p class="not-found__eyebrow" lang="en">
+          SQL.SB · LEARNING BY FOLLOWING THE DATA
+        </p>
+        <p class="not-found__code">404</p>
+        <h1 id="not-found-title" class="not-found__title">
+          页面未找到
+        </h1>
+        <p class="not-found__copy">
+          这个地址没有对应的学习页面。你可以返回首页，或从课程目录继续探索。
+        </p>
+        <p class="not-found__copy not-found__copy--english" lang="en">
+          This page isn’t here. Return home or continue with the course directory.
+        </p>
+
+        <nav class="not-found__actions" aria-label="可用页面">
+          <a class="button button--primary" href={homeHref} data-404-link="home">
+            返回首页 <span aria-hidden="true">→</span>
+          </a>
+          <a class="button button--quiet" href={learnHref} data-404-link="learn">
+            课程目录 <span aria-hidden="true">→</span>
+          </a>
+        </nav>
+        <a
+          class="not-found__english-entry"
+          href={englishHref}
+          lang="en"
+          data-404-link="english-resources"
+        >
+          Explore English resources <span aria-hidden="true">→</span>
+        </a>
+      </section>
+    </main>
+
+    <footer class="not-found__footer">
+      <span>从课程与交互实验继续，看懂数据如何变成可信指标。</span>
+    </footer>
+  </div>
+</BaseLayout>
