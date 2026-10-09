@@ -174,6 +174,32 @@ for (const page of expectedEnglishPages) {
   }
 }
 
+const notFoundPage = readPage('404.html')
+assert.equal(getTagAttribute(notFoundPage, /<html[^>]*>/i, 'lang'), 'zh-CN')
+assert.equal(getTitle(notFoundPage), '页面未找到 | sql.sb')
+assert.doesNotMatch(
+  notFoundPage,
+  /<link[^>]*rel="canonical"/i,
+  'The 404 page must not canonicalize an arbitrary failed request path',
+)
+assert.doesNotMatch(
+  notFoundPage,
+  /<meta[^>]*property="og:url"/i,
+  'The 404 page must not publish an Open Graph URL for a failed request path',
+)
+assert.doesNotMatch(
+  notFoundPage,
+  /<meta[^>]*name="robots"/i,
+  'HTTP 404 is the indexing signal; do not substitute a robots meta directive',
+)
+assert.ok(notFoundPage.includes('页面未找到'))
+assert.ok(notFoundPage.includes('This page isn’t here.'))
+const notFoundLinkHref = (key) =>
+  getTagAttribute(notFoundPage, new RegExp(`<a[^>]*data-404-link="${key}"[^>]*>`, 'i'), 'href')
+assert.equal(notFoundLinkHref('home'), addBase('/'))
+assert.equal(notFoundLinkHref('learn'), addBase('/learn/'))
+assert.equal(notFoundLinkHref('english-resources'), addBase('/en/'))
+
 const homepage = readPage('index.html')
 assert.equal(getTagAttribute(homepage, /<html\b[^>]*>/i, 'lang'), 'zh-CN')
 assert.equal(
@@ -237,6 +263,13 @@ assert.equal(
   'The sitemap must preserve the Learn index and all 56 lesson URLs',
 )
 assert.ok(sitemapUrls.every((url) => !new URL(url).pathname.includes('/zh/')))
+assert.ok(
+  sitemapUrls.every((url) => {
+    const path = removeBase(new URL(url).pathname)
+    return !['/404', '/404/', '/404.html'].includes(path)
+  }),
+  'The sitemap must not include the static 404 document',
+)
 
 console.log(
   `[english-seo-build-contract] PASS · ${expectedEnglishPages.length} English routes · ` +
