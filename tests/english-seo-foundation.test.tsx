@@ -66,6 +66,7 @@ reprocessing-downstream-reload
 reprocessing-historical-parallel
 reprocessing-impact-scope
 reprocessing-incident-timeline
+reprocessing-platform-design
 reprocessing-rolling-backfill
 reprocessing-version-boundary
 scheduling-failure
@@ -110,14 +111,14 @@ describe('English SEO routing contract', () => {
     ])
   })
 
-  it('preserves 63 unique Learn slugs and their existing /learn/ URL shape', () => {
+  it('preserves 64 unique Learn slugs and their existing /learn/ URL shape', () => {
     const slugs = lessons.map(({ slug }) => slug)
 
-    expect(slugs).toHaveLength(63)
-    expect(new Set(slugs).size).toBe(63)
+    expect(slugs).toHaveLength(64)
+    expect(new Set(slugs).size).toBe(64)
     expect([...slugs].sort()).toEqual(establishedLearnSlugs)
     expect(slugs.every((slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))).toBe(true)
-    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(63)
+    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(64)
   })
 
   it('exposes the English namespace from the existing shared footer as a real link', () => {

@@ -1532,6 +1532,147 @@ function RollingBackfillLab() {
   )
 }
 
+interface PlatformPillar {
+  id: string
+  label: string
+  lesson: string
+  real: string
+  demo: string
+  boundary: string
+}
+
+const PLATFORM_PILLARS: readonly PlatformPillar[] = [
+  {
+    id: 'impact-analysis',
+    label: '影响分析',
+    lesson: '14-2 · E2',
+    real: '先有可追溯的 SQL 血缘、实际调度依赖与业务日期 / 分区元数据；三者不一致时宁可不放行。',
+    demo: '模拟器用 fixture 建模任务读写与 dependsOn，输出影响闭包与逐条证据。',
+    boundary: '演示不接入真实调度平台元数据，也不声称可以替代血缘系统。',
+  },
+  {
+    id: 'plan-clone',
+    label: 'Job / Plan 克隆',
+    lesson: '14-4 · E4',
+    real: '平行 Job / Plan 绑定历史 business_date，复用当前有效依赖与最新程序，并与正常生产计划隔离。',
+    demo: '模拟器生成带模拟器内部标识的平行计划条目，展示绑定日期与程序版本。',
+    boundary: '模拟器内部标识只是演示用途，不是平台批次或轮次机制。',
+  },
+  {
+    id: 'state-and-logs',
+    label: '状态与日志',
+    lesson: '14-3 · E3',
+    real: '任务实例状态显式转换，停止要确认副作用；日志按时间追加、可追溯。',
+    demo: '模拟器用九态集合与时间戳事件日志驱动恢复流程。',
+    boundary: '不引入轮次 / generation 字段；日志结构不冒充生产平台格式。',
+  },
+  {
+    id: 'stop-loss',
+    label: '止损',
+    lesson: '14-3 · E3',
+    real: '自动识别受影响实例并停止 / 阻断，正常调度与重做调度互斥，无关链路不误停。',
+    demo: '模拟器演示 running → stopping → stopped → waiting 与写入冲突检查。',
+    boundary: '不接入真实停止命令；真实平台的停止语义与副作用处置以本地规则为准。',
+  },
+  {
+    id: 'run-control',
+    label: '运行控制',
+    lesson: '14-3 / 14-7',
+    real: '按依赖顺序自动调用，失败按正常生产故障流程处理，补数按日期升序满足跨天依赖。',
+    demo: '模拟器按依赖拓扑执行，支持失败重试与滚动窗口顺序。',
+    boundary: '并发策略、重试次数与命令规则以本地生产规则为准，不把「全局并发数 1」当成默认值。',
+  },
+  {
+    id: 'recovery-closure',
+    label: '恢复闭环',
+    lesson: '14-6 · E6',
+    real: '识别下游消费证据，给出重装 / 刷新 / 更正，通知并跟踪确认，确认后才算闭环。',
+    demo: '模拟器用消费证据与确认状态投影闭环进度。',
+    boundary: '不实现真实通知渠道与回执格式；消费方清单必须来自真实登记。',
+  },
+]
+
+function PlatformDesignLab() {
+  const [selectedPillarId, setSelectedPillarId] = useState<string>(PLATFORM_PILLARS[0]?.id ?? '')
+  const selected =
+    PLATFORM_PILLARS.find((pillar) => pillar.id === selectedPillarId) ?? PLATFORM_PILLARS[0]
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="architecture"
+      data-reprocessing-mode="platform-design"
+      aria-label="自动化依赖链重做平台设计"
+    >
+      <p
+        className="dependency-reprocessing__scope-summary"
+        data-role="platform-status"
+        aria-live="polite"
+      >
+        当前能力：<strong>{selected?.label}</strong> · 对应实验：{selected?.lesson}
+      </p>
+
+      <div className="dependency-reprocessing__scope-actions" role="group" aria-label="平台能力">
+        {PLATFORM_PILLARS.map((pillar) => (
+          <button
+            key={pillar.id}
+            className={
+              selectedPillarId === pillar.id
+                ? 'button button--primary button--small'
+                : 'button button--quiet button--small'
+            }
+            type="button"
+            data-pillar={pillar.id}
+            aria-pressed={selectedPillarId === pillar.id}
+            onClick={() => setSelectedPillarId(pillar.id)}
+          >
+            {pillar.label}
+          </button>
+        ))}
+      </div>
+
+      {selected && (
+        <section
+          className="dependency-reprocessing__panel"
+          data-panel="platform-pillar"
+          data-pillar-id={selected.id}
+        >
+          <header className="dependency-reprocessing__panel-header">
+            <span>{selected.label}</span>
+            <strong>{selected.lesson}</strong>
+          </header>
+          <ul className="dependency-reprocessing__evidence">
+            <li data-role="real-experience">
+              <strong>真实经验：</strong>
+              {selected.real}
+            </li>
+            <li data-role="demo-architecture">
+              <strong>演示架构：</strong>
+              {selected.demo}
+            </li>
+            <li data-role="boundary">
+              <strong>边界：</strong>
+              {selected.boundary}
+            </li>
+          </ul>
+        </section>
+      )}
+
+      <section className="dependency-reprocessing__panel" data-panel="platform-baseline">
+        <header className="dependency-reprocessing__panel-header">
+          <span>平台设计底线</span>
+        </header>
+        <ul className="dependency-reprocessing__evidence">
+          <li>要做的：互斥控制、验证门禁、时间戳日志、消费确认、失败按正常故障流程处理。</li>
+          <li>
+            不做的：不重造调度器、不代替血缘系统、不虚构轮次机制、不把演示架构当成通用产品承诺。
+          </li>
+        </ul>
+      </section>
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
@@ -1569,6 +1710,10 @@ export function DependencyReprocessingLab({
 
   if (visualization.lessonFocus === 'rolling-backfill') {
     return <RollingBackfillLab />
+  }
+
+  if (visualization.lessonFocus === 'platform-design') {
+    return <PlatformDesignLab />
   }
 
   return (

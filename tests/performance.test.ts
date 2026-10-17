@@ -78,6 +78,7 @@ describe('第 11 章性能与工程实践课程', () => {
       'reprocessing-version-boundary',
       'reprocessing-downstream-reload',
       'reprocessing-rolling-backfill',
+      'reprocessing-platform-design',
     ]
 
     expectedSlugs.forEach((slug, index) => {

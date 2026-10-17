@@ -670,6 +670,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 20,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-8',
+    slug: 'reprocessing-platform-design',
+    chapter: '14',
+    order: 800,
+    difficulty: 'advanced',
+    estimatedMinutes: 22,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -1040,6 +1049,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '理解 T/T-1、滚动窗口与余额快照的跨天依赖，掌握「日期升序 + 单日依赖」两层执行顺序与窗口选择。',
       tags: ['依赖链重做', '历史补数', '跨天依赖', '滚动窗口', '余额快照'],
+    },
+    'lesson-14-8': {
+      title: '如何设计自动化依赖链重做平台？',
+      summary:
+        '把影响分析、平行计划、状态日志、止损、运行控制与恢复闭环组织成平台能力，并区分真实经验与演示架构。',
+      tags: ['依赖链重做', '平台设计', '工程边界', '恢复闭环', '真实 vs 演示'],
     },
   },
 }

@@ -52,8 +52,8 @@ const CASES = [
   },
   {
     name: 'last',
-    path: '/learn/reprocessing-rolling-backfill/',
-    previous: '/learn/reprocessing-downstream-reload/',
+    path: '/learn/reprocessing-platform-design/',
+    previous: '/learn/reprocessing-rolling-backfill/',
     next: null,
     boundary: 'last',
   },
@@ -323,7 +323,7 @@ async function runMobile(browser, viewport, theme, lesson, baseUrl) {
       check(
         `${tag} completion 仍更新现有课程进度`,
         (await page.locator('[data-progress-count]').innerText()).replace(/\s+/g, ' ').trim() ===
-          '1 / 63',
+          '1 / 64',
         await page.locator('[data-progress-count]').innerText(),
       )
       await page.locator('.complete-button').click()
@@ -331,7 +331,7 @@ async function runMobile(browser, viewport, theme, lesson, baseUrl) {
       check(
         `${tag} completion 可按现有行为撤销`,
         (await page.locator('[data-progress-count]').innerText()).replace(/\s+/g, ' ').trim() ===
-          '0 / 63',
+          '0 / 64',
       )
 
       await page.locator('.lesson-nav__link--previous').click()

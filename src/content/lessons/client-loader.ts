@@ -123,6 +123,10 @@ const lessonContentLoaders: Record<string, () => Promise<LessonContent>> = {
     ),
   'reprocessing-rolling-backfill': () =>
     import('./dependency-reprocessing-rolling').then((m) => m.dependencyReprocessingRollingContent),
+  'reprocessing-platform-design': () =>
+    import('./dependency-reprocessing-platform').then(
+      (m) => m.dependencyReprocessingPlatformContent,
+    ),
 }
 
 const lessonContentCache = new Map<string, LessonContent>()

@@ -65,6 +65,7 @@ import { dependencyReprocessingHistoricalContent } from './dependency-reprocessi
 import { dependencyReprocessingVersionContent } from './dependency-reprocessing-version'
 import { dependencyReprocessingDownstreamContent } from './dependency-reprocessing-downstream'
 import { dependencyReprocessingRollingContent } from './dependency-reprocessing-rolling'
+import { dependencyReprocessingPlatformContent } from './dependency-reprocessing-platform'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { warehouseTermsContent } from './warehouse-terms'
@@ -135,6 +136,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'reprocessing-version-boundary': dependencyReprocessingVersionContent,
   'reprocessing-downstream-reload': dependencyReprocessingDownstreamContent,
   'reprocessing-rolling-backfill': dependencyReprocessingRollingContent,
+  'reprocessing-platform-design': dependencyReprocessingPlatformContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

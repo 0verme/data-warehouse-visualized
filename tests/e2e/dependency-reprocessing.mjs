@@ -28,6 +28,7 @@ const E4_PATH = '/learn/reprocessing-historical-parallel/'
 const E5_PATH = '/learn/reprocessing-version-boundary/'
 const E6_PATH = '/learn/reprocessing-downstream-reload/'
 const E7_PATH = '/learn/reprocessing-rolling-backfill/'
+const E8_PATH = '/learn/reprocessing-platform-design/'
 const SOURCE_TASK_ID = 'ingest.ods-transaction.daily.v2'
 
 const VIEWPORTS = [
@@ -465,6 +466,50 @@ try {
         )
 
         await checkSharedLayout(`${tag} E7`, page, errors)
+        await page.close()
+      }
+
+      // ------------------------------------------------------------ E8
+      {
+        const { page, errors } = await openLesson(browser, viewport, theme, E8_PATH)
+        await page.waitForSelector('[data-reprocessing-mode="platform-design"]', {
+          timeout: 20000,
+        })
+
+        check(`${tag} E8 六个平台能力可见`, (await page.locator('[data-pillar]').count()) === 6)
+        check(
+          `${tag} E8 默认聚焦影响分析`,
+          (await page.getAttribute('[data-panel="platform-pillar"]', 'data-pillar-id')) ===
+            'impact-analysis',
+        )
+        check(
+          `${tag} E8 真实 / 演示 / 边界三层可读`,
+          (await page.locator('[data-role="real-experience"]').count()) === 1 &&
+            (await page.locator('[data-role="demo-architecture"]').count()) === 1 &&
+            (await page.locator('[data-role="boundary"]').count()) === 1,
+        )
+
+        await page.click('[data-pillar="run-control"]')
+        check(
+          `${tag} E8 切换到运行控制`,
+          (await page.getAttribute('[data-panel="platform-pillar"]', 'data-pillar-id')) ===
+            'run-control',
+        )
+        check(
+          `${tag} E8 状态行同步`,
+          ((await page.locator('[data-role="platform-status"]').textContent()) ?? '').includes(
+            '运行控制',
+          ),
+        )
+
+        await page.click('[data-pillar="recovery-closure"]')
+        check(
+          `${tag} E8 切换到恢复闭环`,
+          (await page.getAttribute('[data-panel="platform-pillar"]', 'data-pillar-id')) ===
+            'recovery-closure',
+        )
+
+        await checkSharedLayout(`${tag} E8`, page, errors)
         await page.close()
       }
     }
