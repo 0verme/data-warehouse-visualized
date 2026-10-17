@@ -103,6 +103,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/',
       '/en/data-warehouse/grain/',
       '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/data-lineage-vs-task-dependency/',
     ],
   },
   {
