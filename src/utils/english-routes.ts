@@ -18,6 +18,7 @@ export const ENGLISH_PATHS = {
   pipelineFailureRecovery: '/en/data-warehouse/pipeline-failure-recovery/',
   dataQualityChecks: '/en/data-warehouse/data-quality-checks/',
   dataContracts: '/en/data-warehouse/data-contracts/',
+  pipelineObservability: '/en/data-warehouse/pipeline-observability/',
   tools: '/en/tools/',
 } as const
 
