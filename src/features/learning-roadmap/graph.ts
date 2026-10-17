@@ -255,7 +255,7 @@ export const learningGraph: LearningGraph = {
     {
       id: 'reprocessing-incident-response',
       stageId: 'serving-production',
-      lessonIds: ['lesson-14-1'],
+      lessonIds: ['lesson-14-1', 'lesson-14-2'],
       prerequisites: [],
       recommendedPrior: ['production-lifecycle-debugging'],
       kind: 'case',

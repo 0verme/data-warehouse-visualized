@@ -1,9 +1,19 @@
-import { useMemo, useReducer } from 'react'
+import { useMemo, useReducer, useState } from 'react'
 import {
   createIncidentTimelineKernel,
+  buildImpactScopeViewModel,
+  REPROCESSING_INCIDENT_CHAIN_TASK_IDS,
+  taskIdFromInstanceId,
+  type ImpactScopeSetId,
   type IncidentTimelineHighlight,
   type IncidentTimelineState,
 } from '../../features/dependency-reprocessing/steps'
+import {
+  REPROCESSING_INCIDENT_BUSINESS_DATE,
+  REPROCESSING_TASK_IDS,
+  createReprocessingFixture,
+} from '../../features/dependency-reprocessing/fixture'
+import { orderTaskIdsByDependencies } from '../../features/dependency-reprocessing/model'
 import type { DependencyReprocessingVisualization } from '../../features/dependency-reprocessing/types'
 import {
   applyVisualizationPlayerAction,
@@ -212,11 +222,248 @@ function IncidentTimelineLab() {
   )
 }
 
+const IMPACT_SET_META: Record<ImpactScopeSetId, { label: string; tone: string }> = {
+  stop: { label: '停止集合', tone: 'danger' },
+  redo: { label: '重做集合', tone: 'warning' },
+  waiting: { label: '等待集合', tone: 'muted' },
+  notify: { label: '通知集合', tone: 'accent' },
+}
+
+function ImpactScopeLab() {
+  const model = useMemo(() => createReprocessingFixture(), [])
+  const [sourceTaskId, setSourceTaskId] = useState<string | null>(null)
+  const labels = useMemo(
+    () => new Map(model.tasks.map((task) => [task.taskId, task.label])),
+    [model],
+  )
+  const orderedTaskIds = useMemo(
+    () => orderTaskIdsByDependencies(model, REPROCESSING_INCIDENT_CHAIN_TASK_IDS),
+    [model],
+  )
+  const instanceIdByTaskId = useMemo(
+    () =>
+      new Map(
+        orderedTaskIds.map((taskId) => [
+          taskId,
+          `${taskId}@${REPROCESSING_INCIDENT_BUSINESS_DATE}`,
+        ]),
+      ),
+    [orderedTaskIds],
+  )
+
+  const viewModel = useMemo(() => {
+    if (!sourceTaskId) return null
+    const instanceId = instanceIdByTaskId.get(sourceTaskId)
+    if (!instanceId) return null
+    return buildImpactScopeViewModel(model, instanceId)
+  }, [instanceIdByTaskId, model, sourceTaskId])
+
+  const roleByInstanceId = useMemo(() => {
+    const roles = new Map<string, ImpactScopeSetId | 'source'>()
+    if (!viewModel) return roles
+    roles.set(viewModel.sourceInstanceId, 'source')
+    for (const set of viewModel.sets) {
+      for (const instanceId of set.instanceIds) {
+        if (!roles.has(instanceId)) roles.set(instanceId, set.id)
+      }
+    }
+    return roles
+  }, [viewModel])
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="graph"
+      data-reprocessing-mode="impact-scope"
+      aria-label="依赖链重做影响范围"
+    >
+      <div className="dependency-reprocessing__scope-intro">
+        <p>
+          <strong>选择源实例：</strong>点击下方任一任务节点，联合 SQL
+          血缘、调度依赖与业务日期分区计算影响范围。事故源是 ODS_TRANSACTION 2026-10-16。
+        </p>
+        <div
+          className="dependency-reprocessing__scope-actions"
+          role="group"
+          aria-label="影响范围控制"
+        >
+          <button
+            className="button button--primary button--small"
+            type="button"
+            onClick={() => setSourceTaskId(REPROCESSING_TASK_IDS.ingestTransaction)}
+          >
+            以事故源圈定范围
+          </button>
+          <button
+            className="button button--quiet button--small"
+            type="button"
+            onClick={() => setSourceTaskId(null)}
+            disabled={!sourceTaskId}
+          >
+            重置
+          </button>
+        </div>
+      </div>
+
+      <ol className="dependency-reprocessing__chain" data-reprocessing-chain data-scope-chain>
+        {orderedTaskIds.map((taskId) => {
+          const instanceId = instanceIdByTaskId.get(taskId) ?? taskId
+          const instance = model.instances.find((candidate) => candidate.instanceId === instanceId)
+          const taskLayer = model.tasks.find((task) => task.taskId === taskId)?.layer
+          const role = roleByInstanceId.get(instanceId)
+          const isSource = role === 'source'
+          return (
+            <li
+              key={taskId}
+              className="dependency-reprocessing__node"
+              data-node={taskId}
+              data-instance={instanceId}
+              data-role={role ?? 'idle'}
+              data-affected={role !== undefined}
+            >
+              <button
+                type="button"
+                className="dependency-reprocessing__node-button"
+                aria-pressed={isSource}
+                onClick={() => setSourceTaskId(taskId)}
+              >
+                <span className="dependency-reprocessing__node-header">
+                  <span className="dependency-reprocessing__node-layer">
+                    {LAYER_LABELS[taskLayer ?? ''] ?? taskLayer ?? ''}
+                  </span>
+                  <span
+                    className="dependency-reprocessing__node-state"
+                    data-tone={instance?.state === 'success' ? 'success' : 'muted'}
+                  >
+                    {instance ? (STATE_LABELS[instance.state] ?? instance.state) : '未知'}
+                  </span>
+                </span>
+                <span className="dependency-reprocessing__node-task">
+                  {labels.get(taskId) ?? taskId}
+                </span>
+                {isSource && (
+                  <span className="dependency-reprocessing__node-badge" data-tone="accent">
+                    当前源
+                  </span>
+                )}
+                {role !== undefined && role !== 'source' && (
+                  <span
+                    className="dependency-reprocessing__node-badge"
+                    data-tone={IMPACT_SET_META[role].tone}
+                  >
+                    {IMPACT_SET_META[role].label}
+                  </span>
+                )}
+                {role === undefined && (
+                  <span className="dependency-reprocessing__node-hint">点击作为源</span>
+                )}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+
+      <p className="dependency-reprocessing__scope-summary" aria-live="polite">
+        {!viewModel || !sourceTaskId ? (
+          '尚未选择源实例：影响范围、四类集合与去重清单将在选择后计算。'
+        ) : (
+          <>
+            以 <strong>{labels.get(sourceTaskId) ?? sourceTaskId}</strong> 为源：受影响{' '}
+            <strong>{viewModel.affectedInstanceIds.length}</strong> 个实例、
+            <strong>{viewModel.deduplicatedTaskIds.length}</strong> 个任务（已去重）。
+          </>
+        )}
+      </p>
+
+      {viewModel && sourceTaskId && (
+        <>
+          <div className="dependency-reprocessing__sets">
+            {viewModel.sets.map((set) => (
+              <section key={set.id} className="dependency-reprocessing__set" data-set={set.id}>
+                <header className="dependency-reprocessing__set-header">
+                  <span>{set.label}</span>
+                  <strong>{set.instanceIds.length}</strong>
+                </header>
+                <p>{set.description}</p>
+                {set.instanceIds.length === 0 ? (
+                  <p className="dependency-reprocessing__set-empty">当前为空</p>
+                ) : (
+                  <ul>
+                    {set.instanceIds.map((instanceId) => (
+                      <li key={instanceId} data-instance={instanceId}>
+                        {labels.get(taskIdFromInstanceId(instanceId)) ??
+                          taskIdFromInstanceId(instanceId)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))}
+          </div>
+
+          <section className="dependency-reprocessing__panel" data-panel="dedup-list">
+            <header className="dependency-reprocessing__panel-header">
+              <span>去重后的重做清单</span>
+              <strong>{viewModel.deduplicatedTaskIds.length} 个任务</strong>
+            </header>
+            <ol className="dependency-reprocessing__dedup">
+              {viewModel.deduplicatedTaskIds.map((taskId) => (
+                <li key={taskId} data-task={taskId}>
+                  {labels.get(taskId) ?? taskId}
+                </li>
+              ))}
+            </ol>
+            <p>多支汇合节点只出现一次；没有 SQL 血缘但存在调度依赖的任务同样进入范围。</p>
+            {viewModel.schedulerOnlyTaskIds.length > 0 && (
+              <p data-panel-detail="scheduler-only">
+                仅由调度依赖进入范围：
+                {viewModel.schedulerOnlyTaskIds
+                  .map((taskId) => labels.get(taskId) ?? taskId)
+                  .join('、')}
+              </p>
+            )}
+          </section>
+
+          <section className="dependency-reprocessing__panel" data-panel="impact-evidence">
+            <header className="dependency-reprocessing__panel-header">
+              <span>影响证据</span>
+              <strong>{viewModel.evidenceRows.length} 条</strong>
+            </header>
+            <ul className="dependency-reprocessing__evidence">
+              {viewModel.evidenceRows.map((row) => (
+                <li key={row.id} data-evidence-kind={row.kind}>
+                  <span
+                    className="dependency-reprocessing__evidence-kind"
+                    data-tone={row.kind === 'lineage' ? 'accent' : 'warning'}
+                  >
+                    {row.kind === 'lineage' ? 'SQL 血缘' : '调度依赖'}
+                  </span>
+                  {row.fromLabel} → {row.toLabel}：{row.detail}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
+
+      <section className="dependency-reprocessing__panel" data-panel="left-join-note">
+        <header className="dependency-reprocessing__panel-header">
+          <span>LEFT JOIN 的纳入规则</span>
+        </header>
+        <p>
+          DWS 商户汇总通过 LEFT JOIN
+          读取商户资料。只要该任务读取的任一输入在影响范围内，即使连接结果没有变化，这个已经执行的实例也必须重做——不能用「看起来没变」把它排除。
+        </p>
+      </section>
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
- * Phase 2-A 只实现 E1 事故时间线；其余 focus 由后续课程逐步接入，
- * 未接入时给出明确占位说明，不伪造交互。
+ * Phase 2-A 实现 E1 事故时间线；Phase 2-B 实现 E2 影响范围与去重清单；
+ * 其余 focus 由后续课程逐步接入，未接入时给出明确占位说明，不伪造交互。
  */
 export function DependencyReprocessingLab({
   visualization,
@@ -225,6 +472,10 @@ export function DependencyReprocessingLab({
 }) {
   if (visualization.lessonFocus === 'incident-timeline') {
     return <IncidentTimelineLab />
+  }
+
+  if (visualization.lessonFocus === 'impact-scope') {
+    return <ImpactScopeLab />
   }
 
   return (

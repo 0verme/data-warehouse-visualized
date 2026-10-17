@@ -16,8 +16,8 @@ describe('Learning Graph v1 baseline', () => {
     expect(result.summary).toMatchObject({
       stageCount: 8,
       topicCount: 33,
-      availableLessonCount: 57,
-      coveredAvailableLessonCount: 57,
+      availableLessonCount: 58,
+      coveredAvailableLessonCount: 58,
       requiredEdgeCount: 48,
       recommendedEdgeCount: 18,
       relatedReferenceCount: 1,
@@ -33,7 +33,7 @@ describe('Learning Graph v1 baseline', () => {
       orphanTopicCount: 0,
       unreviewedInversionCount: 0,
     })
-    expect(lessonDefinitions.filter(isLessonAvailable)).toHaveLength(57)
+    expect(lessonDefinitions.filter(isLessonAvailable)).toHaveLength(58)
     expect(requiredEdgeReasons).toHaveLength(48)
     expect(prerequisiteInversionReviews).toEqual([
       expect.objectContaining({

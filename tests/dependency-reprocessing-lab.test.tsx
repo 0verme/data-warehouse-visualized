@@ -4,6 +4,12 @@ import { DependencyReprocessingLab } from '../src/components/visualizations/Depe
 import { getLessonContent } from '../src/content/lessons'
 import { getLessonBySlug, lessons } from '../src/data/course'
 import {
+  REPROCESSING_INCIDENT_BUSINESS_DATE,
+  REPROCESSING_TASK_IDS,
+  createReprocessingFixture,
+} from '../src/features/dependency-reprocessing/fixture'
+import {
+  buildImpactScopeViewModel,
   buildIncidentTimelineSteps,
   createIncidentTimelineKernel,
 } from '../src/features/dependency-reprocessing/steps'
@@ -21,6 +27,15 @@ import {
 const INCIDENT_VISUALIZATION: DependencyReprocessingVisualization = {
   kind: 'dependency-reprocessing',
   lessonFocus: 'incident-timeline',
+}
+
+const IMPACT_VISUALIZATION: DependencyReprocessingVisualization = {
+  kind: 'dependency-reprocessing',
+  lessonFocus: 'impact-scope',
+}
+
+function incidentInstance(taskId: string): string {
+  return `${taskId}@${REPROCESSING_INCIDENT_BUSINESS_DATE}`
 }
 
 describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', () => {
@@ -107,7 +122,7 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'impact-scope' }}
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'stop-wait-redo' }}
       />,
     )
 
@@ -142,7 +157,9 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-incident-timeline').previous?.slug).toBe(
       'delivery-completion-signal',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-incident-timeline').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-incident-timeline').next?.slug).toBe(
+      'reprocessing-impact-scope',
+    )
   })
 
   it('文案遵守专题边界：使用重做语义，不引入轮次 / generation', () => {
@@ -151,6 +168,129 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
 
     expect(text).toContain('依赖链重做（Reprocessing）')
     expect(text).toContain('SUCCESS')
+    expect(text).not.toMatch(/generation|Replay|第 \d+ 轮/i)
+  })
+
+  it('E2 影响范围：四类集合并集去重、调度型任务与 LEFT JOIN 证据', () => {
+    const model = createReprocessingFixture()
+    const viewModel = buildImpactScopeViewModel(
+      model,
+      incidentInstance(REPROCESSING_TASK_IDS.ingestTransaction),
+    )
+    const sets = new Map(viewModel.sets.map((set) => [set.id, set]))
+
+    expect(sets.get('stop')?.instanceIds).toEqual([
+      incidentInstance(REPROCESSING_TASK_IDS.dwsMerchantTransaction),
+    ])
+    expect(sets.get('redo')?.instanceIds).toEqual([
+      incidentInstance(REPROCESSING_TASK_IDS.ingestTransaction),
+      incidentInstance(REPROCESSING_TASK_IDS.checkTransactionCompleteness),
+      incidentInstance(REPROCESSING_TASK_IDS.dwdTransactionDetail),
+      incidentInstance(REPROCESSING_TASK_IDS.dwsChannelTransaction),
+    ])
+    expect(sets.get('waiting')?.instanceIds).toEqual([
+      incidentInstance(REPROCESSING_TASK_IDS.adsTransactionReport),
+      incidentInstance(REPROCESSING_TASK_IDS.consumeTransactionReport),
+      incidentInstance(REPROCESSING_TASK_IDS.deliverTransactionFile),
+    ])
+    expect(sets.get('notify')?.instanceIds).toEqual([
+      incidentInstance(REPROCESSING_TASK_IDS.consumeTransactionReport),
+      incidentInstance(REPROCESSING_TASK_IDS.deliverTransactionFile),
+    ])
+
+    expect(viewModel.affectedInstanceIds).toHaveLength(8)
+    expect(viewModel.deduplicatedTaskIds).toEqual([
+      REPROCESSING_TASK_IDS.ingestTransaction,
+      REPROCESSING_TASK_IDS.checkTransactionCompleteness,
+      REPROCESSING_TASK_IDS.dwdTransactionDetail,
+      REPROCESSING_TASK_IDS.dwsMerchantTransaction,
+      REPROCESSING_TASK_IDS.dwsChannelTransaction,
+      REPROCESSING_TASK_IDS.adsTransactionReport,
+      REPROCESSING_TASK_IDS.consumeTransactionReport,
+      REPROCESSING_TASK_IDS.deliverTransactionFile,
+    ])
+    expect(new Set(viewModel.deduplicatedTaskIds).size).toBe(8)
+    // 没有 SQL 血缘、仅由调度依赖进入范围的任务。
+    expect(viewModel.schedulerOnlyTaskIds).toEqual([
+      REPROCESSING_TASK_IDS.checkTransactionCompleteness,
+    ])
+
+    // 多支汇合：两条血缘证据都指向 ADS，但去重清单只出现一次。
+    const adsInstanceId = incidentInstance(REPROCESSING_TASK_IDS.adsTransactionReport)
+    expect(
+      viewModel.evidenceRows.filter(
+        (row) =>
+          row.toTaskId === REPROCESSING_TASK_IDS.adsTransactionReport && row.kind === 'lineage',
+      ),
+    ).toHaveLength(2)
+    expect(
+      viewModel.affectedInstanceIds.filter((instanceId) => instanceId === adsInstanceId),
+    ).toHaveLength(1)
+  })
+
+  it('E2 LEFT JOIN：输入被污染时左连接读取仍构成传播边', () => {
+    const model = createReprocessingFixture({ variant: 'completed' })
+    const viewModel = buildImpactScopeViewModel(
+      model,
+      incidentInstance(REPROCESSING_TASK_IDS.ingestMerchant),
+    )
+    const merchantDwsInstanceId = incidentInstance(REPROCESSING_TASK_IDS.dwsMerchantTransaction)
+
+    expect(viewModel.sets.find((set) => set.id === 'redo')?.instanceIds).toContain(
+      merchantDwsInstanceId,
+    )
+    expect(
+      viewModel.evidenceRows.some(
+        (row) =>
+          row.toTaskId === REPROCESSING_TASK_IDS.dwsMerchantTransaction &&
+          row.detail.includes('left-join'),
+      ),
+    ).toBe(true)
+  })
+
+  it('E2 静态渲染：源选择与结果面板结构完整', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab visualization={IMPACT_VISUALIZATION} />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="impact-scope"')
+    expect(html).toContain('data-scope-chain')
+    expect(html.match(/data-node=/g)).toHaveLength(8)
+    expect(html).toContain('以事故源圈定范围')
+    expect(html).toContain('尚未选择源实例')
+    expect(html).toContain('LEFT JOIN 的纳入规则')
+    expect(html).toContain('aria-live="polite"')
+  })
+
+  it('第 14 章 14-2 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-impact-scope')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-2',
+      slug: 'reprocessing-impact-scope',
+      chapter: '14',
+      order: 200,
+      difficulty: 'advanced',
+      estimatedMinutes: 20,
+      demo: 'dependency-reprocessing',
+      title: 'SQL 血缘与调度依赖：如何圈定依赖链重做范围？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual(IMPACT_VISUALIZATION)
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-impact-scope').previous?.slug).toBe(
+      'reprocessing-incident-timeline',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-impact-scope').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('SQL 血缘')
+    expect(text).toContain('LEFT JOIN')
     expect(text).not.toMatch(/generation|Replay|第 \d+ 轮/i)
   })
 })
