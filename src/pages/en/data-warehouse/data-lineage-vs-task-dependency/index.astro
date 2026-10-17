@@ -81,8 +81,8 @@ const description =
     <section class="english-article__section" aria-labelledby="example">
       <h2 id="example">One workflow, two graphs</h2>
       <p>
-        The example below has three jobs and one view. <code>JOB_A</code> loads
-        <code>stg_orders</code>, <code>JOB_REPORT</code> writes <code>report_daily</code> from
+        The example below has three jobs and one view. <code>JOB_A</code> loads{' '}
+        <code>stg_orders</code>, <code>JOB_REPORT</code> writes <code>report_daily</code> from{' '}
         <code>v_customer_orders</code>, and the view also reads <code>customers</code> — a table
         loaded by another team. Walk the scenarios and watch what each graph can and cannot see.
       </p>
@@ -94,9 +94,8 @@ const description =
       <ul>
         <li>
           <strong>A view hides its SQL inputs from the scheduler.</strong> The scheduler only sees
-          the jobs and the dependencies someone declared. The view reads
-          <code>stg_orders</code> and <code>customers</code>, but only the job relationship is
-          declared.
+          the jobs and the dependencies someone declared. The view reads <code>stg_orders</code> and{' '}
+          <code>customers</code>, but only the job relationship is declared.
         </li>
         <li>
           <strong>A dependency can exist without data flow.</strong> A job may wait for an upstream

@@ -80,7 +80,7 @@ WHERE o.order_id = 'O-1001';
       <h3>Many-to-many: two repeating keys multiply</h3>
       <p>
         When both sides repeat the same key — or you join two child tables on that key — the matches
-        cross each other. In the lab, joining <code>payments</code> and <code>shipments</code> on
+        cross each other. In the lab, joining <code>payments</code> and <code>shipments</code> on{' '}
         <code>order_id</code> gives <code>O-1001</code> 2 × 2 = 4 rows, and its order amount is
         copied four times.
       </p>
@@ -160,8 +160,7 @@ WHERE o.order_id = 'O-1001';
             <code>SELECT DISTINCT *</code> still returns every joined row
           </strong>{' '}
           when any selected column differs — for example <code>payment_id</code> is different for
-          the two
-          <code>O-1001</code> payments.
+          the two <code>O-1001</code> payments.
         </li>
         <li>
           <strong>
@@ -183,7 +182,7 @@ WHERE o.order_id = 'O-1001';
       <div class="english-callout" data-tone="info">
         <strong>DISTINCT is acceptable only when you actually want distinct combinations</strong>
         <p>
-          If the business question is "how many distinct (order, payment) pairs exist", then
+          If the business question is "how many distinct (order, payment) pairs exist", then{' '}
           <code>DISTINCT</code> or <code>GROUP BY</code> is the right tool. It is not a way to make
           a measure safe while keeping a wrong join.
         </p>
@@ -246,7 +245,7 @@ WHERE o.order_id = 'O-1001';
       </div>
       <p>
         The right fix depends on the target grain. Decide what one output row must represent, then
-        choose the join shape that produces exactly that — this is the same decision described in
+        choose the join shape that produces exactly that — this is the same decision described in{' '}
         <a href={getEnglishRoute('grain')}>data warehouse grain</a>.
       </p>
     </section>

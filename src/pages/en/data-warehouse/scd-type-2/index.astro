@@ -37,7 +37,7 @@ const description =
   <div class="english-answer">
     <span class="english-answer__label">Quick answer</span>
     <p>
-      On an attribute change, close the old row and insert a new one. Use the half-open range
+      On an attribute change, close the old row and insert a new one. Use the half-open range{' '}
       <code>[effective_from, effective_to)</code>: the start date belongs to the new version, the
       end date does not. Keep a stable business key (<code>customer_id</code>) plus a surrogate key
       (<code>customer_sk</code>) that identifies one version, and a current flag for “today”.
@@ -99,7 +99,7 @@ const description =
         </table>
       </div>
       <p>
-        <code>customer_id</code> stays the same because it identifies the customer.
+        <code>customer_id</code> stays the same because it identifies the customer.{' '}
         <code>customer_sk</code> changes because it identifies one version of that customer.
       </p>
     </section>
@@ -148,7 +148,7 @@ JOIN customer AS c
 
 -- customer_sk 1001 → Standard / Austin for a 2025-11-15 disbursement`}</code></pre>
       <p>
-        The current row is simply the one with <code>is_current = true</code> (or the row whose
+        The current row is simply the one with <code>is_current = true</code> (or the row whose{' '}
         <code>effective_to</code> is the open sentinel). Do not use the current flag for historical
         analysis — it answers “what is true today”, not “what was true then”.
       </p>
@@ -213,7 +213,7 @@ JOIN customer AS c
           join complexity. Keep attributes that nobody queries historically in the current row only.
         </li>
         <li>
-          <strong>Query cost.</strong> Range joins benefit from an index on
+          <strong>Query cost.</strong> Range joins benefit from an index on{' '}
           <code>(customer_id, effective_from)</code>. The current flag alone is not enough for
           historical queries.
         </li>
