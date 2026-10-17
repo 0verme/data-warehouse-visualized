@@ -16,6 +16,7 @@ export const ENGLISH_PATHS = {
   lineageVsTaskDependency: '/en/data-warehouse/data-lineage-vs-task-dependency/',
   scdType2: '/en/data-warehouse/scd-type-2/',
   pipelineFailureRecovery: '/en/data-warehouse/pipeline-failure-recovery/',
+  dataQualityChecks: '/en/data-warehouse/data-quality-checks/',
   tools: '/en/tools/',
 } as const
 
