@@ -107,6 +107,10 @@ const lessonContentLoaders: Record<string, () => Promise<LessonContent>> = {
     ),
   'reprocessing-impact-scope': () =>
     import('./dependency-reprocessing-impact').then((m) => m.dependencyReprocessingImpactContent),
+  'reprocessing-auto-stop-wait': () =>
+    import('./dependency-reprocessing-auto-stop').then(
+      (m) => m.dependencyReprocessingAutoStopContent,
+    ),
 }
 
 const lessonContentCache = new Map<string, LessonContent>()

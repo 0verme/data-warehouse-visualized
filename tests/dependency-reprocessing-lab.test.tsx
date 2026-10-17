@@ -122,7 +122,7 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'stop-wait-redo' }}
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'current-vs-historical' }}
       />,
     )
 
@@ -286,11 +286,71 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-impact-scope').previous?.slug).toBe(
       'reprocessing-incident-timeline',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-impact-scope').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-impact-scope').next?.slug).toBe(
+      'reprocessing-auto-stop-wait',
+    )
 
     const text = JSON.stringify(content)
     expect(text).toContain('SQL 血缘')
     expect(text).toContain('LEFT JOIN')
     expect(text).not.toMatch(/generation|Replay|第 \d+ 轮/i)
+  })
+
+  it('E3 静态渲染：恢复流程控制、计划与执行日志结构完整（初始阶段）', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'stop-wait-redo' }}
+      />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="stop-wait-redo"')
+    expect(html).toContain('data-phase="detected"')
+    expect(html).toContain('data-swr-chain')
+    expect(html.match(/data-node=/g)).toHaveLength(8)
+    expect(html).toContain('停止受影响任务')
+    expect(html).toContain('ODS 验证通过')
+    expect(html).toContain('让 DWD 重做失败一次')
+    expect(html).toContain('执行日志')
+    expect(html).toContain('aria-live="polite"')
+    // 初始阶段：还没有计划与门禁面板。
+    expect(html).not.toContain('data-panel="redo-schedule"')
+    expect(html).not.toContain('data-panel="gate-blocked"')
+  })
+
+  it('第 14 章 14-3 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-auto-stop-wait')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-3',
+      slug: 'reprocessing-auto-stop-wait',
+      chapter: '14',
+      order: 300,
+      difficulty: 'advanced',
+      estimatedMinutes: 22,
+      demo: 'dependency-reprocessing',
+      title: '依赖链如何自动停止、等待和重新调用？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual({
+      kind: 'dependency-reprocessing',
+      lessonFocus: 'stop-wait-redo',
+    })
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-auto-stop-wait').previous?.slug).toBe(
+      'reprocessing-impact-scope',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-auto-stop-wait').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('依赖串行')
+    expect(text).toContain('全局并发数 1')
+    // 文案明确禁止轮次机制；「generation」只允许出现在禁止性说明里。
+    expect(text).toContain('不引入轮次')
+    expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
   })
 })

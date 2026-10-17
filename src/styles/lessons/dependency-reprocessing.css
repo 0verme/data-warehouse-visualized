@@ -360,6 +360,86 @@
   color: var(--warning-text);
 }
 
+/* ---------- E3 停止 / 等待 / 自动重做 ---------- */
+
+.dependency-reprocessing__phase {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.dependency-reprocessing__phase[data-phase='blocked'],
+.dependency-reprocessing__phase[data-phase='failed'] {
+  color: var(--danger-text);
+}
+
+.dependency-reprocessing__arm {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.dependency-reprocessing__arm input {
+  margin-top: 3px;
+}
+
+.dependency-reprocessing__node-state[data-tone='danger'] {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
+}
+
+.dependency-reprocessing__dedup li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.dependency-reprocessing__dedup small {
+  color: var(--ink-muted);
+}
+
+.dependency-reprocessing__dedup code {
+  font-size: 0.75rem;
+}
+
+.dependency-reprocessing__log {
+  display: grid;
+  gap: 6px;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.dependency-reprocessing__log li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  font-size: 0.88rem;
+}
+
+.dependency-reprocessing__log time {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dependency-reprocessing__log [data-kind='failure'] {
+  color: var(--danger-text);
+}
+
+.dependency-reprocessing__log [data-kind='block'] {
+  color: var(--warning-text);
+}
+
 /* ---------- 容器查询：窄屏单列，宽屏分支节点并排 ---------- */
 
 @container visualization (min-width: 720px) {
