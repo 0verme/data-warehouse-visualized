@@ -95,7 +95,7 @@ const description =
       </p>
       <p>
         This is the same failure mode as a SQL join duplicating rows. The grain error is the root
-        cause; the inflated <code>SUM</code> is only the symptom. A query-level workaround such as
+        cause; the inflated <code>SUM</code> is only the symptom. A query-level workaround such as{' '}
         <code>DISTINCT</code> hides the symptom and usually keeps the modeling error in place.
       </p>
     </section>
@@ -112,7 +112,7 @@ const description =
           contract.” Keep it short and specific.
         </li>
         <li>
-          <strong>Test the key.</strong> Compare <code>COUNT(*)</code> with
+          <strong>Test the key.</strong> Compare <code>COUNT(*)</code> with{' '}
           <code>COUNT(DISTINCT key)</code>. If they differ, the key does not define the grain.
         </li>
         <li>

@@ -46,6 +46,12 @@ const ENGLISH_ROUTES = [
     title: 'Why Does a SQL JOIN Duplicate Rows? Examples & Fixes | sql.sb',
     heading: 'Why does a SQL JOIN duplicate rows?',
     links: ['/en/', '/en/sql/', '/en/data-warehouse/grain/'],
+    boundaries: [
+      'on order_id gives',
+      'the two O-1001 payments',
+      'pairs exist", then DISTINCT',
+      'described in data warehouse grain',
+    ],
   },
   {
     path: '/en/data-warehouse/',
@@ -71,6 +77,7 @@ const ENGLISH_ROUTES = [
       '/en/sql/sql-join-duplicate-rows/',
       '/en/data-warehouse/scd-type-2/',
     ],
+    boundaries: ['workaround such as DISTINCT hides', 'with COUNT(DISTINCT key)'],
   },
   {
     path: '/en/data-warehouse/idempotent-etl/',
@@ -93,6 +100,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/idempotent-etl/',
       '/en/data-warehouse/grain/',
     ],
+    boundaries: ['loads stg_orders', 'from v_customer_orders', 'view reads stg_orders'],
   },
   {
     path: '/en/data-warehouse/scd-type-2/',
@@ -104,6 +112,12 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/grain/',
       '/en/data-warehouse/idempotent-etl/',
       '/en/data-warehouse/data-lineage-vs-task-dependency/',
+    ],
+    boundaries: [
+      'half-open range [effective_from, effective_to)',
+      'identifies the customer. customer_sk changes',
+      'row whose effective_to',
+      'index on (customer_id, effective_from)',
     ],
   },
   {
@@ -158,6 +172,138 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       bodyLinks: Array.from(document.querySelectorAll('main a')).map((link) =>
         link.getAttribute('href'),
       ),
+      mainText: (document.querySelector('main')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+      textSpacingIssues: (() => {
+        // Regression gate for the English render-spacing cleanup: a line break in
+        // the Astro source between text and an inline element can swallow the
+        // rendered space (for example "such as<code>DISTINCT</code>"). Only
+        // boundaries inside prose containers are inspected, so layout containers
+        // and SQL/code tokens are not misreported as prose concatenations.
+        const INLINE_TAGS = new Set([
+          'a',
+          'abbr',
+          'b',
+          'bdi',
+          'bdo',
+          'cite',
+          'code',
+          'data',
+          'del',
+          'dfn',
+          'em',
+          'i',
+          'ins',
+          'kbd',
+          'mark',
+          'q',
+          's',
+          'samp',
+          'small',
+          'span',
+          'strong',
+          'sub',
+          'sup',
+          'time',
+          'u',
+          'var',
+          'wbr',
+        ])
+        const ELEMENTISH_TAGS = new Set([
+          'a',
+          'abbr',
+          'b',
+          'cite',
+          'code',
+          'em',
+          'i',
+          'kbd',
+          'mark',
+          'q',
+          's',
+          'samp',
+          'small',
+          'strong',
+          'sub',
+          'sup',
+          'time',
+          'u',
+          'var',
+        ])
+        const PROSE_TAGS = new Set([
+          'p',
+          'li',
+          'h1',
+          'h2',
+          'h3',
+          'h4',
+          'h5',
+          'h6',
+          'dt',
+          'dd',
+          'figcaption',
+          'blockquote',
+          'caption',
+          'th',
+          'td',
+          'summary',
+        ])
+        const issues = []
+        const visibleText = (node) => {
+          if (node.nodeType === Node.TEXT_NODE) return node.data
+          if (node.nodeType !== Node.ELEMENT_NODE) return ''
+          if (['SCRIPT', 'STYLE', 'SVG', 'TEMPLATE', 'PRE'].includes(node.tagName)) return ''
+          return Array.from(node.childNodes, visibleText).join('')
+        }
+        const checkPair = (left, right, parent) => {
+          const leftText = left.nodeType === Node.TEXT_NODE ? left.data : visibleText(left)
+          const rightText = right.nodeType === Node.TEXT_NODE ? right.data : visibleText(right)
+          if (!leftText || !rightText) return
+          if (/\s$/.test(leftText) || /^\s/.test(rightText)) return
+          const lastChar = [...leftText].pop()
+          const firstChar = [...rightText][0]
+          const elementPair =
+            left.nodeType === Node.ELEMENT_NODE && right.nodeType === Node.ELEMENT_NODE
+          if (elementPair) {
+            const leftName = left.tagName.toLowerCase()
+            const rightName = right.tagName.toLowerCase()
+            if (!INLINE_TAGS.has(leftName) || !INLINE_TAGS.has(rightName)) return
+            if (!ELEMENTISH_TAGS.has(leftName) && !ELEMENTISH_TAGS.has(rightName)) return
+          }
+          const wordBefore = /[A-Za-z0-9]/.test(lastChar)
+          const wordAfter = /[A-Za-z0-9]/.test(firstChar)
+          const suspicious =
+            (wordBefore && wordAfter) ||
+            (wordBefore && (firstChar === '(' || firstChar === '[')) ||
+            ((lastChar === ')' || lastChar === ']') && wordAfter) ||
+            (lastChar === '.' && /[A-Za-z]/.test(firstChar))
+          if (!suspicious) return
+          issues.push({
+            parent: parent.tagName.toLowerCase(),
+            boundary: `${lastChar}|${firstChar}`,
+            left: leftText.slice(-48),
+            right: rightText.slice(0, 48),
+          })
+        }
+        const visit = (element, inProse) => {
+          const tagName = element.tagName.toLowerCase()
+          if (tagName === 'pre') return
+          const isProse = PROSE_TAGS.has(tagName)
+          const children = Array.from(element.childNodes).filter(
+            (node) => node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE,
+          )
+          if (isProse || inProse) {
+            for (let index = 0; index < children.length - 1; index += 1) {
+              checkPair(children[index], children[index + 1], element)
+            }
+          }
+          for (const child of children) {
+            if (child.nodeType === Node.ELEMENT_NODE) visit(child, isProse || inProse)
+          }
+        }
+        const main = document.querySelector('main')
+        if (main) visit(main, false)
+        return issues
+      })(),
       stylesheets: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(
         (link) => link.sheet !== null,
       ),
@@ -204,6 +350,17 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
     state.stylesheets.length > 0 && state.stylesheets.every(Boolean),
     JSON.stringify(state.stylesheets),
   )
+  check(
+    `${viewportName} ${route.path} keeps rendered word boundaries`,
+    state.textSpacingIssues.length === 0,
+    JSON.stringify(state.textSpacingIssues),
+  )
+  for (const phrase of route.boundaries ?? []) {
+    check(
+      `${viewportName} ${route.path} rendered text contains ${JSON.stringify(phrase)}`,
+      state.mainText.includes(phrase),
+    )
+  }
   check(`${viewportName} ${route.path} no pageerror`, errors.length === 0, errors.join(' | '))
   errors.length = 0
 
