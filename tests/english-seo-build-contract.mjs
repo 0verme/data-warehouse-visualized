@@ -61,6 +61,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/data-quality-checks/index.html',
     title: 'Data Quality Checks: What to Validate in a Pipeline | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/data-contracts/',
+    file: 'en/data-warehouse/data-contracts/index.html',
+    title: 'Data Contracts: Producer & Consumer Interfaces | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 

@@ -17,6 +17,7 @@ export const ENGLISH_PATHS = {
   scdType2: '/en/data-warehouse/scd-type-2/',
   pipelineFailureRecovery: '/en/data-warehouse/pipeline-failure-recovery/',
   dataQualityChecks: '/en/data-warehouse/data-quality-checks/',
+  dataContracts: '/en/data-warehouse/data-contracts/',
   tools: '/en/tools/',
 } as const
 

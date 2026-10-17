@@ -1,0 +1,317 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { ContractChangeLab } from '../../../../components/english/ContractChangeLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import {
+  BASE_CONTRACT_FIELDS,
+  buildContractReference,
+} from '../../../../features/english-contracts/model'
+import contractStylesUrl from '../../../../styles/layouts/english-data-contracts.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Data Contracts: Producer & Consumer Interfaces | sql.sb'
+const description =
+  'What a data contract actually contains — fields, types, nullability, semantics and keys — and which producer changes break consumers loudly or silently.'
+
+const reference = buildContractReference()
+const fields = BASE_CONTRACT_FIELDS
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[contractStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Data contracts' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · governance</p>
+    <h1 class="english-article__title">
+      Data contracts: what producers and consumers actually agree on
+    </h1>
+    <p class="english-article__lede">
+      A pipeline fails loudly when a column disappears. It often keeps running — with every number
+      100× too large — when a column quietly changes meaning. A data contract is how the second case
+      becomes a decision instead of an incident.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      A data contract is an explicit, versioned agreement between the producer of a dataset and its
+      consumers: which fields exist, their types, nullability and meaning, which keys identify a
+      row, and how any of that may change. The contract is enforced by tests that run with the
+      producer's change and the consumer's build, so a breaking change fails in review instead of in
+      production. It answers a different question from a quality check: the check validates the
+      batch that was produced; the contract defines what the producer promised.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="interface">
+      <h2 id="interface">The dataset is an interface, not just a table</h2>
+      <p>
+        Consider the account balance snapshot that feeds the daily report, the branch dashboard and
+        the regulatory extract. Three consumers read the same table, but each one depends on a
+        different part of its meaning. The contract has to state all of it explicitly.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Contract fields for the account balance snapshot</caption>
+          <thead>
+            <tr>
+              <th scope="col">Field</th>
+              <th scope="col">Type</th>
+              <th scope="col">Meaning</th>
+              <th scope="col">Consumed by</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fields.map((field) => (
+              <tr>
+                <td>
+                  <code>{field.name}</code>
+                  {field.nullable ? '' : ' · not null'}
+                </td>
+                <td>
+                  <code>{field.type}</code>
+                </td>
+                <td>{field.semantics}</td>
+                <td>{field.consumedBy.join(', ')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The type alone is not the contract. <code>balance</code> is <code>decimal(18,2)</code> in
+        both versions of a unit change — the field is the same, the meaning is not, and no schema
+        diff will show it.
+      </p>
+      <ContractChangeLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="classes">
+      <h2 id="classes">Eight changes, five ways to get hurt</h2>
+      <p>
+        Producer changes fall into classes with very different failure modes. The classification
+        that matters is not “does the schema change?” but “how does the change reach a consumer?”
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Producer changes and how consumers experience them</caption>
+          <thead>
+            <tr>
+              <th scope="col">Change</th>
+              <th scope="col">Field</th>
+              <th scope="col">Compatibility</th>
+              <th scope="col">Detected</th>
+              <th scope="col">Consumer effect</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.map((row) => (
+              <tr data-tone={row.consumerEffect === 'silent-wrong' ? 'wrong' : undefined}>
+                <td>{row.label}</td>
+                <td>
+                  <code>{row.field}</code>
+                </td>
+                <td>{row.compatibility}</td>
+                <td>{row.detectedAt}</td>
+                <td>{row.consumerEffect}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li>
+          <strong>Additive.</strong> A new nullable column is compatible, but it still owes the
+          consumer a meaning and a backfill plan.
+        </li>
+        <li>
+          <strong>Type change.</strong> Narrowing <code>decimal(18,2)</code> to{' '}
+          <code>decimal(12,2)</code> passes on small data and overflows on one large balance.
+        </li>
+        <li>
+          <strong>Semantic change.</strong> Yuan to cents inside the same column is a breaking
+          change with an unchanged schema.
+        </li>
+        <li>
+          <strong>Structural change.</strong> Renames and removals fail loudly, which is why they
+          need a deprecation window rather than an emergency hotfix.
+        </li>
+        <li>
+          <strong>Value-domain change.</strong> A new currency code keeps queries running but can
+          leave a consumer with no rate, label or rule for the new member.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="silent">
+      <h2 id="silent">Why silent risks are the expensive ones</h2>
+      <p>
+        Loud failures cost time: a job stops, an alert fires, someone restarts the pipeline. Silent
+        failures cost trust: the dashboard keeps rendering, the total is wrong by a factor of 100,
+        and the error is discovered weeks later by a business user.
+      </p>
+      <ul>
+        <li>
+          <strong>Unit change.</strong> The same column name stores a different unit; every sum,
+          average and threshold built on it is wrong.
+        </li>
+        <li>
+          <strong>Nullability relaxation.</strong> <code>branch_id</code> becomes nullable; the
+          branch join drops the unknown rows with no error, so branch totals quietly shrink.
+        </li>
+        <li>
+          <strong>Enum addition.</strong> A new currency code arrives; a consumer with a closed
+          mapping labels it as “other” and the data looks present but is unusable.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="warning">
+        <strong>A schema test cannot see a meaning change</strong>
+        <p>
+          Contracts therefore have to state semantics and units in words, and reviewers have to
+          treat a semantics-only change as a versioned change.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="process">
+      <h2 id="process">The change process is part of the contract</h2>
+      <ol>
+        <li>
+          <strong>The producer declares the change</strong> in the contract file: field, type,
+          nullable, meaning and version.
+        </li>
+        <li>
+          <strong>The producer's CI runs the contract test</strong> against every registered
+          consumer expectation. A breaking change fails before merge.
+        </li>
+        <li>
+          <strong>Consumers get a deprecation window</strong> for renames and removals: the old name
+          stays, the new name is dual-written, and every listed consumer signs off.
+        </li>
+        <li>
+          <strong>Semantic changes are versioned</strong> rather than made in place: add{' '}
+          <code>balance_cents</code>, dual-write it, migrate consumers, then retire the old field.
+        </li>
+        <li>
+          <strong>Ownership is explicit</strong> for the field and for every consumer, so “who
+          updates the dashboard query?” has an answer before the change ships.
+        </li>
+      </ol>
+      <p>
+        A contract test is small: given the current contract, assert that the columns the consumer
+        selects exist with compatible types and nullability, and that the meanings it relies on are
+        still documented. It does not need a schema registry to be useful at this scale.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">Contract, quality check, observability</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Three practices, three questions</caption>
+          <thead>
+            <tr>
+              <th scope="col">Practice</th>
+              <th scope="col">Question</th>
+              <th scope="col">Typical failure it prevents</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-tone="right">
+              <td>
+                <strong>Data contract</strong>
+              </td>
+              <td>What did the producer agree to provide, and how may it change?</td>
+              <td>A release that removes or repurposes a field consumers rely on</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Quality check</strong>
+              </td>
+              <td>Is this produced batch usable?</td>
+              <td>A batch that satisfies the contract but contains broken rows</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Observability</strong>
+              </td>
+              <td>Is the pipeline healthy over time?</td>
+              <td>A slow drift that no single batch reveals</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The three are complementary. A contract makes the interface explicit;{' '}
+        <a href={getEnglishRoute('dataQualityChecks')}>quality checks</a> validate each produced
+        batch against it; <a href={getEnglishRoute('pipelineFailureRecovery')}>failure recovery</a>{' '}
+        handles the case where bad data still reached consumers.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Over-specification.</strong> A contract that freezes every byte makes producers
+          afraid to change anything. Specify what consumers actually depend on, not the whole
+          physical schema.
+        </li>
+        <li>
+          <strong>Consumers must declare dependencies.</strong> A contract test only protects the
+          consumers that registered their expectations. Unknown readers are the ones that break
+          quietly.
+        </li>
+        <li>
+          <strong>Versioning has a cost.</strong> Dual-writing and migrating consumers takes time;
+          that cost is the price of not corrupting historical reports. Skip it only when no consumer
+          reads the field.
+        </li>
+        <li>
+          <strong>Contracts are not a platform.</strong> For a handful of producers and consumers, a
+          versioned file plus CI tests is enough. A registry becomes worth it when discovery and
+          many-to-many dependencies appear.
+        </li>
+        <li>
+          <strong>Semantics need a reviewer.</strong> “Same schema, new meaning” is a human
+          decision. Automate what can be checked, and require a named owner for what cannot.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('dataQualityChecks')}>Data quality checks</a> — the runtime rules
+          that decide whether a produced batch is fit to publish.
+        </li>
+        <li>
+          <a href={getEnglishRoute('pipelineFailureRecovery')}>Data pipeline failure recovery</a> —
+          what to stop, replay and re-notify when broken data already reached consumers.
+        </li>
+        <li>
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>Data lineage vs task dependency</a> —
+          how to find every consumer that a contract change can reach.
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a> — why
+          re-running a producer after a contract change is safe only with an addressable write.
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>
