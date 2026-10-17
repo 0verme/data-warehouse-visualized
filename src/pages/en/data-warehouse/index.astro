@@ -6,7 +6,7 @@ import { getEnglishRoute } from '../../../utils/english-routes'
 
 const title = 'Data Warehouse Engineering | English Resources | sql.sb'
 const description =
-  'English data warehouse pages about grain, idempotent ETL, data lineage versus task dependency, and SCD Type 2 history. Each page works through a concrete engineering problem.'
+  'What a data warehouse is for, plus English pages on grain, idempotent ETL, data lineage versus task dependency, and SCD Type 2 history.'
 ---
 
 <BaseLayout
@@ -24,6 +24,23 @@ const description =
         Modeling, pipeline semantics and data reliability. Each page starts from a concrete failure
         or decision and shows the rows and state transitions behind it — not just definitions.
       </p>
+      <section class="english-foundation__definition" aria-labelledby="what-is-a-data-warehouse">
+        <h2 id="what-is-a-data-warehouse" class="english-foundation__definition-title">
+          What is a data warehouse?
+        </h2>
+        <p>
+          A data warehouse is a database built for analysis rather than transaction processing. It
+          consolidates data from operational systems, models it into tables that answer business
+          questions, and keeps one trusted version of that data for reporting and analytics —
+          instead of every team querying each source system on its own.
+        </p>
+        <p>
+          Most warehouse work is therefore about decisions, not storage: what one row represents,
+          how a metric is defined, how data arrives and changes over time, and how failures are
+          detected and repaired. Each page below works through one of those problems with concrete
+          rows and state.
+        </p>
+      </section>
       <nav class="english-foundation__cards" aria-label="English data warehouse pages">
         <a class="english-foundation__card" href={getEnglishRoute('grain')}>
           <strong>Data warehouse grain</strong>
@@ -49,7 +66,7 @@ const description =
         <a class="english-foundation__card" href={getEnglishRoute('scdType2')}>
           <strong>SCD Type 2</strong>
           <span>
-            Effective dates, historical rows, the current flag and the boundary semantics of
+            {'Effective dates, historical rows, the current flag and the boundary semantics of '}
             <code>[effective_from, effective_to)</code>.
           </span>
         </a>

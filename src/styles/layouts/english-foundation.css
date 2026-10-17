@@ -130,6 +130,30 @@
   line-height: 1.65;
 }
 
+.english-foundation__definition {
+  max-width: 720px;
+  margin-top: 40px;
+}
+
+.english-foundation__definition-title {
+  margin: 0 0 12px;
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.english-foundation__definition p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.english-foundation__definition p + p {
+  margin-top: 12px;
+}
+
 .english-foundation__note {
   max-width: 680px;
   margin-top: 32px;
