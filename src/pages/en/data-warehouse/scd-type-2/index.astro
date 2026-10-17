@@ -204,7 +204,9 @@ JOIN customer AS c
         <li>
           <strong>Late corrections to history.</strong> A backdated change may require splitting an
           existing version. Treat it as a new version with explicit effective dates, not an in-place
-          edit.
+          edit. {'The corrected range also affects downstream tables; see '}
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>data lineage vs task dependency</a>
+          {' for how to bound that impact.'}
         </li>
         <li>
           <strong>Only version what needs history.</strong> Every versioned attribute adds rows and
@@ -232,6 +234,10 @@ JOIN customer AS c
         <li>
           <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a>
           <p>Loading dimension versions safely across retries and backfills.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>Data lineage vs task dependency</a>
+          <p>Finding the downstream tables a corrected history affects.</p>
         </li>
       </ul>
     </section>
