@@ -1,0 +1,231 @@
+/* Page styles for /en/data-warehouse/data-quality-checks/. */
+
+.quality-lab {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.quality-lab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.quality-lab__toolbar > div {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.quality-lab__overline {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.quality-lab__toolbar p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.quality-lab__scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 12px;
+}
+
+.quality-lab__scenario {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.quality-lab__scenario:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.quality-lab__scenario.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
+.quality-lab__scenario:focus-visible,
+.quality-lab__policy:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.quality-lab__batch {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.quality-lab__batch strong {
+  color: var(--text-primary);
+}
+
+.quality-lab__checks td {
+  vertical-align: top;
+}
+
+.quality-lab__status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.quality-lab__status[data-status='pass'] {
+  background: var(--success-bg);
+  color: var(--text-primary);
+}
+
+.quality-lab__status[data-status='warn'] {
+  background: color-mix(in srgb, var(--warning, #d97706) 18%, transparent);
+  color: var(--warning, #d97706);
+}
+
+.quality-lab__status[data-status='fail'] {
+  background: color-mix(in srgb, var(--danger, #dc2626) 14%, transparent);
+  color: var(--danger, #dc2626);
+}
+
+.quality-lab__policies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 18px 0 14px;
+}
+
+.quality-lab__policy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.quality-lab__policy:hover {
+  border-color: var(--border-strong);
+}
+
+.quality-lab__policy.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+}
+
+.quality-lab__policy strong {
+  font-size: 13px;
+}
+
+.quality-lab__policy span {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.quality-lab__release {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, var(--surface-1));
+}
+
+.quality-lab__release[data-status='blocked'] {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, var(--border));
+}
+
+.quality-lab__release[data-status='quarantined'] {
+  border-color: color-mix(in srgb, var(--warning, #d97706) 45%, var(--border));
+}
+
+.quality-lab__release-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.quality-lab__release-head strong {
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.quality-lab__release ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quality-lab__release li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.quality-lab__release li span {
+  flex: 0 0 150px;
+  color: var(--text-muted);
+}
+
+.quality-lab__release li strong {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-weight: 560;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .quality-lab__scenario {
+    padding: 7px 10px;
+    font-size: 12.5px;
+  }
+
+  .quality-lab__release li span {
+    flex-basis: 100%;
+  }
+}

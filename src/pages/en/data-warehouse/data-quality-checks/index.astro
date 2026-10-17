@@ -1,0 +1,321 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { QualityChecksLab } from '../../../../components/english/QualityChecksLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import {
+  QUALITY_CHECK_BUSINESS_DATE,
+  QUALITY_RULE_COPY,
+  buildQualityReference,
+} from '../../../../features/english-quality/model'
+import qualityStylesUrl from '../../../../styles/layouts/english-quality-checks.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Data Quality Checks: What to Validate in a Pipeline | sql.sb'
+const description =
+  'What to validate in a data pipeline batch — identity, required fields, references, completeness, freshness and reconciliation — and when a failed check should block the release.'
+
+const reference = buildQualityReference()
+const rules = QUALITY_RULE_COPY
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[qualityStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Data quality checks' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · data reliability</p>
+    <h1 class="english-article__title">
+      Data quality checks: what to validate, and what failure should do
+    </h1>
+    <p class="english-article__lede">
+      A task can finish successfully and still produce data that must not be published. Quality
+      checks are the executable rules that decide whether one batch, for one business date, is
+      usable — and what happens when it is not.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      A data quality check is an executable rule over a specific dataset produced by a specific
+      task: a table, a partition and a field or key. Checks are grouped by what they protect —
+      identity, required fields, field semantics, references, expected set, freshness,
+      reconciliation and format. A failed check does not always mean “stop everything”: failures
+      that change shared business meaning block the release, while isolated bad records can be
+      quarantined and the valid rows published with the alert kept open.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="scenario">
+      <h2 id="scenario">One batch, eight checks, one release decision</h2>
+      <p>
+        The deposit balance snapshot for business date <code>{QUALITY_CHECK_BUSINESS_DATE}</code>{' '}
+        runs every night. The task reports <code>success</code>, the SLA is met, and the row count
+        looks plausible — but the batch can still be wrong in eight different ways. Each way breaks
+        a different assumption that downstream reports rely on.
+      </p>
+      <QualityChecksLab client:load />
+      <p>
+        The lab reuses the same deterministic rule engine and banking fixture as the Chinese data
+        quality course: every scenario injects exactly one fault, so the failing check is always
+        traceable to the broken assumption.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="what">
+      <h2 id="what">What to validate: eight checks that cover eight assumptions</h2>
+      <p>
+        A useful check list is not a random collection of SQL assertions. Each rule protects a
+        specific downstream assumption, and each one answers a question a data engineer actually
+        asks during an incident.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>The rule catalogue used by the lab</caption>
+          <thead>
+            <tr>
+              <th scope="col">Check</th>
+              <th scope="col">Dimension</th>
+              <th scope="col">Question it answers</th>
+              <th scope="col">What it protects</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((rule) => (
+              <tr>
+                <td>{rule.name}</td>
+                <td>{rule.dimension}</td>
+                <td>{rule.question}</td>
+                <td>{rule.whatItProtects}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Row-level checks (identity, required fields, semantics, references) inspect individual
+        records. Batch-level checks (expected set, freshness, reconciliation) inspect the whole
+        partition or compare two layers. Both are needed: a batch can consist entirely of valid rows
+        and still be missing 3,000 accounts.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="where">
+      <h2 id="where">Where in the pipeline each check belongs</h2>
+      <p>
+        Checks attached to the wrong stage either fire too late or drown in noise. The rule should
+        live where its evidence first exists and where stopping is still cheap.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Typical check placement by stage</caption>
+          <thead>
+            <tr>
+              <th scope="col">Stage</th>
+              <th scope="col">Checks that belong here</th>
+              <th scope="col">What they catch</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Source arrival / staging</td>
+              <td>File and record format; expected set by control table</td>
+              <td>Unreadable payloads and missing deliveries before any transformation runs</td>
+            </tr>
+            <tr>
+              <td>Detail layer (DWD)</td>
+              <td>Identity / grain, required fields, field semantics, referential integrity</td>
+              <td>Broken rows that would contaminate every aggregate built on top of them</td>
+            </tr>
+            <tr>
+              <td>Aggregate layer (DWS / ADS)</td>
+              <td>
+                Cross-layer reconciliation on the same scope; freshness of the represented date
+              </td>
+              <td>
+                Layers that disagree with each other, and outputs that still represent yesterday
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Freshness is a good example. Checking whether the task arrived on time only proves the
+        scheduler did its job; the check that matters compares <code>MAX(snapshot_date)</code> with
+        the business date, so a green run over stale content still fails.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="failure">
+      <h2 id="failure">What failure should do: block, or quarantine and continue</h2>
+      <p>
+        Not every failed check has the same consequence. A failed identity or reference check means
+        the affected rows cannot be interpreted correctly, and any aggregate that includes them is
+        wrong — the release must block. A failed format check on independent events can be handled
+        by isolating the broken records without changing the meaning of the rest.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Release outcome per broken-batch scenario</caption>
+          <thead>
+            <tr>
+              <th scope="col">Broken batch</th>
+              <th scope="col">Failing check</th>
+              <th scope="col">Block on any failure</th>
+              <th scope="col">Quarantine isolated records</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.map((row) => (
+              <tr data-tone={row.status === 'blocked' ? 'wrong' : undefined}>
+                <td>{row.label}</td>
+                <td>{row.failed.join('; ')}</td>
+                <td>{row.status}</td>
+                <td>{row.blockedUnderAnyPolicy ? 'blocked' : 'quarantined'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The table shows the decision boundary: the policy only changes the outcome for the isolated
+        telemetry records. Every failure that touches shared business meaning — duplicates, missing
+        fields, unknown branches, incomplete sets, stale dates, reconciling layers — stays blocked
+        under both policies.
+      </p>
+      <div class="english-callout" data-tone="info">
+        <strong>Quarantine requires evidence</strong>
+        <p>
+          Isolating records is only safe when their removal does not change the meaning of the
+          remaining rows. Record which rows were quarantined, why, and keep the alert open until
+          they are cleared or accepted.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="evidence">
+      <h2 id="evidence">A check result is evidence, not a score</h2>
+      <p>
+        A useful check result carries the observed value, the expected value or threshold, the
+        partition it ran against, the producing task, and a sample row when one exists. That is what
+        makes an incident investigation possible later: without the partition and sample, “the check
+        failed yesterday” cannot be turned into a fix.
+      </p>
+      <p>
+        Warnings are not passes. A reconciliation drift below the failure threshold is still a
+        signal that two layers disagree; if warnings are allowed to accumulate silently, the
+        difference eventually crosses the threshold in production instead of during the run that
+        introduced it.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">How checks differ from contracts and observability</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Three different questions that are easy to confuse</caption>
+          <thead>
+            <tr>
+              <th scope="col">Practice</th>
+              <th scope="col">Question</th>
+              <th scope="col">When it acts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-tone="right">
+              <td>
+                <strong>Quality check</strong>
+              </td>
+              <td>Is this specific batch, for this partition, usable?</td>
+              <td>During the run, before publication</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Data contract</strong>
+              </td>
+              <td>What did the producer promise the consumer, and how do changes get agreed?</td>
+              <td>Before and during development, not only at runtime</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Observability</strong>
+              </td>
+              <td>Is the pipeline healthy over time: latency, coverage, error trends?</td>
+              <td>Continuously, across many runs</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        A check can pass while the pipeline is unhealthy (slow but correct), and a healthy pipeline
+        can still publish a batch that fails a check. Keep the three signals separate. Checks also
+        tell you that recovery is needed — what to stop, replay and re-notify is covered in{' '}
+        <a href={getEnglishRoute('pipelineFailureRecovery')}>pipeline failure recovery</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Aggregate cost.</strong> A reconciliation check that re-aggregates a large scope
+          is expensive. Run it on a stable scope (same date, branch, product, currency) and accept a
+          bounded warning range instead of skipping it entirely.
+        </li>
+        <li>
+          <strong>False positives.</strong> A rule with a bad threshold blocks a correct batch and
+          destroys trust in the gate. Start strict on identity and references, and tune statistical
+          thresholds with real history.
+        </li>
+        <li>
+          <strong>Partial batches.</strong> “Some valid rows and some broken rows” is a different
+          problem from “too few rows”. The first can often be quarantined; the second usually
+          cannot, because the missing rows are not identifiable.
+        </li>
+        <li>
+          <strong>Ownership.</strong> Every rule needs an owner who can decide whether a failure
+          blocks a release, changes a threshold or is accepted. Unowned alerts get ignored.
+        </li>
+        <li>
+          <strong>Checks are not a substitute for design.</strong> If the source has no stable key
+          or no control total, no runtime rule can tell whether the batch is complete.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('pipelineFailureRecovery')}>Data pipeline failure recovery</a> —
+          what to stop, replay and re-notify when bad data already moved downstream.
+        </li>
+        <li>
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>Data lineage vs task dependency</a> —
+          why a failed check needs the data graph, not only the scheduler graph, to find where it
+          came from.
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a> — why
+          re-running the producing task after a failed check is safe only when the write is
+          idempotent.
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a> — the row meaning that makes
+          an identity check possible in the first place.
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>
