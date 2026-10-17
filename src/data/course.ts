@@ -661,6 +661,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 20,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-7',
+    slug: 'reprocessing-rolling-backfill',
+    chapter: '14',
+    order: 700,
+    difficulty: 'advanced',
+    estimatedMinutes: 20,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -1025,6 +1034,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '识别装数、接口、文件、报表、监管消费方，按消费证据给出重装、刷新与更正动作，并完成通知与确认闭环。',
       tags: ['依赖链重做', '下游恢复', '重新装数', '消费闭环', '确认跟踪'],
+    },
+    'lesson-14-7': {
+      title: '连续多日历史补数，为什么不能简单并行？',
+      summary:
+        '理解 T/T-1、滚动窗口与余额快照的跨天依赖，掌握「日期升序 + 单日依赖」两层执行顺序与窗口选择。',
+      tags: ['依赖链重做', '历史补数', '跨天依赖', '滚动窗口', '余额快照'],
     },
   },
 }

@@ -27,6 +27,7 @@ const E3_PATH = '/learn/reprocessing-auto-stop-wait/'
 const E4_PATH = '/learn/reprocessing-historical-parallel/'
 const E5_PATH = '/learn/reprocessing-version-boundary/'
 const E6_PATH = '/learn/reprocessing-downstream-reload/'
+const E7_PATH = '/learn/reprocessing-rolling-backfill/'
 const SOURCE_TASK_ID = 'ingest.ods-transaction.daily.v2'
 
 const VIEWPORTS = [
@@ -405,6 +406,65 @@ try {
         )
 
         await checkSharedLayout(`${tag} E6`, page, errors)
+        await page.close()
+      }
+
+      // ------------------------------------------------------------ E7
+      {
+        const { page, errors } = await openLesson(browser, viewport, theme, E7_PATH)
+        await page.waitForSelector('[data-reprocessing-mode="rolling-backfill"]', {
+          timeout: 20000,
+        })
+
+        check(
+          `${tag} E7 默认 7 天窗口`,
+          (await page.locator('[data-role="rolling-order"] li').count()) === 7,
+        )
+        check(
+          `${tag} E7 跨天依赖 6 条`,
+          (await page.locator('[data-panel="cross-day-dependencies"] li').count()) === 6,
+        )
+
+        await page.getByRole('button', { name: '检查并行可行性' }).click()
+        check(
+          `${tag} E7 简单并行判定为不可并行`,
+          (await page.getAttribute('[data-panel="parallel-check"]', 'data-check')) === 'unsafe',
+        )
+        check(
+          `${tag} E7 列出 6 条跨天冲突`,
+          (await page.locator('[data-role="parallel-conflicts"] li').count()) === 6,
+        )
+
+        await page.getByRole('button', { name: '执行下一日' }).click()
+        check(
+          `${tag} E7 按顺序完成第一日`,
+          (await page.getAttribute('li[data-date="2026-10-10"]', 'data-completed')) === 'true',
+        )
+
+        await page.getByRole('button', { name: '一键按顺序完成' }).click()
+        check(
+          `${tag} E7 全部日期完成`,
+          (await page.locator('[data-role="rolling-order"] li[data-completed="true"]').count()) ===
+            7,
+        )
+        check(
+          `${tag} E7 完成状态可解释`,
+          ((await page.locator('[data-role="rolling-status"]').textContent()) ?? '').includes(
+            '补数完成',
+          ),
+        )
+
+        await page.click('[data-window-size="3"]')
+        check(
+          `${tag} E7 切换 3 天窗口`,
+          (await page.locator('[data-role="rolling-order"] li').count()) === 3,
+        )
+        check(
+          `${tag} E7 切换窗口后依赖同步`,
+          (await page.locator('[data-panel="cross-day-dependencies"] li').count()) === 2,
+        )
+
+        await checkSharedLayout(`${tag} E7`, page, errors)
         await page.close()
       }
     }

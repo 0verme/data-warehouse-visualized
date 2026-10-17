@@ -64,6 +64,7 @@ import { dependencyReprocessingAutoStopContent } from './dependency-reprocessing
 import { dependencyReprocessingHistoricalContent } from './dependency-reprocessing-historical'
 import { dependencyReprocessingVersionContent } from './dependency-reprocessing-version'
 import { dependencyReprocessingDownstreamContent } from './dependency-reprocessing-downstream'
+import { dependencyReprocessingRollingContent } from './dependency-reprocessing-rolling'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { warehouseTermsContent } from './warehouse-terms'
@@ -133,6 +134,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'reprocessing-historical-parallel': dependencyReprocessingHistoricalContent,
   'reprocessing-version-boundary': dependencyReprocessingVersionContent,
   'reprocessing-downstream-reload': dependencyReprocessingDownstreamContent,
+  'reprocessing-rolling-backfill': dependencyReprocessingRollingContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

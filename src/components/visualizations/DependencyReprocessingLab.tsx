@@ -17,8 +17,10 @@ import {
 } from '../../features/dependency-reprocessing/fixture'
 import {
   createParallelPlan,
+  createRollingBackfillWindow,
   evaluateCurrentBatch,
   evaluateDownstreamClosure,
+  listRollingBusinessDates,
   orderTaskIdsByDependencies,
 } from '../../features/dependency-reprocessing/model'
 import {
@@ -1339,6 +1341,197 @@ function ConsumerClosureLab() {
   )
 }
 
+const ROLLING_WINDOW_SIZES = [3, 5, 7] as const
+
+function RollingBackfillLab() {
+  const model = useMemo(() => createReprocessingFixture(), [])
+  const [windowSize, setWindowSize] = useState<number>(7)
+  const [completedDates, setCompletedDates] = useState<readonly string[]>([])
+  const [parallelChecked, setParallelChecked] = useState(false)
+
+  const rollingWindow = useMemo(() => {
+    const dates = listRollingBusinessDates(REPROCESSING_INCIDENT_BUSINESS_DATE, windowSize)
+    return createRollingBackfillWindow(dates)
+  }, [windowSize])
+
+  const instanceCountByDate = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const date of rollingWindow.businessDates) {
+      counts.set(
+        date,
+        model.instances.filter(
+          (instance) =>
+            instance.businessDate === date &&
+            REPROCESSING_INCIDENT_CHAIN_TASK_IDS.includes(instance.taskId),
+        ).length,
+      )
+    }
+    return counts
+  }, [model, rollingWindow])
+
+  const nextDate = rollingWindow.order.find((date) => !completedDates.includes(date)) ?? null
+  const allCompleted = completedDates.length === rollingWindow.order.length
+
+  const handleWindowSize = (size: number): void => {
+    setWindowSize(size)
+    setCompletedDates([])
+    setParallelChecked(false)
+  }
+
+  const executeNext = (): void => {
+    if (nextDate) setCompletedDates((previous) => [...previous, nextDate])
+  }
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="timeline"
+      data-reprocessing-mode="rolling-backfill"
+      aria-label="连续多日历史补数与跨天依赖"
+    >
+      <div className="dependency-reprocessing__scope-actions" role="group" aria-label="补数窗口">
+        {ROLLING_WINDOW_SIZES.map((size) => (
+          <button
+            key={size}
+            className={
+              windowSize === size
+                ? 'button button--primary button--small'
+                : 'button button--quiet button--small'
+            }
+            type="button"
+            data-window-size={size}
+            aria-pressed={windowSize === size}
+            onClick={() => handleWindowSize(size)}
+          >
+            {size} 天窗口
+          </button>
+        ))}
+      </div>
+
+      <p
+        className="dependency-reprocessing__scope-summary"
+        data-role="rolling-status"
+        aria-live="polite"
+      >
+        窗口：最近 <strong>{windowSize}</strong> 天（{rollingWindow.businessDates[0]} →{' '}
+        {rollingWindow.businessDates[rollingWindow.businessDates.length - 1]}）· 跨天依赖{' '}
+        <strong>{rollingWindow.crossDayDependencies.length}</strong> 条 · 已完成{' '}
+        <strong>{completedDates.length}</strong> / {rollingWindow.order.length} ·{' '}
+        {allCompleted ? '补数完成（逐日串行）' : '按顺序逐日执行'}
+      </p>
+
+      <div className="dependency-reprocessing__scope-actions" role="group" aria-label="补数控制">
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => setParallelChecked(true)}
+        >
+          检查并行可行性
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={allCompleted}
+          onClick={executeNext}
+        >
+          执行下一日
+        </button>
+        <button
+          className="button button--primary button--small"
+          type="button"
+          disabled={allCompleted}
+          onClick={() => setCompletedDates([...rollingWindow.order])}
+        >
+          一键按顺序完成
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => {
+            setCompletedDates([])
+            setParallelChecked(false)
+          }}
+        >
+          重置
+        </button>
+      </div>
+
+      <section className="dependency-reprocessing__panel" data-panel="rolling-order">
+        <header className="dependency-reprocessing__panel-header">
+          <span>安全执行顺序</span>
+          <strong>{rollingWindow.order.length} 个业务日期</strong>
+        </header>
+        <ol className="dependency-reprocessing__dedup" data-role="rolling-order">
+          {rollingWindow.order.map((date, index) => (
+            <li
+              key={date}
+              data-date={date}
+              data-index={index + 1}
+              data-completed={completedDates.includes(date)}
+            >
+              <span>
+                {index + 1}. {date}
+              </span>
+              <small>实例 {instanceCountByDate.get(date) ?? 0} 个</small>
+            </li>
+          ))}
+        </ol>
+        <p>连续多日补数按业务日期升序执行；未建模的日期间仍保留顺序占位，避免跳过跨天依赖。</p>
+      </section>
+
+      <section className="dependency-reprocessing__panel" data-panel="cross-day-dependencies">
+        <header className="dependency-reprocessing__panel-header">
+          <span>跨天依赖</span>
+          <strong>{rollingWindow.crossDayDependencies.length} 条</strong>
+        </header>
+        <ul className="dependency-reprocessing__evidence">
+          {rollingWindow.crossDayDependencies.map((dependency) => (
+            <li
+              key={`${dependency.fromBusinessDate}->${dependency.toBusinessDate}`}
+              data-from={dependency.fromBusinessDate}
+              data-to={dependency.toBusinessDate}
+            >
+              {dependency.fromBusinessDate} → {dependency.toBusinessDate}：{dependency.reason}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {parallelChecked && (
+        <section
+          className="dependency-reprocessing__panel"
+          data-panel="parallel-check"
+          data-check={rollingWindow.crossDayDependencies.length > 0 ? 'unsafe' : 'ok'}
+        >
+          <header className="dependency-reprocessing__panel-header">
+            <span>简单并行检查</span>
+            <strong>
+              {rollingWindow.crossDayDependencies.length > 0 ? '不可并行' : '可安全并行'}
+            </strong>
+          </header>
+          {rollingWindow.crossDayDependencies.length > 0 ? (
+            <ul className="dependency-reprocessing__evidence" data-role="parallel-conflicts">
+              {rollingWindow.crossDayDependencies.map((dependency) => (
+                <li key={`conflict-${dependency.fromBusinessDate}`}>
+                  冲突：{dependency.toBusinessDate} 依赖 {dependency.fromBusinessDate}{' '}
+                  的结果，前一天未完时不能启动。
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>当前窗口没有跨天依赖，可以安全并行。</p>
+          )}
+        </section>
+      )}
+
+      <p className="dependency-reprocessing__scope-summary">
+        余额快照与滚动窗口指标会把前一天的结果带入后一天：T/T-1
+        之间必须保持顺序；单日内部仍按血缘与调度依赖执行。
+      </p>
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
@@ -1372,6 +1565,10 @@ export function DependencyReprocessingLab({
 
   if (visualization.lessonFocus === 'consumer-closure') {
     return <ConsumerClosureLab />
+  }
+
+  if (visualization.lessonFocus === 'rolling-backfill') {
+    return <RollingBackfillLab />
   }
 
   return (
