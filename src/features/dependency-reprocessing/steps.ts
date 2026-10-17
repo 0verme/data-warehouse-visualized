@@ -21,7 +21,12 @@ import {
   createReprocessingFixture,
 } from './fixture'
 import { analyzeReprocessingImpact, orderTaskIdsByDependencies } from './model'
-import type { ReprocessingLayer, TaskInstanceState } from './types'
+import type {
+  ImpactAnalysis,
+  ReprocessingLayer,
+  ReprocessingModel,
+  TaskInstanceState,
+} from './types'
 
 export type IncidentTimelineStepKind =
   | 'arrival'
@@ -242,4 +247,135 @@ export function createIncidentTimelineKernel(): StepKernel<
   IncidentTimelineHighlight
 > {
   return createStepKernel(buildIncidentTimelineSteps())
+}
+
+/* ------------------------------------------------------------------ *
+ * E2 影响范围：四类集合、去重清单与影响证据
+ * ------------------------------------------------------------------ */
+
+/** 事故链上的 8 个任务（与 E1 时间线一致）。 */
+export const REPROCESSING_INCIDENT_CHAIN_TASK_IDS: readonly string[] = Object.freeze([
+  TASK.ingestTransaction,
+  TASK.checkTransactionCompleteness,
+  TASK.dwdTransactionDetail,
+  TASK.dwsMerchantTransaction,
+  TASK.dwsChannelTransaction,
+  TASK.adsTransactionReport,
+  TASK.consumeTransactionReport,
+  TASK.deliverTransactionFile,
+])
+
+export type ImpactScopeSetId = 'stop' | 'redo' | 'waiting' | 'notify'
+
+export interface ImpactScopeSet {
+  id: ImpactScopeSetId
+  label: string
+  description: string
+  instanceIds: readonly string[]
+}
+
+/** 一条影响证据，已把任务 id 替换为可读名称。 */
+export interface ImpactScopeEvidenceRow {
+  id: string
+  kind: 'lineage' | 'scheduler'
+  fromTaskId: string
+  fromLabel: string
+  toTaskId: string
+  toLabel: string
+  detail: string
+}
+
+export interface ImpactScopeViewModel {
+  sourceInstanceId: string
+  affectedInstanceIds: readonly string[]
+  sets: readonly ImpactScopeSet[]
+  deduplicatedTaskIds: readonly string[]
+  evidenceRows: readonly ImpactScopeEvidenceRow[]
+  /** 没有 SQL 血缘、仅由调度依赖进入范围的任务。 */
+  schedulerOnlyTaskIds: readonly string[]
+}
+
+function taskLabelById(model: ReprocessingModel): ReadonlyMap<string, string> {
+  return new Map(model.tasks.map((task) => [task.taskId, task.label]))
+}
+
+export function taskIdFromInstanceId(instanceId: string): string {
+  const separatorIndex = instanceId.lastIndexOf('@')
+  return separatorIndex >= 0 ? instanceId.slice(0, separatorIndex) : instanceId
+}
+
+/** 把影响分析结果投影为 E2 的四类集合、去重清单与证据列表。 */
+export function buildImpactScopeViewModel(
+  model: ReprocessingModel,
+  sourceInstanceId: string,
+): ImpactScopeViewModel {
+  const analysis: ImpactAnalysis = analyzeReprocessingImpact(model, sourceInstanceId)
+  const labels = taskLabelById(model)
+
+  const sets: readonly ImpactScopeSet[] = [
+    {
+      id: 'stop',
+      label: '停止集合',
+      description: '正在运行 / 就绪：先停止或阻断，确认副作用后再进入等待。',
+      instanceIds: analysis.stopRequiredInstanceIds,
+    },
+    {
+      id: 'redo',
+      label: '重做集合',
+      description: '已经执行过：按血缘范围全部重做，包括 LEFT JOIN 后结果未变化的实例。',
+      instanceIds: analysis.redoInstanceIds,
+    },
+    {
+      id: 'waiting',
+      label: '等待集合',
+      description: '尚未首次执行：等待依赖满足后由调度重新调用，不伪称为已经重做。',
+      instanceIds: analysis.waitingInstanceIds,
+    },
+    {
+      id: 'notify',
+      label: '通知集合',
+      description: '受影响的消费方：数仓重做完成不等于消费端恢复，需要跟踪重新装数与确认。',
+      instanceIds: analysis.consumerInstanceIds,
+    },
+  ]
+
+  const incomingKinds = new Map<string, Set<'lineage' | 'scheduler'>>()
+  for (const edge of analysis.evidence) {
+    const kinds = incomingKinds.get(edge.toInstanceId) ?? new Set()
+    kinds.add(edge.kind)
+    incomingKinds.set(edge.toInstanceId, kinds)
+  }
+
+  const schedulerOnlyTaskIds: string[] = []
+  for (const instanceId of analysis.affectedInstanceIds) {
+    const kinds = incomingKinds.get(instanceId)
+    if (!kinds || kinds.size !== 1 || !kinds.has('scheduler')) continue
+    const taskId = taskIdFromInstanceId(instanceId)
+    if (!schedulerOnlyTaskIds.includes(taskId)) {
+      schedulerOnlyTaskIds.push(taskId)
+    }
+  }
+
+  const evidenceRows: readonly ImpactScopeEvidenceRow[] = analysis.evidence.map((edge, index) => {
+    const fromTaskId = taskIdFromInstanceId(edge.fromInstanceId)
+    const toTaskId = taskIdFromInstanceId(edge.toInstanceId)
+    return {
+      id: `${index}:${edge.fromInstanceId}->${edge.toInstanceId}`,
+      kind: edge.kind,
+      fromTaskId,
+      fromLabel: labels.get(fromTaskId) ?? fromTaskId,
+      toTaskId,
+      toLabel: labels.get(toTaskId) ?? toTaskId,
+      detail: edge.detail,
+    }
+  })
+
+  return {
+    sourceInstanceId,
+    affectedInstanceIds: analysis.affectedInstanceIds,
+    sets,
+    deduplicatedTaskIds: analysis.deduplicatedTaskIds,
+    evidenceRows,
+    schedulerOnlyTaskIds,
+  }
 }

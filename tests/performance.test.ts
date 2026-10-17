@@ -72,6 +72,7 @@ describe('第 11 章性能与工程实践课程', () => {
       'lifecycle-path-failure',
       'delivery-completion-signal',
       'reprocessing-incident-timeline',
+      'reprocessing-impact-scope',
     ]
 
     expectedSlugs.forEach((slug, index) => {

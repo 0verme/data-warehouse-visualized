@@ -616,6 +616,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 18,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-2',
+    slug: 'reprocessing-impact-scope',
+    chapter: '14',
+    order: 200,
+    difficulty: 'advanced',
+    estimatedMinutes: 20,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -950,6 +959,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         'ODS 分区不完整却一路 SUCCESS；沿事故时间线看错误数据如何穿过 DWD、DWS、ADS 到消费端，并建立依赖链重做的范围判断。',
       tags: ['依赖链重做', '生产事故', '污染传播', 'SUCCESS 边界', 'ODS'],
+    },
+    'lesson-14-2': {
+      title: 'SQL 血缘与调度依赖：如何圈定依赖链重做范围？',
+      summary:
+        '把一个事故拆成 SQL 血缘与调度依赖两个闭包，去重得到重做清单，并区分停止、重做、等待与通知四类集合。',
+      tags: ['依赖链重做', '影响范围', 'SQL 血缘', '调度依赖', 'LEFT JOIN'],
     },
   },
 }

@@ -215,10 +215,160 @@
   color: var(--ink-muted);
 }
 
+/* ---------- E2 影响范围：可点击节点、四类集合与证据 ---------- */
+
+.dependency-reprocessing__scope-intro {
+  display: grid;
+  gap: 10px;
+}
+
+.dependency-reprocessing__scope-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dependency-reprocessing__scope-summary {
+  margin: 0;
+  line-height: 1.6;
+}
+
+
+.dependency-reprocessing__node-button {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dependency-reprocessing__node-button:focus-visible {
+  outline: 2px solid var(--diagram-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+.dependency-reprocessing__node-button:hover .dependency-reprocessing__node-task {
+  color: var(--diagram-accent);
+}
+
+.dependency-reprocessing__node[data-affected='true'] {
+  border-color: var(--diagram-accent);
+}
+
+.dependency-reprocessing__node-badge[data-tone='accent'] {
+  background: var(--diagram-accent-soft);
+  color: var(--ink);
+  border: 1px solid var(--diagram-accent);
+}
+
+.dependency-reprocessing__node-badge[data-tone='warning'] {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.dependency-reprocessing__node-badge[data-tone='muted'] {
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  border: 1px solid var(--diagram-border);
+}
+
+.dependency-reprocessing__sets {
+  display: grid;
+  gap: 10px;
+}
+
+.dependency-reprocessing__set {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.dependency-reprocessing__set[data-set='stop'] {
+  border-color: var(--danger-border);
+}
+
+.dependency-reprocessing__set[data-set='redo'] {
+  border-color: var(--warning-border);
+}
+
+.dependency-reprocessing__set[data-set='notify'] {
+  border-color: var(--diagram-accent);
+}
+
+.dependency-reprocessing__set-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.dependency-reprocessing__set p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.dependency-reprocessing__set ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.dependency-reprocessing__set-empty {
+  color: var(--ink-muted);
+}
+
+.dependency-reprocessing__dedup {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.dependency-reprocessing__evidence-kind {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dependency-reprocessing__evidence-kind[data-tone='accent'] {
+  background: var(--diagram-accent-soft);
+  color: var(--ink);
+}
+
+.dependency-reprocessing__evidence-kind[data-tone='warning'] {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
 /* ---------- 容器查询：窄屏单列，宽屏分支节点并排 ---------- */
 
 @container visualization (min-width: 720px) {
   .dependency-reprocessing__chain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dependency-reprocessing__sets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

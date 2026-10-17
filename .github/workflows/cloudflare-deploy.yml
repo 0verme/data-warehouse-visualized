@@ -87,6 +87,9 @@ jobs:
       - name: Run Knowledge Search browser checks
         run: npm run test:e2e:search -- --skip-build
 
+      - name: Run dependency reprocessing browser checks
+        run: npm run test:e2e:reprocessing -- --skip-build
+
       - name: Run homepage navigation browser checks
         run: npm run test:e2e:home -- --skip-build
 

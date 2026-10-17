@@ -28,6 +28,7 @@
     "test:e2e:streaming-golden": "node tests/e2e/streaming-golden.mjs",
     "test:e2e:layers": "node tests/e2e/layer-network-evolution.mjs",
     "test:e2e:learn-anchor": "node tests/e2e/learn-anchor-fragment.mjs",
+    "test:e2e:reprocessing": "node tests/e2e/dependency-reprocessing.mjs",
     "test:e2e:search": "node tests/e2e/knowledge-search.mjs",
     "test:e2e:home": "node tests/e2e/home-onboarding.mjs",
     "test:e2e:sql-sandbox-stage0": "node tests/e2e/sql-sandbox-stage0.mjs",
