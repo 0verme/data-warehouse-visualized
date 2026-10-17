@@ -7,7 +7,7 @@ import { getEnglishRoute } from '../../../../utils/english-routes'
 
 const title = 'Data Lineage vs Task Dependency: Why the Graphs Differ | sql.sb'
 const description =
-  'One workflow, two graphs: scheduler task dependencies and SQL data lineage can disagree. See the missing edge and what it does to impact analysis.'
+  'Data lineage is the record of how an output was produced. See how it differs from scheduler task dependencies, and how both graphs drive impact analysis.'
 ---
 
 <EnglishArticleLayout
@@ -39,14 +39,45 @@ const description =
   <div class="english-answer">
     <span class="english-answer__label">Quick answer</span>
     <p>
-      Task dependency is declared execution order; data lineage is the actual data derivation. A
-      dependency can exist without data flow (a job waits for a signal), and data flow can exist
-      without a declared dependency (a view reads a table no job declares). Use lineage to know what
-      data is affected, and dependencies to know what to re-trigger.
+      <strong>Data lineage</strong> is the record of how an output was produced: which inputs a run
+      read, which transformation it applied, and which output it wrote.{' '}
+      <strong>Task dependency</strong> is the declared execution order between jobs. They can
+      disagree — a dependency can exist without data flow (a wait for a signal), and data flow can
+      exist without a declared dependency (a view reads a table no job declares). Use lineage to
+      know which data is affected, and dependencies to know what to re-trigger.
     </p>
   </div>
 
   <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="definition">
+      <h2 id="definition">What data lineage is — and what it is not</h2>
+      <p>
+        Each lineage edge says “this output was derived from that input”. The edges are recorded
+        from what actually ran (execution metadata) or parsed from the code that ran — SQL, view
+        definitions, notebooks. Three properties decide what a lineage graph can answer:
+      </p>
+      <ul>
+        <li>
+          <strong>Direction.</strong> Upstream lineage answers “where did this value come from?”.
+          The same edges inverted answer the downstream question “what is computed from this
+          table?”.
+        </li>
+        <li>
+          <strong>Level.</strong> Table-level lineage says one table depends on another.
+          Column-level lineage says a specific field does, and costs more to maintain.
+        </li>
+        <li>
+          <strong>Time and version.</strong> Without execution or version information, an edge
+          describes what <em>can</em> flow, not what flowed in a specific run.
+        </li>
+      </ul>
+      <p>
+        A lineage graph is therefore not the scheduler graph. Lineage tracks data derivation;
+        dependencies track execution order. The two usually overlap, which is exactly why the
+        differences matter when something goes wrong.
+      </p>
+    </section>
+
     <section class="english-article__section" aria-labelledby="example">
       <h2 id="example">One workflow, two graphs</h2>
       <p>
@@ -94,7 +125,18 @@ const description =
       <h2 id="impact">What this does to impact analysis</h2>
       <p>
         Impact analysis starts from a change — a late table, a corrected value, a failed job — and
-        asks what else is affected. The answer depends on which graph you query:
+        asks what else is affected. Mechanically, lineage-based impact analysis is a graph walk:
+        anchor the change at one node (a table partition, a column, a business date), then collect
+        the transitive closure of every downstream node reachable through derivation edges. That
+        closure is the <em>potential</em> impact set — everything that <em>could</em> have consumed
+        the changed data.
+      </p>
+      <p>
+        Reachability is an upper bound, not the final answer. To narrow it, filter by evidence: did
+        the downstream job actually run after the change, did it read the affected partition, and
+        does its output still agree with a recomputation? Run metadata, source cursors and row-count
+        or checksum comparisons turn “possibly affected” into “confirmed affected” or “provably
+        unaffected”. The answer also depends on which graph you query:
       </p>
       <div class="english-table-scroll">
         <table class="english-table">
@@ -133,6 +175,28 @@ const description =
           </tbody>
         </table>
       </div>
+      <ol>
+        <li>
+          <strong>Anchor the change.</strong> Name the object, the partition or date range, and the
+          moment the wrong data appeared.
+        </li>
+        <li>
+          <strong>Walk downstream lineage.</strong> Expand through views and other readers the
+          scheduler does not see. This produces the potential impact set.
+        </li>
+        <li>
+          <strong>Filter with execution evidence.</strong> Keep the consumers that ran after the
+          change and actually read the affected data.
+        </li>
+        <li>
+          <strong>Plan the rewrite.</strong> Order the confirmed consumers by data dependency, then
+          rerun and validate each affected partition.
+        </li>
+        <li>
+          <strong>Notify consumers outside the graph.</strong> Reports, extracts and external
+          systems may have already consumed the old result.
+        </li>
+      </ol>
       <p>
         The practical rule: use lineage to enumerate affected data objects, then use the scheduler
         graph to plan the execution — which jobs to rerun and in what order. Neither is a substitute
