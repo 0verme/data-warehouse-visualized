@@ -15,6 +15,7 @@ export const ENGLISH_PATHS = {
   idempotentEtl: '/en/data-warehouse/idempotent-etl/',
   lineageVsTaskDependency: '/en/data-warehouse/data-lineage-vs-task-dependency/',
   scdType2: '/en/data-warehouse/scd-type-2/',
+  pipelineFailureRecovery: '/en/data-warehouse/pipeline-failure-recovery/',
   tools: '/en/tools/',
 } as const
 
