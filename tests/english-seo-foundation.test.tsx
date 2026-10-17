@@ -34,6 +34,10 @@ const englishRoutes = [
     file: 'en/data-warehouse/pipeline-observability/index.astro',
     route: ENGLISH_PATHS.pipelineObservability,
   },
+  {
+    file: 'en/data-warehouse/fact-vs-dimension-tables/index.astro',
+    route: ENGLISH_PATHS.factVsDimensionTables,
+  },
   { file: 'en/tools/index.astro', route: ENGLISH_PATHS.tools },
 ]
 const establishedLearnSlugs = `
@@ -106,7 +110,7 @@ why-data-warehouse
   .split(/\s+/)
 
 describe('English SEO routing contract', () => {
-  it('defines exactly the thirteen English pages outside /learn/', () => {
+  it('defines exactly the fourteen English pages outside /learn/', () => {
     const pageFiles = readdirSync(pagesDirectory, { recursive: true }).map(String)
     const englishPageFiles = pageFiles
       .filter((path) => path.startsWith('en/') && path.endsWith('.astro'))
@@ -127,6 +131,7 @@ describe('English SEO routing contract', () => {
       '/en/data-warehouse/data-quality-checks/',
       '/en/data-warehouse/data-contracts/',
       '/en/data-warehouse/pipeline-observability/',
+      '/en/data-warehouse/fact-vs-dimension-tables/',
       '/en/tools/',
     ])
   })

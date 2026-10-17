@@ -71,6 +71,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/pipeline-observability/index.html',
     title: 'Data Pipeline Observability: Health Signals | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/fact-vs-dimension-tables/',
+    file: 'en/data-warehouse/fact-vs-dimension-tables/index.html',
+    title: 'Fact Table vs Dimension Table: Roles & Keys | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 
