@@ -26,6 +26,7 @@ const E2_PATH = '/learn/reprocessing-impact-scope/'
 const E3_PATH = '/learn/reprocessing-auto-stop-wait/'
 const E4_PATH = '/learn/reprocessing-historical-parallel/'
 const E5_PATH = '/learn/reprocessing-version-boundary/'
+const E6_PATH = '/learn/reprocessing-downstream-reload/'
 const SOURCE_TASK_ID = 'ingest.ods-transaction.daily.v2'
 
 const VIEWPORTS = [
@@ -347,6 +348,63 @@ try {
         )
 
         await checkSharedLayout(`${tag} E5`, page, errors)
+        await page.close()
+      }
+
+      // ------------------------------------------------------------ E6
+      {
+        const { page, errors } = await openLesson(browser, viewport, theme, E6_PATH)
+        await page.waitForSelector('[data-reprocessing-mode="consumer-closure"]', {
+          timeout: 20000,
+        })
+
+        check(`${tag} E6 六类消费方可见`, (await page.locator('[data-consumer-id]').count()) === 6)
+        check(
+          `${tag} E6 初始待确认 4 个`,
+          ((await page.locator('[data-role="closure-status"]').textContent()) ?? '').includes(
+            '待确认 4 个',
+          ),
+        )
+        check(
+          `${tag} E6 初始未闭环`,
+          (await page.getAttribute('[data-panel="downstream-closure"]', 'data-all-confirmed')) ===
+            'false',
+        )
+
+        await page.click('[data-consumer-id="interface.push"] button')
+        check(
+          `${tag} E6 单项确认生效`,
+          (await page.getAttribute('[data-consumer-id="interface.push"]', 'data-confirmation')) ===
+            'confirmed',
+        )
+        check(
+          `${tag} E6 待确认降为 3`,
+          ((await page.locator('[data-role="closure-status"]').textContent()) ?? '').includes(
+            '待确认 3 个',
+          ),
+        )
+
+        await page.getByRole('button', { name: '一键确认全部受影响消费方' }).click()
+        check(
+          `${tag} E6 全部确认后闭环`,
+          (await page.getAttribute('[data-panel="downstream-closure"]', 'data-all-confirmed')) ===
+            'true',
+        )
+        check(
+          `${tag} E6 闭环状态可解释`,
+          ((await page.locator('[data-role="closure-status"]').textContent()) ?? '').includes(
+            '消费端恢复闭环已完成',
+          ),
+        )
+
+        await page.getByRole('button', { name: '重置' }).click()
+        check(
+          `${tag} E6 重置回到待确认`,
+          (await page.getAttribute('[data-panel="downstream-closure"]', 'data-all-confirmed')) ===
+            'false',
+        )
+
+        await checkSharedLayout(`${tag} E6`, page, errors)
         await page.close()
       }
     }

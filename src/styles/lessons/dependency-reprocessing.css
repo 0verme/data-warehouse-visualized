@@ -473,6 +473,89 @@
   border-color: var(--diagram-accent);
 }
 
+/* ---------- E6 下游消费闭环 ---------- */
+
+.dependency-reprocessing__consumers {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dependency-reprocessing__consumers li {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2);
+}
+
+.dependency-reprocessing__consumers li[data-action='none'] {
+  opacity: 0.82;
+}
+
+.dependency-reprocessing__consumers
+  li[data-confirmation='pending'][data-action]:not([data-action='none']) {
+  border-color: var(--warning-border);
+}
+
+.dependency-reprocessing__consumers
+  li[data-confirmation='confirmed'][data-action]:not([data-action='none']) {
+  border-color: var(--success-border);
+}
+
+.dependency-reprocessing__consumer-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dependency-reprocessing__consumer-kind {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--diagram-accent-soft);
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.dependency-reprocessing__consumer-kind[data-kind='regulatory'] {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.dependency-reprocessing__consumer-kind[data-kind='report'] {
+  background: var(--surface-blue);
+  color: var(--ink);
+}
+
+.dependency-reprocessing__consumers p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.dependency-reprocessing__consumer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.dependency-reprocessing__consumer-actions [data-role='action-label'] {
+  font-weight: 600;
+}
+
+.dependency-reprocessing__panel[data-all-confirmed='true'] {
+  border-color: var(--success-border);
+}
+
 /* ---------- 容器查询：窄屏单列，宽屏分支节点并排 ---------- */
 
 @container visualization (min-width: 720px) {

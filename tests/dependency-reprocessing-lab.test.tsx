@@ -122,7 +122,7 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'consumer-closure' }}
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'rolling-backfill' }}
       />,
     )
 
@@ -466,7 +466,9 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-version-boundary').previous?.slug).toBe(
       'reprocessing-historical-parallel',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-version-boundary').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-version-boundary').next?.slug).toBe(
+      'reprocessing-downstream-reload',
+    )
 
     const text = JSON.stringify(content)
     expect(text).toContain('版本边界')
@@ -474,6 +476,66 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(text).toContain('重大重构')
     expect(text).toContain('专项修复')
     expect(text).toContain('SQL 能跑')
+    expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
+  })
+
+  it('E6 静态渲染：数仓 SUCCESS 与消费端待确认同时可见', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'consumer-closure' }}
+      />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="consumer-closure"')
+    expect(html).toContain('data-role="closure-status"')
+    expect(html).toContain('aria-live="polite"')
+    expect(html).toContain('数仓任务：<strong>全部 SUCCESS</strong>')
+    expect(html).toContain('data-panel="downstream-closure"')
+    expect(html).toContain('data-all-confirmed="false"')
+    expect(html.match(/data-consumer-id=/g)).toHaveLength(6)
+    expect(html.match(/data-action="reload"/g)).toHaveLength(2)
+    expect(html.match(/data-action="refresh"/g)).toHaveLength(1)
+    expect(html.match(/data-action="correct"/g)).toHaveLength(1)
+    expect(html.match(/data-action="none"/g)).toHaveLength(2)
+    expect(html).toContain('待确认 4 个')
+    expect(html).toContain('一键确认全部受影响消费方')
+    expect(html).toContain('14-7')
+  })
+
+  it('第 14 章 14-6 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-downstream-reload')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-6',
+      slug: 'reprocessing-downstream-reload',
+      chapter: '14',
+      order: 600,
+      difficulty: 'advanced',
+      estimatedMinutes: 20,
+      demo: 'dependency-reprocessing',
+      title: '数仓重做成功，为什么下游还要重新装数？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual({
+      kind: 'dependency-reprocessing',
+      lessonFocus: 'consumer-closure',
+    })
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-downstream-reload').previous?.slug).toBe(
+      'reprocessing-version-boundary',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-downstream-reload').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('消费闭环')
+    expect(text).toContain('重新装数')
+    expect(text).toContain('确认')
+    expect(text).toContain('SUCCESS')
     expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
   })
 })

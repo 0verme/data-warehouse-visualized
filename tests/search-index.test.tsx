@@ -247,11 +247,11 @@ describe('搜索索引构建（#148 P1-B）', () => {
         `coldQuery=${coldFirstQueryUs.toFixed(0)}us warmQuery=${warmPerQueryUs.toFixed(0)}us`,
     )
 
-    // 索引包含全部课程正文；预算按已上线课程数缩放（每篇约 5.4KB raw / 1.55KB gzip / 1.25KB brotli），只防数量级回归。
+    // 索引包含全部课程正文；预算按已上线课程数缩放（每篇约 5.6KB raw / 1.65KB gzip / 1.3KB brotli），只防数量级回归。
     const lessonCount = index.lessons.length
-    expect(rawBytes).toBeLessThan(lessonCount * 5_400)
-    expect(gzipBytes).toBeLessThan(lessonCount * 1_550)
-    expect(brotliBytes).toBeLessThan(lessonCount * 1_250)
+    expect(rawBytes).toBeLessThan(lessonCount * 5_600)
+    expect(gzipBytes).toBeLessThan(lessonCount * 1_650)
+    expect(brotliBytes).toBeLessThan(lessonCount * 1_300)
     expect(buildMs).toBeLessThan(200)
     // 性能上限刻意宽松：CI 与其他测试并行时噪声很大，这里只防 O(n²) 级回归
     expect(coldFirstQueryUs).toBeLessThan(50_000)

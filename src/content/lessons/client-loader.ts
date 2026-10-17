@@ -117,6 +117,10 @@ const lessonContentLoaders: Record<string, () => Promise<LessonContent>> = {
     ),
   'reprocessing-version-boundary': () =>
     import('./dependency-reprocessing-version').then((m) => m.dependencyReprocessingVersionContent),
+  'reprocessing-downstream-reload': () =>
+    import('./dependency-reprocessing-downstream').then(
+      (m) => m.dependencyReprocessingDownstreamContent,
+    ),
 }
 
 const lessonContentCache = new Map<string, LessonContent>()

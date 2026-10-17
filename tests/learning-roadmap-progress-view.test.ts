@@ -130,12 +130,12 @@ describe('Roadmap progress view projection', () => {
     const view = viewFor({ completedLessonIds: ['lesson-12'], currentLessonId: 'lesson-12' })
     const stage = stageView(view, 'serving-production')
 
-    expect(stage.totalLessons).toBe(19)
+    expect(stage.totalLessons).toBe(20)
     expect(topicView(view, 'capstone-delivery')).toMatchObject({
       state: 'completed',
       label: '已完成 · 1 / 1',
     })
-    expect(stage.label).toBe('1 / 19 节 · 5%')
+    expect(stage.label).toBe('1 / 20 节 · 5%')
   })
 
   it('marks all 33 Topics completed and all 8 Stages at 100% for a completed course', () => {
@@ -144,7 +144,7 @@ describe('Roadmap progress view projection', () => {
       currentLessonId: availableLessonIds[0],
     })
 
-    expect(availableLessonIds).toHaveLength(61)
+    expect(availableLessonIds).toHaveLength(62)
     expect(view.topics).toHaveLength(33)
     expect(view.topics.every((topic) => topic.state === 'completed')).toBe(true)
     expect(
@@ -160,8 +160,8 @@ describe('Roadmap progress view projection', () => {
       expect(stage.label).toBe(`${stage.totalLessons} / ${stage.totalLessons} 节 · 100%`)
       expect(stage.completedLessons).toBe(stage.totalLessons)
     }
-    expect(view.stages.reduce((sum, stage) => sum + stage.totalLessons, 0)).toBe(61)
-    expect(view.stages.reduce((sum, stage) => sum + stage.completedLessons, 0)).toBe(61)
+    expect(view.stages.reduce((sum, stage) => sum + stage.totalLessons, 0)).toBe(62)
+    expect(view.stages.reduce((sum, stage) => sum + stage.completedLessons, 0)).toBe(62)
     // The current location stays independent from the completed state.
     expect(view.current).not.toBeNull()
     expect(view.topics.some((topic) => topic.isCurrent)).toBe(true)

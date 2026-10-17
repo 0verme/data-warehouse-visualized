@@ -61,8 +61,8 @@ describe('Learning Roadmap view model', () => {
     const available = lessons.filter(isLessonAvailable)
     const courseById = new Map(available.map((lesson) => [lesson.id, lesson]))
 
-    expect(allLessons).toHaveLength(61)
-    expect(new Set(allLessons.map(({ id }) => id)).size).toBe(61)
+    expect(allLessons).toHaveLength(62)
+    expect(new Set(allLessons.map(({ id }) => id)).size).toBe(62)
     expect(new Set(allLessons.map(({ id }) => id))).toEqual(new Set(available.map(({ id }) => id)))
 
     for (const lesson of allLessons) {
