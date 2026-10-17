@@ -1,0 +1,286 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { ObservabilitySignalsLab } from '../../../../components/english/ObservabilitySignalsLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import {
+  OBSERVABILITY_SIGNALS,
+  buildObservabilityReference,
+  signalLabel,
+} from '../../../../features/english-observability/model'
+import observabilityStylesUrl from '../../../../styles/layouts/english-pipeline-observability.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Data Pipeline Observability: Health Signals | sql.sb'
+const description =
+  'Which signals show whether a data pipeline is healthy over time — run status, latency, freshness, volume, invalid rows and backlog — and why green runs can still hide broken data.'
+
+const reference = buildObservabilityReference()
+const signals = OBSERVABILITY_SIGNALS
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[observabilityStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Pipeline observability' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · operations</p>
+    <h1 class="english-article__title">
+      Data pipeline observability: the signals a green run hides
+    </h1>
+    <p class="english-article__lede">
+      “All runs succeeded” answers one question: the scheduler did its job. It does not say the data
+      is current, complete or correct. Observability is the set of signals that answer the other
+      questions over time.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Pipeline observability watches a small set of signals across many runs: run status, latency,
+      freshness, volume, invalid rows and backlog. Liveness signals (run status, latency, backlog)
+      tell you whether the machinery is working; data-health signals (freshness, volume, invalid
+      rows) tell you whether the output is usable. A run can be green while data is stale,
+      incomplete or wrong, so both groups have to be on the same timeline.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="signals">
+      <h2 id="signals">Six signals, six different questions</h2>
+      <p>
+        Each signal has a normal band, a failure meaning and a typical false positive. A signal
+        without a known normal band is just a number.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Signals worth watching for a daily pipeline</caption>
+          <thead>
+            <tr>
+              <th scope="col">Signal</th>
+              <th scope="col">Question</th>
+              <th scope="col">Healthy when</th>
+              <th scope="col">Alert when</th>
+              <th scope="col">Common false positive</th>
+            </tr>
+          </thead>
+          <tbody>
+            {signals.map((signal) => (
+              <tr>
+                <td>{signal.label}</td>
+                <td>{signal.question}</td>
+                <td>{signal.healthyWhen}</td>
+                <td>{signal.alertWhen}</td>
+                <td>{signal.falsePositive}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="lab">
+      <h2 id="lab">Watch seven runs, not one</h2>
+      <p>
+        Single-run monitoring is blind to trends. The lab below replays seven runs of one pipeline
+        and marks the first run where a signal leaves its band.
+      </p>
+      <ObservabilitySignalsLab client:load />
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Where each pattern first shows up</caption>
+          <thead>
+            <tr>
+              <th scope="col">Pattern</th>
+              <th scope="col">First signal</th>
+              <th scope="col">First run</th>
+              <th scope="col">Run status ever failed?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.map((row) => (
+              <tr data-tone={row.firstSignal && !row.runStatusEverFailed ? 'wrong' : undefined}>
+                <td>{row.label}</td>
+                <td>{row.firstSignal ? signalLabel(row.firstSignal) : 'none'}</td>
+                <td>{row.firstSignalRun ?? '—'}</td>
+                <td>{row.runStatusEverFailed ? 'yes' : 'no'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="green">
+      <h2 id="green">Why a green run status is not health</h2>
+      <p>
+        A run reports success when the job finished, not when the output is good. Five of the eight
+        patterns above never fail a run: the job arrives on time, reads what is there, writes what
+        the query produced and exits cleanly. The damage is in what it produced.
+      </p>
+      <ul>
+        <li>
+          <strong>Stale.</strong> The output still represents the previous business date; the run
+          succeeded on the wrong slice.
+        </li>
+        <li>
+          <strong>Incomplete.</strong> The rows that exist are valid, and three thousand accounts
+          are simply missing.
+        </li>
+        <li>
+          <strong>Wrong.</strong> A few invalid rows were published, or a unit changed and every
+          number is off by a factor.
+        </li>
+        <li>
+          <strong>Late and growing.</strong> The run succeeded after waiting for an upstream job,
+          and the backlog keeps growing.
+        </li>
+      </ul>
+      <p>
+        This is why observability has to include the data-health signals, not only the scheduler
+        status. The per-batch rules themselves are covered in{' '}
+        <a href={getEnglishRoute('dataQualityChecks')}>data quality checks</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="alerts">
+      <h2 id="alerts">What to alert on, and what to leave for review</h2>
+      <p>
+        The value of a signal is not that it moves once; it is that its trend becomes different from
+        normal. Alert on sustained deviation and on the leading signals, and review the trailing
+        ones with context.
+      </p>
+      <ul>
+        <li>
+          <strong>Leading signals:</strong> latency, backlog and queue waiting time change before
+          the SLA breach and before freshness degrades.
+        </li>
+        <li>
+          <strong>Trailing signals:</strong> freshness, volume and invalid rows are what the
+          consumers actually experience; by the time they fire, the batch may already be published.
+        </li>
+        <li>
+          <strong>Use a window, not a point:</strong> two consecutive runs outside the band are a
+          pattern; one slow run is often a backfill or a large input.
+        </li>
+        <li>
+          <strong>One owner per alert:</strong> an alert that nobody can act on becomes noise and is
+          muted within a week.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>Alerts are decisions, not dashboards</strong>
+        <p>
+          A dashboard with twenty green tiles is not observability. A small set of signals with a
+          known normal band, an owner and a documented next step is.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">Observability, quality checks and lineage</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Three practices, three questions</caption>
+          <thead>
+            <tr>
+              <th scope="col">Practice</th>
+              <th scope="col">Scope</th>
+              <th scope="col">Question</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-tone="right">
+              <td>
+                <strong>Observability</strong>
+              </td>
+              <td>Many runs over time</td>
+              <td>Is the pipeline healthy, and which signal is moving?</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Quality check</strong>
+              </td>
+              <td>One produced batch</td>
+              <td>Is this batch usable right now?</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Lineage</strong>
+              </td>
+              <td>Tables, columns and tasks</td>
+              <td>Where did this data come from, and what does it affect?</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Observability tells you that something is wrong;{' '}
+        <a href={getEnglishRoute('lineageVsTaskDependency')}>lineage and impact analysis</a> tell
+        you what it reaches;{' '}
+        <a href={getEnglishRoute('pipelineFailureRecovery')}>failure recovery</a> tells you what to
+        stop and replay. Keep the three roles separate so each one stays small.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Seasonality and holidays.</strong> Volume and freshness baselines move with the
+          business calendar. Compare with the same weekday and business-day type, not with a fixed
+          number.
+        </li>
+        <li>
+          <strong>Baseline drift.</strong> A growing business gradually moves the normal band. Re-
+          derive baselines on a schedule, otherwise every alert becomes a false positive.
+        </li>
+        <li>
+          <strong>Alert fatigue.</strong> More signals do not mean more safety. Start with the six
+          here, one owner each, and add a signal only when a previous incident needed it.
+        </li>
+        <li>
+          <strong>Missing labels.</strong> A metric without the business date, table and task id
+          cannot be acted on. Collect context with the number.
+        </li>
+        <li>
+          <strong>Observability is not a substitute for contracts.</strong> A signal can show that
+          something changed, but only a contract states what the producer promised and how changes
+          are agreed.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('dataQualityChecks')}>Data quality checks</a> — the per-batch
+          rules whose results become the invalid-rows signal.
+        </li>
+        <li>
+          <a href={getEnglishRoute('pipelineFailureRecovery')}>Data pipeline failure recovery</a> —
+          what to stop, replay and re-notify once a signal confirms an incident.
+        </li>
+        <li>
+          <a href={getEnglishRoute('dataContracts')}>Data contracts</a> — the interface promises
+          that tell you whether a change is compatible before it ships.
+        </li>
+        <li>
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>Data lineage vs task dependency</a> —
+          how to trace a signal back to the data and tasks behind it.
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

@@ -65,6 +65,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/pipeline-failure-recovery/',
       '/en/data-warehouse/data-quality-checks/',
       '/en/data-warehouse/data-contracts/',
+      '/en/data-warehouse/pipeline-observability/',
       '/en/',
       '/en/sql/',
       '/en/tools/',
@@ -159,6 +160,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/data-contracts/',
       '/en/data-warehouse/idempotent-etl/',
       '/en/data-warehouse/grain/',
+      '/en/data-warehouse/pipeline-observability/',
     ],
     boundaries: [
       'A data quality check is an executable rule over a specific dataset',
@@ -178,12 +180,32 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/pipeline-failure-recovery/',
       '/en/data-warehouse/data-lineage-vs-task-dependency/',
       '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/pipeline-observability/',
     ],
     boundaries: [
       'A data contract is an explicit, versioned agreement',
       'Why silent risks are the expensive ones',
       'A schema test cannot see a meaning change',
       'The change process is part of the contract',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/pipeline-observability/',
+    title: 'Data Pipeline Observability: Health Signals | sql.sb',
+    heading: 'Data pipeline observability: the signals a green run hides',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/data-quality-checks/',
+      '/en/data-warehouse/pipeline-failure-recovery/',
+      '/en/data-warehouse/data-contracts/',
+      '/en/data-warehouse/data-lineage-vs-task-dependency/',
+    ],
+    boundaries: [
+      'Six signals, six different questions',
+      'Why a green run status is not health',
+      'Alerts are decisions, not dashboards',
+      'Watch seven runs, not one',
     ],
   },
   {

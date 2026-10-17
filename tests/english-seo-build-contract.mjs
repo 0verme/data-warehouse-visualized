@@ -66,6 +66,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/data-contracts/index.html',
     title: 'Data Contracts: Producer & Consumer Interfaces | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/pipeline-observability/',
+    file: 'en/data-warehouse/pipeline-observability/index.html',
+    title: 'Data Pipeline Observability: Health Signals | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 
