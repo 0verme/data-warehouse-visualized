@@ -13,6 +13,8 @@ import { fileURLToPath } from 'node:url'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const WRANGLER = process.env.WRANGLER_BIN || join(ROOT, 'node_modules/wrangler/bin/wrangler.js')
 const UNKNOWN_PATH = '/__smart-404-verification-path__'
+const CASE_TYPO_PATH = '/Learn/Grain/'
+const CASE_TYPO_TARGET = '/learn/grain/'
 const XSS_PATH = `/__smart-404-${encodeURIComponent('<img src=x onerror=window.__smart404Injected=1>')}`
 
 if (!existsSync(resolve(ROOT, 'dist/404.html'))) {
@@ -155,6 +157,37 @@ try {
     normalResponses.set(route, response)
   }
 
+  const caseTypoResponse = await fetch(`${origin}${CASE_TYPO_PATH}`, { redirect: 'manual' })
+  const caseTypoHtml = await caseTypoResponse.text()
+  assert.equal(caseTypoResponse.status, 404, 'Case-typo paths must keep the HTTP 404 status')
+  assert.equal(caseTypoResponse.headers.get('location'), null, 'Case-typo paths must not redirect')
+  assert.ok(
+    caseTypoHtml.includes('data-404-recovery'),
+    'The 404 document must ship the recovery manifest hook',
+  )
+  assert.equal(
+    caseTypoHtml.includes(CASE_TYPO_PATH),
+    false,
+    'The case-typo request path must not be reflected',
+  )
+
+  const queryResponse = await fetch(
+    `${origin}${UNKNOWN_PATH}?next=${encodeURIComponent('https://evil.example/?x=<script>')}`,
+    { redirect: 'manual' },
+  )
+  const queryHtml = await queryResponse.text()
+  assert.equal(queryResponse.status, 404, 'Query strings must not change the 404 status')
+  assert.equal(
+    queryResponse.headers.get('location'),
+    null,
+    'Query strings must not trigger redirects',
+  )
+  assert.equal(
+    queryHtml === notFoundHtml,
+    true,
+    'The query string must not change or be reflected in the static 404 document',
+  )
+
   const stylesheetPath = notFoundHtml.match(/<link[^>]+href="([^"]+\.css)"[^>]*>/)?.[1]
   assert.ok(stylesheetPath, '404 document must load its page stylesheet')
   const stylesheetResponse = await fetch(new URL(stylesheetPath, `${origin}/`))
@@ -254,9 +287,103 @@ try {
     console.log(`[smart-404-workers] PASS · ${testCase.name}`)
   }
 
+  const recoveryCases = [
+    { name: 'case-typo-mobile-light', width: 390, height: 844, theme: 'light' },
+    { name: 'case-typo-narrow-dark', width: 320, height: 720, theme: 'dark' },
+  ]
+
+  for (const testCase of recoveryCases) {
+    const context = await browser.newContext({
+      viewport: { width: testCase.width, height: testCase.height },
+    })
+    await context.addInitScript((theme) => {
+      localStorage.setItem('data-warehouse-visualized:theme', theme)
+    }, testCase.theme)
+    const page = await context.newPage()
+    const pageErrors = []
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    const response = await page.goto(`${origin}${CASE_TYPO_PATH}`, { waitUntil: 'networkidle' })
+
+    assert.equal(response?.status(), 404, `${testCase.name}: typo path must still be HTTP 404`)
+    assert.equal(
+      new URL(page.url()).pathname,
+      CASE_TYPO_PATH,
+      `${testCase.name}: the page must not auto-redirect`,
+    )
+
+    const recovery = page.locator('[data-404-recovery]')
+    await recovery.waitFor({ state: 'visible' })
+    assert.equal(
+      await recovery
+        .getByRole('heading')
+        .textContent()
+        .then((text) => text?.trim()),
+      '你是不是想访问这个页面？',
+    )
+
+    const suggestion = page.locator('[data-404-suggestion-list] a')
+    assert.equal(await suggestion.count(), 1, `${testCase.name}: exactly one verified suggestion`)
+    assert.equal(await suggestion.first().getAttribute('href'), CASE_TYPO_TARGET)
+    assert.equal(await suggestion.first().textContent(), CASE_TYPO_TARGET)
+    assert.equal(
+      (await page.locator('body').innerHTML()).includes('Grain/'),
+      false,
+      `${testCase.name}: the requested path must not be echoed into the DOM`,
+    )
+
+    await suggestion.first().focus()
+    assert.notEqual(
+      await suggestion.first().evaluate((el) => getComputedStyle(el).outlineStyle),
+      'none',
+      `${testCase.name}: suggestion focus must be visible`,
+    )
+
+    const layout = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      theme: document.documentElement.dataset.theme,
+    }))
+    assert.equal(layout.theme, testCase.theme, `${testCase.name}: saved theme must be honored`)
+    assert.ok(
+      layout.documentWidth <= layout.viewportWidth,
+      `${testCase.name}: recovery UI must not overflow horizontally`,
+    )
+    assert.deepEqual(pageErrors, [], `${testCase.name}: no uncaught errors`)
+
+    await suggestion.first().click()
+    await page.waitForURL((url) => url.pathname === CASE_TYPO_TARGET)
+    await page.waitForLoadState('networkidle')
+    assert.equal(
+      page.url().endsWith(CASE_TYPO_TARGET),
+      true,
+      `${testCase.name}: suggestion must navigate to the canonical route`,
+    )
+    assert.equal(await page.locator('h1').first().isVisible(), true)
+    assert.equal(pageErrors.length, 0, `${testCase.name}: target page must not error`)
+
+    await context.close()
+    console.log(`[smart-404-workers] PASS · ${testCase.name}`)
+  }
+
+  const noSuggestionContext = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  const noSuggestionPage = await noSuggestionContext.newPage()
+  await noSuggestionPage.goto(`${origin}${XSS_PATH}`, { waitUntil: 'networkidle' })
+  assert.equal(
+    await noSuggestionPage.locator('[data-404-recovery]').isVisible(),
+    false,
+    'Unknown paths must not show a guessed suggestion',
+  )
+  assert.equal(
+    await noSuggestionPage.locator('[data-404-suggestion-list] a').count(),
+    0,
+    'Unknown paths must not render suggestion links',
+  )
+  assert.equal(await noSuggestionPage.evaluate(() => window.__smart404Injected), undefined)
+  await noSuggestionContext.close()
+
   console.log(
     `[smart-404-workers] PASS · HTTP 404, no redirect, safe static body, cache policy, ` +
-      `${normalRoutes.length} normal routes · Wrangler local`,
+      `${normalRoutes.length} normal routes, case-typo recovery · Wrangler local`,
   )
 } finally {
   await browser?.close()
