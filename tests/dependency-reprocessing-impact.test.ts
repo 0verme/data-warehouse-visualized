@@ -236,11 +236,15 @@ describe('依赖链重做 · 影响分析内核（Phase 1-A）', () => {
 
     expect(findInstance(model, REPROCESSING_SOURCE_INSTANCE_ID)?.state).toBe('success')
     expect(findInstance(model, 'missing@2026-10-16')).toBeUndefined()
-    expect(listTaskInstances(model, TASK.dwsMerchantTransaction)).toHaveLength(2)
+    // 事故日 / 前一日 / 历史重做目标日三个业务日期各有一个实例。
+    expect(listTaskInstances(model, TASK.dwsMerchantTransaction)).toHaveLength(3)
     expect(listTaskInstances(model, TASK.dwsMerchantTransaction, INCIDENT_DATE)[0]?.state).toBe(
       'running',
     )
     expect(listTaskInstances(model, TASK.dwsMerchantTransaction, PREVIOUS_DATE)[0]?.state).toBe(
+      'success',
+    )
+    expect(listTaskInstances(model, TASK.dwsMerchantTransaction, '2026-10-10')[0]?.state).toBe(
       'success',
     )
   })
