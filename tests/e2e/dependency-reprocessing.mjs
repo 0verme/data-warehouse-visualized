@@ -25,6 +25,7 @@ const E1_PATH = '/learn/reprocessing-incident-timeline/'
 const E2_PATH = '/learn/reprocessing-impact-scope/'
 const E3_PATH = '/learn/reprocessing-auto-stop-wait/'
 const E4_PATH = '/learn/reprocessing-historical-parallel/'
+const E5_PATH = '/learn/reprocessing-version-boundary/'
 const SOURCE_TASK_ID = 'ingest.ods-transaction.daily.v2'
 
 const VIEWPORTS = [
@@ -295,6 +296,57 @@ try {
         )
 
         await checkSharedLayout(`${tag} E4`, page, errors)
+        await page.close()
+      }
+
+      // ------------------------------------------------------------ E5
+      {
+        const { page, errors } = await openLesson(browser, viewport, theme, E5_PATH)
+        await page.waitForSelector('[data-reprocessing-mode="version-boundary"]', {
+          timeout: 20000,
+        })
+
+        const verdict = () => page.getAttribute('[data-panel="version-verdict"]', 'data-verdict')
+
+        check(`${tag} E5 默认 SQL 逻辑调整兼容`, (await verdict()) === 'compatible')
+        check(
+          `${tag} E5 兼容时可生成平行计划`,
+          (await page.locator('[data-plan-items] li').count()) === 8,
+        )
+
+        await page.click('[data-change-type="major-refactor"]')
+        check(`${tag} E5 重大重构禁止直接重做`, (await verdict()) === 'forbidden')
+        check(
+          `${tag} E5 禁止时给出专项修复动作`,
+          await page.locator('[data-role="required-action"]').isVisible(),
+        )
+        check(
+          `${tag} E5 禁止时无平行计划`,
+          (await page.locator('[data-plan-items] li').count()) === 0,
+        )
+
+        await page.getByRole('button', { name: '模拟仅凭 SQL 试跑通过' }).click()
+        check(
+          `${tag} E5 试跑结论可见且不改变判定`,
+          (await page.locator('[data-role="trial-note"]').isVisible()) &&
+            (await verdict()) === 'forbidden',
+        )
+
+        await page.click('[data-change-type="schema-breaking"]')
+        check(`${tag} E5 表结构破坏性变更禁止`, (await verdict()) === 'forbidden')
+        check(
+          `${tag} E5 切换类型后试跑结论清除`,
+          (await page.locator('[data-role="trial-note"]').count()) === 0,
+        )
+
+        await page.click('[data-change-type="none"]')
+        check(`${tag} E5 无变更恢复兼容`, (await verdict()) === 'compatible')
+        check(
+          `${tag} E5 恢复兼容后计划重新出现`,
+          (await page.locator('[data-plan-items] li').count()) === 8,
+        )
+
+        await checkSharedLayout(`${tag} E5`, page, errors)
         await page.close()
       }
     }

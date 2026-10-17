@@ -28,7 +28,10 @@ import {
   summarizeStopWaitRedoSession,
   type StopWaitRedoPhase,
 } from '../../features/dependency-reprocessing/session'
-import type { DependencyReprocessingVisualization } from '../../features/dependency-reprocessing/types'
+import type {
+  DependencyReprocessingVisualization,
+  VersionChangeType,
+} from '../../features/dependency-reprocessing/types'
 import {
   applyVisualizationPlayerAction,
   createVisualizationPlayer,
@@ -992,6 +995,165 @@ function HistoricalModeLab() {
   )
 }
 
+const VERSION_CHANGE_OPTIONS: readonly {
+  type: VersionChangeType
+  label: string
+  hint: string
+}[] = [
+  { type: 'none', label: '无变更', hint: '程序与契约没有变化，历史输入兼容。' },
+  { type: 'sql-logic', label: 'SQL 逻辑调整', hint: '加工逻辑变化，但输入契约保持兼容。' },
+  {
+    type: 'schema-breaking',
+    label: '表结构破坏性变更',
+    hint: '字段、类型或表结构不兼容历史输入。',
+  },
+  { type: 'semantics-changed', label: '业务语义变化', hint: '口径或业务含义已经变化。' },
+  {
+    type: 'input-contract-changed',
+    label: '输入契约变化',
+    hint: '历史输入与最新程序的契约不一致。',
+  },
+  { type: 'major-refactor', label: '新老系统重大重构', hint: '重构导致历史输入不兼容。' },
+]
+
+function VersionBoundaryLab() {
+  const model = useMemo(() => createReprocessingFixture({ variant: 'completed' }), [])
+  const [changeType, setChangeType] = useState<VersionChangeType>('sql-logic')
+  const [trialRequested, setTrialRequested] = useState(false)
+
+  const decision = useMemo(
+    () =>
+      createParallelPlan(model, {
+        currentBusinessDate: REPROCESSING_INCIDENT_BUSINESS_DATE,
+        targetBusinessDate: REPROCESSING_HISTORICAL_BUSINESS_DATE,
+        sourceTaskId: REPROCESSING_TASK_IDS.ingestTransaction,
+        programVersion: PARALLEL_PROGRAM_VERSION,
+        changeType,
+      }),
+    [model, changeType],
+  )
+
+  const selectedOption =
+    VERSION_CHANGE_OPTIONS.find((option) => option.type === changeType) ?? VERSION_CHANGE_OPTIONS[0]
+  const compatible = decision.compatibility.compatible
+  const labels = new Map(model.tasks.map((task) => [task.taskId, task.label]))
+
+  const handleChangeType = (nextType: VersionChangeType): void => {
+    setChangeType(nextType)
+    setTrialRequested(false)
+  }
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="decision"
+      data-reprocessing-mode="version-boundary"
+      aria-label="历史重做版本兼容边界"
+    >
+      <div className="dependency-reprocessing__scope-actions" role="group" aria-label="变更类型">
+        {VERSION_CHANGE_OPTIONS.map((option) => (
+          <button
+            key={option.type}
+            className={
+              changeType === option.type
+                ? 'button button--primary button--small'
+                : 'button button--quiet button--small'
+            }
+            type="button"
+            data-change-type={option.type}
+            aria-pressed={changeType === option.type}
+            onClick={() => handleChangeType(option.type)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      <p
+        className="dependency-reprocessing__scope-summary"
+        data-role="version-status"
+        aria-live="polite"
+      >
+        变更类型：<strong>{selectedOption.label}</strong>（{selectedOption.hint}）。判定：
+        {compatible ? '兼容，可以生成平行 Job / Plan' : '禁止直接历史重做，转专项修复'}。
+      </p>
+
+      <section
+        className="dependency-reprocessing__panel"
+        data-panel="version-verdict"
+        data-verdict={compatible ? 'compatible' : 'forbidden'}
+      >
+        <header className="dependency-reprocessing__panel-header">
+          <span>版本兼容性判定（历史目标 {REPROCESSING_HISTORICAL_BUSINESS_DATE}）</span>
+          <strong>{compatible ? '兼容' : '禁止'}</strong>
+        </header>
+        <ul className="dependency-reprocessing__evidence">
+          {decision.compatibility.reasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+        {decision.compatibility.requiredAction && (
+          <p data-role="required-action">{decision.compatibility.requiredAction}</p>
+        )}
+
+        {!compatible && (
+          <div
+            className="dependency-reprocessing__scope-actions"
+            role="group"
+            aria-label="试跑模拟"
+          >
+            <button
+              className="button button--quiet button--small"
+              type="button"
+              onClick={() => setTrialRequested(true)}
+            >
+              模拟仅凭 SQL 试跑通过
+            </button>
+            <button
+              className="button button--quiet button--small"
+              type="button"
+              disabled={!trialRequested}
+              onClick={() => setTrialRequested(false)}
+            >
+              清除试跑结论
+            </button>
+          </div>
+        )}
+
+        {trialRequested && !compatible && (
+          <p data-role="trial-note">
+            SQL
+            试跑通过：只说明语法与执行计划可运行，不构成历史输入兼容性证据；本次判定仍为禁止直接历史重做。
+          </p>
+        )}
+
+        {decision.parallelPlan && (
+          <>
+            <p>
+              平行 Job / Plan 使用最新程序 {decision.parallelPlan.programVersion}，绑定历史日期{' '}
+              {decision.parallelPlan.targetBusinessDate}；当前正常计划状态不被修改。
+            </p>
+            <ol className="dependency-reprocessing__dedup" data-plan-items>
+              {decision.parallelPlan.items.map((item, index) => (
+                <li key={item.instanceId} data-instance={item.instanceId}>
+                  <span>
+                    {index + 1}. {labels.get(item.taskId) ?? item.taskId}
+                  </span>
+                  <code>{item.programVersion}</code>
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
+      </section>
+
+      <p className="dependency-reprocessing__scope-summary">
+        不因 SQL 能运行就认定安全：变更类型不兼容时，正确动作是先完成数据迁移与历史回填的专项方案。
+      </p>
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
@@ -1017,6 +1179,10 @@ export function DependencyReprocessingLab({
 
   if (visualization.lessonFocus === 'current-vs-historical') {
     return <HistoricalModeLab />
+  }
+
+  if (visualization.lessonFocus === 'version-boundary') {
+    return <VersionBoundaryLab />
   }
 
   return (

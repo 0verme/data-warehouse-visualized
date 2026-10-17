@@ -122,7 +122,7 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'version-boundary' }}
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'consumer-closure' }}
       />,
     )
 
@@ -406,13 +406,74 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-historical-parallel').previous?.slug).toBe(
       'reprocessing-auto-stop-wait',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-historical-parallel').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-historical-parallel').next?.slug).toBe(
+      'reprocessing-version-boundary',
+    )
 
     const text = JSON.stringify(content)
     expect(text).toContain('日切')
     expect(text).toContain('平行 Job / Plan')
     expect(text).toContain('business_date')
     expect(text).toContain('最新程序')
+    expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
+  })
+
+  it('E5 静态渲染：默认兼容变更展示判定与平行计划', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'version-boundary' }}
+      />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="version-boundary"')
+    expect(html.match(/data-change-type=/g)).toHaveLength(6)
+    expect(html).toContain('data-panel="version-verdict"')
+    expect(html).toContain('data-verdict="compatible"')
+    expect(html).toContain('data-role="version-status"')
+    expect(html).toContain('aria-live="polite"')
+    expect(html).toContain('SQL 逻辑调整')
+    expect(html).toContain('最新程序 v3')
+    expect(html.match(/data-plan-items/g)).toHaveLength(1)
+    // 初始为兼容变更：没有禁止动作与试跑模拟。
+    expect(html).not.toContain('data-role="required-action"')
+    expect(html).not.toContain('模拟仅凭 SQL 试跑通过')
+  })
+
+  it('第 14 章 14-5 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-version-boundary')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-5',
+      slug: 'reprocessing-version-boundary',
+      chapter: '14',
+      order: 500,
+      difficulty: 'advanced',
+      estimatedMinutes: 20,
+      demo: 'dependency-reprocessing',
+      title: '为什么有些历史数据禁止重做？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual({
+      kind: 'dependency-reprocessing',
+      lessonFocus: 'version-boundary',
+    })
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-version-boundary').previous?.slug).toBe(
+      'reprocessing-historical-parallel',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-version-boundary').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('版本边界')
+    expect(text).toContain('最新程序')
+    expect(text).toContain('重大重构')
+    expect(text).toContain('专项修复')
+    expect(text).toContain('SQL 能跑')
     expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
   })
 })
