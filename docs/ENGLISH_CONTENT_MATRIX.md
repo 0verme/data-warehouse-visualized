@@ -1,12 +1,12 @@
 # 英文内容矩阵与 Phase 0 审计（#220）
 
-> **状态：** Phase 0 COMPLETE / 规划文档；**内容实现 GATED**
+> **状态：** Phase 0 COMPLETE · **实施授权 2026-10-17（Maintainer-Authorized Content Expansion）** · 冻结实施队列见 §14
 > **Parent Epic：** [#220](https://github.com/0verme/data-warehouse-visualized/issues/220)
-> **Gate：** [#39](https://github.com/0verme/data-warehouse-visualized/issues/39) `Phase 4 — Expansion` = **HOLD**；[#179](https://github.com/0verme/data-warehouse-visualized/issues/179) `GSC / SERP` = **DATA NOT YET AVAILABLE**
+> **授权：** [#39](https://github.com/0verme/data-warehouse-visualized/issues/39) `Phase 4 — Expansion` = **ACTIVE / Maintainer-Authorized（2026-10-17）**，授权范围 = 本文件 §14 冻结实施队列；[#179](https://github.com/0verme/data-warehouse-visualized/issues/179) 原始实验基线保持不变，GSC / SERP 转为上线后持续观测机制
 > **六 Cluster 规划 Child：** [#222](https://github.com/0verme/data-warehouse-visualized/issues/222) A / [#223](https://github.com/0verme/data-warehouse-visualized/issues/223) B / [#224](https://github.com/0verme/data-warehouse-visualized/issues/224) C / [#225](https://github.com/0verme/data-warehouse-visualized/issues/225) D / [#226](https://github.com/0verme/data-warehouse-visualized/issues/226) E / [#227](https://github.com/0verme/data-warehouse-visualized/issues/227) F
 > **并行中文总控：** [#221](https://github.com/0verme/data-warehouse-visualized/issues/221)（依赖链重做专题；见 §11）
 > **审计基线：** `origin/main` = `cb9d273a0e55a4fd91737c3d2ca4e30f434aec50`（PR #219 Smart 404 Phase 2 merged）
-> **文档用途：** 作为 #220 的候选判定、Topic Cluster、复用地图、质量合同与 Agent Loop 边界的单一规划入口。**不授权任何新页面实现。**
+> **文档用途：** 作为 #220 的候选判定、Topic Cluster、复用地图、质量合同、冻结实施队列与 Agent Loop 边界的单一规划入口。**授权范围以 §14 为准；未进入 §14 队列的主题不自动获得授权。**
 
 ---
 
@@ -309,7 +309,7 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 
 ---
 
-## 10. 已确认可执行（gate-free）任务
+## 10. 已确认可执行（gate-free）任务（Wave 0，2026-10-17 已完成；保留为历史记录）
 
 | 任务                                                                | Cluster | 说明                                                             | 前置     |
 | ------------------------------------------------------------------- | ------- | ---------------------------------------------------------------- | -------- |
@@ -321,21 +321,23 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 | #179 观测窗口回写（2026-10-20 / 2026-11-03）                        | —       | GSC 可用性、query → page；不可用则继续 `DATA NOT YET AVAILABLE`  | 外部数据 |
 | 内容矩阵与 Child 判定维护                                           | 全部    | 每轮更新本文件与 #220                                            | 无       |
 
-**明确不可执行（HOLD）：** §4.1 中 11 个 `new` 候选的新页面实现，直到 #39 Gate 解除且有独立 intent 证据。
+> **2026-10-17 更新：** 表中 Wave 0 任务（E 簇 lineage 增强、D 簇 retry / rerun / backfill 增强、A 簇索引短定义、内链审计）已由 PR #244 / #246 / #248 / #249 / #252 完成并 merged。§4.1 中 11 个 `new` 候选的新页面实现已由 #39 Maintainer-Authorized Content Expansion 授权，进入 §14 冻结实施队列。
+
+**历史 HOLD 记录（已解除）：** §4.1 中 11 个 `new` 候选在授权前的新页面实现 HOLD。
 
 ---
 
 ## 11. 阻塞、风险与依赖
 
-| 类型   | 内容                                                                    | 影响                                       | 处理                                        |
-| ------ | ----------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------- |
-| Gate   | #39 `Phase 4 — Expansion` = HOLD                                        | 阻止 11 个 new 候选上线                    | 保持 HOLD；Wave 0 继续                      |
-| 数据   | #179 GSC / SERP = `DATA NOT YET AVAILABLE`；环境无 GSC 访问             | 无法验证搜索意图与成效                     | 如实记录；不推断 0 / 失败                   |
-| 先例   | #208（CLOSED，2026-10-10）Scheduling / Business Date topic cluster STOP | 禁止复活同 intent 日期语义页               | 写入 §4 / Cluster D                         |
-| 并行   | #221（中文依赖链重做专题，2026-10-17）                                  | 与 Cluster D 同域；重复建设 / 术语漂移风险 | 英文线只做独立页面 + 复用；跟踪 #221 设计   |
-| 资产   | C 簇 window performance 无独立实验资产；F 簇 Iceberg 无实操资产         | 无法保证差异化与准确性                     | 保持 defer；满足条件再评估                  |
-| 准确性 | Lakehouse / 表格式事实时效性强                                          | 事实过时或误导                             | Cluster F 准确性审查清单 + 不确定处降级表述 |
-| 环境   | 本环境无 GSC 登录 / 无 SERP 数据源                                      | 证据级别受限                               | Editorial hypothesis 标注；#179 观测窗口    |
+| 类型   | 内容                                                                         | 影响                                               | 处理                                          |
+| ------ | ---------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------------------------- |
+| Gate   | #39 `Phase 4 — Expansion` = **ACTIVE / Maintainer-Authorized**（2026-10-17） | 已解除：授权 11 个 new + 重评纳入的 defer 候选实施 | 按 §14 冻结队列串行实施                       |
+| 数据   | #179 GSC / SERP = `DATA NOT YET AVAILABLE`；环境无 GSC 访问                  | 不阻断实施；影响上线后成效观测                     | 按批次记录观测基线；如实记录；不推断 0 / 失败 |
+| 先例   | #208（CLOSED，2026-10-10）Scheduling / Business Date topic cluster STOP      | 禁止复活同 intent 日期语义页                       | 写入 §4 / Cluster D                           |
+| 并行   | #221（中文依赖链重做专题，2026-10-17）                                       | 与 Cluster D 同域；重复建设 / 术语漂移风险         | 英文线只做独立页面 + 复用；跟踪 #221 设计     |
+| 资产   | C 簇 window performance 无独立实验资产；F 簇 Iceberg 无实操资产              | 无法保证差异化与准确性                             | 保持 defer；满足条件再评估                    |
+| 准确性 | Lakehouse / 表格式事实时效性强                                               | 事实过时或误导                                     | Cluster F 准确性审查清单 + 不确定处降级表述   |
+| 环境   | 本环境无 GSC 登录 / 无 SERP 数据源                                           | 证据级别受限                                       | Editorial hypothesis 标注；#179 观测窗口      |
 
 ---
 
@@ -351,8 +353,87 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 
 ## 13. 变更记录
 
-| 日期       | 变更                                                                                                     | 证据                                                 |
-| ---------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 2026-10-17 | Phase 0 审计完成；24 候选判定冻结；创建 Cluster A–F 规划 Child #222–#227；标注 #221 协调与 #208 停止先例 | 本文件；#220；生产探针 9/9 200；sitemap 68（9 英文） |
+| 日期       | 变更                                                                                                                                                         | 证据                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| 2026-10-17 | Phase 0 审计完成；24 候选判定冻结；创建 Cluster A–F 规划 Child #222–#227；标注 #221 协调与 #208 停止先例                                                     | 本文件；#220；生产探针 9/9 200；sitemap 68（9 英文）       |
+| 2026-10-17 | 维护者调整策略为 Maintainer-Authorized Content Expansion；GSC / SERP 转为上线后观测；5 个 defer 候选重评（2 纳入 / 3 保持 defer）；冻结 13 篇实施队列（§14） | #39 Phase 4 更新；#220 Current Contract Update；本文件 §14 |
 
 > 后续 Loop 应在完成 Wave 0 任务、Gate 变化或 Child 判定调整时更新本表与 #220，而不是重写整份文档。
+
+---
+
+## 14. 冻结实施队列（2026-10-17 · Maintainer-Authorized Content Expansion）
+
+> **依据：** #39 Phase 4 维护者授权（授权范围 = 本文件已审计矩阵）；策略目标 = 一次性建立覆盖完整、互相关联、具备独立教学价值的英文专题网络，GSC / SERP 不再作为强制前置。
+> **边界：** 队列外主题不自动获得授权；不为凑篇数发布；所有关键词仍为 **editorial hypothesis**，不得表述为已验证的高流量机会。
+
+### 14.1 冻结结论
+
+| 类别                  | 数量 | 说明                                                                                              |
+| --------------------- | ---- | ------------------------------------------------------------------------------------------------- |
+| `new`（原审计 11 项） | 11   | 全部进入实施队列                                                                                  |
+| `defer` 重评后纳入    | 2    | OLTP vs OLAP；ETL vs ELT（理由见 §14.2）                                                          |
+| `defer` 保持          | 3    | SQL window function performance；Data Lake vs Data Warehouse；Apache Iceberg Explained            |
+| `existing`            | 4    | 不重复创建 URL：JOIN duplicates、grain、SCD Type 2、lineage vs task dependency（含 dependencies） |
+| `improve`             | 3    | Wave 0 已完成（PR #244 / #246 / #249）：lineage 定义、impact、retry / rerun / backfill            |
+| `merge`               | 1    | Wave 0 已完成（PR #248）：What Is a Data Warehouse → `/en/data-warehouse/` 索引短定义             |
+| `reject`              | 0    | —                                                                                                 |
+
+**本轮新增页面目标：13 篇；实施完成后英文 URL 总数预计 9 + 13 = 22 条**（不含未来轮次）。
+
+### 14.2 defer 候选重评结论（2026-10-17）
+
+| #   | 候选                            | 重评结论                  | 理由                                                                                                                                                                                                                                   |
+| --- | ------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2   | OLTP vs OLAP                    | **纳入本轮**（Cluster A） | 独立意图（为什么数仓不能直接承接事务负载 / 行存与列存差异）；概念稳定、无需依赖第三方 SERP；本站可用确定性 page-access 模型讲清「同一聚合在行存与列存下各读多少数据」；与 layers / grain 无同意图冲突，且能为 Cluster A 提供基础锚点。 |
+| 3   | ETL vs ELT                      | **纳入本轮**（Cluster A） | 独立意图（转换发生在加载前还是加载后）；工程后果可观察：原始数据留存、可重放范围、计算位置；与 idempotent-etl（写入是否满足重复执行安全）和 layers（层职责）边界明确。范围收紧为「转换位置决策」，不写成管道教程。                     |
+| 18  | SQL Window Function Performance | **保持 defer**            | 缺少独立确定性实验资产；窄化角度未定义；与通用 window function 教程竞争，无法保证本站差异化教学价值。                                                                                                                                  |
+| 20  | Data Lake vs Data Warehouse     | **保持 defer**            | lakehouse 页面（Cluster F）将直接解释湖 / 仓 / 表格式关系；单独 head-to-head URL 与 lakehouse 及 layers 页面存在同意图竞争风险；待真实 query 证据显示独立意图后再评估。                                                                |
+| 22  | Apache Iceberg Explained        | **保持 defer**            | 本站没有 Iceberg 实操实验资产；规范 / 版本 / 生态事实时效性强，无法保证长期准确性；待出现可维护事实源或真实实验后再评估。                                                                                                              |
+
+### 14.3 实施顺序与页面合同（串行，一次一篇）
+
+> 顺序遵循维护者指定队列：D → E → B → C → A → F。每篇 = 一个最小实施 Child Issue + 一个 worktree / branch / 聚焦 PR。
+> 「Primary intent」为冻结假设（editorial hypothesis）；「URL」为冻结 stable slug，实施时不得漂移。
+
+| 序  | Cluster | 页面                            | Stable URL                                      | Primary intent（假设）                                              | 与既有页边界                                                                                                                                        | 复用资产（不复制）                                                                                                                                                            |
+| --- | ------- | ------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | D #225  | Data pipeline failure recovery  | `/en/data-warehouse/pipeline-failure-recovery/` | `data pipeline failure recovery`；`rerun downstream after bad data` | 不讲写入是否幂等（idempotent-etl）、不讲依赖图差异（lineage 页面）；聚焦「坏数据已进入下游后的影响闭包 → 停止 / 等待 → 安全重跑顺序 → 验证 → 通知」 | `src/features/dependency-reprocessing/{fixture,model,session,steps}.ts`（#221 内核，只读复用）；step kernel；`LifecyclePathLab` / `DeliveryInvestigationLab` 的状态与证据表达 |
+| 2   | E #226  | Data quality checks             | `/en/data-warehouse/data-quality-checks/`       | `data quality checks`；`what to validate in a data pipeline`        | 不是监控 / 告警（observability）；不是生产者契约（contracts）；聚焦「检查什么、在哪检查、失败后阻断还是放行」                                       | `src/features/data-quality/*`；`DataQualityWorkbench` 规则 / 证据表达                                                                                                         |
+| 3   | E #226  | Data contracts                  | `/en/data-warehouse/data-contracts/`            | `data contract example`；`producer consumer data contract`          | 不是数据质量规则（checks）；聚焦生产者 / 消费者接口、字段语义、变更责任与破坏性变更流程                                                             | `sql-transformation-contract` 课程数据；治理变更责任模型；`GovernanceWorkbench` 表达                                                                                          |
+| 4   | E #226  | Data pipeline observability     | `/en/data-warehouse/pipeline-observability/`    | `data pipeline observability`；`pipeline health signals`            | 不是「校验规则」（checks）、不是「来源 / 影响」（lineage）；聚焦「看得见哪些信号、如何判断一次运行 / 一个数据集是否健康」                           | `src/features/delivery-investigation/*`；`scheduling-sla` / `data-quality-evidence` 语义；`DeliveryInvestigationLab` 时间线                                                   |
+| 5   | B #223  | Fact table vs dimension table   | `/en/data-warehouse/fact-vs-dimension-tables/`  | `fact table vs dimension table`                                     | 不重复解释 grain（一行是什么）；聚焦角色、主键 / 外键、度量与描述的分工、为什么通常不合并                                                           | `star-schema.ts`；`banking-fact-types.ts`；`BankingFactTypesLab` 对照式布局                                                                                                   |
+| 6   | B #223  | Star schema vs snowflake schema | `/en/data-warehouse/star-schema-vs-snowflake/`  | `star schema vs snowflake schema`                                   | 不是 fact/dim 定义；聚焦同一模型的规范化程度与 join 形状、维护 / 查询取舍                                                                           | `star-schema.ts`；`BankingStarSchemaLab`；`StarSchemaFlow` 拓扑表达                                                                                                           |
+| 7   | B #223  | Incremental load vs full load   | `/en/data-warehouse/incremental-vs-full-load/`  | `incremental load vs full load`                                     | 不重复 idempotent-etl 的写策略；聚焦「重算范围 / 成本 / 迟到数据 / 如何验证等价」                                                                   | `performance-tradeoffs` 语义；微批 fixture；`IdempotentRerunLab` 状态表达方式（仅参考）                                                                                       |
+| 8   | C #224  | Data skew                       | `/en/sql/data-skew/`                            | `data skew in SQL`；`one task takes all the time`                   | 不是 JOIN 行放大正确性；聚焦执行分布长尾、键选择 / 加盐 / 重分布的取舍；标注「教学模拟 ≠ benchmark」                                                | `src/features/performance/*` skew fixture；`PerformanceSkewLab`                                                                                                               |
+| 9   | C #224  | Partition pruning               | `/en/sql/partition-pruning/`                    | `partition pruning explained`；`partition filter not used`          | 不是 skew（分布）；聚焦扫描裁剪、谓词 / 类型 / 统计信息为何导致裁剪失效；写清「取决于引擎」                                                         | `src/features/performance/*` scan fixture；`PerformanceScanLab`                                                                                                               |
+| 10  | A #222  | Data warehouse layers           | `/en/data-warehouse/layers/`                    | `data warehouse layers explained`；`staging vs core vs mart`        | 不把 ODS/DWD/DWS/ADS 或 medallion 说成标准；不写湖仓（Cluster F）；聚焦分层动机、跨层读取代价、何时不需要更多层                                     | `warehouse-layers` / `sql-transformation-layers` 课程数据；`LayerEvolutionLab` / `LayerNetworkEvolution`                                                                      |
+| 11  | A #222  | OLTP vs OLAP                    | `/en/data-warehouse/oltp-vs-olap/`              | `oltp vs olap`；`why can a data warehouse not handle transactions`  | 不是 layers（层职责）；聚焦访问模式（行存 / 列存、单行读写 vs 大范围聚合扫描）与架构后果                                                            | 新增确定性 page-access 模型；`LayerEvolutionLab` 布局参考                                                                                                                     |
+| 12  | A #222  | ETL vs ELT                      | `/en/data-warehouse/etl-vs-elt/`                | `etl vs elt`；`transform before or after load`                      | 不是写策略幂等；聚焦转换位置对原始数据留存 / 重放 / 计算位置的影响与决策清单                                                                        | 新增确定性「转换位置」模型；`sql-transformation-layers` 课程数据                                                                                                              |
+| 13  | F #227  | What is a lakehouse             | `/en/data-warehouse/lakehouse/`                 | `what is a lakehouse`                                               | 不是 layers；聚焦文件 / 表 / 查询引擎角色与表格式解决的问题；不作产品背书、不编造版本与 benchmark                                                   | `src/utils/lakehouse.ts`；`LakehouseArchitectureLab` 表达；准确性审查清单（#227 §5）                                                                                          |
+
+### 14.4 每篇统一验收标准（继承 §7 并具体化）
+
+1. `ENGLISH_PATHS` 登记 stable URL；页面使用 `EnglishArticleLayout` + `EnglishBreadcrumb`；`active` 分区正确。
+2. 准确 title（含 `| sql.sb`，≤ 约 65 字符）、唯一 H1、description、self-canonical、`lang=en`、`og:locale=en_US`、无 hreflang、无 noindex、进入 sitemap。
+3. Quick answer + 分节 h2 + 可复核示例（表格 / fixture / SQL + 期望输出）+ 工程解释 + 边界与权衡 + Related pages（入链 + 回链）。
+4. 交互 / 图解为 deterministic React island 或静态对照；优先复用既有 fixture / step kernel；不新增重型依赖。
+5. 新 fixture 纯函数单测（`npm test`）；SEO build contract（`tests/english-seo-build-contract.mjs` 路由清单 + title）、`tests/english-foundation.mjs`（如涉及）；`npm run check` / `lint` / `format:check` / `build` / `test:english-seo-build` / `BASE_PATH` build + SEO contract。
+6. 中文 `/learn/*` 与既有 9 条英文路由零回归；移动端 320 / 390 与桌面 1280 人工或脚本检查无横向溢出、无文本拼接。
+7. PR 为中文说明（before / after、目标 URL、测试输出、内链、风险、rollback）；CI 全绿后按授权 squash merge；merge 后回写 Child Issue、#220 与 §14.5 台账。
+
+### 14.5 批次上线台账（每篇 merge 后追加）
+
+| 日期 (UTC) | URL | Cluster / Child | PR  | Merge SHA | Deploy run | 观测基线（GSC / 探针） |
+| ---------- | --- | --------------- | --- | --------- | ---------- | ---------------------- |
+| —          | —   | —               | —   | —         | —          | 待首篇上线后记录       |
+
+**观测基线规则：** 每篇记录 launch date、URL、commit、deploy run 与首次生产探针结果（HTTP / lang / canonical / sitemap / SSR 正文）；GSC / SERP 数据可得时追加 query / impression / index 状态，不可得时记 `DATA NOT YET AVAILABLE`；不与 #179 Baseline A / B 合并。
+
+### 14.6 Loop 恢复指引
+
+1. 读取本文件 §14 + #220 Current Contract Update + `STATUS.md`。
+2. 按 §14.3 顺序找到第一篇尚未在 §14.5 台账登记的行，即为下一任务；若该行已有 Child Issue，先 `gh issue view` 核对状态与 PR。
+3. 已 merged 的页面不得重复开发；已 OPEN 的 PR 先查 CI / mergeable，失败先修复。
+4. 一次只允许一个实施工作推进；共享文件（`ENGLISH_PATHS`、`tests/english-seo-build-contract.mjs`、索引页、导航）只能串行修改。
+5. 受阻时如实标记 `BLOCKED` 并跳过到下一个不依赖该阻塞的队列项，但不绕过 CI / 评审 / 保护规则。
