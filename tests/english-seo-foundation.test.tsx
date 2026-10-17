@@ -26,6 +26,10 @@ const englishRoutes = [
     file: 'en/data-warehouse/data-quality-checks/index.astro',
     route: ENGLISH_PATHS.dataQualityChecks,
   },
+  {
+    file: 'en/data-warehouse/data-contracts/index.astro',
+    route: ENGLISH_PATHS.dataContracts,
+  },
   { file: 'en/tools/index.astro', route: ENGLISH_PATHS.tools },
 ]
 const establishedLearnSlugs = `
@@ -98,7 +102,7 @@ why-data-warehouse
   .split(/\s+/)
 
 describe('English SEO routing contract', () => {
-  it('defines exactly the eleven English pages outside /learn/', () => {
+  it('defines exactly the twelve English pages outside /learn/', () => {
     const pageFiles = readdirSync(pagesDirectory, { recursive: true }).map(String)
     const englishPageFiles = pageFiles
       .filter((path) => path.startsWith('en/') && path.endsWith('.astro'))
@@ -117,6 +121,7 @@ describe('English SEO routing contract', () => {
       '/en/data-warehouse/scd-type-2/',
       '/en/data-warehouse/pipeline-failure-recovery/',
       '/en/data-warehouse/data-quality-checks/',
+      '/en/data-warehouse/data-contracts/',
       '/en/tools/',
     ])
   })
