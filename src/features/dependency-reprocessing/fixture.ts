@@ -8,12 +8,18 @@
  * SQL 血缘 + 调度依赖圈定受影响实例并重做。
  *
  * 无关链路（机构维表 → 机构报表 → 机构消费）必须保持不受影响；`2026-10-15`
- * 的相同任务实例属于另一个业务日期分区，也不得被误伤。
+ * 的相同任务实例属于另一个业务日期分区，也不得被误伤；`2026-10-10` 作为历史
+ * 重做目标日期，整条链路已 SUCCESS。
+ *
+ * 日切批次的自然运行日可以晚于业务日期（例如 `2026-10-16` 的批次在
+ * `2026-10-17` 凌晨运行），业务日期与自然日期不互相推导。
  *
  * 本文件只提供确定性数据；影响分析由 `model.ts` 的纯函数计算。
  */
 
+import { shiftBusinessDate } from './date'
 import type {
+  ConsumerKind,
   ReprocessingInstanceLog,
   ReprocessingModel,
   ReprocessingOdsCheck,
@@ -25,6 +31,8 @@ import type {
 
 export const REPROCESSING_INCIDENT_BUSINESS_DATE = '2026-10-16'
 export const REPROCESSING_PREVIOUS_BUSINESS_DATE = '2026-10-15'
+/** 历史重做目标日期：整条交易链路已 SUCCESS，用于平行 Job / Plan 教学。 */
+export const REPROCESSING_HISTORICAL_BUSINESS_DATE = '2026-10-10'
 export const REPROCESSING_PARTITION_COLUMN = 'business_date'
 
 export const REPROCESSING_TASK_IDS = {
@@ -266,9 +274,11 @@ function buildLogs(
   taskIndex: number,
 ): readonly ReprocessingInstanceLog[] {
   const startHour = 1 + Math.floor(taskIndex / 3)
-  const scheduledAt = `${businessDate} ${normalizeTime(startHour, 0)}`
-  const startedAt = `${businessDate} ${normalizeTime(startHour, 5)}`
-  const endedAt = `${businessDate} ${normalizeTime(startHour, 12)}`
+  // 日切批次的自然运行日通常晚于业务日期：业务日期决定分区，自然日期只决定日志时间。
+  const runDate = shiftBusinessDate(businessDate, 1)
+  const scheduledAt = `${runDate} ${normalizeTime(startHour, 0)}`
+  const startedAt = `${runDate} ${normalizeTime(startHour, 5)}`
+  const endedAt = `${runDate} ${normalizeTime(startHour, 12)}`
   const logs: ReprocessingInstanceLog[] = []
 
   if (state === 'waiting' || state === 'ready' || state === 'blocked' || state === 'skipped') {
@@ -344,7 +354,7 @@ function createInstance(
 /**
  * 构造事故 fixture：
  * - 事故日 `2026-10-16` 采用 `variant` 指定的状态；
- * - 前一日 `2026-10-15` 全链路 SUCCESS，用于验证分区隔离。
+ * - 前一日 `2026-10-15` 与历史重做目标 `2026-10-10` 全链路 SUCCESS。
  */
 export function createReprocessingFixture(
   options: CreateReprocessingFixtureOptions = {},
@@ -368,6 +378,7 @@ export function createReprocessingFixture(
     instances.push(
       createInstance(task.taskId, REPROCESSING_INCIDENT_BUSINESS_DATE, incidentState, taskIndex),
       createInstance(task.taskId, REPROCESSING_PREVIOUS_BUSINESS_DATE, 'success', taskIndex),
+      createInstance(task.taskId, REPROCESSING_HISTORICAL_BUSINESS_DATE, 'success', taskIndex),
     )
   })
 
@@ -416,3 +427,10 @@ export function createOdsValidationChecks(
     },
   ]
 }
+
+/** 消费方类型映射：把消费方实例对齐到装数 / 接口 / 文件 / 报表 / 监管语义。 */
+export const reprocessingConsumerKinds = {
+  [REPROCESSING_TASK_IDS.consumeTransactionReport]: 'interface',
+  [REPROCESSING_TASK_IDS.deliverTransactionFile]: 'file',
+  [REPROCESSING_TASK_IDS.consumeBranchReport]: 'report',
+} as const satisfies Readonly<Record<string, ConsumerKind>>

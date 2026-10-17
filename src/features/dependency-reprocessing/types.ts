@@ -230,3 +230,125 @@ export interface InvalidationResult {
   model: ReprocessingModel
   invalidatedInstanceIds: readonly string[]
 }
+
+/* ------------------------------------------------------------------ *
+ * Phase 1-C：历史模式 / 平行 Job Plan / 版本兼容 / 下游闭环 / 滚动多日
+ * ------------------------------------------------------------------ */
+
+/** 当前生产日切批次的完成状态；“当日”由 businessDate 决定，可跨自然日。 */
+export interface CurrentBatchStatus {
+  businessDate: string
+  /** 所有实例都已进入终态（success / failed / skipped）才视为结束。 */
+  completed: boolean
+  runningInstanceIds: readonly string[]
+  /** 尚未进入终态的实例，包含 waiting / ready / running / stopping / stopped / blocked。 */
+  pendingInstanceIds: readonly string[]
+}
+
+/** 变更类型：决定最新加工程序能否兼容历史输入。 */
+export type VersionChangeType =
+  | 'none'
+  | 'sql-logic'
+  | 'schema-breaking'
+  | 'semantics-changed'
+  | 'input-contract-changed'
+  | 'major-refactor'
+
+export interface VersionCompatibilityInput {
+  programVersion: string
+  targetBusinessDate: string
+  changeType: VersionChangeType
+}
+
+export interface VersionCompatibility {
+  programVersion: string
+  targetBusinessDate: string
+  changeType: VersionChangeType
+  compatible: boolean
+  reasons: readonly string[]
+  /** 不兼容时给出的替代动作；兼容时为 null。 */
+  requiredAction: string | null
+}
+
+export interface ParallelPlanItem {
+  instanceId: string
+  taskId: string
+  targetBusinessDate: string
+  /** 平行 Job 统一使用最新加工程序，而不是历史版本。 */
+  programVersion: string
+}
+
+export interface ParallelPlan {
+  /**
+   * 模拟器内部标识：仅用于演示平行 Job / Plan 与当前正常计划的隔离，
+   * 不是生产平台的批次号或轮次机制。
+   */
+  simulatorPlanId: string
+  currentBusinessDate: string
+  targetBusinessDate: string
+  programVersion: string
+  /** 与哪个正常 Job / Plan 隔离：平行计划不修改它的状态。 */
+  isolatedFromBusinessDate: string
+  items: readonly ParallelPlanItem[]
+}
+
+export type ParallelRedoStatus = 'blocked' | 'forbidden' | 'allowed'
+
+export interface ParallelRedoDecision {
+  status: ParallelRedoStatus
+  blockers: readonly string[]
+  gate: CurrentBatchStatus
+  compatibility: VersionCompatibility
+  parallelPlan: ParallelPlan | null
+  requiredAction: string | null
+}
+
+/** 跨天依赖：后一天的滚动窗口 / 快照读取前一天的结果。 */
+export interface RollingCrossDayDependency {
+  fromBusinessDate: string
+  toBusinessDate: string
+  reason: string
+}
+
+export interface RollingBackfillWindow {
+  businessDates: readonly string[]
+  /** 安全执行顺序（业务日期升序）；跨天依赖存在时不能简单并行。 */
+  order: readonly string[]
+  crossDayDependencies: readonly RollingCrossDayDependency[]
+  parallelUnsafeReason: string | null
+}
+
+/** 消费方类型：装数 / 接口 / 文件 / 报表 / 监管。 */
+export type ConsumerKind = 'load' | 'interface' | 'file' | 'report' | 'regulatory'
+
+export type ConsumerAction = 'none' | 'reload' | 'refresh' | 'correct'
+export type ConsumerConfirmation = 'pending' | 'confirmed'
+
+/** 消费方证据：是否已经消费了旧结果，是否已消费重做后的新结果并确认。 */
+export interface ConsumerEvidence {
+  consumerId: string
+  label: string
+  kind: ConsumerKind
+  /** 消费端当前装载的结果实例；null 表示尚未消费任何结果。 */
+  consumedInstanceId: string | null
+  consumedNewResult: boolean
+  confirmation: ConsumerConfirmation
+  notes?: string
+}
+
+export interface DownstreamClosureRow {
+  consumerId: string
+  label: string
+  kind: ConsumerKind
+  consumedOldResult: boolean
+  requiredAction: ConsumerAction
+  actionLabel: string
+  confirmation: ConsumerConfirmation
+  note: string
+}
+
+export interface DownstreamClosure {
+  rows: readonly DownstreamClosureRow[]
+  pendingConfirmationCount: number
+  allConfirmed: boolean
+}
