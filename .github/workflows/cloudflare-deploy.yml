@@ -54,6 +54,9 @@ jobs:
       - name: Verify built SEO and sitemap contract
         run: npm run test:english-seo-build
 
+      - name: Verify Smart 404 recovery build contract
+        run: npm run test:smart-404-build
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
@@ -91,6 +94,7 @@ jobs:
         run: |
           BASE_PATH=/seo-base-path/ npm run build
           npm run test:english-seo-build -- --base-path /seo-base-path/
+          npm run test:smart-404-build -- --base-path /seo-base-path/
           BASE_PATH=/seo-base-path/ npm run test:e2e:english-foundation -- --skip-build
           BASE_PATH=/seo-base-path/ npm run test:e2e:roadmap -- --skip-build
           BASE_PATH=/seo-base-path/ npm run test:e2e:home -- --skip-build

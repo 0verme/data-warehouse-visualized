@@ -114,6 +114,68 @@
   font-size: 13px;
 }
 
+.not-found__recovery {
+  max-width: 38em;
+  margin: 22px auto 0;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  text-align: left;
+}
+
+.not-found__recovery[hidden] {
+  display: none;
+}
+
+.not-found__recovery-title {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.not-found__recovery-hint {
+  margin: 0 0 12px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.not-found__recovery-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.not-found__recovery-item + .not-found__recovery-item {
+  margin-top: 8px;
+}
+
+.not-found__recovery-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--blue-deep);
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.not-found__recovery-link:hover {
+  border-color: var(--blue);
+}
+
+.not-found__recovery-link:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .not-found__actions {
   display: flex;
   flex-wrap: wrap;
@@ -165,6 +227,15 @@
 
   .not-found__copy--english {
     font-size: 12px;
+  }
+
+  .not-found__recovery {
+    margin-top: 18px;
+    padding: 16px;
+  }
+
+  .not-found__recovery-link {
+    width: 100%;
   }
 
   .not-found__actions {
