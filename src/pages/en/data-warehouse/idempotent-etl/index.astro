@@ -7,7 +7,7 @@ import { getEnglishRoute } from '../../../../utils/english-routes'
 
 const title = 'How to Make an ETL Job Idempotent: Examples & Trade-offs | sql.sb'
 const description =
-  'Run the same ETL input twice and compare append, overwrite and merge-upsert: see duplicate rows, inflated totals, retries and backfill behavior.'
+  'Run the same ETL input twice and compare append, overwrite and merge-upsert: duplicate rows, inflated totals, and how retry, rerun and backfill differ.'
 ---
 
 <EnglishArticleLayout
@@ -38,7 +38,7 @@ const description =
     <span class="english-answer__label">Quick answer</span>
     <p>
       Make the target partition addressable — for example by <code>(branch_id, business_date)</code>{' '}
-      — and write it idempotently: overwrite the partition, or merge/upsert on that key. A plain
+      — and write it idempotently: overwrite the partition, or merge/upsert on that key. A plain{' '}
       <code>INSERT APPEND</code> is not idempotent: the same run twice produces two rows for one
       business date and every downstream sum is inflated.
     </p>
@@ -54,6 +54,57 @@ const description =
         execution.
       </p>
       <IdempotentRerunLab client:load />
+      <p>
+        The lab uses one source row for branch <code>HZ-01</code> on business date{' '}
+        <code>2026-02-01</code>. The table records the same fixture as a fixed sequence, so the
+        result can be checked without clicking:
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>
+            Rows and SUM(balance) for partition (branch_id=HZ-01, business_date=2026-02-01)
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Execution</th>
+              <th scope="col">
+                <code>INSERT APPEND</code>
+              </th>
+              <th scope="col">
+                <code>OVERWRITE PARTITION</code>
+              </th>
+              <th scope="col">
+                <code>MERGE / UPSERT</code>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>First run, input 1,000,000</td>
+              <td>1 row / 1,000,000</td>
+              <td>1 row / 1,000,000</td>
+              <td>1 row / 1,000,000</td>
+            </tr>
+            <tr>
+              <td>Retry, same input 1,000,000</td>
+              <td>2 rows / 2,000,000 (duplicate)</td>
+              <td>1 row / 1,000,000</td>
+              <td>1 row / 1,000,000</td>
+            </tr>
+            <tr>
+              <td>Rerun, corrected input 1,100,000</td>
+              <td>3 rows / 3,100,000 (duplicate)</td>
+              <td>1 row / 1,100,000</td>
+              <td>1 row / 1,100,000</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        With append, every execution adds a row, so the partition total keeps growing and never
+        converges on the corrected value. With overwrite and merge, the partition always holds one
+        row for the business date, and the rerun result matches the latest input.
+      </p>
     </section>
 
     <section class="english-article__section" aria-labelledby="definition">
@@ -81,6 +132,83 @@ const description =
           target state, not the run status.
         </p>
       </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="dates">
+      <h2 id="dates">Execution date, business date and the target partition</h2>
+      <p>Idempotency depends on three dates that are easy to confuse:</p>
+      <ul>
+        <li>
+          <strong>Business date</strong> — the slice of data the run is responsible for, for example{' '}
+          <code>2026-02-01</code>. It is part of the logical input, so it must not change when the
+          job is retried.
+        </li>
+        <li>
+          <strong>Execution date</strong> — when the attempt actually runs, for example{' '}
+          <code>2026-02-02 01:00</code>. Every retry gets a new execution date or timestamp.
+        </li>
+        <li>
+          <strong>Target partition</strong> — where the result is written, for example{' '}
+          <code>dt=2026-02-01</code>. Derive it from the business date, not from the execution date.
+        </li>
+      </ul>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>One business date across three executions</caption>
+          <thead>
+            <tr>
+              <th scope="col">Execution</th>
+              <th scope="col">Execution date</th>
+              <th scope="col">Business date</th>
+              <th scope="col">Writes to</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>First run</td>
+              <td>
+                <code>2026-02-02 01:00</code>
+              </td>
+              <td>
+                <code>2026-02-01</code>
+              </td>
+              <td>
+                <code>dt=2026-02-01</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Retry</td>
+              <td>
+                <code>2026-02-02 01:12</code>
+              </td>
+              <td>
+                <code>2026-02-01</code>
+              </td>
+              <td>
+                <code>dt=2026-02-01</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Rerun the next day</td>
+              <td>
+                <code>2026-02-03 09:30</code>
+              </td>
+              <td>
+                <code>2026-02-01</code>
+              </td>
+              <td>
+                <code>dt=2026-02-01</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        If the partition follows the execution date instead, a retry that spills into the next day
+        writes a different partition: the business date keeps its old rows while a new slice appears
+        for the same logical input. Deriving the partition from the business date is what lets a
+        retry or rerun replace exactly the data it is addressing.
+      </p>
     </section>
 
     <section class="english-article__section" aria-labelledby="duplicates">
@@ -157,6 +285,12 @@ const description =
 
     <section class="english-article__section" aria-labelledby="retry">
       <h2 id="retry">Retry, rerun and backfill are different scopes</h2>
+      <p>
+        {'These three terms describe different scopes, not different scheduler buttons: '}
+        <strong>retry</strong> is another attempt of the same run, a <strong>rerun</strong> is a new
+        execution for one existing business date, and a <strong>backfill</strong> is a rerun across
+        a range of historical business dates.
+      </p>
       <div class="english-compare-grid">
         <article class="english-compare-card">
           <span>Retry</span>
@@ -195,6 +329,20 @@ const description =
           </ul>
         </article>
       </div>
+      <p>
+        The scopes nest: a backfill is many reruns, and one rerun may include retries. Idempotency
+        must hold at the smallest scope — one write to one business-date partition — because a
+        backfill can stop after any date and resume later.
+      </p>
+      <div class="english-callout" data-tone="info">
+        <strong>Scope decides what must stay fixed</strong>
+        <p>
+          Retry: same business date, same target partition, same logical input. Rerun: same business
+          date, same target partition, corrected input. Backfill: one target partition per business
+          date in the range. None of them changes the pipeline logic — reprocessing re-executes
+          existing work; it does not rewrite it.
+        </p>
+      </div>
     </section>
 
     <section class="english-article__section" aria-labelledby="limits">
@@ -210,8 +358,10 @@ const description =
         <li>External systems updated through an API.</li>
       </ul>
       <p>
-        For those, use a deterministic output path or an idempotency key. The task graph view of the
-        pipeline is a separate concern — see
+        {
+          'For those, use a deterministic output path or an idempotency key. The task graph view of the '
+        }
+        {'pipeline is a separate concern — see '}
         <a href={getEnglishRoute('lineageVsTaskDependency')}>data lineage vs task dependency</a>.
       </p>
     </section>
