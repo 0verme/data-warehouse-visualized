@@ -625,6 +625,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 20,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-3',
+    slug: 'reprocessing-auto-stop-wait',
+    chapter: '14',
+    order: 300,
+    difficulty: 'advanced',
+    estimatedMinutes: 22,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -965,6 +974,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '把一个事故拆成 SQL 血缘与调度依赖两个闭包，去重得到重做清单，并区分停止、重做、等待与通知四类集合。',
       tags: ['依赖链重做', '影响范围', 'SQL 血缘', '调度依赖', 'LEFT JOIN'],
+    },
+    'lesson-14-3': {
+      title: '依赖链如何自动停止、等待和重新调用？',
+      summary:
+        '走一遍恢复状态机：停止与副作用处置、ODS 验证门禁、按依赖顺序自动重做、普通失败处理与再次修复重新入队。',
+      tags: ['依赖链重做', '止损', '等待', '自动重做', 'ODS 验证'],
     },
   },
 }

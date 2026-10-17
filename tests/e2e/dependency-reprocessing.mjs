@@ -23,6 +23,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SCRIPT_NAME = 'dependency-reprocessing'
 const E1_PATH = '/learn/reprocessing-incident-timeline/'
 const E2_PATH = '/learn/reprocessing-impact-scope/'
+const E3_PATH = '/learn/reprocessing-auto-stop-wait/'
 const SOURCE_TASK_ID = 'ingest.ods-transaction.daily.v2'
 
 const VIEWPORTS = [
@@ -189,7 +190,97 @@ try {
         await checkSharedLayout(`${tag} E2`, page, errors)
         await page.close()
       }
+
+      // ------------------------------------------------------------ E3
+      {
+        const { page, errors } = await openLesson(browser, viewport, theme, E3_PATH)
+        await page.waitForSelector('[data-reprocessing-mode="stop-wait-redo"]', { timeout: 20000 })
+
+        const phase = () => page.getAttribute('.dependency-reprocessing__phase', 'data-phase')
+        const stateCount = (state) =>
+          page.locator(`[data-swr-chain] [data-state="${state}"]`).count()
+
+        check(`${tag} E3 初始阶段 detected`, (await phase()) === 'detected')
+        check(`${tag} E3 初始等待 3`, (await stateCount('waiting')) === 3)
+        check(`${tag} E3 初始运行中 1`, (await stateCount('running')) === 1)
+
+        await page.getByRole('button', { name: '停止受影响任务' }).click()
+        check(`${tag} E3 停止后阶段 stopped`, (await phase()) === 'stopped')
+        check(`${tag} E3 停止后无运行中实例`, (await stateCount('running')) === 0)
+        check(`${tag} E3 停止后等待 4`, (await stateCount('waiting')) === 4)
+
+        await page.getByRole('button', { name: 'ODS 验证不通过' }).click()
+        check(`${tag} E3 验证不通过被阻断`, (await phase()) === 'blocked')
+        check(
+          `${tag} E3 门禁面板展示失败项`,
+          (await page.locator('[data-panel="gate-blocked"] [data-passed="false"]').count()) >= 1,
+        )
+
+        await page.getByRole('button', { name: 'ODS 验证通过' }).click()
+        check(`${tag} E3 验证通过后放行`, (await phase()) === 'validated')
+
+        await page.getByRole('button', { name: '生成重做计划' }).click()
+        check(`${tag} E3 生成重做计划`, (await phase()) === 'scheduled')
+        check(
+          `${tag} E3 计划包含 8 个实例`,
+          (await page.locator('[data-panel="redo-schedule"] li').count()) === 8,
+        )
+
+        await page.getByRole('button', { name: '执行重做' }).click()
+        check(`${tag} E3 重做完成`, (await phase()) === 'completed')
+        check(`${tag} E3 完成后 8 个 SUCCESS`, (await stateCount('success')) === 8)
+
+        await checkSharedLayout(`${tag} E3`, page, errors)
+        await page.close()
+      }
     }
+  }
+
+  // ------------------------------------------------------------ E3 failure + re-repair journey
+  {
+    const viewport = { width: 1280, height: 800 }
+    const { page, errors } = await openLesson(browser, viewport, 'light', E3_PATH)
+    await page.waitForSelector('[data-reprocessing-mode="stop-wait-redo"]', { timeout: 20000 })
+    const tag = '1280x800 light 失败旅程'
+    const phase = () => page.getAttribute('.dependency-reprocessing__phase', 'data-phase')
+
+    await page.getByRole('button', { name: '停止受影响任务' }).click()
+    await page.getByRole('button', { name: 'ODS 验证通过' }).click()
+    await page.getByRole('checkbox').check()
+    await page.getByRole('button', { name: '生成重做计划' }).click()
+    await page.getByRole('button', { name: '执行重做' }).click()
+
+    check(`${tag} 失败阶段 failed`, (await phase()) === 'failed')
+    check(
+      `${tag} DWD 处于 FAILED`,
+      (await page.locator('[data-swr-chain] [data-state="failed"]').count()) === 1,
+    )
+    // ingest / check 重做成功，dwsChannel 事故前已成功且未到重做点；全部保持 SUCCESS。
+    check(
+      `${tag} 已成功上游保持 SUCCESS`,
+      (await page.locator('[data-swr-chain] [data-state="success"]').count()) === 3,
+    )
+
+    await page.getByRole('button', { name: '重试失败任务' }).click()
+    check(`${tag} 重试后 completed`, (await phase()) === 'completed')
+
+    await page.getByRole('button', { name: 'ODS 再次修复' }).click()
+    check(`${tag} 再次修复后 repaired`, (await phase()) === 'repaired')
+    check(
+      `${tag} 再次修复后 8 个等待`,
+      (await page.locator('[data-swr-chain] [data-state="waiting"]').count()) === 8,
+    )
+
+    await page.getByRole('button', { name: '重新入队' }).click()
+    check(`${tag} 重新入队 scheduled`, (await phase()) === 'scheduled')
+    await page.getByRole('button', { name: '执行重做' }).click()
+    check(`${tag} 重新重做 completed`, (await phase()) === 'completed')
+    check(
+      `${tag} 重新重做后 8 个 SUCCESS`,
+      (await page.locator('[data-swr-chain] [data-state="success"]').count()) === 8,
+    )
+    check(`${tag} 无 pageerror`, errors.length === 0, errors.join('; '))
+    await page.close()
   }
 
   // ------------------------------------------------------------ reduced motion

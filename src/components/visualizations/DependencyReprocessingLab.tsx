@@ -14,6 +14,14 @@ import {
   createReprocessingFixture,
 } from '../../features/dependency-reprocessing/fixture'
 import { orderTaskIdsByDependencies } from '../../features/dependency-reprocessing/model'
+import {
+  STOP_WAIT_FAIL_TASK_ID,
+  applyStopWaitRedoAction,
+  buildStopWaitRedoNodeViews,
+  createStopWaitRedoSession,
+  summarizeStopWaitRedoSession,
+  type StopWaitRedoPhase,
+} from '../../features/dependency-reprocessing/session'
 import type { DependencyReprocessingVisualization } from '../../features/dependency-reprocessing/types'
 import {
   applyVisualizationPlayerAction,
@@ -459,6 +467,254 @@ function ImpactScopeLab() {
   )
 }
 
+const STOP_WAIT_PHASE_HINTS: Record<StopWaitRedoPhase, string> = {
+  detected: '影响范围已圈定：先停止 / 阻断受影响实例，再验证 ODS 修复。',
+  stopped: '受影响实例已停止或阻断并进入等待；只有 ODS 验证通过才能放行重做。',
+  blocked: 'ODS 验证未通过：不生成重做计划，等待再次修复后重新验证。',
+  validated: 'ODS 修复验证通过：可以按当前血缘 / 依赖生成重做计划。',
+  scheduled: '重做计划已生成：按依赖顺序自动调用，上游先于下游。',
+  failed: '重做中发生任务失败：按正常生产故障流程处理，上游成功状态保持不变。',
+  completed: '受影响实例全部重做完成：可以继续处理下游消费恢复或再次修复。',
+  repaired: 'ODS 再次修复：受影响 SUCCESS 已失效并重新等待，历史日志保留。',
+}
+
+const SCHEDULE_ACTION_LABELS = {
+  'redo-after-stop': '停止后重做',
+  'redo-executed': '已执行重做',
+  'run-waiting': '等待后执行',
+} as const
+
+function StopWaitRedoLab() {
+  const [session, dispatch] = useReducer(
+    applyStopWaitRedoAction,
+    undefined,
+    createStopWaitRedoSession,
+  )
+  const summary = summarizeStopWaitRedoSession(session)
+  const nodes = buildStopWaitRedoNodeViews(session)
+  const nodeById = new Map(nodes.map((node) => [node.instanceId, node]))
+  const schedule = session.schedule
+  const armDisabled = !(
+    ['detected', 'stopped', 'validated', 'scheduled'] as StopWaitRedoPhase[]
+  ).includes(session.phase)
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="state-machine"
+      data-reprocessing-mode="stop-wait-redo"
+      aria-label="停止、等待与自动依赖重做"
+    >
+      <p className="dependency-reprocessing__phase" data-phase={session.phase} aria-live="polite">
+        <strong>当前阶段：{summary.phaseLabel}</strong>
+        <span>{STOP_WAIT_PHASE_HINTS[session.phase]}</span>
+      </p>
+
+      <div
+        className="dependency-reprocessing__scope-actions"
+        role="group"
+        aria-label="恢复流程控制"
+      >
+        <button
+          className="button button--primary button--small"
+          type="button"
+          disabled={session.phase !== 'detected'}
+          onClick={() => dispatch({ type: 'stop-affected' })}
+        >
+          停止受影响任务
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'stopped' && session.phase !== 'blocked'}
+          onClick={() => dispatch({ type: 'validate', outcome: 'passed' })}
+        >
+          ODS 验证通过
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'stopped' && session.phase !== 'blocked'}
+          onClick={() => dispatch({ type: 'validate', outcome: 'failed' })}
+        >
+          ODS 验证不通过
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'validated'}
+          onClick={() => dispatch({ type: 'create-schedule' })}
+        >
+          生成重做计划
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'scheduled'}
+          onClick={() => dispatch({ type: 'execute' })}
+        >
+          执行重做
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'failed'}
+          onClick={() => dispatch({ type: 'retry-failed' })}
+        >
+          重试失败任务
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'completed'}
+          onClick={() => dispatch({ type: 're-repair' })}
+        >
+          ODS 再次修复
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          disabled={session.phase !== 'repaired'}
+          onClick={() => dispatch({ type: 'requeue' })}
+        >
+          重新入队
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => dispatch({ type: 'reset' })}
+        >
+          重置
+        </button>
+      </div>
+
+      <label className="dependency-reprocessing__arm">
+        <input
+          type="checkbox"
+          checked={session.failTaskId === STOP_WAIT_FAIL_TASK_ID}
+          disabled={armDisabled}
+          onChange={(event) =>
+            dispatch({
+              type: 'arm-failure',
+              taskId: event.target.checked ? STOP_WAIT_FAIL_TASK_ID : null,
+            })
+          }
+        />
+        <span>教学开关：让 DWD 重做失败一次（验证正常生产故障流程）</span>
+      </label>
+
+      <p className="dependency-reprocessing__scope-summary" data-summary="true">
+        受影响 <strong>{summary.affectedCount}</strong> · 完成{' '}
+        <strong>{summary.successCount}</strong> · 等待 <strong>{summary.waitingCount}</strong> ·
+        失败 <strong>{summary.failedCount}</strong> · 消费方{' '}
+        <strong>{summary.consumerCount}</strong>
+      </p>
+
+      <ol className="dependency-reprocessing__chain" data-reprocessing-chain data-swr-chain>
+        {nodes.map((node) => (
+          <li
+            key={node.instanceId}
+            className="dependency-reprocessing__node"
+            data-node={node.taskId}
+            data-instance={node.instanceId}
+            data-state={node.state}
+            data-consumer={node.isConsumer}
+          >
+            <header className="dependency-reprocessing__node-header">
+              <span className="dependency-reprocessing__node-layer">
+                {LAYER_LABELS[node.layer] ?? node.layer}
+              </span>
+              <span
+                className="dependency-reprocessing__node-state"
+                data-tone={
+                  node.state === 'success'
+                    ? 'success'
+                    : node.state === 'failed'
+                      ? 'danger'
+                      : 'muted'
+                }
+              >
+                {STATE_LABELS[node.state] ?? node.state}
+              </span>
+            </header>
+            <p className="dependency-reprocessing__node-task">{node.label}</p>
+            {node.isConsumer && (
+              <span className="dependency-reprocessing__node-badge" data-tone="accent">
+                消费方
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+
+      {session.phase === 'blocked' && session.validation && (
+        <section className="dependency-reprocessing__panel" data-panel="gate-blocked">
+          <header className="dependency-reprocessing__panel-header">
+            <span>ODS 验证门禁</span>
+            <strong>未通过</strong>
+          </header>
+          <p>{session.validation.blockedReason}</p>
+          <ul className="dependency-reprocessing__evidence">
+            {session.validation.checks.map((check) => (
+              <li key={check.id} data-check={check.id} data-passed={check.passed}>
+                {check.label}：{check.detail}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {schedule && (
+        <section className="dependency-reprocessing__panel" data-panel="redo-schedule">
+          <header className="dependency-reprocessing__panel-header">
+            <span>重做计划（按依赖顺序）</span>
+            <strong>{schedule.items.length} 个实例</strong>
+          </header>
+          <ol className="dependency-reprocessing__dedup">
+            {schedule.items.map((item, index) => {
+              const node = nodeById.get(item.instanceId)
+              return (
+                <li
+                  key={item.instanceId}
+                  data-instance={item.instanceId}
+                  data-action={item.action}
+                  data-state={node?.state}
+                >
+                  <span>
+                    {index + 1}. {node?.label ?? item.taskId}
+                  </span>
+                  <small>{SCHEDULE_ACTION_LABELS[item.action]}</small>
+                  <code>{node?.state ?? 'unknown'}</code>
+                </li>
+              )
+            })}
+          </ol>
+          <p>
+            模拟器内部标识 {schedule.simulatorPlanId}
+            ；仅用于演示与当前正常计划的隔离，不是平台批次机制。
+          </p>
+        </section>
+      )}
+
+      <section className="dependency-reprocessing__panel" data-panel="event-log">
+        <header className="dependency-reprocessing__panel-header">
+          <span>执行日志</span>
+          <strong>{session.events.length} 条</strong>
+        </header>
+        <ol className="dependency-reprocessing__log">
+          {session.events.map((event, index) => (
+            <li key={`${event.at}-${index}`} data-kind={event.kind}>
+              <time>{event.at}</time>
+              <span>{event.detail}</span>
+            </li>
+          ))}
+        </ol>
+        <p>日志按时间顺序追加；保留历史执行记录，不引入轮次 / generation 字段。</p>
+      </section>
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
@@ -476,6 +732,10 @@ export function DependencyReprocessingLab({
 
   if (visualization.lessonFocus === 'impact-scope') {
     return <ImpactScopeLab />
+  }
+
+  if (visualization.lessonFocus === 'stop-wait-redo') {
+    return <StopWaitRedoLab />
   }
 
   return (

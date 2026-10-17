@@ -52,8 +52,8 @@ const CASES = [
   },
   {
     name: 'last',
-    path: '/learn/reprocessing-impact-scope/',
-    previous: '/learn/reprocessing-incident-timeline/',
+    path: '/learn/reprocessing-auto-stop-wait/',
+    previous: '/learn/reprocessing-impact-scope/',
     next: null,
     boundary: 'last',
   },
@@ -323,7 +323,7 @@ async function runMobile(browser, viewport, theme, lesson, baseUrl) {
       check(
         `${tag} completion 仍更新现有课程进度`,
         (await page.locator('[data-progress-count]').innerText()).replace(/\s+/g, ' ').trim() ===
-          '1 / 58',
+          '1 / 59',
         await page.locator('[data-progress-count]').innerText(),
       )
       await page.locator('.complete-button').click()
@@ -331,7 +331,7 @@ async function runMobile(browser, viewport, theme, lesson, baseUrl) {
       check(
         `${tag} completion 可按现有行为撤销`,
         (await page.locator('[data-progress-count]').innerText()).replace(/\s+/g, ' ').trim() ===
-          '0 / 58',
+          '0 / 59',
       )
 
       await page.locator('.lesson-nav__link--previous').click()
