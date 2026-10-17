@@ -61,6 +61,7 @@ import { deliveryInvestigationContent } from './delivery-investigation'
 import { dependencyReprocessingIncidentContent } from './dependency-reprocessing-incident'
 import { dependencyReprocessingImpactContent } from './dependency-reprocessing-impact'
 import { dependencyReprocessingAutoStopContent } from './dependency-reprocessing-auto-stop'
+import { dependencyReprocessingHistoricalContent } from './dependency-reprocessing-historical'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { warehouseTermsContent } from './warehouse-terms'
@@ -127,6 +128,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'reprocessing-incident-timeline': dependencyReprocessingIncidentContent,
   'reprocessing-impact-scope': dependencyReprocessingImpactContent,
   'reprocessing-auto-stop-wait': dependencyReprocessingAutoStopContent,
+  'reprocessing-historical-parallel': dependencyReprocessingHistoricalContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

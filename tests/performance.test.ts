@@ -74,6 +74,7 @@ describe('第 11 章性能与工程实践课程', () => {
       'reprocessing-incident-timeline',
       'reprocessing-impact-scope',
       'reprocessing-auto-stop-wait',
+      'reprocessing-historical-parallel',
     ]
 
     expectedSlugs.forEach((slug, index) => {

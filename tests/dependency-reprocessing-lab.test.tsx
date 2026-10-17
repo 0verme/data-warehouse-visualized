@@ -122,7 +122,7 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'current-vs-historical' }}
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'version-boundary' }}
       />,
     )
 
@@ -344,13 +344,75 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-auto-stop-wait').previous?.slug).toBe(
       'reprocessing-impact-scope',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-auto-stop-wait').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-auto-stop-wait').next?.slug).toBe(
+      'reprocessing-historical-parallel',
+    )
 
     const text = JSON.stringify(content)
     expect(text).toContain('依赖串行')
     expect(text).toContain('全局并发数 1')
     // 文案明确禁止轮次机制；「generation」只允许出现在禁止性说明里。
     expect(text).toContain('不引入轮次')
+    expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
+  })
+
+  it('E4 静态渲染：历史模式默认展示日切门禁与平行计划控制', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'current-vs-historical' }}
+      />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="historical-parallel"')
+    expect(html).toContain('data-panel="current-batch-gate"')
+    expect(html).toContain('data-gate-status="blocked"')
+    expect(html).toContain('尚未全部结束')
+    expect(html).toContain('模拟当日跑批完成')
+    expect(html).toContain('data-role="target-date"')
+    expect(html.match(/<option/g)).toHaveLength(2)
+    expect(html).toContain('2026-10-10')
+    expect(html).toContain('2026-10-15')
+    expect(html).toContain('最新程序 v3')
+    expect(html).toContain('生成平行 Job / Plan')
+    expect(html).toContain('14-5')
+    // 初始尚未请求计划。
+    expect(html).not.toContain('data-panel="parallel-plan"')
+  })
+
+  it('第 14 章 14-4 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-historical-parallel')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-4',
+      slug: 'reprocessing-historical-parallel',
+      chapter: '14',
+      order: 400,
+      difficulty: 'advanced',
+      estimatedMinutes: 20,
+      demo: 'dependency-reprocessing',
+      title: '历史数据如何重做而不影响当天日切？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual({
+      kind: 'dependency-reprocessing',
+      lessonFocus: 'current-vs-historical',
+    })
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-historical-parallel').previous?.slug).toBe(
+      'reprocessing-auto-stop-wait',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-historical-parallel').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('日切')
+    expect(text).toContain('平行 Job / Plan')
+    expect(text).toContain('business_date')
+    expect(text).toContain('最新程序')
     expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
   })
 })
