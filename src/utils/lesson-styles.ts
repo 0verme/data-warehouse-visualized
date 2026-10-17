@@ -10,6 +10,7 @@ import sqlWorkbenchStylesUrl from '../styles/lessons/sql-workbench.css?url'
 import joinFanoutStylesUrl from '../styles/lessons/join-fanout.css?url'
 import lifecyclePathStylesUrl from '../styles/lessons/lifecycle-path.css?url'
 import deliveryInvestigationStylesUrl from '../styles/lessons/delivery-investigation.css?url'
+import dependencyReprocessingStylesUrl from '../styles/lessons/dependency-reprocessing.css?url'
 import streamingGoldenStylesUrl from '../styles/lessons/streaming-golden.css?url'
 import schedulerStylesUrl from '../styles/lessons/scheduler.css?url'
 import sensorReadinessStylesUrl from '../styles/lessons/sensor-readiness.css?url'
@@ -41,6 +42,7 @@ const lessonStyleUrls = {
   'join-fanout.css': joinFanoutStylesUrl,
   'lifecycle-path.css': lifecyclePathStylesUrl,
   'delivery-investigation.css': deliveryInvestigationStylesUrl,
+  'dependency-reprocessing.css': dependencyReprocessingStylesUrl,
   'streaming-golden.css': streamingGoldenStylesUrl,
   'scheduler.css': schedulerStylesUrl,
   'sensor-readiness.css': sensorReadinessStylesUrl,
@@ -105,6 +107,7 @@ export const visualizationStyleSheets: Record<
   'join-fanout': ['join-fanout.css'],
   'lifecycle-path': ['lifecycle-path.css'],
   'delivery-investigation': ['delivery-investigation.css'],
+  'dependency-reprocessing': ['dependency-reprocessing.css'],
   'streaming-golden': ['streaming-golden.css'],
   governance: ['governance.css'],
   'performance-lab': ['performance.css'],

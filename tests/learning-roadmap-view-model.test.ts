@@ -28,7 +28,7 @@ describe('Learning Roadmap view model', () => {
   it('projects every Stage and Topic using the frozen presentation labels', () => {
     expect(view.stages).toHaveLength(8)
     expect(view.stages.map(({ order }) => order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
-    expect(allTopics).toHaveLength(32)
+    expect(allTopics).toHaveLength(33)
     expect(new Set(view.stages.map(({ id }) => id))).toEqual(
       new Set(Object.keys(learningStageTitles)),
     )
@@ -61,8 +61,8 @@ describe('Learning Roadmap view model', () => {
     const available = lessons.filter(isLessonAvailable)
     const courseById = new Map(available.map((lesson) => [lesson.id, lesson]))
 
-    expect(allLessons).toHaveLength(56)
-    expect(new Set(allLessons.map(({ id }) => id)).size).toBe(56)
+    expect(allLessons).toHaveLength(57)
+    expect(new Set(allLessons.map(({ id }) => id)).size).toBe(57)
     expect(new Set(allLessons.map(({ id }) => id))).toEqual(new Set(available.map(({ id }) => id)))
 
     for (const lesson of allLessons) {

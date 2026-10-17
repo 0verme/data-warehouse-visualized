@@ -31,6 +31,7 @@ export type LessonDemo =
   | 'capstone'
   | 'lifecycle-path'
   | 'delivery-investigation'
+  | 'dependency-reprocessing'
   | 'streaming-golden'
   | 'coming-soon'
 
@@ -95,6 +96,7 @@ export const chapterDefinitions = [
   { id: '11' },
   { id: '12' },
   { id: '13' },
+  { id: '14' },
 ] as const satisfies readonly ChapterDefinition[]
 
 export type ChapterId = (typeof chapterDefinitions)[number]['id']
@@ -605,6 +607,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 18,
     demo: 'delivery-investigation',
   },
+  {
+    id: 'lesson-14-1',
+    slug: 'reprocessing-incident-timeline',
+    chapter: '14',
+    order: 100,
+    difficulty: 'advanced',
+    estimatedMinutes: 18,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -625,6 +636,7 @@ export const chapterTranslations: Partial<Record<Locale, Record<ChapterId, Chapt
     '11': { title: '性能与工程实践' },
     '12': { title: '跨系统分行经营分析数据产品' },
     '13': { title: '生产实践案例' },
+    '14': { title: '依赖链重做' },
   },
 }
 
@@ -932,6 +944,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         'Producer Job 成功不等于交付完成；沿 Producer → Exchange → Consumer 交付链排除假设，定位完成信号边界，再验证恰好一次消费。',
       tags: ['生产案例', '交付链', '完成信号', '判断链', '幂等'],
+    },
+    'lesson-14-1': {
+      title: '为什么数仓任务成功了，数据仍然是错的？',
+      summary:
+        'ODS 分区不完整却一路 SUCCESS；沿事故时间线看错误数据如何穿过 DWD、DWS、ADS 到消费端，并建立依赖链重做的范围判断。',
+      tags: ['依赖链重做', '生产事故', '污染传播', 'SUCCESS 边界', 'ODS'],
     },
   },
 }

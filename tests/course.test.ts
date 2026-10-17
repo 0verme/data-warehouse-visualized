@@ -594,7 +594,7 @@ describe('课程数据与导航', () => {
     expect(chapterText).toContain('12000000000')
   })
 
-  it('第 13 章注册生产实践案例 13-1 / 13-2，并接在 Capstone 之后作为课程终点', () => {
+  it('第 13 章注册生产实践案例 13-1 / 13-2，并接在 Capstone 之后', () => {
     const chapterLessons = lessons.filter((lesson) => lesson.chapter === '13')
 
     expect(getChapterTitle('13')).toBe('生产实践案例')
@@ -659,7 +659,9 @@ describe('课程数据与导航', () => {
     expect(getAdjacentLessons(lessons, 'delivery-completion-signal').previous?.slug).toBe(
       'lifecycle-path-failure',
     )
-    expect(getAdjacentLessons(lessons, 'delivery-completion-signal').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'delivery-completion-signal').next?.slug).toBe(
+      'reprocessing-incident-timeline',
+    )
   })
 
   it('首尾课程不会产生越界导航', () => {

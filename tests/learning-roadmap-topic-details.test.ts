@@ -22,9 +22,9 @@ function getTopic(topicId: string) {
 }
 
 describe('Learning Roadmap Topic Detail', () => {
-  it('covers every graph Topic exactly once (32/32)', () => {
-    expect(learningTopicDetails).toHaveLength(32)
-    expect(new Set(learningTopicDetails.map(({ topicId }) => topicId)).size).toBe(32)
+  it('covers every graph Topic exactly once (33/33)', () => {
+    expect(learningTopicDetails).toHaveLength(33)
+    expect(new Set(learningTopicDetails.map(({ topicId }) => topicId)).size).toBe(33)
     expect(learningTopicDetails.map(({ topicId }) => topicId).sort()).toEqual(
       learningGraph.topics.map(({ id }) => id).sort(),
     )

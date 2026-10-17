@@ -58,6 +58,7 @@ import { sqlTransformationJoinContent } from './sql-and-transformation-join'
 import { sqlTransformationLayersContent } from './sql-and-transformation-layers'
 import { lifecyclePathFailureContent } from './lifecycle-path-failure'
 import { deliveryInvestigationContent } from './delivery-investigation'
+import { dependencyReprocessingIncidentContent } from './dependency-reprocessing-incident'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { warehouseTermsContent } from './warehouse-terms'
@@ -121,6 +122,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'streaming-warehouse-golden': streamingWarehouseGoldenContent,
   'lifecycle-path-failure': lifecyclePathFailureContent,
   'delivery-completion-signal': deliveryInvestigationContent,
+  'reprocessing-incident-timeline': dependencyReprocessingIncidentContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

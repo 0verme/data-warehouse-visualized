@@ -15,11 +15,11 @@ describe('Learning Graph v1 baseline', () => {
     expect(result.errors).toEqual([])
     expect(result.summary).toMatchObject({
       stageCount: 8,
-      topicCount: 32,
-      availableLessonCount: 56,
-      coveredAvailableLessonCount: 56,
+      topicCount: 33,
+      availableLessonCount: 57,
+      coveredAvailableLessonCount: 57,
       requiredEdgeCount: 48,
-      recommendedEdgeCount: 17,
+      recommendedEdgeCount: 18,
       relatedReferenceCount: 1,
       requiredReasonFixtureCount: 48,
       duplicateOwnerCount: 0,
@@ -29,11 +29,11 @@ describe('Learning Graph v1 baseline', () => {
       selfEdgeCount: 0,
       duplicateEdgeCount: 0,
       cycleCount: 0,
-      requiredRootCount: 4,
+      requiredRootCount: 5,
       orphanTopicCount: 0,
       unreviewedInversionCount: 0,
     })
-    expect(lessonDefinitions.filter(isLessonAvailable)).toHaveLength(56)
+    expect(lessonDefinitions.filter(isLessonAvailable)).toHaveLength(57)
     expect(requiredEdgeReasons).toHaveLength(48)
     expect(prerequisiteInversionReviews).toEqual([
       expect.objectContaining({

@@ -30,6 +30,7 @@ import type { CapstoneVisualization } from '../features/capstone/types'
 import type { JoinFanoutVisualization } from '../features/join-fanout/types'
 import type { LifecyclePathVisualization } from '../features/lifecycle-path/types'
 import type { DeliveryInvestigationVisualization } from '../features/delivery-investigation/types'
+import type { DependencyReprocessingVisualization } from '../features/dependency-reprocessing/types'
 import type { StreamingGoldenVisualization } from '../features/streaming-golden/types'
 
 export interface LessonOpening {
@@ -165,6 +166,7 @@ export type LessonVisualization =
   | JoinFanoutVisualization
   | LifecyclePathVisualization
   | DeliveryInvestigationVisualization
+  | DependencyReprocessingVisualization
   | StreamingGoldenVisualization
   | GovernanceVisualization
   | PerformanceVisualization

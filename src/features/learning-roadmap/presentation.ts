@@ -46,6 +46,7 @@ export const learningTopicTitles: Readonly<Record<string, string>> = {
   'performance-tradeoffs': '性能收益与工程取舍',
   'capstone-delivery': '跨系统交付与 Launch Review',
   'production-lifecycle-debugging': '生产生命周期与交付链复盘',
+  'reprocessing-incident-response': '依赖链重做事故恢复',
 }
 
 export function getLearningTopicTitle(topicId: string): string {

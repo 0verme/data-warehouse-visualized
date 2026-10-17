@@ -73,23 +73,24 @@ ODS、DWD、DWS、ADS 是常见的分层叫法，不是所有团队都必须照�
 
 ## 完整课程体系
 
-当前课程定义包含 **13 个章节、56 节课程**：其中 **56 节已上线，0 节规划中**。按已上线课程的实验入口计，当前有 **56 个交互实验入口**，对应 **25 类实验工作台**。第 11 章在原有 11-5 后增加 11-6 Advanced Golden Lesson 进阶专题课；不新增章节或独立进阶线。
+当前课程定义包含 **14 个章节、57 节课程**：其中 **57 节已上线，0 节规划中**。按已上线课程的实验入口计，当前有 **57 个交互实验入口**，对应 **26 类实验工作台**。第 11 章在原有 11-5 后增加 11-6 Advanced Golden Lesson 进阶专题课；第 14 章为依赖链重做专题，按已交付文章逐篇上线。
 
-| 章节                                                       | 主题                       | 课程数 | 状态   |
-| :--------------------------------------------------------- | :------------------------- | -----: | :----- |
-| [第 01 章](https://sql.sb/learn/why-data-warehouse/)       | 认识数据仓库               |      4 | 已上线 |
-| [第 02 章](https://sql.sb/learn/data-modeling/)            | 数据建模                   |      5 | 已上线 |
-| [第 03 章](https://sql.sb/learn/metric-system/)            | 指标体系                   |      4 | 已上线 |
-| [第 04 章](https://sql.sb/learn/sql-and-transformation/)   | SQL 与数据加工             |      5 | 已上线 |
-| [第 05 章](https://sql.sb/learn/scheduling-system/)        | 调度系统                   |      5 | 已上线 |
-| [第 06 章](https://sql.sb/learn/data-quality/)             | 数据质量                   |      5 | 已上线 |
-| [第 07 章](https://sql.sb/learn/data-lineage/)             | 数据血缘                   |      5 | 已上线 |
-| [第 08 章](https://sql.sb/learn/data-governance/)          | 数据治理                   |      5 | 已上线 |
-| [第 09 章](https://sql.sb/learn/lakehouse/)                | 湖仓                       |      4 | 已上线 |
-| [第 10 章](https://sql.sb/learn/data-service/)             | 数据服务                   |      5 | 已上线 |
-| [第 11 章](https://sql.sb/learn/performance-and-practice/) | 性能与工程实践             |      6 | 已上线 |
-| 第 12 章                                                   | 跨系统分行经营分析数据产品 |      1 | 已上线 |
-| 第 13 章                                                   | 生产实践案例               |      2 | 已上线 |
+| 章节                                                             | 主题                       | 课程数 | 状态   |
+| :--------------------------------------------------------------- | :------------------------- | -----: | :----- |
+| [第 01 章](https://sql.sb/learn/why-data-warehouse/)             | 认识数据仓库               |      4 | 已上线 |
+| [第 02 章](https://sql.sb/learn/data-modeling/)                  | 数据建模                   |      5 | 已上线 |
+| [第 03 章](https://sql.sb/learn/metric-system/)                  | 指标体系                   |      4 | 已上线 |
+| [第 04 章](https://sql.sb/learn/sql-and-transformation/)         | SQL 与数据加工             |      5 | 已上线 |
+| [第 05 章](https://sql.sb/learn/scheduling-system/)              | 调度系统                   |      5 | 已上线 |
+| [第 06 章](https://sql.sb/learn/data-quality/)                   | 数据质量                   |      5 | 已上线 |
+| [第 07 章](https://sql.sb/learn/data-lineage/)                   | 数据血缘                   |      5 | 已上线 |
+| [第 08 章](https://sql.sb/learn/data-governance/)                | 数据治理                   |      5 | 已上线 |
+| [第 09 章](https://sql.sb/learn/lakehouse/)                      | 湖仓                       |      4 | 已上线 |
+| [第 10 章](https://sql.sb/learn/data-service/)                   | 数据服务                   |      5 | 已上线 |
+| [第 11 章](https://sql.sb/learn/performance-and-practice/)       | 性能与工程实践             |      6 | 已上线 |
+| 第 12 章                                                         | 跨系统分行经营分析数据产品 |      1 | 已上线 |
+| 第 13 章                                                         | 生产实践案例               |      2 | 已上线 |
+| [第 14 章](https://sql.sb/learn/reprocessing-incident-timeline/) | 依赖链重做                 |      1 | 已上线 |
 
 ## 视觉预览
 

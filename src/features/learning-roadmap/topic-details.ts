@@ -186,6 +186,13 @@ export const learningTopicDetails: readonly LearningTopicDetail[] = [
       '只凭「昨天成功了」或「任务 SUCCESS」判断问题时，生命周期路径差异与交付契约缺口都会在运行期才暴露。',
     learningOutcome: '从运行证据与交付链证据定位数据停在生产、完成、传输、识别还是消费边界。',
   },
+  {
+    topicId: 'reprocessing-incident-response',
+    whyLearn:
+      '把任务 SUCCESS 当作数据正确时，错误数据会沿血缘与调度依赖静默传播到消费端，止损时连重做范围都无法确定。',
+    learningOutcome:
+      '判断错误数据沿血缘与调度依赖传播到哪一层，并区分「执行完成」与「数据正确」的边界。',
+  },
 ]
 
 const topicDetailById = new Map(
