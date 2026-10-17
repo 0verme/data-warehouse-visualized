@@ -463,6 +463,16 @@
   font: inherit;
 }
 
+/* ---------- E5 版本兼容边界 ---------- */
+
+.dependency-reprocessing__panel[data-verdict='forbidden'] {
+  border-color: var(--danger-border);
+}
+
+.dependency-reprocessing__panel[data-verdict='compatible'] {
+  border-color: var(--diagram-accent);
+}
+
 /* ---------- 容器查询：窄屏单列，宽屏分支节点并排 ---------- */
 
 @container visualization (min-width: 720px) {

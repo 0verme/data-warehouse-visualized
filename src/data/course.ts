@@ -643,6 +643,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 20,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-5',
+    slug: 'reprocessing-version-boundary',
+    chapter: '14',
+    order: 500,
+    difficulty: 'advanced',
+    estimatedMinutes: 20,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -995,6 +1004,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '区分当日与历史两种恢复模式，理解日切完成门禁与平行 Job / Plan 的绑定、隔离和最新程序要求。',
       tags: ['依赖链重做', '历史重做', '平行 Job / Plan', '日切门禁', 'business_date'],
+    },
+    'lesson-14-5': {
+      title: '为什么有些历史数据禁止重做？',
+      summary:
+        '区分可重做与禁止重做的变更类型：表结构、业务语义、输入契约与重大重构；理解 SQL 能跑不等于兼容。',
+      tags: ['依赖链重做', '版本边界', '兼容性', '重大重构', '专项修复'],
     },
   },
 }
