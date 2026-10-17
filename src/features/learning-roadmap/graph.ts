@@ -263,6 +263,7 @@ export const learningGraph: LearningGraph = {
         'lesson-14-5',
         'lesson-14-6',
         'lesson-14-7',
+        'lesson-14-8',
       ],
       prerequisites: [],
       recommendedPrior: ['production-lifecycle-debugging'],

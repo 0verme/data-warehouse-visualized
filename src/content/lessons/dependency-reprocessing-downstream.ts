@@ -69,6 +69,7 @@ export const dependencyReprocessingDownstreamContent: LessonContent = {
         '动作完成后必须跟踪确认，确认状态要可查询。',
         '确认的证据包括接收回执、消费批次、缓存版本或报送记录。',
         '全部受影响消费方确认后，闭环才算完成。',
+        '交付完成信号与消费证据的检查方法见 13-2。',
       ],
     },
     {

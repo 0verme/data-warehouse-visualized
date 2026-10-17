@@ -13,7 +13,10 @@ import {
   buildIncidentTimelineSteps,
   createIncidentTimelineKernel,
 } from '../src/features/dependency-reprocessing/steps'
-import type { DependencyReprocessingVisualization } from '../src/features/dependency-reprocessing/types'
+import type {
+  DependencyReprocessingFocus,
+  DependencyReprocessingVisualization,
+} from '../src/features/dependency-reprocessing/types'
 import { getAdjacentLessons } from '../src/utils/lesson'
 import { getLessonStyleSheets } from '../src/utils/lesson-styles'
 import {
@@ -122,7 +125,10 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'platform-design' }}
+        visualization={{
+          kind: 'dependency-reprocessing',
+          lessonFocus: 'unknown-future-mode' as DependencyReprocessingFocus,
+        }}
       />,
     )
 
@@ -590,7 +596,9 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-rolling-backfill').previous?.slug).toBe(
       'reprocessing-downstream-reload',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-rolling-backfill').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-rolling-backfill').next?.slug).toBe(
+      'reprocessing-platform-design',
+    )
 
     const text = JSON.stringify(content)
     expect(text).toContain('跨天依赖')
@@ -599,5 +607,62 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(text).toContain('T/T-1')
     expect(text).toContain('14-8')
     expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
+  })
+
+  it('E8 静态渲染：平台能力与真实/演示/边界三层结构完整', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'platform-design' }}
+      />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="platform-design"')
+    expect(html).toContain('data-role="platform-status"')
+    expect(html).toContain('aria-live="polite"')
+    expect(html.match(/data-pillar=/g)).toHaveLength(6)
+    expect(html).toContain('data-pillar-id="impact-analysis"')
+    expect(html).toContain('data-role="real-experience"')
+    expect(html).toContain('data-role="demo-architecture"')
+    expect(html).toContain('data-role="boundary"')
+    expect(html).toContain('data-panel="platform-baseline"')
+    expect(html).toContain('不重造调度器')
+  })
+
+  it('第 14 章 14-8 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-platform-design')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-8',
+      slug: 'reprocessing-platform-design',
+      chapter: '14',
+      order: 800,
+      difficulty: 'advanced',
+      estimatedMinutes: 22,
+      demo: 'dependency-reprocessing',
+      title: '如何设计自动化依赖链重做平台？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual({
+      kind: 'dependency-reprocessing',
+      lessonFocus: 'platform-design',
+    })
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-platform-design').previous?.slug).toBe(
+      'reprocessing-rolling-backfill',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-platform-design').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('平台')
+    expect(text).toContain('真实经验')
+    expect(text).toContain('演示架构')
+    expect(text).toContain('不重造调度器')
+    expect(text).toContain('消费确认')
+    expect(text).not.toMatch(/Replay Generation|第 \d+ 轮重做/)
   })
 })
