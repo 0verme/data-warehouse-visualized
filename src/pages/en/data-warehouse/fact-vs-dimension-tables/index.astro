@@ -1,0 +1,348 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { FactVsDimensionLab } from '../../../../components/english/FactVsDimensionLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import {
+  DIM_ACCOUNT_ROWS,
+  DIM_BRANCH_ROWS,
+  FACT_ROWS,
+  ROLE_DEFINITIONS,
+  buildFactDimensionReference,
+} from '../../../../features/english-modeling/model'
+import factDimensionStylesUrl from '../../../../styles/layouts/english-fact-dimension.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Fact Table vs Dimension Table: Roles & Keys | sql.sb'
+const description =
+  'What fact and dimension tables each store, how surrogate keys join them, and why a duplicated dimension key silently inflates every measure.'
+
+const reference = buildFactDimensionReference()
+const roles = ROLE_DEFINITIONS
+
+const usd = (value: number) => value.toLocaleString('en-US')
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[factDimensionStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Fact vs dimension tables' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · modeling</p>
+    <h1 class="english-article__title">
+      Fact table vs dimension table: which table answers which question
+    </h1>
+    <p class="english-article__lede">
+      A star schema has two kinds of table, and mixing them up produces two very different failures:
+      a column that does not exist, or a total that is quietly too large.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      A fact table stores what happened or what the state was: numeric measures plus foreign keys,
+      one row per event or state change at a declared grain. A dimension table stores who, what,
+      where and when: descriptive attributes used for grouping and filtering, one row per entity (or
+      entity version), joined on a surrogate key. Measures belong to facts; text and classifications
+      belong to dimensions. Joining a fact to a dimension does not change the measure — unless the
+      dimension key is not unique, in which case the fact rows are multiplied.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="roles">
+      <h2 id="roles">Two roles, two jobs</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>What each table role is responsible for</caption>
+          <thead>
+            <tr>
+              <th scope="col">Role</th>
+              <th scope="col">Stores</th>
+              <th scope="col">Row meaning</th>
+              <th scope="col">Examples</th>
+              <th scope="col">Shape</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roles.map((role) => (
+              <tr>
+                <td>
+                  <strong>{role.label}</strong>
+                </td>
+                <td>{role.stores}</td>
+                <td>{role.key}</td>
+                <td>{role.examples}</td>
+                <td>{role.width}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The model below is one account balance snapshot day. The fact table records the balance that
+        was true for each account on that date; the dimensions describe the account, the branch and
+        the product.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>fact_deposit_balance_daily · 2026-09-30</caption>
+          <thead>
+            <tr>
+              <th scope="col">account_sk</th>
+              <th scope="col">branch_sk</th>
+              <th scope="col">product_sk</th>
+              <th scope="col">balance</th>
+              <th scope="col">transaction_count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {FACT_ROWS.map((row) => (
+              <tr>
+                <td>
+                  <code>{row.account_sk}</code>
+                </td>
+                <td>
+                  <code>{row.branch_sk}</code>
+                </td>
+                <td>
+                  <code>{row.product_sk}</code>
+                </td>
+                <td>{usd(row.balance)}</td>
+                <td>{row.transaction_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Dimensions: attributes, not measures</caption>
+          <thead>
+            <tr>
+              <th scope="col">dim_branch.branch_sk</th>
+              <th scope="col">branch_id</th>
+              <th scope="col">branch_name</th>
+              <th scope="col">region</th>
+              <th scope="col">dim_account has</th>
+            </tr>
+          </thead>
+          <tbody>
+            {DIM_BRANCH_ROWS.map((branch, index) => (
+              <tr>
+                <td>
+                  <code>{branch.branch_sk}</code>
+                </td>
+                <td>
+                  <code>{branch.branch_id}</code>
+                </td>
+                <td>{branch.branch_name}</td>
+                <td>{branch.region}</td>
+                <td>
+                  {index === 0
+                    ? `account_sk, account_id, customer_name, status (${DIM_ACCOUNT_ROWS.length} rows)`
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <code>dim_account</code> has no <code>balance</code> column, and that is not an omission. A
+        balance is a fact: it changes every business date. An account row is an entity description
+        that stays true until the account itself changes.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="lab">
+      <h2 id="lab">The same question, four query attempts</h2>
+      <p>
+        The question is constant — “what is the total balance by branch on 2026-09-30?” — but the
+        choice of table changes the answer, or destroys it.
+      </p>
+      <FactVsDimensionLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="join">
+      <h2 id="join">The join does not change the measure — until the key is not unique</h2>
+      <p>
+        Joining a fact to a dimension on a unique surrogate key is row-preserving: each fact row
+        finds at most one dimension row, so the measure total is unchanged. The moment the dimension
+        key is not unique, the join multiplies fact rows.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Total balance by branch with a clean and a duplicated dim_branch</caption>
+          <thead>
+            <tr>
+              <th scope="col">branch_name</th>
+              <th scope="col">Clean dimension</th>
+              <th scope="col">Duplicated B1 key</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.duplicateRows.map((row, index) => (
+              <tr data-tone={row.branch_name === 'Hangzhou (old)' ? 'wrong' : undefined}>
+                <td>{row.branch_name}</td>
+                <td>
+                  {reference.correctRows[index]?.branch_name === row.branch_name
+                    ? usd(reference.correctRows[index]?.total_balance ?? 0)
+                    : '—'}
+                </td>
+                <td>{usd(row.total_balance)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Grand total</td>
+              <td>{usd(reference.correctTotal)}</td>
+              <td data-tone="wrong">{usd(reference.duplicateTotal)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p>
+        The duplicated key added {usd(reference.inflatedBy)} of repeated balance. No fact row was
+        wrong; the join was. This is the same row-multiplication failure as a join on a non-unique
+        key, which is covered in{' '}
+        <a href={getEnglishRoute('joinDuplicateRows')}>SQL JOIN duplicate rows</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="not-merge">
+      <h2 id="not-merge">Why not merge everything into one wide table?</h2>
+      <p>
+        A single denormalized table is simpler to query, so it is a reasonable shape for a published
+        data mart. It is a poor shape for the layer where the data is maintained:
+      </p>
+      <ul>
+        <li>
+          <strong>Storage and write cost.</strong> Branch attributes are repeated on every fact row;
+          a renamed branch or region must be updated everywhere instead of one row.
+        </li>
+        <li>
+          <strong>Update anomalies.</strong> With one wide table, the same attribute can appear with
+          two different values in two rows, and there is no single place to fix it.
+        </li>
+        <li>
+          <strong>History.</strong> A dimension version can be tracked independently; repeating the
+          attribute in the fact table mixes “what was true then” with “what is true now”.
+        </li>
+        <li>
+          <strong>Ownership and contracts.</strong> Dimension attributes come from reference data;
+          measures come from events. One table means one write path for two very different sources.
+        </li>
+        <li>
+          <strong>Nulls.</strong> A merged row needs every attribute for every fact, including the
+          ones not yet known when the event was recorded.
+        </li>
+      </ul>
+      <p>
+        When a mart is published for a specific group of consumers, denormalizing a conformed star
+        into a wide table is a normal serving choice. The failure is maintaining the warehouse
+        itself in that shape.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">How this differs from grain, star/snowflake and SCD</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Four modeling questions that are easy to confuse</caption>
+          <thead>
+            <tr>
+              <th scope="col">Question</th>
+              <th scope="col">Where it is answered</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>What does one row represent?</td>
+              <td>
+                <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+              </td>
+            </tr>
+            <tr data-tone="right">
+              <td>Which table stores the measure and which stores the attributes?</td>
+              <td>This page</td>
+            </tr>
+            <tr>
+              <td>How normalized should the schema be, and how many joins is that?</td>
+              <td>Star schema vs snowflake schema (next page)</td>
+            </tr>
+            <tr>
+              <td>How does a dimension attribute change over time?</td>
+              <td>
+                <a href={getEnglishRoute('scdType2')}>SCD Type 2</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Factless fact tables.</strong> A fact table can record an event with only keys (an
+          account was shown an offer) — the measure is the count of rows, not a column.
+        </li>
+        <li>
+          <strong>Degenerate dimensions.</strong> An order number stored directly on the fact row is
+          a dimension key with no dimension table; useful when it has no attributes to describe.
+        </li>
+        <li>
+          <strong>Junk dimensions.</strong> Low-cardinality flags and codes can be combined into one
+          dimension to avoid a forest of tiny tables.
+        </li>
+        <li>
+          <strong>Role-playing dimensions.</strong> One date dimension can appear several times
+          (open date, close date), each with its own alias. The table is reused; the keys are not.
+        </li>
+        <li>
+          <strong>Conformed dimensions.</strong> Sharing a dimension across fact tables is what
+          makes two processes comparable; copying it per subject area breaks that guarantee.
+        </li>
+        <li>
+          <strong>Surrogate keys.</strong> Join on warehouse-generated keys, not on source business
+          keys, so a source key change does not rewrite history.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a> — the row meaning that makes a
+          fact table’s measures add up correctly.
+        </li>
+        <li>
+          <a href={getEnglishRoute('scdType2')}>SCD Type 2 example</a> — how dimension attributes
+          keep history when an entity changes.
+        </li>
+        <li>
+          <a href={getEnglishRoute('joinDuplicateRows')}>Why does a SQL JOIN duplicate rows?</a> —
+          the join-level view of the fan-out this page shows through a duplicated dimension key.
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a> — why
+          reloading a fact partition twice must not double its measures.
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

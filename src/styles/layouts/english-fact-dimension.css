@@ -1,0 +1,168 @@
+/* Page styles for /en/data-warehouse/fact-vs-dimension-tables/. */
+
+.fact-dim-lab {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.fact-dim-lab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.fact-dim-lab__toolbar > div {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.fact-dim-lab__overline {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fact-dim-lab__toolbar p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.fact-dim-lab__scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 12px;
+}
+
+.fact-dim-lab__scenario {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.fact-dim-lab__scenario:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.fact-dim-lab__scenario.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
+.fact-dim-lab__scenario:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.fact-dim-lab__question {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.fact-dim-lab__question strong {
+  color: var(--text-primary);
+}
+
+.fact-dim-lab__plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fact-dim-lab__plan div {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, var(--surface-1));
+}
+
+.fact-dim-lab__plan span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fact-dim-lab__plan strong {
+  display: block;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.fact-dim-lab__sql {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, var(--surface-1));
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.fact-dim-lab__result tfoot td {
+  font-weight: 700;
+}
+
+.fact-dim-lab__verdict {
+  min-width: 0;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.fact-dim-lab__verdict[data-tone='right'] {
+  border-color: color-mix(in srgb, var(--success, #16a34a) 45%, var(--border));
+}
+
+.fact-dim-lab__verdict[data-tone='wrong'] {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, var(--border));
+}
+
+.fact-dim-lab__verdict p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .fact-dim-lab__scenario {
+    padding: 7px 10px;
+    font-size: 12.5px;
+  }
+}

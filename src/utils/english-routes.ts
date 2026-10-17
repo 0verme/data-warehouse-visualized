@@ -19,6 +19,7 @@ export const ENGLISH_PATHS = {
   dataQualityChecks: '/en/data-warehouse/data-quality-checks/',
   dataContracts: '/en/data-warehouse/data-contracts/',
   pipelineObservability: '/en/data-warehouse/pipeline-observability/',
+  factVsDimensionTables: '/en/data-warehouse/fact-vs-dimension-tables/',
   tools: '/en/tools/',
 } as const
 
