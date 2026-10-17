@@ -16,6 +16,7 @@
 import type {
   ReprocessingInstanceLog,
   ReprocessingModel,
+  ReprocessingOdsCheck,
   ReprocessingTaskDefinition,
   ReprocessingTaskInstance,
   TableRef,
@@ -374,4 +375,44 @@ export function createReprocessingFixture(
     tasks: reprocessingTaskDefinitions,
     instances,
   }
+}
+
+export type OdsValidationFixtureResult = 'passed' | 'failed'
+
+/**
+ * 合成 ODS 修复验证检查：与事故 fixture 对齐的确定性清单。
+ * `failed` 变体只让行数检查失败，用于验证“验证不通过不放行”。
+ */
+export function createOdsValidationChecks(
+  result: OdsValidationFixtureResult = 'passed',
+): readonly ReprocessingOdsCheck[] {
+  return [
+    {
+      id: 'partition-arrived',
+      label: '当日分区文件已到达并登记',
+      passed: true,
+      detail: 'ODS_TRANSACTION 2026-10-16 分区的数据文件已在控制表登记。',
+    },
+    {
+      id: 'row-count',
+      label: '行数与控制表登记一致',
+      passed: result === 'passed',
+      detail:
+        result === 'passed'
+          ? '修复后行数与控制表登记一致，缺失的交易已补齐。'
+          : '修复后行数仍少于控制表登记，缺失交易未完全补齐。',
+    },
+    {
+      id: 'transaction-identity',
+      label: 'transaction_id 非空且无重复',
+      passed: true,
+      detail: '交易主键唯一性检查通过。',
+    },
+    {
+      id: 'merchant-reference',
+      label: '商户引用在允许 LEFT JOIN 的前提下可解析',
+      passed: true,
+      detail: '商户缺失不影响交易明细重做；引用解析结果已记录。',
+    },
+  ]
 }

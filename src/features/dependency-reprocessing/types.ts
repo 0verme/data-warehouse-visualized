@@ -78,7 +78,7 @@ export interface LineageEdge {
 }
 
 export type ReprocessingLogEvent =
-  'scheduled' | 'started' | 'succeeded' | 'failed' | 'stop-requested' | 'stopped'
+  'scheduled' | 'started' | 'succeeded' | 'failed' | 'stop-requested' | 'stopped' | 'waiting'
 
 export interface ReprocessingInstanceLog {
   /** 按重做时的时分秒记录；没有轮次 / generation 字段。 */
@@ -138,4 +138,95 @@ export interface ImpactAnalysis {
   /** 受影响实例涉及的任务（首次出现顺序去重）。 */
   deduplicatedTaskIds: readonly string[]
   evidence: readonly ImpactEvidence[]
+}
+
+/* ------------------------------------------------------------------ *
+ * Phase 1-B：止损 / 等待 / 自动重做 / ODS 门禁与二次修复
+ * ------------------------------------------------------------------ */
+
+/** ODS 修复验证的单项检查。 */
+export interface ReprocessingOdsCheck {
+  id: string
+  label: string
+  passed: boolean
+  detail: string
+}
+
+/** ODS 修复验证结果；只有全部通过且至少有一项检查才放行依赖链重做。 */
+export interface OdsValidationResult {
+  businessDate: string
+  checks: readonly ReprocessingOdsCheck[]
+  validated: boolean
+  blockedReason: string | null
+}
+
+/** 重做计划中每个实例的动作语义。 */
+export type RedoScheduleItemAction = 'redo-after-stop' | 'redo-executed' | 'run-waiting'
+
+export interface RedoScheduleItem {
+  instanceId: string
+  taskId: string
+  action: RedoScheduleItemAction
+}
+
+export interface RedoSchedule {
+  /**
+   * 模拟器内部标识：仅用于演示本次重做计划与正常 Job / Plan 的隔离，
+   * 不是生产平台的批次号或轮次机制。
+   */
+  simulatorPlanId: string
+  businessDate: string
+  sourceInstanceId: string
+  /** 按依赖顺序排列：上游先于下游。 */
+  items: readonly RedoScheduleItem[]
+}
+
+/** 正常调度与重做调度之间的互斥冲突。 */
+export interface MutualExclusionViolation {
+  instanceId: string
+  taskId: string
+  state: TaskInstanceState
+  reason: string
+}
+
+export interface MutualExclusionResult {
+  ok: boolean
+  violations: readonly MutualExclusionViolation[]
+}
+
+export type RedoScheduleResult =
+  | {
+      status: 'blocked'
+      reason: string
+      schedule: null
+      violations: readonly MutualExclusionViolation[]
+    }
+  | {
+      status: 'ready'
+      reason: null
+      schedule: RedoSchedule
+      violations: readonly MutualExclusionViolation[]
+    }
+
+/** 由控制器施加到具体实例上的状态转换动作。 */
+export type ReprocessingExecutionAction =
+  | { type: 'request-stop'; instanceId: string; at: string; reason: string }
+  | { type: 'confirm-stop'; instanceId: string; at: string; sideEffectDisposition: string }
+  | { type: 'wait'; instanceId: string; at: string; reason: string }
+  | { type: 'start-redo'; instanceId: string; at: string }
+  | { type: 'complete-redo'; instanceId: string; at: string }
+  | { type: 'fail-redo'; instanceId: string; at: string; reason: string }
+
+export interface StopAndWaitResult {
+  model: ReprocessingModel
+  /** 经过 running → stopping → stopped → waiting 的实例。 */
+  stoppedInstanceIds: readonly string[]
+  /** 原本 ready、尚未开始执行就被阻断为 waiting 的实例。 */
+  blockedInstanceIds: readonly string[]
+}
+
+/** ODS 再次修复后的失效结果：受影响 SUCCESS 被清空并重新等待。 */
+export interface InvalidationResult {
+  model: ReprocessingModel
+  invalidatedInstanceIds: readonly string[]
 }
