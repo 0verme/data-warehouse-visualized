@@ -51,6 +51,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/scd-type-2/index.html',
     title: 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/pipeline-failure-recovery/',
+    file: 'en/data-warehouse/pipeline-failure-recovery/index.html',
+    title: 'Data Pipeline Failure Recovery: Impact & Safe Rerun | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 

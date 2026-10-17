@@ -1,0 +1,472 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { PipelineRecoveryLab } from '../../../../components/english/PipelineRecoveryLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import { buildRecoveryReference } from '../../../../features/english-recovery/model'
+import recoveryStylesUrl from '../../../../styles/layouts/english-pipeline-recovery.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Data Pipeline Failure Recovery: Impact & Safe Rerun | sql.sb'
+const description =
+  'Bad rows already reached the warehouse while downstream jobs keep running: compute the impact closure, stop safely, replay in dependency order and re-notify consumers.'
+
+const reference = buildRecoveryReference()
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[recoveryStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Pipeline failure recovery' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · pipelines</p>
+    <h1 class="english-article__title">
+      Data pipeline failure recovery: stop, replay and re-notify
+    </h1>
+    <p class="english-article__lede">
+      When wrong data has already moved downstream, “rerun the failed task” is not a recovery plan.
+      The finished jobs are still marked <code>success</code>, some jobs are still running, and
+      consumers may already be showing the bad number.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Recovery answers four questions in order: which task instances are affected (SQL lineage plus
+      declared scheduler dependencies, for the same business date); which of them are still running
+      and must stop or be blocked first; in what order the affected instances are recomputed after
+      the corrected source passes its checks; and which consumers already loaded the old result and
+      still need a reload and a confirmation.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="scenario">
+      <h2 id="scenario">The hard part starts after the bad rows land</h2>
+      <p>
+        A load for business date <code>2026-10-16</code> registers 12,480 rows in the arrival
+        control table, but the partition holds 11,904 — 576 transactions never arrived, and one
+        arrived with the wrong amount (<code>400.00</code> instead of <code>480.00</code>). The
+        partition is not empty and the task status is <code>success</code>, so nothing in the run
+        history looks broken.
+      </p>
+      <p>
+        By the time the correction is prepared, the DWD transaction detail has already succeeded on
+        the bad rows, the merchant aggregate is still running, and the ADS report plus two consumers
+        have not started yet. The lab below reproduces exactly this incident with a deterministic
+        banking fixture: the same input always produces the same closure, the same stop set and the
+        same replay order.
+      </p>
+      <PipelineRecoveryLab client:load />
+      <p>
+        The lab is deterministic. The reference tables below are generated from the same fixture at
+        build time, so every claim on this page can be checked without clicking anything.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="steps">
+      <h2 id="steps">Seven recovery states, each with observable evidence</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Recovery states and the evidence that releases each one</caption>
+          <thead>
+            <tr>
+              <th scope="col">State</th>
+              <th scope="col">Question</th>
+              <th scope="col">Evidence you need</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <code>BAD_INPUT</code>
+              </td>
+              <td>Is the source wrong, incomplete, or both?</td>
+              <td>Control-table row count vs partition content; a concrete bad row</td>
+            </tr>
+            <tr>
+              <td>
+                <code>IMPACT_DISCOVERY</code>
+              </td>
+              <td>Which instances are actually affected?</td>
+              <td>Closure over SQL lineage and scheduler dependencies for one business date</td>
+            </tr>
+            <tr>
+              <td>
+                <code>QUIESCE_RUNNING</code>
+              </td>
+              <td>Who must stop before anything is replayed?</td>
+              <td>
+                Running or ready instances inside the closure, plus their side-effect disposition
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>SAFE_RERUN_PLAN</code>
+              </td>
+              <td>Is it allowed to replay yet?</td>
+              <td>Every corrected-source check passes; no normal-schedule writer conflicts</td>
+            </tr>
+            <tr>
+              <td>
+                <code>ORDERED_REPLAY</code>
+              </td>
+              <td>What runs before what?</td>
+              <td>
+                Topological order over dependencies and lineage; each converged branch runs once
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code>VALIDATION</code>
+              </td>
+              <td>Did the recomputed instances produce the corrected result?</td>
+              <td>Per-instance success for the incident business date only</td>
+            </tr>
+            <tr>
+              <td>
+                <code>CONSUMER_NOTIFICATION</code>
+              </td>
+              <td>Is anyone still showing the old number?</td>
+              <td>Consumer evidence: loaded old result, loaded new result, confirmed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="impact">
+      <h2 id="impact">Impact discovery: follow two edge types</h2>
+      <p>
+        A task list is not an impact list. Starting from the polluted partition, the closure follows
+        two independent edge types:
+      </p>
+      <ul>
+        <li>
+          <strong>SQL lineage</strong> — the task reads a table this instance wrote.{' '}
+          <code>LEFT JOIN</code> still counts: even when a missing merchant does not change the
+          aggregate, the instance is in the lineage and must be recomputed.
+        </li>
+        <li>
+          <strong>Scheduler dependencies</strong> — the downstream job declares{' '}
+          <code>depends_on</code> on the upstream task, even without a direct SQL read. The
+          completeness check is affected this way.
+        </li>
+      </ul>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Closure for ods_transaction · business date{reference.businessDate}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Group</th>
+              <th scope="col">Count</th>
+              <th scope="col">Instances</th>
+              <th scope="col">What it means</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-tone="wrong">
+              <td>Must stop or block first</td>
+              <td>{reference.stop.length}</td>
+              <td>{reference.stop.map((item) => item.label).join(', ')}</td>
+              <td>The instance is still running and would write a result derived from bad input</td>
+            </tr>
+            <tr>
+              <td>Recompute after validation</td>
+              <td>{reference.redo.length}</td>
+              <td>{reference.redo.map((item) => item.label).join(', ')}</td>
+              <td>Already executed, so the published result for this business date is invalid</td>
+            </tr>
+            <tr>
+              <td>Waiting for dependencies</td>
+              <td>{reference.waiting.length}</td>
+              <td>{reference.waiting.map((item) => item.label).join(', ')}</td>
+              <td>Never started; they must not be claimed as “already rerun”</td>
+            </tr>
+            <tr data-tone="right">
+              <td>Untouched</td>
+              <td>everything else</td>
+              <td>{reference.untouchedTaskIds.join(', ')}, business date 2026-10-15</td>
+              <td>Same pipeline, different source or partition — stop nothing here</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Partition scope matters. The instance for <code>2026-10-15</code> is not affected by a
+        correction to <code>2026-10-16</code>, even though both instances belong to the same task.
+        Impact analysis works at the instance level: task + business date, not task name.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="stop">
+      <h2 id="stop">Quiesce: stop running work before replaying</h2>
+      <p>
+        The merchant aggregate is still running and will read the corrupted DWD result. Replaying
+        upstream while it runs would let two writers touch the same table, and the last commit would
+        win. The instance goes through <code>running → stopping → stopped → waiting</code>, and the
+        stop records what happened to external side effects: no partial file made visible, no push
+        that needs recalling.
+      </p>
+      <p>
+        Instances that are merely <code>ready</code> can be blocked before their first execution.
+        Instances that never started are left waiting. Unaffected branches are not stopped — that is
+        the visible difference between a targeted recovery and a full rebuild.
+      </p>
+      <div class="english-callout" data-tone="info">
+        <strong>A stopped task is not a recovered task</strong>
+        <p>
+          After quiesce, the closure holds no running instances, but nothing has been recomputed
+          yet. Recovery proceeds only when the corrected source passes its checks.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="gate">
+      <h2 id="gate">Validate the source before releasing the replay</h2>
+      <p>
+        Replaying against an incomplete correction produces the same incident twice and destroys the
+        log trail that would show it. The gate is explicit evidence, not a successful manual spot
+        check:
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Corrected-source checks for{reference.businessDate}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Check</th>
+              <th scope="col">Why it blocks replay</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.odsChecks.map((check) => (
+              <tr data-tone={check.passed ? 'right' : 'wrong'}>
+                <td>{check.label}</td>
+                <td>{check.detail}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        In the lab, the row-count check fails until the partition is corrected. While any check
+        fails, the replay plan stays <code>blocked</code>: there is no partial release, and the
+        consumers are not notified to reload a result that is about to change again.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="replay">
+      <h2 id="replay">Replay in dependency order, once per branch</h2>
+      <p>
+        The replay plan is a topological order over declared dependencies and SQL lineage. Two DWS
+        branches feed the same ADS report; the report runs once, after both branches have been
+        recomputed. Nothing runs twice and no downstream instance starts before its upstream
+        instance has finished.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Ordered replay plan for{reference.businessDate}</caption>
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Instance</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.replayOrder.map((item) => (
+              <tr>
+                <td>{item.order}</td>
+                <td>{item.label}</td>
+                <td>{item.actionLabel}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The plan is isolated from the normal schedule: it addresses the incident business date, and
+        the plan identifier is a lab construct, not a production batch number. The instances that
+        were blocked or waiting become runnable only inside this plan.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="verify">
+      <h2 id="verify">Verify the result, and expect a second correction</h2>
+      <p>
+        After replay, every affected instance for <code>2026-10-16</code> ends in{' '}
+        <code>success</code>. That statement is scoped: other business dates were not recomputed,
+        and <code>success</code> says the job finished, not that the data is correct or that a
+        consumer has seen it.
+      </p>
+      <p>
+        If the “corrected” partition turns out to be wrong again, do not append another run on top.
+        Invalidate the recomputed <code>success</code> instances back to <code>waiting</code> and
+        replay from the corrected source again. The execution history stays; only the invalid result
+        is discarded. This is the difference between reprocessing existing work and layering a
+        second, contradictory result for the same business date.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="notify">
+      <h2 id="notify">Consumer notification closes the loop</h2>
+      <p>
+        Recomputing ADS does not update a consumer that already pulled the old result. Each consumer
+        needs an explicit action — reload, refresh, or a correction for a transmitted file — plus a
+        confirmation that the new result is what it now holds.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Consumers that loaded the pre-recovery result</caption>
+          <thead>
+            <tr>
+              <th scope="col">Consumer</th>
+              <th scope="col">State</th>
+              <th scope="col">Required action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reference.consumerRows.map((row) => (
+              <tr data-tone="wrong">
+                <td>{row.label}</td>
+                <td>{row.note}</td>
+                <td>{row.actionLabel}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Recovery is closed only when every affected consumer has loaded the new result and confirmed
+        it. A pipeline dashboard can look fully green while an external report still shows the old
+        total, which is why the closure is tracked per consumer, not per pipeline.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">Where recovery stops and other operations begin</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Retry, rerun, backfill and recovery are different scopes</caption>
+          <thead>
+            <tr>
+              <th scope="col">Operation</th>
+              <th scope="col">Scope</th>
+              <th scope="col">Question it answers</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Retry</strong>
+              </td>
+              <td>One attempt of the same run</td>
+              <td>Was the write safe to execute again?</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Rerun</strong>
+              </td>
+              <td>One existing business date</td>
+              <td>How do we replace a result for a date we already processed?</td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Backfill</strong>
+              </td>
+              <td>A range of business dates</td>
+              <td>How do we recompute history without double-writing a date?</td>
+            </tr>
+            <tr data-tone="right">
+              <td>
+                <strong>Recovery</strong>
+              </td>
+              <td>An impact closure after bad input</td>
+              <td>
+                What is affected, what must stop, what order is safe, and who still holds the old
+                result?
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Retry and rerun safety depend on the write policy — see{' '}
+        <a href={getEnglishRoute('idempotentEtl')}>idempotent ETL</a>. Recovery starts from the
+        closure: a perfectly idempotent rerun can still be wrong if it restarts a downstream job
+        before the corrected upstream result exists.
+      </p>
+      <p>
+        Recovery also does not cover: external side effects that already left the warehouse
+        (payments, emails, regulatory files), non-idempotent jobs that cannot be replayed safely,
+        and cross-business-date dependencies, where a later day's rolling window must be replayed
+        after the earlier correction. Those need their own checks before the replay plan is
+        released.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">Edge cases and trade-offs</h2>
+      <ul>
+        <li>
+          <strong>Stop versus wait.</strong> Stopping a nearly finished aggregate wastes its work,
+          but waiting for it to succeed means the bad result is published first. If publishing
+          triggers consumers, stop — the wasted minutes are cheaper than the re-notification.
+        </li>
+        <li>
+          <strong>Blast radius versus under-recovery.</strong> Stopping the whole pipeline is simple
+          and usually correct for a critical table, but it delays unrelated branches. Targeted
+          recovery needs a trustworthy closure; an incomplete dependency graph turns it into
+          under-recovery.
+        </li>
+        <li>
+          <strong>Partial replay is a trap.</strong> Restarting only the failed-looking task leaves
+          already-published downstream results inconsistent. The unit of recovery is the closure,
+          not the last red task.
+        </li>
+        <li>
+          <strong>Full rebuild is sometimes simpler.</strong> If the table is small, the dependency
+          graph is unreliable, or many business dates are involved, rebuilding a range may cost less
+          than maintaining a perfect closure. Decide with numbers, not habit.
+        </li>
+        <li>
+          <strong>Idempotency is still required.</strong> The replay plan runs instances again.
+          Without an addressable target partition or merge key, the replay itself becomes another
+          source of duplicates.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>How to make an ETL job idempotent</a> — the
+          write semantics that make a retry or rerun safe.
+        </li>
+        <li>
+          <a href={getEnglishRoute('lineageVsTaskDependency')}>Data lineage vs task dependency</a> —
+          why the two graphs disagree, and what that does to impact analysis.
+        </li>
+        <li>
+          <a href={getEnglishRoute('scdType2')}>SCD Type 2 example</a> — how dimension history is
+          versioned when a correction changes an attribute.
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a> — what one row represents, and
+          why the wrong grain inflates a recomputed measure.
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

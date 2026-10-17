@@ -1,0 +1,403 @@
+/* Page styles for /en/data-warehouse/pipeline-failure-recovery/. */
+
+.recovery-lab {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.recovery-lab__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.recovery-lab__toolbar > div {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.recovery-lab__overline {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recovery-lab__toolbar p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.recovery-lab__phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 16px;
+}
+
+.recovery-lab__phase {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.recovery-lab__phase span {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-2, rgba(148, 163, 184, 0.18));
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.recovery-lab__phase:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.recovery-lab__phase.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
+.recovery-lab__phase:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.recovery-lab__body {
+  min-width: 0;
+  padding: clamp(16px, 2.4vw, 22px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, var(--surface-1));
+}
+
+.recovery-lab__view h3 {
+  margin: 0 0 12px;
+  font-size: clamp(17px, 2.4vw, 20px);
+  line-height: 1.35;
+}
+
+.recovery-lab__view p {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
+.recovery-lab__view h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.recovery-lab__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.recovery-lab__groups article {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.recovery-lab__groups article[data-tone='risk'] {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, var(--border));
+  background: var(--danger-bg, rgba(220, 38, 38, 0.06));
+}
+
+.recovery-lab__instances {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recovery-lab__instances li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-1);
+}
+
+.recovery-lab__instances li[data-state='running'] {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, var(--border));
+}
+
+.recovery-lab__instances li[data-state='waiting'] {
+  border-style: dashed;
+}
+
+.recovery-lab__instances strong {
+  flex: 1 1 150px;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.recovery-lab__layer {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-2, rgba(148, 163, 184, 0.18));
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.recovery-lab__state {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+
+.recovery-lab__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.recovery-lab__note {
+  margin: 14px 0 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.recovery-lab__gate {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.recovery-lab__gate-option {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.recovery-lab__gate-option.is-selected {
+  border-color: var(--accent);
+  background: var(--success-bg);
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
+.recovery-lab__gate-option:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.recovery-lab__checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.recovery-lab__checks li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-1);
+}
+
+.recovery-lab__checks li[data-passed='false'] {
+  border-color: color-mix(in srgb, var(--danger, #dc2626) 45%, var(--border));
+  background: var(--danger-bg, rgba(220, 38, 38, 0.06));
+}
+
+.recovery-lab__checks strong {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.recovery-lab__checks li[data-passed='false'] strong {
+  color: var(--danger, #dc2626);
+}
+
+.recovery-lab__checks span {
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.recovery-lab__order {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.recovery-lab__order li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-1);
+}
+
+.recovery-lab__order li[data-done='true'] {
+  border-color: color-mix(in srgb, var(--success, #16a34a) 45%, var(--border));
+}
+
+.recovery-lab__order span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-2, rgba(148, 163, 184, 0.18));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.recovery-lab__order strong {
+  flex: 1 1 190px;
+  min-width: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.recovery-lab__order em {
+  flex: 1 1 150px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.recovery-lab__consumers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.recovery-lab__consumers li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface-1);
+}
+
+.recovery-lab__consumers li[data-consumed='true'] {
+  border-color: color-mix(in srgb, var(--warning, #d97706) 40%, var(--border));
+}
+
+.recovery-lab__consumers div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.recovery-lab__consumers strong {
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.recovery-lab__consumers div span {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.recovery-lab__action {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 620;
+}
+
+.recovery-lab__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.recovery-lab__progress {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+@media (max-width: 480px) {
+  .recovery-lab__phase {
+    padding: 7px 10px;
+    font-size: 12.5px;
+  }
+
+  .recovery-lab__consumers li {
+    align-items: flex-start;
+  }
+}
