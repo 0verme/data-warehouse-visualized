@@ -252,6 +252,15 @@ export const learningGraph: LearningGraph = {
       kind: 'case',
       optional: true,
     },
+    {
+      id: 'reprocessing-incident-response',
+      stageId: 'serving-production',
+      lessonIds: ['lesson-14-1'],
+      prerequisites: [],
+      recommendedPrior: ['production-lifecycle-debugging'],
+      kind: 'case',
+      optional: true,
+    },
   ],
 }
 

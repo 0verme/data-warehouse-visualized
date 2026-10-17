@@ -352,3 +352,20 @@ export interface DownstreamClosure {
   pendingConfirmationCount: number
   allConfirmed: boolean
 }
+
+/** 实验室能力模式；E1 事故时间线在 Phase 2-A 实现，其余模式后续课程逐步接入。 */
+export type DependencyReprocessingFocus =
+  | 'incident-timeline'
+  | 'impact-scope'
+  | 'stop-wait-redo'
+  | 'current-vs-historical'
+  | 'version-boundary'
+  | 'consumer-closure'
+  | 'rolling-backfill'
+  | 'platform-design'
+
+/** 课程 section payload：按 lesson focus 切换实验室视图。 */
+export interface DependencyReprocessingVisualization {
+  kind: 'dependency-reprocessing'
+  lessonFocus: DependencyReprocessingFocus
+}

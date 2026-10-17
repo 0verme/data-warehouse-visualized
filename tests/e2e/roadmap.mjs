@@ -8,25 +8,25 @@ import { createChecker, launchChromium, startPreview, trackPageErrors } from './
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SCRIPT_NAME = 'roadmap'
 const PROGRESS_STORAGE_KEY = 'data-warehouse-visualized:progress'
-/** Sum of `Lesson.estimatedMinutes` over all 56 available lessons; locks derived Topic time. */
-const TOTAL_ESTIMATED_MINUTES = 703
+/** Sum of `Lesson.estimatedMinutes` over all 57 available lessons; locks derived Topic time. */
+const TOTAL_ESTIMATED_MINUTES = 721
 /** Frozen Phase 4 Path fixtures; mirrors `src/features/learning-roadmap/paths.ts`. */
 const PATH_FIXTURES = {
   systematic: {
     highlighted: 30,
-    dimmed: 2,
+    dimmed: 3,
     entries: ['warehouse-mental-model'],
     audienceKeyword: '第一次系统学习数据仓库',
   },
   'sql-etl': {
     highlighted: 23,
-    dimmed: 9,
+    dimmed: 10,
     entries: ['business-process-and-grain', 'metric-definition-and-scope'],
     audienceKeyword: 'SQL / ETL 基础',
   },
   production: {
     highlighted: 22,
-    dimmed: 10,
+    dimmed: 11,
     entries: [
       'quality-batch-and-evidence',
       'failure-and-recovery',
@@ -418,13 +418,13 @@ async function inspectPage(page, baseUrl, tag, errors) {
     `stages=${documentContract.stageCount}`,
   )
   check(
-    `${tag} 静态 SSR 输出 32 Topic`,
-    documentContract.topicCount === 32,
+    `${tag} 静态 SSR 输出 33 Topic`,
+    documentContract.topicCount === 33,
     `topics=${documentContract.topicCount}`,
   )
   check(
-    `${tag} Topic 映射 56 个不重复的真实 Lesson link`,
-    documentContract.lessonCount === 56 && documentContract.uniqueLessonCount === 56,
+    `${tag} Topic 映射 57 个不重复的真实 Lesson link`,
+    documentContract.lessonCount === 57 && documentContract.uniqueLessonCount === 57,
     `links=${documentContract.lessonCount} unique=${documentContract.uniqueLessonCount}`,
   )
   check(
@@ -523,13 +523,13 @@ async function inspectPage(page, baseUrl, tag, errors) {
     `state=${documentContract.progressState}`,
   )
   check(
-    `${tag} 32 Topic 与 8 Stage 均有 Progress 层`,
-    documentContract.topicProgressCount === 32 && documentContract.stageProgressCount === 8,
+    `${tag} 33 Topic 与 8 Stage 均有 Progress 层`,
+    documentContract.topicProgressCount === 33 && documentContract.stageProgressCount === 8,
     `topics=${documentContract.topicProgressCount} stages=${documentContract.stageProgressCount}`,
   )
   check(
-    `${tag} 无进度时 32 Topic = 未开始`,
-    documentContract.notStartedCount === 32,
+    `${tag} 无进度时 33 Topic = 未开始`,
+    documentContract.notStartedCount === 33,
     `notStarted=${documentContract.notStartedCount}`,
   )
   check(
@@ -567,24 +567,24 @@ async function inspectPage(page, baseUrl, tag, errors) {
   check(
     `${tag} 默认状态文本说明全部知识`,
     documentContract.pathStatus.includes('当前显示全部知识') &&
-      documentContract.pathStatus.includes('32 个主题') &&
+      documentContract.pathStatus.includes('33 个主题') &&
       documentContract.pathStatus.includes('8 个 Stage'),
     documentContract.pathStatus,
   )
   check(
-    `${tag} 32 Topic 均含 why learn / outcome / 时间`,
-    documentContract.topicDetailCount === 32 &&
-      documentContract.whyLearnTexts.length === 32 &&
-      documentContract.outcomeTexts.length === 32 &&
-      documentContract.timeTexts.length === 32,
+    `${tag} 33 Topic 均含 why learn / outcome / 时间`,
+    documentContract.topicDetailCount === 33 &&
+      documentContract.whyLearnTexts.length === 33 &&
+      documentContract.outcomeTexts.length === 33 &&
+      documentContract.timeTexts.length === 33,
     `detail=${documentContract.topicDetailCount} why=${documentContract.whyLearnTexts.length} outcome=${documentContract.outcomeTexts.length} time=${documentContract.timeTexts.length}`,
   )
   check(
     `${tag} why learn / outcome 文案非空且跨 Topic 唯一`,
     documentContract.whyLearnTexts.every((text) => (text?.length ?? 0) > 8) &&
-      new Set(documentContract.whyLearnTexts).size === 32 &&
+      new Set(documentContract.whyLearnTexts).size === 33 &&
       documentContract.outcomeTexts.every((text) => (text?.length ?? 0) > 8) &&
-      new Set(documentContract.outcomeTexts).size === 32,
+      new Set(documentContract.outcomeTexts).size === 33,
   )
   check(
     `${tag} 预计时间格式可读`,
@@ -592,7 +592,7 @@ async function inspectPage(page, baseUrl, tag, errors) {
     documentContract.timeTexts.find((text) => !/^预计 \d+ 分钟 · \d+ 节$/.test(text ?? '')) ?? '',
   )
   check(
-    `${tag} 预计时间由 56 节 Lesson metadata 派生（合计 ${TOTAL_ESTIMATED_MINUTES} 分钟）`,
+    `${tag} 预计时间由 57 节 Lesson metadata 派生（合计 ${TOTAL_ESTIMATED_MINUTES} 分钟）`,
     documentContract.estimatedMinutes.every(Number.isFinite) &&
       documentContract.estimatedMinutes.reduce((sum, minutes) => sum + minutes, 0) ===
         TOTAL_ESTIMATED_MINUTES,
@@ -712,7 +712,7 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
     await context.close()
   }
 
-  // All 56 available Lessons completed.
+  // All 57 available Lessons completed.
   {
     const { context, page, errors } = await openRoadmapContext(browser, baseUrl, viewport)
     const allLessonIds = await page.evaluate(() => [
@@ -722,7 +722,7 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
         ),
       ),
     ])
-    check(`${tag} all: 收集到 56 个唯一 Lesson identity`, allLessonIds.length === 56)
+    check(`${tag} all: 收集到 57 个唯一 Lesson identity`, allLessonIds.length === 57)
     await page.evaluate(
       ([key, ids]) =>
         localStorage.setItem(
@@ -740,8 +740,8 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
     const stageTotalSum = parsedStages.reduce((sum, stage) => sum + (stage?.total ?? 0), 0)
 
     check(
-      `${tag} all: 32 Topic 全部完成`,
-      completedTopics.length === 32,
+      `${tag} all: 33 Topic 全部完成`,
+      completedTopics.length === 33,
       `completed=${completedTopics.length}`,
     )
     check(
@@ -751,8 +751,8 @@ async function runProgressScenarios(browser, baseUrl, viewport) {
       all.stages.map((stage) => `${stage.id}:${stage.label}`).join(' | '),
     )
     check(
-      `${tag} all: Stage 分母无重复且合计 56`,
-      stageTotalSum === 56 && stageCompletedSum === 56,
+      `${tag} all: Stage 分母无重复且合计 57`,
+      stageTotalSum === 57 && stageCompletedSum === 57,
       `completed=${stageCompletedSum} total=${stageTotalSum}`,
     )
     check(
@@ -836,7 +836,7 @@ async function runPathScenarios(browser, baseUrl, viewport) {
   check(
     `${tag} 默认全部：无 Path 覆盖状态`,
     baseline.activePath === 'all' &&
-      baseline.topics.length === 32 &&
+      baseline.topics.length === 33 &&
       baseline.topics.every((topic) => topic.pathState === null && !topic.pathEntry),
     `active=${baseline.activePath}`,
   )
@@ -856,7 +856,7 @@ async function runPathScenarios(browser, baseUrl, viewport) {
       dom.activePath === pathId &&
         highlighted.length === fixture.highlighted &&
         dimmed.length === fixture.dimmed &&
-        highlighted.length + dimmed.length === 32,
+        highlighted.length + dimmed.length === 33,
       `active=${dom.activePath} highlighted=${highlighted.length} dimmed=${dimmed.length}`,
     )
     check(
@@ -1076,10 +1076,10 @@ async function runNoJsCheck(browser, baseUrl) {
     (await page.locator('.roadmap-stage[data-stage-id]').count()) === 8,
   )
   check(
-    'no-js: 32 Topic 静态可读',
-    (await page.locator('.roadmap-topic[data-topic-id]').count()) === 32,
+    'no-js: 33 Topic 静态可读',
+    (await page.locator('.roadmap-topic[data-topic-id]').count()) === 33,
   )
-  check('no-js: 56 Lesson link 静态可读', (await page.locator('[data-lesson-id]').count()) === 56)
+  check('no-js: 57 Lesson link 静态可读', (await page.locator('[data-lesson-id]').count()) === 57)
   check(
     'no-js: 没有 Progress 增强节点',
     (await page
@@ -1088,9 +1088,9 @@ async function runNoJsCheck(browser, baseUrl) {
   )
   check(
     'no-js: Topic 为什么学 / 学完应能 / 预计时间静态可读',
-    (await page.locator('.roadmap-topic__why').count()) === 32 &&
-      (await page.locator('.roadmap-topic__outcome').count()) === 32 &&
-      (await page.locator('.roadmap-topic__time').count()) === 32 &&
+    (await page.locator('.roadmap-topic__why').count()) === 33 &&
+      (await page.locator('.roadmap-topic__outcome').count()) === 33 &&
+      (await page.locator('.roadmap-topic__time').count()) === 33 &&
       (await page.getByText('为什么学').first().isVisible()) &&
       (await page.getByText('学完应能').first().isVisible()) &&
       (await page
@@ -1461,7 +1461,7 @@ async function main() {
       '首页软跳转后 Progress 增强就绪',
       (await homePage.evaluate(
         () =>
-          document.querySelectorAll('[data-topic-progress]').length === 32 &&
+          document.querySelectorAll('[data-topic-progress]').length === 33 &&
           document.querySelector('.roadmap-main')?.getAttribute('data-roadmap-progress') ===
             'ready',
       )) === true,

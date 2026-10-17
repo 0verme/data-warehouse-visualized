@@ -700,7 +700,9 @@ describe('生产案例 13-2 · 课程注册与导航', () => {
     expect(getAdjacentLessons(lessons, 'delivery-completion-signal').previous?.slug).toBe(
       'lifecycle-path-failure',
     )
-    expect(getAdjacentLessons(lessons, 'delivery-completion-signal').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'delivery-completion-signal').next?.slug).toBe(
+      'reprocessing-incident-timeline',
+    )
   })
 
   it('13-2 正文只注册一个 delivery-investigation 实验', () => {

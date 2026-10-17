@@ -60,7 +60,7 @@ describe('第 11 章性能与工程实践课程', () => {
     })
   })
 
-  it('11-1 到 11-6、12-1 和 13-1 / 13-2 的正向、反向导航连续', () => {
+  it('11-1 到 11-6、12-1、13-1 / 13-2 与 14-1 的正向、反向导航连续', () => {
     const expectedSlugs = [
       'performance-and-practice',
       'performance-scan-layout',
@@ -71,6 +71,7 @@ describe('第 11 章性能与工程实践课程', () => {
       'build-a-warehouse',
       'lifecycle-path-failure',
       'delivery-completion-signal',
+      'reprocessing-incident-timeline',
     ]
 
     expectedSlugs.forEach((slug, index) => {

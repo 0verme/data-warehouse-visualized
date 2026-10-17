@@ -71,6 +71,12 @@ const LazyDeliveryInvestigationLab = lazy(() =>
   })),
 )
 
+const LazyDependencyReprocessingLab = lazy(() =>
+  import('../visualizations/DependencyReprocessingLab').then(({ DependencyReprocessingLab }) => ({
+    default: DependencyReprocessingLab,
+  })),
+)
+
 const LazyStreamingGoldenLab = lazy(() =>
   import('../visualizations/StreamingGoldenLab').then(({ StreamingGoldenLab }) => ({
     default: StreamingGoldenLab,
@@ -168,6 +174,7 @@ type LazyVisualizationKind =
   | 'join-fanout'
   | 'lifecycle-path'
   | 'delivery-investigation'
+  | 'dependency-reprocessing'
   | 'streaming-golden'
   | 'data-quality'
   | 'governance'
@@ -401,6 +408,12 @@ function VisualizationBody({
       return (
         <VisualizationLoadBoundary key={lessonId} kind="delivery-investigation">
           <LazyDeliveryInvestigationLab />
+        </VisualizationLoadBoundary>
+      )
+    case 'dependency-reprocessing':
+      return (
+        <VisualizationLoadBoundary key={lessonId} kind="dependency-reprocessing">
+          <LazyDependencyReprocessingLab visualization={visualization} />
         </VisualizationLoadBoundary>
       )
     case 'streaming-golden':

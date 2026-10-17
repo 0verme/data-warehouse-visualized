@@ -1,0 +1,264 @@
+/* 依赖链重做专题 · E1 事故时间线与污染传播。
+   只使用既有 diagram / semantic token；见 docs/DIAGRAM_VISUAL_GRAMMAR.md。 */
+
+.dependency-reprocessing {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.dependency-reprocessing__toolbar-main {
+  min-width: 0;
+}
+
+.dependency-reprocessing__toolbar .visualization-toolbar__label {
+  display: inline-block;
+  margin-bottom: 3px;
+}
+
+.dependency-reprocessing__toolbar p strong {
+  color: var(--ink);
+}
+
+/* 保留多行说明高度，避免切换步骤时控件与进度条跳动。 */
+.dependency-reprocessing__toolbar p {
+  min-height: 5.1em;
+}
+
+.dependency-reprocessing__progress {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--progress-track);
+}
+
+.dependency-reprocessing__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--diagram-accent);
+  transition: width var(--motion-fast) ease;
+}
+
+.dependency-reprocessing__reveal-count {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- 时间线节点 ---------- */
+
+.dependency-reprocessing__chain {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.dependency-reprocessing__node {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.dependency-reprocessing__node:not(:first-child)::before {
+  content: '↓';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--diagram-connection);
+  font-size: 0.8rem;
+  line-height: 1;
+  background: var(--diagram-bg, transparent);
+}
+
+.dependency-reprocessing__node[data-revealed='false'] {
+  border-style: dashed;
+  background: var(--surface-2);
+}
+
+.dependency-reprocessing__node[data-revealed='true'][data-contaminated='true'] {
+  border-color: var(--danger-border);
+  box-shadow: inset 3px 0 0 var(--danger-border);
+}
+
+.dependency-reprocessing__node[data-focus='current'] {
+  border-color: var(--diagram-accent);
+  box-shadow: inset 3px 0 0 var(--diagram-accent);
+}
+
+.dependency-reprocessing__node-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.dependency-reprocessing__node-layer,
+.dependency-reprocessing__node-state,
+.dependency-reprocessing__node-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.dependency-reprocessing__node-layer {
+  background: var(--diagram-accent-soft);
+  color: var(--ink);
+}
+
+.dependency-reprocessing__node-state[data-tone='success'] {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+
+.dependency-reprocessing__node-state[data-tone='muted'] {
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+}
+
+.dependency-reprocessing__node-badge[data-tone='danger'] {
+  justify-self: start;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
+}
+
+.dependency-reprocessing__node-task {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dependency-reprocessing__node-note,
+.dependency-reprocessing__node-hint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.dependency-reprocessing__node-hint {
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* ---------- 证据与小结 ---------- */
+
+.dependency-reprocessing__panel,
+.dependency-reprocessing__conclusion {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  background: var(--diagram-surface);
+}
+
+.dependency-reprocessing__panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dependency-reprocessing__panel-header strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.dependency-reprocessing__evidence {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.dependency-reprocessing__conclusion {
+  border-color: var(--diagram-accent);
+  background: var(--diagram-accent-soft);
+}
+
+.dependency-reprocessing__conclusion p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.dependency-reprocessing__pending {
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed var(--diagram-border);
+  border-radius: var(--radius-section, 14px);
+  color: var(--ink-muted);
+}
+
+/* ---------- 容器查询：窄屏单列，宽屏分支节点并排 ---------- */
+
+@container visualization (min-width: 720px) {
+  .dependency-reprocessing__chain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dependency-reprocessing__node[data-layer='ods'],
+  .dependency-reprocessing__node[data-layer='ads'],
+  .dependency-reprocessing__node[data-layer='consumer'] {
+    grid-column: 1 / -1;
+  }
+
+  .dependency-reprocessing__node:not(:first-child)::before {
+    display: none;
+  }
+}
+
+@container visualization (max-width: 660px) {
+  /* 390px 下最长的步骤说明需要额外高度；预留空间避免切换步骤时按钮跳动。 */
+  .dependency-reprocessing__toolbar p {
+    min-height: 9em;
+  }
+}
+
+@container visualization (max-width: 480px) {
+  .dependency-reprocessing {
+    gap: 13px;
+  }
+
+  /* 320px 下最长的步骤说明需要约 12.5em。 */
+  .dependency-reprocessing__toolbar p {
+    min-height: 12.5em;
+  }
+
+  .dependency-reprocessing__node,
+  .dependency-reprocessing__panel,
+  .dependency-reprocessing__conclusion {
+    padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dependency-reprocessing__progress > span {
+    transition: none;
+  }
+}

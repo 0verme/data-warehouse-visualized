@@ -247,7 +247,8 @@ describe('搜索索引构建（#148 P1-B）', () => {
         `coldQuery=${coldFirstQueryUs.toFixed(0)}us warmQuery=${warmPerQueryUs.toFixed(0)}us`,
     )
 
-    expect(rawBytes).toBeLessThan(290_000)
+    // 索引包含全部课程正文；每新增一篇专题文章都会增长，这里按课程数评审上限，只防 O(n) 级误设，不追求严格预算。
+    expect(rawBytes).toBeLessThan(310_000)
     expect(gzipBytes).toBeLessThan(85_000)
     expect(brotliBytes).toBeLessThan(68_000)
     expect(buildMs).toBeLessThan(200)
