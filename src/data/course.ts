@@ -652,6 +652,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 20,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-6',
+    slug: 'reprocessing-downstream-reload',
+    chapter: '14',
+    order: 600,
+    difficulty: 'advanced',
+    estimatedMinutes: 20,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -1010,6 +1019,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '区分可重做与禁止重做的变更类型：表结构、业务语义、输入契约与重大重构；理解 SQL 能跑不等于兼容。',
       tags: ['依赖链重做', '版本边界', '兼容性', '重大重构', '专项修复'],
+    },
+    'lesson-14-6': {
+      title: '数仓重做成功，为什么下游还要重新装数？',
+      summary:
+        '识别装数、接口、文件、报表、监管消费方，按消费证据给出重装、刷新与更正动作，并完成通知与确认闭环。',
+      tags: ['依赖链重做', '下游恢复', '重新装数', '消费闭环', '确认跟踪'],
     },
   },
 }

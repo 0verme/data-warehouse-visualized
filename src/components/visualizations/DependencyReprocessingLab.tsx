@@ -18,6 +18,7 @@ import {
 import {
   createParallelPlan,
   evaluateCurrentBatch,
+  evaluateDownstreamClosure,
   orderTaskIdsByDependencies,
 } from '../../features/dependency-reprocessing/model'
 import {
@@ -29,6 +30,8 @@ import {
   type StopWaitRedoPhase,
 } from '../../features/dependency-reprocessing/session'
 import type {
+  ConsumerConfirmation,
+  ConsumerEvidence,
   DependencyReprocessingVisualization,
   VersionChangeType,
 } from '../../features/dependency-reprocessing/types'
@@ -1154,6 +1157,188 @@ function VersionBoundaryLab() {
   )
 }
 
+const CONSUMER_KIND_LABELS: Record<ConsumerEvidence['kind'], string> = {
+  load: '装数',
+  interface: '接口',
+  file: '文件',
+  report: '报表',
+  regulatory: '监管',
+}
+
+const INITIAL_CONSUMERS: readonly ConsumerEvidence[] = [
+  {
+    consumerId: 'interface.push',
+    label: '交易报表推送',
+    kind: 'interface',
+    consumedInstanceId: 'publish.ads-transaction-report.daily.v3@2026-10-10',
+    consumedNewResult: false,
+    confirmation: 'pending',
+  },
+  {
+    consumerId: 'file.export',
+    label: '交易文件投递',
+    kind: 'file',
+    consumedInstanceId: 'deliver.transaction-file.daily.v1@2026-10-10',
+    consumedNewResult: false,
+    confirmation: 'pending',
+  },
+  {
+    consumerId: 'report.bi',
+    label: '经营分析报表',
+    kind: 'report',
+    consumedInstanceId: 'publish.ads-transaction-report.daily.v3@2026-10-10',
+    consumedNewResult: false,
+    confirmation: 'pending',
+  },
+  {
+    consumerId: 'regulator.submit',
+    label: '监管报送',
+    kind: 'regulatory',
+    consumedInstanceId: 'publish.ads-transaction-report.daily.v3@2026-10-10',
+    consumedNewResult: false,
+    confirmation: 'pending',
+  },
+  {
+    consumerId: 'load.new',
+    label: '新建装载任务',
+    kind: 'load',
+    consumedInstanceId: null,
+    consumedNewResult: false,
+    confirmation: 'pending',
+  },
+  {
+    consumerId: 'interface.fresh',
+    label: '已消费新结果的接口',
+    kind: 'interface',
+    consumedInstanceId: 'publish.ads-transaction-report.daily.v3@2026-10-16',
+    consumedNewResult: true,
+    confirmation: 'confirmed',
+  },
+]
+
+function ConsumerClosureLab() {
+  const [consumers, setConsumers] = useState<readonly ConsumerEvidence[]>(INITIAL_CONSUMERS)
+  const closure = useMemo(() => evaluateDownstreamClosure(consumers), [consumers])
+
+  const actionRequiredRows = closure.rows.filter((row) => row.requiredAction !== 'none')
+  const pendingCount = closure.pendingConfirmationCount
+  const actionCounts = {
+    reload: closure.rows.filter((row) => row.requiredAction === 'reload').length,
+    refresh: closure.rows.filter((row) => row.requiredAction === 'refresh').length,
+    correct: closure.rows.filter((row) => row.requiredAction === 'correct').length,
+  }
+
+  const setConfirmation = (consumerId: string, confirmation: ConsumerConfirmation): void => {
+    setConsumers((previous) =>
+      previous.map((consumer) =>
+        consumer.consumerId === consumerId ? { ...consumer, confirmation } : consumer,
+      ),
+    )
+  }
+
+  const confirmAll = (): void => {
+    setConsumers((previous) =>
+      previous.map((consumer) => ({ ...consumer, confirmation: 'confirmed' })),
+    )
+  }
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="closure"
+      data-reprocessing-mode="consumer-closure"
+      aria-label="下游消费与重新装数闭环"
+    >
+      <p
+        className="dependency-reprocessing__scope-summary"
+        data-role="closure-status"
+        aria-live="polite"
+      >
+        数仓任务：<strong>全部 SUCCESS</strong>（重做已完成） · 受影响消费方{' '}
+        <strong>{actionRequiredRows.length}</strong> 个 · 待确认 <strong>{pendingCount}</strong> 个
+        · {closure.allConfirmed ? '消费端恢复闭环已完成' : '消费端尚未全部恢复'}
+      </p>
+
+      <div className="dependency-reprocessing__scope-actions" role="group" aria-label="闭环控制">
+        <button
+          className="button button--primary button--small"
+          type="button"
+          disabled={closure.allConfirmed}
+          onClick={confirmAll}
+        >
+          一键确认全部受影响消费方
+        </button>
+        <button
+          className="button button--quiet button--small"
+          type="button"
+          onClick={() => setConsumers(INITIAL_CONSUMERS)}
+        >
+          重置
+        </button>
+      </div>
+
+      <section
+        className="dependency-reprocessing__panel"
+        data-panel="downstream-closure"
+        data-all-confirmed={closure.allConfirmed}
+      >
+        <header className="dependency-reprocessing__panel-header">
+          <span>下游消费闭环</span>
+          <strong>{closure.allConfirmed ? '已闭环' : `待确认 ${pendingCount} 个`}</strong>
+        </header>
+        <p>
+          重装 {actionCounts.reload} · 刷新 {actionCounts.refresh} · 更正 {actionCounts.correct}
+          ；动作完成后需要确认跟踪，确认是闭环的一部分。
+        </p>
+        <ul className="dependency-reprocessing__consumers">
+          {closure.rows.map((row) => (
+            <li
+              key={row.consumerId}
+              data-consumer-id={row.consumerId}
+              data-kind={row.kind}
+              data-action={row.requiredAction}
+              data-confirmation={row.confirmation}
+            >
+              <div className="dependency-reprocessing__consumer-title">
+                <strong>{row.label}</strong>
+                <span className="dependency-reprocessing__consumer-kind" data-kind={row.kind}>
+                  {CONSUMER_KIND_LABELS[row.kind]}
+                </span>
+              </div>
+              <p>{row.note}</p>
+              <div className="dependency-reprocessing__consumer-actions">
+                <span data-role="action-label">{row.actionLabel}</span>
+                {row.requiredAction === 'none' ? (
+                  <span data-role="no-action">无需处理</span>
+                ) : (
+                  <button
+                    className="button button--quiet button--small"
+                    type="button"
+                    onClick={() =>
+                      setConfirmation(
+                        row.consumerId,
+                        row.confirmation === 'confirmed' ? 'pending' : 'confirmed',
+                      )
+                    }
+                  >
+                    {row.confirmation === 'confirmed' ? '撤销确认' : '标记已确认'}
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <p className="dependency-reprocessing__scope-summary">
+        数仓任务 SUCCESS
+        不等于消费端恢复：报表要刷新缓存、文件要重新投递、对外报送要更正并确认。14-7
+        会继续讨论连续多日历史补数的顺序约束。
+      </p>
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
@@ -1183,6 +1368,10 @@ export function DependencyReprocessingLab({
 
   if (visualization.lessonFocus === 'version-boundary') {
     return <VersionBoundaryLab />
+  }
+
+  if (visualization.lessonFocus === 'consumer-closure') {
+    return <ConsumerClosureLab />
   }
 
   return (

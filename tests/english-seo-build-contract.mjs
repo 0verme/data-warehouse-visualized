@@ -230,7 +230,7 @@ const lessonDirectories = readdirSync(join(dist, 'learn'), { withFileTypes: true
   )
   .map((entry) => entry.name)
   .sort()
-assert.equal(lessonDirectories.length, 61, 'All 61 static lesson routes must remain')
+assert.equal(lessonDirectories.length, 62, 'All 62 static lesson routes must remain')
 
 const sitemapIndexXml = readFileSync(sitemapIndexFile, 'utf8')
 const sitemapFiles = getUrls(sitemapIndexXml)
@@ -259,8 +259,8 @@ assert.equal(
     const path = removeBase(new URL(url).pathname)
     return path === '/learn/' || /^\/learn\/[^/]+\/$/.test(path)
   }).length,
-  62,
-  'The sitemap must preserve the Learn index and all 61 lesson URLs',
+  63,
+  'The sitemap must preserve the Learn index and all 62 lesson URLs',
 )
 assert.ok(sitemapUrls.every((url) => !new URL(url).pathname.includes('/zh/')))
 assert.ok(

@@ -63,6 +63,7 @@ import { dependencyReprocessingImpactContent } from './dependency-reprocessing-i
 import { dependencyReprocessingAutoStopContent } from './dependency-reprocessing-auto-stop'
 import { dependencyReprocessingHistoricalContent } from './dependency-reprocessing-historical'
 import { dependencyReprocessingVersionContent } from './dependency-reprocessing-version'
+import { dependencyReprocessingDownstreamContent } from './dependency-reprocessing-downstream'
 import { starSchemaAndGrainContent } from './star-schema-and-grain'
 import { warehouseLayersContent } from './warehouse-layers'
 import { warehouseTermsContent } from './warehouse-terms'
@@ -131,6 +132,7 @@ export const lessonContentBySlug: Record<string, LessonContent> = {
   'reprocessing-auto-stop-wait': dependencyReprocessingAutoStopContent,
   'reprocessing-historical-parallel': dependencyReprocessingHistoricalContent,
   'reprocessing-version-boundary': dependencyReprocessingVersionContent,
+  'reprocessing-downstream-reload': dependencyReprocessingDownstreamContent,
 }
 
 export function getLessonContent(lesson: Lesson): LessonContent {

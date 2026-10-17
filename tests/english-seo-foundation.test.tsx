@@ -62,6 +62,7 @@ performance-shuffle-skew
 performance-tradeoffs
 report-metric-journey
 reprocessing-auto-stop-wait
+reprocessing-downstream-reload
 reprocessing-historical-parallel
 reprocessing-impact-scope
 reprocessing-incident-timeline
@@ -108,14 +109,14 @@ describe('English SEO routing contract', () => {
     ])
   })
 
-  it('preserves 61 unique Learn slugs and their existing /learn/ URL shape', () => {
+  it('preserves 62 unique Learn slugs and their existing /learn/ URL shape', () => {
     const slugs = lessons.map(({ slug }) => slug)
 
-    expect(slugs).toHaveLength(61)
-    expect(new Set(slugs).size).toBe(61)
+    expect(slugs).toHaveLength(62)
+    expect(new Set(slugs).size).toBe(62)
     expect([...slugs].sort()).toEqual(establishedLearnSlugs)
     expect(slugs.every((slug) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug))).toBe(true)
-    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(61)
+    expect(slugs.map((slug) => `/learn/${slug}/`)).toHaveLength(62)
   })
 
   it('exposes the English namespace from the existing shared footer as a real link', () => {
