@@ -9,11 +9,17 @@ import {
   type IncidentTimelineState,
 } from '../../features/dependency-reprocessing/steps'
 import {
+  REPROCESSING_HISTORICAL_BUSINESS_DATE,
   REPROCESSING_INCIDENT_BUSINESS_DATE,
+  REPROCESSING_PREVIOUS_BUSINESS_DATE,
   REPROCESSING_TASK_IDS,
   createReprocessingFixture,
 } from '../../features/dependency-reprocessing/fixture'
-import { orderTaskIdsByDependencies } from '../../features/dependency-reprocessing/model'
+import {
+  createParallelPlan,
+  evaluateCurrentBatch,
+  orderTaskIdsByDependencies,
+} from '../../features/dependency-reprocessing/model'
 import {
   STOP_WAIT_FAIL_TASK_ID,
   applyStopWaitRedoAction,
@@ -715,6 +721,277 @@ function StopWaitRedoLab() {
   )
 }
 
+const HISTORICAL_TARGET_DATES = [
+  REPROCESSING_HISTORICAL_BUSINESS_DATE,
+  REPROCESSING_PREVIOUS_BUSINESS_DATE,
+] as const
+
+const PARALLEL_PROGRAM_VERSION = 'v3'
+
+function HistoricalModeLab() {
+  const [currentCompleted, setCurrentCompleted] = useState(false)
+  const model = useMemo(
+    () => createReprocessingFixture({ variant: currentCompleted ? 'completed' : 'mid-flight' }),
+    [currentCompleted],
+  )
+  const [mode, setMode] = useState<'current' | 'historical'>('historical')
+  const [targetDate, setTargetDate] = useState<string>(REPROCESSING_HISTORICAL_BUSINESS_DATE)
+  const [planRequested, setPlanRequested] = useState(false)
+
+  const labels = useMemo(
+    () => new Map(model.tasks.map((task) => [task.taskId, task.label])),
+    [model],
+  )
+  const gate = useMemo(
+    () => evaluateCurrentBatch(model, REPROCESSING_INCIDENT_BUSINESS_DATE),
+    [model],
+  )
+  const decision = useMemo(() => {
+    if (!planRequested) return null
+    return createParallelPlan(model, {
+      currentBusinessDate: REPROCESSING_INCIDENT_BUSINESS_DATE,
+      targetBusinessDate: targetDate,
+      sourceTaskId: REPROCESSING_TASK_IDS.ingestTransaction,
+      programVersion: PARALLEL_PROGRAM_VERSION,
+      changeType: 'sql-logic',
+    })
+  }, [model, planRequested, targetDate])
+
+  const currentInstances = model.instances.filter(
+    (instance) => instance.businessDate === REPROCESSING_INCIDENT_BUSINESS_DATE,
+  )
+  const currentFinished = currentInstances.length - gate.pendingInstanceIds.length
+
+  const handleModeChange = (nextMode: 'current' | 'historical'): void => {
+    setMode(nextMode)
+    setPlanRequested(false)
+  }
+
+  const handleTargetDateChange = (nextDate: string): void => {
+    setTargetDate(nextDate)
+    setPlanRequested(false)
+  }
+
+  const handleSimulateCompleted = (): void => {
+    setCurrentCompleted((previous) => !previous)
+    setPlanRequested(false)
+  }
+
+  return (
+    <section
+      className="dependency-reprocessing dependency-reprocessing__scope"
+      data-diagram-type="plan-isolation"
+      data-reprocessing-mode="historical-parallel"
+      aria-label="当日与历史重做模式"
+    >
+      <div className="dependency-reprocessing__scope-actions" role="group" aria-label="模式选择">
+        <button
+          className={
+            mode === 'current'
+              ? 'button button--primary button--small'
+              : 'button button--quiet button--small'
+          }
+          type="button"
+          aria-pressed={mode === 'current'}
+          onClick={() => handleModeChange('current')}
+        >
+          当日重做
+        </button>
+        <button
+          className={
+            mode === 'historical'
+              ? 'button button--primary button--small'
+              : 'button button--quiet button--small'
+          }
+          type="button"
+          aria-pressed={mode === 'historical'}
+          onClick={() => handleModeChange('historical')}
+        >
+          历史重做
+        </button>
+      </div>
+
+      <p
+        className="dependency-reprocessing__scope-summary"
+        data-role="historical-status"
+        aria-live="polite"
+      >
+        {mode === 'current'
+          ? `当日重做：当前批次 ${REPROCESSING_INCIDENT_BUSINESS_DATE} ${
+              gate.completed ? '已全部结束' : '尚未全部结束'
+            }。`
+          : decision
+            ? decision.status === 'allowed'
+              ? `历史重做：已生成平行 Job / Plan，绑定 ${decision.parallelPlan?.targetBusinessDate}，使用最新程序 ${decision.parallelPlan?.programVersion}。`
+              : decision.status === 'blocked'
+                ? '历史重做：平行计划被日切门禁阻断。'
+                : '历史重做：程序不兼容，禁止直接历史重做。'
+            : `历史重做：当前批次 ${
+                gate.completed ? '已全部结束，可以生成平行 Job / Plan' : '尚未全部结束，门禁阻断'
+              }。`}
+      </p>
+
+      {mode === 'current' ? (
+        <section className="dependency-reprocessing__panel" data-panel="current-mode">
+          <header className="dependency-reprocessing__panel-header">
+            <span>当日重做</span>
+            <strong>沿现有生产 Job / Plan</strong>
+          </header>
+          <p>
+            「当日」指当前生产日切批次（可跨自然日）。当日重做不生成平行 Job /
+            Plan，而是在现有生产链路上停止、等待、验证与重新调用；具体恢复流程见 14-3 的实验。
+          </p>
+          <ul className="dependency-reprocessing__evidence">
+            <li>当前批次：{REPROCESSING_INCIDENT_BUSINESS_DATE}</li>
+            <li>
+              批次状态：
+              {gate.completed
+                ? '已全部结束'
+                : `未结束（${gate.pendingInstanceIds.length} 个实例未到终态）`}
+            </li>
+            <li>当日重做沿现有链路恢复，不重置为新的计划。</li>
+          </ul>
+        </section>
+      ) : (
+        <>
+          <section
+            className="dependency-reprocessing__panel"
+            data-panel="current-batch-gate"
+            data-gate-status={gate.completed ? 'completed' : 'blocked'}
+          >
+            <header className="dependency-reprocessing__panel-header">
+              <span>当日日切门禁</span>
+              <strong>{gate.completed ? '已结束' : '未结束'}</strong>
+            </header>
+            {gate.completed ? (
+              <p>
+                当前生产日切批次 {REPROCESSING_INCIDENT_BUSINESS_DATE}{' '}
+                已全部结束，可以生成历史日期的平行 Job / Plan。
+              </p>
+            ) : (
+              <p>
+                当前生产日切批次 {REPROCESSING_INCIDENT_BUSINESS_DATE} 尚未全部结束：
+                {gate.pendingInstanceIds
+                  .map((instanceId) => labels.get(taskIdFromInstanceId(instanceId)) ?? instanceId)
+                  .join('、')}
+                。历史重做必须先等当日跑批结束。
+              </p>
+            )}
+            <button
+              className="button button--quiet button--small"
+              type="button"
+              onClick={handleSimulateCompleted}
+            >
+              {currentCompleted ? '模拟当日跑批未结束' : '模拟当日跑批完成'}
+            </button>
+          </section>
+
+          <div
+            className="dependency-reprocessing__scope-actions"
+            role="group"
+            aria-label="平行计划控制"
+          >
+            <label className="dependency-reprocessing__arm">
+              <span>历史目标日期</span>
+              <select
+                value={targetDate}
+                data-role="target-date"
+                onChange={(event) => handleTargetDateChange(event.target.value)}
+              >
+                {HISTORICAL_TARGET_DATES.map((date) => (
+                  <option key={date} value={date}>
+                    {date}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="dependency-reprocessing__node-state" data-tone="muted">
+              最新程序 {PARALLEL_PROGRAM_VERSION}
+            </span>
+            <button
+              className="button button--primary button--small"
+              type="button"
+              onClick={() => setPlanRequested(true)}
+            >
+              生成平行 Job / Plan
+            </button>
+            <button
+              className="button button--quiet button--small"
+              type="button"
+              disabled={!planRequested}
+              onClick={() => setPlanRequested(false)}
+            >
+              清空结果
+            </button>
+          </div>
+
+          {decision && (
+            <section
+              className="dependency-reprocessing__panel"
+              data-panel="parallel-plan"
+              data-plan-status={decision.status}
+            >
+              <header className="dependency-reprocessing__panel-header">
+                <span>平行 Job / Plan</span>
+                <strong>
+                  {decision.status === 'allowed'
+                    ? '已生成'
+                    : decision.status === 'blocked'
+                      ? '被阻断'
+                      : '被禁止'}
+                </strong>
+              </header>
+              {decision.status === 'blocked' && (
+                <ul className="dependency-reprocessing__evidence">
+                  {decision.blockers.map((blocker) => (
+                    <li key={blocker}>{blocker}</li>
+                  ))}
+                </ul>
+              )}
+              {decision.status === 'forbidden' && <p>{decision.requiredAction}</p>}
+              {decision.parallelPlan && (
+                <>
+                  <p>
+                    绑定历史日期 <strong>{decision.parallelPlan.targetBusinessDate}</strong>
+                    ；使用当前有效血缘 / 依赖与
+                    <strong>最新程序 {decision.parallelPlan.programVersion}</strong>
+                    ；模拟器内部标识 {decision.parallelPlan.simulatorPlanId}
+                    （仅用于演示隔离，不是平台批次机制）。
+                  </p>
+                  <ol className="dependency-reprocessing__dedup" data-plan-items>
+                    {decision.parallelPlan.items.map((item, index) => (
+                      <li
+                        key={item.instanceId}
+                        data-instance={item.instanceId}
+                        data-target-date={item.targetBusinessDate}
+                      >
+                        <span>
+                          {index + 1}. {labels.get(item.taskId) ?? item.taskId}
+                        </span>
+                        <code>{item.targetBusinessDate}</code>
+                        <small>{item.programVersion}</small>
+                      </li>
+                    ))}
+                  </ol>
+                  <p data-plan-note="isolation">
+                    平行计划只绑定历史日期；当前正常 Job / Plan（
+                    {REPROCESSING_INCIDENT_BUSINESS_DATE}）的状态未被修改：完成 {currentFinished} /
+                    共 {currentInstances.length} 个实例。
+                  </p>
+                </>
+              )}
+            </section>
+          )}
+
+          <p className="dependency-reprocessing__scope-summary">
+            程序 / 表结构 / 业务语义不兼容（尤其新老系统重大重构）会直接禁止历史重做，详见 14-5。
+          </p>
+        </>
+      )}
+    </section>
+  )
+}
+
 /**
  * 依赖链重做实验室入口。
  *
@@ -736,6 +1013,10 @@ export function DependencyReprocessingLab({
 
   if (visualization.lessonFocus === 'stop-wait-redo') {
     return <StopWaitRedoLab />
+  }
+
+  if (visualization.lessonFocus === 'current-vs-historical') {
+    return <HistoricalModeLab />
   }
 
   return (

@@ -634,6 +634,15 @@ export const lessonDefinitions = [
     estimatedMinutes: 22,
     demo: 'dependency-reprocessing',
   },
+  {
+    id: 'lesson-14-4',
+    slug: 'reprocessing-historical-parallel',
+    chapter: '14',
+    order: 400,
+    difficulty: 'advanced',
+    estimatedMinutes: 20,
+    demo: 'dependency-reprocessing',
+  },
 ] as const satisfies readonly LessonDefinition[]
 
 export type LessonId = (typeof lessonDefinitions)[number]['id']
@@ -980,6 +989,12 @@ export const lessonTranslations: Partial<Record<Locale, Record<LessonId, LessonT
       summary:
         '走一遍恢复状态机：停止与副作用处置、ODS 验证门禁、按依赖顺序自动重做、普通失败处理与再次修复重新入队。',
       tags: ['依赖链重做', '止损', '等待', '自动重做', 'ODS 验证'],
+    },
+    'lesson-14-4': {
+      title: '历史数据如何重做而不影响当天日切？',
+      summary:
+        '区分当日与历史两种恢复模式，理解日切完成门禁与平行 Job / Plan 的绑定、隔离和最新程序要求。',
+      tags: ['依赖链重做', '历史重做', '平行 Job / Plan', '日切门禁', 'business_date'],
     },
   },
 }

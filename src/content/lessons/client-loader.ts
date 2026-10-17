@@ -111,6 +111,10 @@ const lessonContentLoaders: Record<string, () => Promise<LessonContent>> = {
     import('./dependency-reprocessing-auto-stop').then(
       (m) => m.dependencyReprocessingAutoStopContent,
     ),
+  'reprocessing-historical-parallel': () =>
+    import('./dependency-reprocessing-historical').then(
+      (m) => m.dependencyReprocessingHistoricalContent,
+    ),
 }
 
 const lessonContentCache = new Map<string, LessonContent>()

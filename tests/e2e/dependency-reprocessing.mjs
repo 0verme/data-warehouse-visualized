@@ -24,6 +24,7 @@ const SCRIPT_NAME = 'dependency-reprocessing'
 const E1_PATH = '/learn/reprocessing-incident-timeline/'
 const E2_PATH = '/learn/reprocessing-impact-scope/'
 const E3_PATH = '/learn/reprocessing-auto-stop-wait/'
+const E4_PATH = '/learn/reprocessing-historical-parallel/'
 const SOURCE_TASK_ID = 'ingest.ods-transaction.daily.v2'
 
 const VIEWPORTS = [
@@ -231,6 +232,69 @@ try {
         check(`${tag} E3 完成后 8 个 SUCCESS`, (await stateCount('success')) === 8)
 
         await checkSharedLayout(`${tag} E3`, page, errors)
+        await page.close()
+      }
+
+      // ------------------------------------------------------------ E4
+      {
+        const { page, errors } = await openLesson(browser, viewport, theme, E4_PATH)
+        await page.waitForSelector('[data-reprocessing-mode="historical-parallel"]', {
+          timeout: 20000,
+        })
+
+        check(
+          `${tag} E4 默认历史模式 · 门禁阻断`,
+          (await page.getAttribute('[data-panel="current-batch-gate"]', 'data-gate-status')) ===
+            'blocked',
+        )
+
+        await page.getByRole('button', { name: '生成平行 Job / Plan' }).click()
+        check(
+          `${tag} E4 当日未完时计划被阻断`,
+          (await page.getAttribute('[data-panel="parallel-plan"]', 'data-plan-status')) ===
+            'blocked',
+        )
+
+        await page.getByRole('button', { name: '模拟当日跑批完成' }).click()
+        check(
+          `${tag} E4 模拟完成后门禁通过`,
+          (await page.getAttribute('[data-panel="current-batch-gate"]', 'data-gate-status')) ===
+            'completed',
+        )
+
+        await page.getByRole('button', { name: '生成平行 Job / Plan' }).click()
+        check(
+          `${tag} E4 平行计划生成`,
+          (await page.getAttribute('[data-panel="parallel-plan"]', 'data-plan-status')) ===
+            'allowed',
+        )
+        check(
+          `${tag} E4 平行计划 8 个实例`,
+          (await page.locator('[data-plan-items] li').count()) === 8,
+        )
+        check(
+          `${tag} E4 绑定历史日期 2026-10-10`,
+          (await page.locator('[data-plan-items] li[data-target-date="2026-10-10"]').count()) === 8,
+        )
+        check(
+          `${tag} E4 隔离说明可见`,
+          await page.locator('[data-plan-note="isolation"]').isVisible(),
+        )
+
+        await page.selectOption('[data-role="target-date"]', '2026-10-15')
+        await page.getByRole('button', { name: '生成平行 Job / Plan' }).click()
+        check(
+          `${tag} E4 切换日期后绑定 2026-10-15`,
+          (await page.locator('[data-plan-items] li[data-target-date="2026-10-15"]').count()) === 8,
+        )
+
+        await page.getByRole('button', { name: '当日重做' }).click()
+        check(
+          `${tag} E4 当日模式面板可见`,
+          await page.locator('[data-panel="current-mode"]').isVisible(),
+        )
+
+        await checkSharedLayout(`${tag} E4`, page, errors)
         await page.close()
       }
     }
