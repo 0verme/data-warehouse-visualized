@@ -556,6 +556,20 @@
   border-color: var(--success-border);
 }
 
+/* ---------- E7 连续多日补数 ---------- */
+
+.dependency-reprocessing__panel[data-check='unsafe'] {
+  border-color: var(--warning-border);
+}
+
+.dependency-reprocessing__panel[data-check='ok'] {
+  border-color: var(--success-border);
+}
+
+.dependency-reprocessing__dedup li[data-completed='true'] span {
+  color: var(--success-text);
+}
+
 /* ---------- 容器查询：窄屏单列，宽屏分支节点并排 ---------- */
 
 @container visualization (min-width: 720px) {

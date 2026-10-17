@@ -122,7 +122,7 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
   it('未接入的 focus 明确占位，不伪造交互', () => {
     const html = renderToStaticMarkup(
       <DependencyReprocessingLab
-        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'rolling-backfill' }}
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'platform-design' }}
       />,
     )
 
@@ -529,13 +529,75 @@ describe('依赖链重做 · E1 事故时间线与污染传播（Phase 2-A）', 
     expect(getAdjacentLessons(lessons, 'reprocessing-downstream-reload').previous?.slug).toBe(
       'reprocessing-version-boundary',
     )
-    expect(getAdjacentLessons(lessons, 'reprocessing-downstream-reload').next).toBeUndefined()
+    expect(getAdjacentLessons(lessons, 'reprocessing-downstream-reload').next?.slug).toBe(
+      'reprocessing-rolling-backfill',
+    )
 
     const text = JSON.stringify(content)
     expect(text).toContain('消费闭环')
     expect(text).toContain('重新装数')
     expect(text).toContain('确认')
     expect(text).toContain('SUCCESS')
+    expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
+  })
+
+  it('E7 静态渲染：默认 7 天窗口展示顺序与跨天依赖', () => {
+    const html = renderToStaticMarkup(
+      <DependencyReprocessingLab
+        visualization={{ kind: 'dependency-reprocessing', lessonFocus: 'rolling-backfill' }}
+      />,
+    )
+
+    expect(html).toContain('data-reprocessing-mode="rolling-backfill"')
+    expect(html).toContain('data-role="rolling-status"')
+    expect(html).toContain('aria-live="polite"')
+    expect(html.match(/data-window-size=/g)).toHaveLength(3)
+    expect(html).toContain('data-window-size="7" aria-pressed="true"')
+    expect(html.match(/data-role="rolling-order"[\s\S]*?<\/ol>/)?.[0]).toBeDefined()
+    expect(html.match(/data-date="2026-10-1[0-6]"/g)).toHaveLength(7)
+    expect(html.match(/data-from="2026-10-1[0-5]"/g)).toHaveLength(6)
+    // 三个已建模业务日期各有 8 个链上实例，其余日期为顺序占位。
+    expect(html.match(/实例 8 个/g)).toHaveLength(3)
+    expect(html.match(/实例 0 个/g)).toHaveLength(4)
+    expect(html).not.toContain('data-panel="parallel-check"')
+    expect(html).toContain('跨天依赖')
+  })
+
+  it('第 14 章 14-7 课程接线完整：metadata、内容、样式与相邻导航', () => {
+    const lesson = getLessonBySlug('reprocessing-rolling-backfill')
+
+    expect(lesson).toMatchObject({
+      id: 'lesson-14-7',
+      slug: 'reprocessing-rolling-backfill',
+      chapter: '14',
+      order: 700,
+      difficulty: 'advanced',
+      estimatedMinutes: 20,
+      demo: 'dependency-reprocessing',
+      title: '连续多日历史补数，为什么不能简单并行？',
+    })
+
+    const content = getLessonContent(lesson!)
+    const visualizationSection = content.sections.find(
+      (section) => section.kind === 'visualization',
+    )
+    expect(visualizationSection?.visualization).toEqual({
+      kind: 'dependency-reprocessing',
+      lessonFocus: 'rolling-backfill',
+    })
+    expect(getLessonStyleSheets(content)).toEqual(['dependency-reprocessing.css'])
+
+    expect(getAdjacentLessons(lessons, 'reprocessing-rolling-backfill').previous?.slug).toBe(
+      'reprocessing-downstream-reload',
+    )
+    expect(getAdjacentLessons(lessons, 'reprocessing-rolling-backfill').next).toBeUndefined()
+
+    const text = JSON.stringify(content)
+    expect(text).toContain('跨天依赖')
+    expect(text).toContain('余额快照')
+    expect(text).toContain('滚动窗口')
+    expect(text).toContain('T/T-1')
+    expect(text).toContain('14-8')
     expect(text).not.toMatch(/Replay|第 \d+ 轮/i)
   })
 })
