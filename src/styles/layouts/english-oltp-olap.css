@@ -1,0 +1,217 @@
+/* Page-owned layout for /en/data-warehouse/oltp-vs-olap/. */
+
+.english-oltp-olap-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.english-oltp-olap-lab__header {
+  max-width: 76ch;
+}
+
+.english-oltp-olap-lab__eyebrow {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.english-oltp-olap-lab__header h3 {
+  margin: 0;
+  font-size: clamp(18px, 2.4vw, 22px);
+  line-height: 1.35;
+}
+
+.english-oltp-olap-lab__header p:not(.english-oltp-olap-lab__eyebrow) {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.english-oltp-olap-lab__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.english-oltp-olap-lab__controls button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.english-oltp-olap-lab__controls button:hover,
+.english-oltp-olap-lab__controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+.english-oltp-olap-lab__controls button[aria-pressed='true'] {
+  background: var(--success-bg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.english-oltp-olap-lab__controls button:focus-visible,
+.english-oltp-olap-lab summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.english-oltp-olap-lab__request {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.english-oltp-olap-lab__request > div,
+.english-oltp-olap-lab__layout {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.english-oltp-olap-lab__request span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.english-oltp-olap-lab__request p,
+.english-oltp-olap-lab__request strong {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.english-oltp-olap-lab__comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.english-oltp-olap-lab__layout {
+  background: var(--surface-1);
+}
+
+.english-oltp-olap-lab__layout h4 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.english-oltp-olap-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.english-oltp-olap-lab__metrics > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.english-oltp-olap-lab__metrics dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.english-oltp-olap-lab__metrics dd {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.english-oltp-olap-lab__layout details {
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.english-oltp-olap-lab__layout summary {
+  width: fit-content;
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+
+.english-oltp-olap-lab__layout details ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+  margin: 8px 0 0;
+}
+
+.english-oltp-olap-lab__layout details li {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.english-oltp-olap-lab__layout details code {
+  overflow-wrap: anywhere;
+}
+
+.english-oltp-olap-lab__note {
+  padding: 12px 14px;
+  border-left: 3px solid var(--info-text);
+  margin: 14px 0 0;
+  background: var(--info-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+@media (max-width: 620px) {
+  .english-oltp-olap-lab__request,
+  .english-oltp-olap-lab__comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .english-oltp-olap-lab {
+    padding: 12px;
+  }
+
+  .english-oltp-olap-lab__request > div,
+  .english-oltp-olap-lab__layout {
+    padding: 11px;
+  }
+}

@@ -1,0 +1,255 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { OltpVsOlapAccessLab } from '../../../../components/english/OltpVsOlapAccessLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import oltpOlapStylesUrl from '../../../../styles/layouts/english-oltp-olap.css?url'
+import { getOltpOlapAccessModel } from '../../../../features/english-oltp-olap/model'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'OLTP vs OLAP: Row and Column Storage Explained | sql.sb'
+const description =
+  'Compare modeled block reads for a point update and a narrow analytical scan. Learn what row- and column-oriented layouts change—and what this teaching model cannot promise.'
+const accessModel = getOltpOlapAccessModel()
+const currency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'CNY',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[oltpOlapStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'OLTP vs OLAP' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · workload and storage</p>
+    <h1 class="english-article__title">OLTP vs. OLAP: how row and column layouts change access</h1>
+    <p class="english-article__lede">
+      The useful distinction is not that one database can transact and another cannot. It is how a
+      request tends to access records: a small number of complete rows, or a narrow projection
+      across many rows.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Online transaction processing (OLTP) and online analytical processing (OLAP) describe common
+      workload patterns, not two mutually exclusive database types. Row-oriented layouts often keep
+      a complete record together; column-oriented layouts often let a scan read only selected
+      fields. In the fixed fixture below, retrieving one full row reads one row page or four column
+      blocks, while summing one field across eight rows reads four row pages or one column block.
+      These are modeled block counts, not bytes, latency, benchmark results, or guarantees about a
+      product.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="workload-shapes">
+      <h2 id="workload-shapes">Start with the shape of the request</h2>
+      <p>
+        An operational request might look up one account's current snapshot and inspect or correct a
+        few fields. An analytical request might total a balance field for many accounts while
+        ignoring unrelated fields. OLTP is short for online transaction processing; OLAP is online
+        analytical processing. These labels describe typical priorities and access patterns—not a
+        rule that a warehouse cannot handle a transaction, or that every operational database uses
+        rows and every analytical system uses columns.
+      </p>
+      <p>
+        Row and column orientation describe how values are organized for access. They do not, by
+        themselves, define isolation, durability, update guarantees, or an application's fit for a
+        workload. Hybrid layouts and engine-specific execution strategies also exist.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="fixed-fixture">
+      <h2 id="fixed-fixture">A fixed snapshot makes the arithmetic checkable</h2>
+      <p>
+        This teaching fixture contains one account-balance snapshot for{' '}
+        <code>{accessModel.snapshotDate}</code>. Each row is one account's balance at that date; the
+        date is held constant so the example's total compares like with like. For more on stating
+        what a row means, see <a href={getEnglishRoute('grain')}>data warehouse grain</a>.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table" data-access-fixture>
+          <caption>Eight account rows · one snapshot date · balances in CNY</caption>
+          <thead>
+            <tr>
+              {accessModel.columns.map((column) => (
+                <th scope="col">{column.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {accessModel.rows.map((row) => (
+              <tr data-account-id={row.accountId}>
+                <th scope="row">{row.accountId}</th>
+                <td>{row.branch}</td>
+                <td>{row.product}</td>
+                <td>{currency.format(row.balanceCny)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colspan="3">
+                Total balance · {accessModel.snapshotDate}
+              </th>
+              <td>
+                {currency.format(
+                  accessModel.rows.reduce((total, row) => total + row.balanceCny, 0),
+                )}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p>
+        All four fields count as one equal-width value slot in this deliberately small model. A
+        block holds eight slots: a row page packs two complete four-field records; a column block
+        packs eight values from one field. Thus both layouts store the same 32 fixture values in
+        four blocks before any request is run.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="compare-access">
+      <h2 id="compare-access">Compare one point access with a narrow scan</h2>
+      <p>
+        Choose a request to see which blocks the same fixture touches in each layout. For the point
+        example, assume a locator has already identified account <code>A-105</code>; index and
+        locator reads are not counted. The request inspects all four fields before a possible
+        balance correction. The analytical example reads only <code>balance_cny</code> for all eight
+        rows.
+      </p>
+      <OltpVsOlapAccessLab scenarios={accessModel.scenarios} client:load />
+      <p>
+        Here, modeled read amplification is{' '}
+        <code>value slots touched ÷ useful projected values</code>. For a point request, that is 8 ÷
+        4 = 2× for the row layout and 32 ÷ 4 = 8× for the column layout. For the scan, it is 32 ÷ 8
+        = 4× versus 8 ÷ 8 = 1×. The estimate counts equal-sized teaching slots; it is not a
+        measurement of physical bytes or device I/O.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="why-layout-matters">
+      <h2 id="why-layout-matters">Why the layouts favor different access shapes</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>What the fixed layout makes local to a request</caption>
+          <thead>
+            <tr>
+              <th scope="col">Request shape</th>
+              <th scope="col">Row-oriented layout</th>
+              <th scope="col">Column-oriented layout</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Read one complete record</th>
+              <td>Fields for nearby records share a row page.</td>
+              <td>Requested fields live in separate column blocks.</td>
+            </tr>
+            <tr>
+              <th scope="row">Scan one field across many records</th>
+              <td>Pages also carry the other fields in each row.</td>
+              <td>The scan can focus on blocks for the projected field.</td>
+            </tr>
+            <tr>
+              <th scope="row">Correct one field</th>
+              <td>The row is colocated in this model; write mechanics are excluded.</td>
+              <td>A column-oriented engine may use different mutation strategies.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        This is an access-locality explanation, not a choice rule that applies to every engine. A
+        narrow query can still read extra data because of its filter, organization, or execution
+        plan; a row layout can still support analytical queries. For a separate question about
+        shared warehouse responsibilities, see{' '}
+        <a href={getEnglishRoute('warehouseLayers')}>data warehouse layers</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="limits">
+      <h2 id="limits">What this model leaves out</h2>
+      <ul>
+        <li>
+          <strong>Indexes and locators:</strong> the point example begins after the target row has
+          been identified; finding it can itself require reads.
+        </li>
+        <li>
+          <strong>Physical representation:</strong> real page formats, field widths, compression,
+          encodings, row groups, and metadata can change bytes and block counts.
+        </li>
+        <li>
+          <strong>Execution context:</strong> caching, partitioning, clustering, concurrency, and
+          engine-specific pruning can alter the work a query performs.
+        </li>
+        <li>
+          <strong>Writes and transaction semantics:</strong> this comparison counts reads only; it
+          does not model mutation cost, logging, isolation, durability, or concurrent updates.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>Do not turn a workload label into a universal capability claim</strong>
+        <p>
+          Whether a particular warehouse supports a transaction pattern depends on that product's
+          write, concurrency, and consistency contracts. Row-versus-column organization alone cannot
+          answer whether it is suitable for an application workload.
+        </p>
+      </div>
+      <p>
+        If the question is instead whether repeating a pipeline write changes its result, see{' '}
+        <a href={getEnglishRoute('idempotentEtl')}>idempotent ETL</a>. Write repeatability and
+        physical read layout are related engineering concerns, but they are not the same decision.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="decision-checklist">
+      <h2 id="decision-checklist">A practical comparison checklist</h2>
+      <ol>
+        <li>Write down the actual predicates, projected fields, and update scope.</li>
+        <li>Identify which pages or column groups the query plan says it reads.</li>
+        <li>Separate logical values requested from physical bytes and elapsed time.</li>
+        <li>
+          Test representative data, caching state, and concurrent workload on the target engine.
+        </li>
+        <li>Compare the engine's documented write and consistency guarantees separately.</li>
+      </ol>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('warehouse')}>Data warehouse engineering</a>
+          <p>Browse the English pages on warehouse modeling, pipelines, and reliability.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+          <p>State what one row represents before comparing how its values are stored.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('warehouseLayers')}>Data warehouse layers</a>
+          <p>Compare responsibilities and dependencies, not row-versus-column access.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>Idempotent ETL</a>
+          <p>Understand repeatable writes, retries, and reruns as a separate concern.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

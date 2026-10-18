@@ -106,6 +106,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/star-schema-vs-snowflake/',
       '/en/data-warehouse/incremental-vs-full-load/',
       '/en/data-warehouse/layers/',
+      '/en/data-warehouse/oltp-vs-olap/',
       '/en/',
       '/en/sql/',
       '/en/tools/',
@@ -128,6 +129,23 @@ const ENGLISH_ROUTES = [
       'Three business groups; this result need not be persisted as a separate layer',
       'a structural comparison only',
       'Layer names are conventions, not universal standards',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/oltp-vs-olap/',
+    title: 'OLTP vs OLAP: Row and Column Storage Explained | sql.sb',
+    heading: 'OLTP vs. OLAP: how row and column layouts change access',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/grain/',
+      '/en/data-warehouse/layers/',
+      '/en/data-warehouse/idempotent-etl/',
+    ],
+    boundaries: [
+      'not bytes, latency, benchmark results, or guarantees',
+      'this comparison counts reads only',
+      'does not model mutation cost, logging, isolation, durability, or concurrent updates',
     ],
   },
   {
@@ -666,6 +684,83 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
     if (originalViewport) await page.setViewportSize(originalViewport)
     check(
       `${viewportName} ${route.path} no pageerror after layer interactions`,
+      errors.length === 0,
+    )
+    errors.length = 0
+  }
+
+  if (route.path === '/en/data-warehouse/oltp-vs-olap/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const lab = page.locator('[data-access-lab]')
+    const rowLayout = lab.locator('[data-layout="row"]')
+    const columnLayout = lab.locator('[data-layout="column"]')
+    check(
+      `${viewportName} point-access fixture reads one row page or four column blocks`,
+      (await lab.getAttribute('data-workload')) === 'point-update' &&
+        (await rowLayout.getAttribute('data-block-count')) === '1' &&
+        (await columnLayout.getAttribute('data-block-count')) === '4' &&
+        (await rowLayout.getAttribute('data-read-amplification')) === '2' &&
+        (await columnLayout.getAttribute('data-read-amplification')) === '8',
+    )
+    await lab.locator('[data-workload-button="analytical-scan"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-access-lab]')?.getAttribute('data-workload') ===
+        'analytical-scan',
+    )
+    check(
+      `${viewportName} narrow-scan fixture reads four row pages or one column block`,
+      (await rowLayout.getAttribute('data-block-count')) === '4' &&
+        (await columnLayout.getAttribute('data-block-count')) === '1' &&
+        (await rowLayout.getAttribute('data-read-amplification')) === '4' &&
+        (await columnLayout.getAttribute('data-read-amplification')) === '1' &&
+        (await lab.textContent())?.includes('CN¥28,000.00 across 8 accounts'),
+    )
+    await lab.locator('[data-workload-button="point-update"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-access-lab]')?.getAttribute('data-workload') ===
+        'point-update',
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-workload-button="analytical-scan"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-access-lab]')?.getAttribute('data-workload') ===
+          'analytical-scan',
+      )
+      check(
+        `${viewportName} ${route.path} workload control remains usable at ${width}px`,
+        (await columnLayout.getAttribute('data-block-count')) === '1' &&
+          (await lab.textContent())?.includes('CN¥28,000.00 across 8 accounts'),
+      )
+      await lab.locator('[data-workload-button="point-update"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-access-lab]')?.getAttribute('data-workload') ===
+          'point-update',
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(
+      `${viewportName} ${route.path} no pageerror after access-lab interactions`,
       errors.length === 0,
     )
     errors.length = 0
