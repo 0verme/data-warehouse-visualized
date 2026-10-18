@@ -42,6 +42,7 @@ const ENGLISH_ROUTES = [
     links: [
       '/en/sql/sql-join-duplicate-rows/',
       '/en/sql/data-skew/',
+      '/en/sql/partition-pruning/',
       '/en/',
       '/en/data-warehouse/',
       '/en/tools/',
@@ -63,12 +64,29 @@ const ENGLISH_ROUTES = [
     path: '/en/sql/data-skew/',
     title: 'SQL Data Skew: Why One Task Takes So Long | sql.sb',
     heading: 'SQL data skew: why one task takes so long',
-    links: ['/en/', '/en/sql/', '/en/sql/sql-join-duplicate-rows/', '/en/data-warehouse/grain/'],
+    links: [
+      '/en/',
+      '/en/sql/',
+      '/en/sql/sql-join-duplicate-rows/',
+      '/en/data-warehouse/grain/',
+      '/en/sql/partition-pruning/',
+    ],
     boundaries: [
       'all rows for one value',
       'controls stage completion',
       'not a measured runtime, a benchmark or a promise',
       'Data skew is not the same problem as join fan-out or storage pruning',
+    ],
+  },
+  {
+    path: '/en/sql/partition-pruning/',
+    title: 'Partition Pruning in SQL: Why Filters May Not Prune | sql.sb',
+    heading: 'Partition pruning in SQL: why a filter may not prune',
+    links: ['/en/', '/en/sql/', '/en/sql/data-skew/', '/en/sql/sql-join-duplicate-rows/'],
+    boundaries: [
+      'A filter alone proves neither pruning nor a runtime improvement.',
+      'The exact SQL literal syntax and partition plan vary by engine',
+      'Partition pruning is not data skipping or data skew',
     ],
   },
   {
@@ -691,6 +709,74 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
         (await lab.getAttribute('data-skew-max')) === '262' &&
           (await lab.getAttribute('data-skew-total')) === '927' &&
           (await lab.getAttribute('data-skew-bar-scale')) === '680',
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(`${viewportName} ${route.path} no pageerror after lab interactions`, errors.length === 0)
+    errors.length = 0
+  }
+
+  if (route.path === '/en/sql/partition-pruning/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const lab = page.locator('[data-pruning-lab]')
+    const meter = lab.locator('[data-pruning-meter]')
+    const initialMeterWidth = await meter
+      .locator('span')
+      .evaluate((element) => Number.parseFloat(element.style.width))
+    check(
+      `${viewportName} typed date range matches the shared scan fixture`,
+      (await lab.getAttribute('data-pruning-shape')) === 'typed-range' &&
+        (await lab.getAttribute('data-pruning-total-partitions')) === '1095' &&
+        (await lab.getAttribute('data-pruning-scanned-partitions')) === '30' &&
+        (await lab.getAttribute('data-pruning-skipped-partitions')) === '1065' &&
+        (await lab.getAttribute('data-pruning-scan-bytes')) === '82 TB' &&
+        (await meter.getAttribute('aria-valuemax')) === '1095' &&
+        (await meter.getAttribute('aria-valuenow')) === '30' &&
+        Math.abs(initialMeterWidth - (30 / 1095) * 100) < 0.001,
+    )
+
+    await lab.locator('[data-pruning-shape-button="wrapped-key"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-pruning-lab]')?.getAttribute('data-pruning-shape') ===
+        'wrapped-key',
+    )
+    check(
+      `${viewportName} wrapped-key fixture shows the conservative full-scan contrast`,
+      (await lab.getAttribute('data-pruning-scanned-partitions')) === '1095' &&
+        (await lab.getAttribute('data-pruning-skipped-partitions')) === '0' &&
+        (await lab.getAttribute('data-pruning-scan-bytes')) === '3.0 PB' &&
+        (await meter.getAttribute('aria-valuenow')) === '1095' &&
+        (await meter.locator('span').evaluate((element) => element.style.width)) === '100%',
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-pruning-shape-button="typed-range"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-pruning-lab]')?.getAttribute('data-pruning-shape') ===
+          'typed-range',
+      )
+      check(
+        `${viewportName} ${route.path} predicate control works at ${width}px`,
+        (await lab.getAttribute('data-pruning-scanned-partitions')) === '30' &&
+          (await meter.getAttribute('aria-valuenow')) === '30',
       )
     }
     if (originalViewport) await page.setViewportSize(originalViewport)

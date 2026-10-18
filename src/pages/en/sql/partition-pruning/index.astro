@@ -1,0 +1,180 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { PartitionPruningLab } from '../../../../components/english/PartitionPruningLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import partitionPruningStylesUrl from '../../../../styles/layouts/english-partition-pruning.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Partition Pruning in SQL: Why Filters May Not Prune | sql.sb'
+const description =
+  'Learn how partition pruning narrows a SQL scan, why a filter may not reach partitions, and how to verify engine-specific plans without assuming a performance gain.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="sql"
+  styleUrls={[partitionPruningStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'SQL', key: 'sql' },
+      { label: 'Partition pruning' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">SQL · storage and scan behavior</p>
+    <h1 class="english-article__title">Partition pruning in SQL: why a filter may not prune</h1>
+    <p class="english-article__lede">
+      A date filter can be logically correct and still leave a query scanning more partitions than
+      expected. The key question is whether the engine can map the predicate to the table's
+      partition metadata—not merely whether a <code>WHERE</code> clause exists.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Partition pruning skips partitions that cannot match a predicate on the partition key. Use a
+      type-aligned range on that key, then inspect the engine's plan or scan metrics to confirm
+      which partitions and bytes were read. Expressions, implicit casts, mismatched columns,
+      unavailable metadata, and engine-specific optimizer rules can change the outcome. A filter
+      alone proves neither pruning nor a runtime improvement.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="pruning-scope">
+      <h2 id="pruning-scope">What partition pruning changes</h2>
+      <p>
+        Suppose a transaction table is partitioned by <code>txn_date</code>. A query for one month
+        should not need every date partition if the engine can determine that the other partition
+        values are outside the requested range. Pruning narrows the candidate partitions before
+        reading their data; it does not rewrite the table or remove rows from storage.
+      </p>
+      <p>
+        The shared scan-layout teaching fixture compares 1,095 historical partitions with a fixed
+        30-day window. Its illustrative snapshots show 30 partitions and 82 TB for the narrowed
+        range versus 1,095 partitions and 3.0 PB for the full-history scan. Those figures are
+        fixture values, not production measurements or a benchmark.
+      </p>
+      <PartitionPruningLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="typed-range">
+      <h2 id="typed-range">Start with a type-aligned half-open range</h2>
+      <p>
+        If <code>txn_date</code> is a date partition key, express the requested calendar window
+        directly on that column. A half-open range includes the start and excludes the next period's
+        start, avoiding ambiguous end-of-day timestamps:
+      </p>
+      <pre><code>{`SELECT txn_date, COUNT(*) AS transaction_count
+FROM transactions
+WHERE txn_date >= DATE '2026-09-01'
+  AND txn_date < DATE '2026-10-01'
+GROUP BY txn_date
+ORDER BY txn_date;`}</code></pre>
+      <p>
+        The dates above describe September 2026. In the teaching fixture, a 30-day range maps to 30
+        of 1,095 date partitions. The exact SQL literal syntax and partition plan vary by engine;
+        adapt the types and boundaries to the column definition, timezone convention, and query
+        dialect. The expected result rows depend on the table's data; partition counts describe the
+        scan scope, not the number of grouped rows.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="why-not-pruned">
+      <h2 id="why-not-pruned">Why a partition filter may not prune</h2>
+      <ul>
+        <li>
+          <strong>The predicate targets another column.</strong> Filtering on ingestion time does
+          not necessarily constrain partitions created from business date.
+        </li>
+        <li>
+          <strong>The key is wrapped or converted.</strong> A function or cast around the partition
+          column can make bounds harder to infer. Some optimizers rewrite particular expressions;
+          others do not.
+        </li>
+        <li>
+          <strong>Types or boundaries do not line up.</strong> Implicit coercion, string-formatted
+          dates, timestamp timezones, or an inclusive end boundary can alter comparison semantics or
+          prevent a simple partition-range inference.
+        </li>
+        <li>
+          <strong>Metadata or statistics are missing or stale.</strong> Partition pruning needs
+          enough partition metadata to exclude whole partitions. Depending on the engine, statistics
+          may affect plan choices or finer-grained file skipping; these mechanisms are related but
+          not interchangeable.
+        </li>
+        <li>
+          <strong>The filter is indirect.</strong> A join, disjunction, parameter, or runtime value
+          may require dynamic pruning or an optimizer feature that is unavailable or not selected
+          for this plan.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>
+          Do not assume every expression blocks pruning—or that every engine rewrites it
+        </strong>
+        <p>
+          For example, a function on <code>txn_date</code> may prevent static range inference in one
+          engine, while another engine may simplify that expression. Confirm behavior for the
+          deployed engine and version instead of treating one SQL shape as a universal rule.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="verify-plan">
+      <h2 id="verify-plan">Verify the scan in the query plan</h2>
+      <p>
+        Use the engine's <code>EXPLAIN</code> output and, when available, the executed query
+        profile. Names differ, but look for evidence that corresponds to the table's partition key
+        and scan:
+      </p>
+      <ol>
+        <li>
+          Confirm the table's actual partition column, type, granularity, and boundary convention.
+        </li>
+        <li>Check the plan's partition filter or equivalent planned partition list.</li>
+        <li>Compare partitions considered, partitions read, bytes scanned, and files opened.</li>
+        <li>
+          For runtime or join-derived filters, inspect the executed plan and actual scan metrics.
+        </li>
+      </ol>
+      <p>
+        If partition counts fall but bytes remain high, inspect file sizes, row-group statistics,
+        and data distribution inside the selected partitions. If the plan shows no pruning, first
+        verify semantics and metadata, then compare a direct typed predicate with the original
+        expression. Do not infer a fix from elapsed time alone: cache state, concurrency,
+        scheduling, and other work can change runtime independently of scan scope.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="related-mechanisms">
+      <h2 id="related-mechanisms">Partition pruning is not data skipping or data skew</h2>
+      <p>
+        Partition pruning excludes whole partitions using partition values and engine metadata. Some
+        systems also use file or row-group statistics—such as minimum and maximum values—to skip
+        data within a selected partition. That finer-grained data skipping is a separate mechanism.
+        Neither technique guarantees a particular runtime.
+      </p>
+      <p>
+        Data skew is different again: it concerns uneven work distribution, such as one task
+        receiving much more input than its peers after data is redistributed. A query can prune
+        partitions successfully and still have skew inside the remaining work. See the separate
+        explanation of <a href={getEnglishRoute('dataSkew')}>SQL data skew and long-tail tasks</a>.
+        JOIN fanout is about repeated keys multiplying result rows, not about which storage
+        partitions are scanned; see{' '}
+        <a href={getEnglishRoute('joinDuplicateRows')}>why a SQL JOIN duplicates rows</a>.
+      </p>
+    </section>
+
+    <nav class="english-article__related" aria-label="Related English resources">
+      <a href={getEnglishRoute('sql')}>More English SQL resources</a>
+      <a href={getEnglishRoute('dataSkew')}>SQL data skew</a>
+      <a href={getEnglishRoute('joinDuplicateRows')}>SQL JOIN duplicate rows</a>
+    </nav>
+  </div>
+</EnglishArticleLayout>
