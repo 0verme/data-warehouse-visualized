@@ -81,6 +81,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/star-schema-vs-snowflake/index.html',
     title: 'Star Schema vs Snowflake Schema: Trade-offs | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/incremental-vs-full-load/',
+    file: 'en/data-warehouse/incremental-vs-full-load/index.html',
+    title: 'Incremental vs Full Load: Scope & Late Data | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 

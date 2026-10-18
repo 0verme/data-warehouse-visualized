@@ -42,6 +42,10 @@ const englishRoutes = [
     file: 'en/data-warehouse/star-schema-vs-snowflake/index.astro',
     route: ENGLISH_PATHS.starSchemaVsSnowflake,
   },
+  {
+    file: 'en/data-warehouse/incremental-vs-full-load/index.astro',
+    route: ENGLISH_PATHS.incrementalVsFullLoad,
+  },
   { file: 'en/tools/index.astro', route: ENGLISH_PATHS.tools },
 ]
 const establishedLearnSlugs = `
@@ -114,7 +118,7 @@ why-data-warehouse
   .split(/\s+/)
 
 describe('English SEO routing contract', () => {
-  it('defines exactly the fifteen English pages outside /learn/', () => {
+  it('defines exactly the sixteen English pages outside /learn/', () => {
     const pageFiles = readdirSync(pagesDirectory, { recursive: true }).map(String)
     const englishPageFiles = pageFiles
       .filter((path) => path.startsWith('en/') && path.endsWith('.astro'))
@@ -137,17 +141,19 @@ describe('English SEO routing contract', () => {
       '/en/data-warehouse/pipeline-observability/',
       '/en/data-warehouse/fact-vs-dimension-tables/',
       '/en/data-warehouse/star-schema-vs-snowflake/',
+      '/en/data-warehouse/incremental-vs-full-load/',
       '/en/tools/',
     ])
   })
 
-  it('lists each fact/dimension and star/snowflake page exactly once in the warehouse index source', () => {
+  it('lists each modeling and load-strategy page exactly once in the warehouse index source', () => {
     const indexSource = readFileSync(
       new URL('../src/pages/en/data-warehouse/index.astro', import.meta.url),
       'utf8',
     )
     expect(indexSource.match(/getEnglishRoute\('factVsDimensionTables'\)/g)).toHaveLength(1)
     expect(indexSource.match(/getEnglishRoute\('starSchemaVsSnowflake'\)/g)).toHaveLength(1)
+    expect(indexSource.match(/getEnglishRoute\('incrementalVsFullLoad'\)/g)).toHaveLength(1)
   })
 
   it('preserves 64 unique Learn slugs and their existing /learn/ URL shape', () => {

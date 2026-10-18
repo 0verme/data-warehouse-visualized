@@ -1,0 +1,183 @@
+/* Page-specific styles for /en/data-warehouse/incremental-vs-full-load/. */
+
+.incremental-load-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 24px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.incremental-load-lab__heading,
+.incremental-load-lab__result-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.incremental-load-lab__heading > div,
+.incremental-load-lab__result-heading > div {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.incremental-load-lab__heading p,
+.incremental-load-lab__result-heading p,
+.incremental-load-lab__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.incremental-load-lab__overline {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.incremental-load-lab__source,
+.incremental-load-lab__output {
+  margin-top: 16px;
+}
+
+.incremental-load-lab__source [data-late-change='true'] {
+  background: color-mix(in srgb, var(--warning, #d97706) 9%, transparent);
+}
+
+.incremental-load-lab__late {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  margin-left: 7px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.incremental-load-lab__plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin: 18px 0;
+}
+
+.incremental-load-lab__plan {
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.incremental-load-lab__plan:hover,
+.incremental-load-lab__plan.is-selected {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.incremental-load-lab__plan.is-selected {
+  background: var(--success-bg);
+}
+
+.incremental-load-lab__plan:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.incremental-load-lab__result {
+  min-width: 0;
+  padding: clamp(14px, 2.5vw, 20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2, var(--surface-1));
+}
+
+.incremental-load-lab__result-heading h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.incremental-load-lab__verdict {
+  flex: 0 1 250px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.incremental-load-lab__verdict[data-equivalent='true'] {
+  border-color: color-mix(in srgb, var(--success, #16a34a) 50%, var(--border));
+}
+
+.incremental-load-lab__verdict[data-equivalent='false'] {
+  border-color: color-mix(in srgb, var(--warning, #d97706) 60%, var(--border));
+}
+
+.incremental-load-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 9px;
+  margin: 16px 0 0;
+}
+
+.incremental-load-lab__metrics div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.incremental-load-lab__metrics dt {
+  margin-bottom: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.incremental-load-lab__metrics dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.incremental-load-lab__note {
+  margin-top: 12px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 560px) {
+  .incremental-load-lab__plans {
+    grid-template-columns: 1fr;
+  }
+
+  .incremental-load-lab__plan {
+    text-align: left;
+  }
+}

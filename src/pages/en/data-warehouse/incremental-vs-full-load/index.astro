@@ -1,0 +1,302 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { IncrementalVsFullLoadLab } from '../../../../components/english/IncrementalVsFullLoadLab'
+import { tradeoffData } from '../../../../features/performance/banking'
+import { buildIncrementalLoadComparison } from '../../../../features/english-load-comparison/model'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import incrementalLoadStylesUrl from '../../../../styles/layouts/english-incremental-load.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Incremental vs Full Load: Scope & Late Data | sql.sb'
+const description =
+  'Compare incremental and full loads by recompute scope, late-arriving data and equivalence checks—not by write policy alone.'
+
+const comparison = buildIncrementalLoadComparison()
+const fullLoad = comparison.plans.find(({ id }) => id === 'full-load')!
+const eventTimeOnly = comparison.plans.find(({ id }) => id === 'event-time-only')!
+const arrivalCursor = comparison.plans.find(({ id }) => id === 'arrival-cursor')!
+const lateData = tradeoffData.lateData
+const usd = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 })
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[incrementalLoadStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Incremental vs full load' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · pipeline design</p>
+    <h1 class="english-article__title">
+      Incremental load vs full load: how much should you recompute?
+    </h1>
+    <p class="english-article__lede">
+      A smaller load is useful only when it still includes every changed business result. Compare
+      the work each plan repeats, then check the incremental answer against a full-load reference.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      A <strong>full load</strong> rebuilds the complete declared target scope from the available
+      source state. An <strong>incremental load</strong> processes a smaller set of new or changed
+      data and recomputes only the output scope that data can affect. Incremental processing can
+      reduce repeated work, but only if its change cursor, late-data policy and dependency range are
+      complete. A late record for an old business date may require rebuilding that date—or a wider
+      downstream range. Load scope is separate from whether repeating a target write is safe; see{' '}
+      <a href={getEnglishRoute('idempotentEtl')}>idempotent ETL</a> for write semantics.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="scope">
+      <h2 id="scope">Load scope is a recomputation decision</h2>
+      <p>
+        “Incremental” does not mean “append only,” and “full” does not mean “delete everything.”
+        Here, the terms describe how much source state is read and how much target output is
+        recalculated. The target write method is a separate decision.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>What each load plan recalculates</caption>
+          <thead>
+            <tr>
+              <th scope="col">Plan</th>
+              <th scope="col">Input scope</th>
+              <th scope="col">Output scope</th>
+              <th scope="col">Main condition</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Full load</th>
+              <td>Complete source scope at a declared cutoff</td>
+              <td>Every output partition in that scope</td>
+              <td>Rebuild cost and runtime fit the operating window</td>
+            </tr>
+            <tr>
+              <th scope="row">Incremental load</th>
+              <td>New or changed records after a durable source cursor</td>
+              <td>Every partition or downstream range those changes affect</td>
+              <td>Capture, correction and reconciliation rules are explicit</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        A source cursor answers <em>what arrived or changed since the prior run</em>. A
+        business-date partition answers <em>which historical output must be recalculated</em>. Those
+        are different columns and may move in opposite directions when data arrives late.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="example">
+      <h2 id="example">A late change can belong to an older event-time window</h2>
+      <p>
+        The small change-log fixture below begins with three records available at{' '}
+        {comparison.initialAsOf}. Two more changes become available by {comparison.finalAsOf}: one
+        inserts a transaction with an earlier event time, and one updates an earlier transaction.
+        The initial event-time watermark is {comparison.eventTimeWatermark}; neither change is
+        beyond it.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Window totals before and after the late changes</caption>
+          <thead>
+            <tr>
+              <th scope="col">Event-time window</th>
+              <th scope="col">Initial result</th>
+              <th scope="col">Full-load reference</th>
+              <th scope="col">Event-time watermark only</th>
+              <th scope="col">Arrival cursor + affected window</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.windows.map((window, index) => (
+              <tr>
+                <th scope="row">{window.label}</th>
+                <td>{usd(comparison.initialOutput[index]?.amountTotal ?? 0)}</td>
+                <td>{usd(fullLoad.output[index]?.amountTotal ?? 0)}</td>
+                <td>{usd(eventTimeOnly.output[index]?.amountTotal ?? 0)}</td>
+                <td>{usd(arrivalCursor.output[index]?.amountTotal ?? 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total amount</th>
+              <td>
+                {usd(comparison.initialOutput.reduce((total, row) => total + row.amountTotal, 0))}
+              </td>
+              <td>{usd(fullLoad.totalAmount)}</td>
+              <td>{usd(eventTimeOnly.totalAmount)}</td>
+              <td>{usd(arrivalCursor.totalAmount)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p>
+        The event-time-only filter leaves the old result at {usd(eventTimeOnly.totalAmount)}.
+        Reading changes after the arrival cursor finds both late changes, identifies the affected
+        10:00–10:05 window, and rebuilds that window from its input. It reads{' '}
+        {arrivalCursor.sourceRowsRecomputed}
+        fixture records and recomputes one of two windows; the full-load reference reads{' '}
+        {fullLoad.sourceRowsRecomputed} fixture records and recomputes both. Both correct outputs
+        are {usd(fullLoad.totalAmount)}. These small counts are for checking logic, not physical
+        I/O, runtime, or a production benchmark.
+      </p>
+      <IncrementalVsFullLoadLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="business-date">
+      <h2 id="business-date">Arrival date is not business date</h2>
+      <p>
+        The existing banking performance fixture gives a calendar-date example: a transaction is
+        received on {lateData.receivedAt} but belongs to business date {lateData.businessDate} for
+        customer {lateData.customerId} and counterparty {lateData.counterpartyId}.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>One late row, two different dates</caption>
+          <thead>
+            <tr>
+              <th scope="col">Received at</th>
+              <th scope="col">Business date</th>
+              <th scope="col">Example effect</th>
+              <th scope="col">Affected output range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{lateData.receivedAt}</td>
+              <td>{lateData.businessDate}</td>
+              <td>
+                {lateData.customerId} × {lateData.counterpartyId}: first-seen date changes from{' '}
+                {lateData.currentFirstSeenDate} to {lateData.correctedFirstSeenDate}
+              </td>
+              <td>{lateData.affectedFeatureRange}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        If the target is a daily total, the repair may be limited to the affected business-date
+        partition. A cumulative feature can have a wider dependency range: the first-seen correction
+        above can change later customer-day results too. Derive the recompute scope from the
+        target's meaning and dependencies; do not assume that “last day” or a fixed lookback is
+        sufficient. For downstream replay order and verification, see{' '}
+        <a href={getEnglishRoute('pipelineFailureRecovery')}>pipeline failure recovery</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="implementation">
+      <h2 id="implementation">A practical incremental pattern</h2>
+      <p>
+        First capture changes using an arrival or source-version cursor. Next derive the affected
+        business dates from those changes. Then read the complete source rows for each affected date
+        and recompute the target grain. The cursor should advance only after the run's data and
+        evidence are safely committed; the mechanics depend on the source and warehouse.
+      </p>
+      <pre><code>{`WITH changed_rows AS (
+  SELECT *
+  FROM source_change_log
+  WHERE (available_at, change_id) > (:saved_available_at, :saved_change_id)
+),
+affected_dates AS (
+  SELECT DISTINCT business_date
+  FROM changed_rows
+),
+recomputed_daily AS (
+  SELECT source.business_date, SUM(source.amount) AS daily_amount
+  FROM source
+  JOIN affected_dates USING (business_date)
+  GROUP BY source.business_date
+)
+SELECT * FROM recomputed_daily;`}</code></pre>
+      <p>
+        This is a scope sketch, not portable SQL: tuple comparisons, CDC metadata, tombstones and
+        transaction boundaries vary by engine. For updates or deletes, the change feed must reveal
+        enough information to identify every affected key and date. A corrected cursor without a
+        complete change feed can still miss data.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">When is a full load the better choice?</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Operational trade-offs, not a universal winner</caption>
+          <thead>
+            <tr>
+              <th scope="col">Consideration</th>
+              <th scope="col">Full load</th>
+              <th scope="col">Incremental load</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Compute and scan</th>
+              <td>Repeats work across the declared source and target scope</td>
+              <td>Can reduce repeated work when changed scope is small</td>
+            </tr>
+            <tr>
+              <th scope="row">Late data</th>
+              <td>Included if the full reference reads the corrected source state</td>
+              <td>Needs a change cursor plus affected-date or dependency-range repair</td>
+            </tr>
+            <tr>
+              <th scope="row">Complexity</th>
+              <td>Often fewer state boundaries; may be too expensive at scale</td>
+              <td>Requires cursor durability, change capture, backfill and equivalence checks</td>
+            </tr>
+            <tr>
+              <th scope="row">Good fit</th>
+              <td>Small source, manageable runtime, or a trusted rebuild/reference path</td>
+              <td>Large repeated scans, bounded changes, and owned repair procedures</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Incremental is not automatically cheaper end to end: change capture, state, storage, repair
+        runs and validation also consume resources. A full load is often a valuable reconciliation
+        reference even when it is not the routine schedule. Confirm the actual scan, compute, SLA
+        and freshness behavior in the target engine; this fixture does not establish a performance
+        win.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundary">
+      <h2 id="boundary">Do not confuse load scope with idempotent writes</h2>
+      <p>
+        Incremental versus full asks <em>which source and output range to recompute</em>.
+        Idempotence asks <em>what happens if the same result is written again</em>. A full load can
+        still append duplicate rows, and an incremental load can still be safely repeatable—or not.
+        Choose and test both contracts independently in{' '}
+        <a href={getEnglishRoute('idempotentEtl')}>how to make an ETL job idempotent</a>.
+      </p>
+      <p>
+        The fixture's cursor-and-window result matches the full-load reference; the event-time-only
+        result does not. A production equivalence check should compare the declared grain, keys,
+        nulls, deletes and relevant measures over a stated cutoff—not just the row count.
+      </p>
+    </section>
+
+    <nav class="english-article__related" aria-label="Related English data warehouse pages">
+      <a href={getEnglishRoute('warehouse')}>All data warehouse pages</a>
+      <a href={getEnglishRoute('idempotentEtl')}>Idempotent ETL and write safety</a>
+      <a href={getEnglishRoute('pipelineFailureRecovery')}>Pipeline failure recovery</a>
+      <a href={getEnglishRoute('pipelineObservability')}>Pipeline observability</a>
+      <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+    </nav>
+  </div>
+</EnglishArticleLayout>
