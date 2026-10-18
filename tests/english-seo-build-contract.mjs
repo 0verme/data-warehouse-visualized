@@ -52,6 +52,11 @@ const expectedEnglishPages = [
     title: 'OLTP vs OLAP: Row and Column Storage Explained | sql.sb',
   },
   {
+    route: '/en/data-warehouse/etl-vs-elt/',
+    file: 'en/data-warehouse/etl-vs-elt/index.html',
+    title: 'ETL vs ELT: Where Should You Transform Data? | sql.sb',
+  },
+  {
     route: '/en/data-warehouse/grain/',
     file: 'en/data-warehouse/grain/index.html',
     title: 'Data Warehouse Grain: What Does One Row Represent? | sql.sb',
@@ -237,6 +242,46 @@ for (const page of expectedEnglishPages) {
     )
     assert.ok(mainHtml.includes('one row page or four column blocks'))
     assert.ok(mainHtml.includes('does not model mutation cost'))
+  }
+  if (page.route === '/en/data-warehouse/etl-vs-elt/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(
+      mainHtml,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} SSR body must be English-only`,
+    )
+    assert.ok(
+      mainHtml.includes(
+        'The transformation and target do not change just because their location changes.',
+      ),
+    )
+    assert.ok(
+      mainHtml.includes(
+        'Loading raw rows first does not guarantee that a team keeps them after transformation.',
+      ),
+    )
+    assert.ok(
+      mainHtml.includes('The labels do not promise lower cost, faster execution, or safer reruns.'),
+    )
+    const fixture = mainHtml.match(/<div\b[^>]*data-etl-elt-example[^>]*>/)?.[0] ?? ''
+    assert.ok(fixture, `${page.route} must render the fixed transformation fixture`)
+    for (const [attribute, expected] of Object.entries({
+      'data-source-rows': '5',
+      'data-standardized-rows': '4',
+      'data-grouped-rows': '3',
+      'data-published-rows': '1',
+      'data-published-amount': '300000',
+    })) {
+      assert.equal(getTagAttribute(fixture, /<div\b[^>]*>/i, attribute), expected)
+    }
+    const islandUrl = getTagAttribute(mainHtml, /<astro-island\b[^>]*>/i, 'component-url')
+    const islandPath = removeBase(new URL(islandUrl, siteOrigin).pathname)
+    const islandScript = readFileSync(join(dist, islandPath.replace(/^\/+/, '')), 'utf8')
+    assert.doesNotMatch(
+      islandScript,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} client island must not bundle Chinese lesson content`,
+    )
   }
   if (page.route === '/en/sql/data-skew/') {
     const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''

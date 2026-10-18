@@ -6,7 +6,7 @@ import { getEnglishRoute } from '../../../utils/english-routes'
 
 const title = 'Data Warehouse Engineering | English Resources | sql.sb'
 const description =
-  'Data warehouse engineering pages on modeling, incremental and full loads, ETL write safety, data reliability, lineage and SCD Type 2 history.'
+  'Data warehouse engineering pages on modeling, ETL/ELT placement, incremental and full loads, ETL write safety, data reliability, lineage and SCD Type 2 history.'
 ---
 
 <BaseLayout
@@ -53,6 +53,13 @@ const description =
           <span>
             Compare modeled row- and column-oriented block reads for a point update and an
             analytical scan.
+          </span>
+        </a>
+        <a class="english-foundation__card" href={getEnglishRoute('etlVsElt')}>
+          <strong>ETL vs ELT</strong>
+          <span>
+            Compare transform-before-load and load-before-transform, including raw retention and
+            replay choices.
           </span>
         </a>
         <a class="english-foundation__card" href={getEnglishRoute('grain')}>

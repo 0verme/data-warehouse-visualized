@@ -1,0 +1,203 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { EtlVsEltPlacementLab } from '../../../../components/english/EtlVsEltPlacementLab'
+import { buildEtlEltFixture } from '../../../../features/english-etl-elt/model'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import etlEltStylesUrl from '../../../../styles/layouts/english-etl-elt.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'ETL vs ELT: Where Should You Transform Data? | sql.sb'
+const description =
+  'Compare ETL and ELT by where transformation runs, what crosses the warehouse boundary, and which raw snapshot remains available for replay.'
+const example = buildEtlEltFixture()
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[etlEltStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'ETL vs ELT' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · transformation placement</p>
+    <h1 class="english-article__title">ETL vs. ELT: where should transformation happen?</h1>
+    <p class="english-article__lede">
+      ETL transforms extracted data before it crosses into the target warehouse; ELT loads the raw
+      extract first and transforms it there. That boundary changes where compute runs and what is
+      loaded—not whether raw inputs are retained or whether a rerun is safe.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Choose ETL when the needed transformation belongs before the warehouse boundary; choose ELT
+      when raw rows should land first and transformation can run after that load. Neither label
+      decides whether the original snapshot is kept: that is a separate retention policy. If a later
+      rule change must be replayed, keep an accessible, versioned raw copy somewhere.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="same-result">
+      <h2 id="same-result">The same five source rows can produce the same target in either path</h2>
+      <p>
+        This fixed teaching snapshot is from the existing deposit-balance transformation lesson. It
+        contains two snapshots for account <code>A001</code>; the canonical path keeps the latest,
+        standardizes a currency label, preserves facts with missing dimensions, groups the detail,
+        and selects one metric row. These are fixture counts, not production volumes.
+      </p>
+      <div
+        class="english-table-scroll"
+        data-etl-elt-example
+        data-source-rows={example.rawRows}
+        data-standardized-rows={example.standardizedRows}
+        data-grouped-rows={example.groupedRows}
+        data-published-rows={example.publishedRows}
+        data-published-amount={example.publishedAmount}
+      >
+        <table class="english-table">
+          <caption>One fixed snapshot through the shared transformation</caption>
+          <thead>
+            <tr>
+              <th scope="col">Point in path</th>
+              <th scope="col">Rows</th>
+              <th scope="col">Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Extracted source snapshot</th>
+              <td>{example.rawRows}</td>
+              <td>Five raw account-balance records for one snapshot date</td>
+            </tr>
+            <tr>
+              <th scope="row">Standardized detail</th>
+              <td>{example.standardizedRows}</td>
+              <td>Latest account snapshot retained; currency value normalized</td>
+            </tr>
+            <tr>
+              <th scope="row">Grouped intermediate</th>
+              <td>{example.groupedRows}</td>
+              <td>Rows grouped by the fixture's reporting dimensions</td>
+            </tr>
+            <tr>
+              <th scope="row">Published metric</th>
+              <td>{example.publishedRows}</td>
+              <td>CNY {example.publishedAmount.toLocaleString('en-US')} for the selected metric</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        In ETL, the shown transformation runs upstream and the one-row curated result crosses the
+        warehouse boundary. In ELT, the five raw rows cross first; warehouse processing then follows
+        the same four-to-three-to-one result. The transformation and target do not change just
+        because their location changes.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="placement-lab">
+      <h2 id="placement-lab">Separate transformation placement from raw retention</h2>
+      <p>
+        Compare both paths with one retention policy at a time. Keeping the snapshot makes this
+        fixed five-row input available for replay; turning retention off leaves only the published
+        aggregate in this model. Retention location differs between the paths.
+      </p>
+      <EtlVsEltPlacementLab client:load fixture={example} />
+      <p>
+        “Replay available” here means replay from the modeled retained copy of this exact snapshot.
+        Reading a live source again is equivalent only if the same source version remains
+        accessible. Loading raw rows first does not guarantee that a team keeps them after
+        transformation.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="decision">
+      <h2 id="decision">A practical decision checklist</h2>
+      <ol>
+        <li>
+          Mark the warehouse load boundary on the actual data path. Which fields and rows cross it?
+        </li>
+        <li>
+          Name the transformation that must run before loading or can wait until raw input is
+          landed.
+        </li>
+        <li>
+          Decide where the original snapshot is retained, for how long, and how a specific version
+          can be read again.
+        </li>
+        <li>
+          Confirm which environment owns the required compute and has access to the inputs and
+          reference data. Engine and policy constraints differ by system.
+        </li>
+        <li>
+          State what the consumer receives and how corrections will be replayed; do not infer this
+          from the ETL/ELT label alone.
+        </li>
+      </ol>
+      <div class="english-callout" data-tone="info">
+        <strong>ETL and ELT describe placement, not a complete operating contract</strong>
+        <p>
+          Source retention, transformation versioning, access controls, target grain, and write
+          semantics still need explicit decisions. The labels do not promise lower cost, faster
+          execution, or safer reruns.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">Keep three different pipeline questions separate</h2>
+      <ul>
+        <li>
+          <strong>ETL vs ELT:</strong> where transformation sits relative to the target warehouse
+          load boundary.
+        </li>
+        <li>
+          <strong>Raw retention:</strong> whether an original, versioned input remains available
+          after publishing and where it is stored.
+        </li>
+        <li>
+          <strong>Write idempotence:</strong> whether repeating a write leaves the same target
+          business state. That is a separate question from transformation placement; see{' '}
+          <a href={getEnglishRoute('idempotentEtl')}>how to make an ETL job idempotent</a>.
+        </li>
+      </ul>
+      <p>
+        A team can transform before load and preserve a raw archive, or load first and later remove
+        raw rows under a retention policy. Likewise, choosing either placement says nothing by
+        itself about whether a full or incremental recomputation is appropriate.
+      </p>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('warehouse')}>Data warehouse engineering</a>
+          <p>The English index for architecture, modeling, and pipeline topics.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>Idempotent ETL</a>
+          <p>Write repeatability, retries, reruns, and backfills.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('warehouseLayers')}>Data warehouse layers</a>
+          <p>What staging, core, and mart responsibilities mean in a sample path.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('incrementalVsFullLoad')}>Incremental load vs full load</a>
+          <p>How much source history a recomputation reads—not where transformation runs.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

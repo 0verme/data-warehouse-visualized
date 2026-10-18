@@ -107,6 +107,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/incremental-vs-full-load/',
       '/en/data-warehouse/layers/',
       '/en/data-warehouse/oltp-vs-olap/',
+      '/en/data-warehouse/etl-vs-elt/',
       '/en/',
       '/en/sql/',
       '/en/tools/',
@@ -146,6 +147,23 @@ const ENGLISH_ROUTES = [
       'not bytes, latency, benchmark results, or guarantees',
       'this comparison counts reads only',
       'does not model mutation cost, logging, isolation, durability, or concurrent updates',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/etl-vs-elt/',
+    title: 'ETL vs ELT: Where Should You Transform Data? | sql.sb',
+    heading: 'ETL vs. ELT: where should transformation happen?',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/layers/',
+      '/en/data-warehouse/incremental-vs-full-load/',
+    ],
+    boundaries: [
+      'The transformation and target do not change just because their location changes.',
+      'Loading raw rows first does not guarantee that a team keeps them after transformation.',
+      'The labels do not promise lower cost, faster execution, or safer reruns.',
     ],
   },
   {
@@ -763,6 +781,86 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       `${viewportName} ${route.path} no pageerror after access-lab interactions`,
       errors.length === 0,
     )
+    errors.length = 0
+  }
+
+  if (route.path === '/en/data-warehouse/etl-vs-elt/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const fixture = page.locator('[data-etl-elt-example]')
+    check(
+      `${viewportName} ETL/ELT example matches the shared fixed fixture`,
+      (await fixture.getAttribute('data-source-rows')) === '5' &&
+        (await fixture.getAttribute('data-standardized-rows')) === '4' &&
+        (await fixture.getAttribute('data-grouped-rows')) === '3' &&
+        (await fixture.getAttribute('data-published-rows')) === '1' &&
+        (await fixture.getAttribute('data-published-amount')) === '300000',
+    )
+
+    const lab = page.locator('[data-etl-elt-lab]')
+    const etl = lab.locator('[data-placement-path="etl"]')
+    const elt = lab.locator('[data-placement-path="elt"]')
+    const checkRetention = async (expectedRows, expectedReplay) =>
+      (await etl.getAttribute('data-retained-raw-rows')) === expectedRows &&
+      (await elt.getAttribute('data-retained-raw-rows')) === expectedRows &&
+      (await etl.getAttribute('data-replay-available')) === expectedReplay &&
+      (await elt.getAttribute('data-replay-available')) === expectedReplay
+
+    check(
+      `${viewportName} initial ETL and ELT paths share output but cross the boundary differently`,
+      (await lab.getAttribute('data-retention')) === 'retain' &&
+        (await etl.getAttribute('data-boundary-rows')) === '1' &&
+        (await elt.getAttribute('data-boundary-rows')) === '5' &&
+        (await checkRetention('5', 'true')) &&
+        (await lab.getAttribute('data-published-amount')) === '300000',
+    )
+    await lab.locator('[data-retention-button="discard"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-etl-elt-lab]')?.getAttribute('data-retention') === 'discard',
+    )
+    check(
+      `${viewportName} raw retention policy changes replay availability without changing output`,
+      (await checkRetention('0', 'false')) &&
+        (await etl.getAttribute('data-boundary-rows')) === '1' &&
+        (await elt.getAttribute('data-boundary-rows')) === '5' &&
+        (await lab.getAttribute('data-published-amount')) === '300000',
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-retention-button="retain"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-etl-elt-lab]')?.getAttribute('data-retention') === 'retain',
+      )
+      await lab.locator('[data-retention-button="discard"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-etl-elt-lab]')?.getAttribute('data-retention') ===
+          'discard',
+      )
+      check(
+        `${viewportName} ${route.path} retention controls work at ${width}px`,
+        await checkRetention('0', 'false'),
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(`${viewportName} ${route.path} no pageerror after lab interactions`, errors.length === 0)
     errors.length = 0
   }
 
