@@ -6,7 +6,7 @@ import { getEnglishRoute } from '../../../utils/english-routes'
 
 const title = 'Data Warehouse Engineering | English Resources | sql.sb'
 const description =
-  'Data warehouse engineering pages on modeling, ETL/ELT placement, incremental and full loads, ETL write safety, data reliability, lineage and SCD Type 2 history.'
+  'Data warehouse engineering pages on modeling, ETL/ELT placement, lakehouse table state, incremental and full loads, write safety, data reliability, lineage and SCD Type 2 history.'
 ---
 
 <BaseLayout
@@ -60,6 +60,13 @@ const description =
           <span>
             Compare transform-before-load and load-before-transform, including raw retention and
             replay choices.
+          </span>
+        </a>
+        <a class="english-foundation__card" href={getEnglishRoute('lakehouse')}>
+          <strong>What is a lakehouse?</strong>
+          <span>
+            See how data files, table metadata, catalogs and query engines fit together—and what a
+            table-level commit can make visible.
           </span>
         </a>
         <a class="english-foundation__card" href={getEnglishRoute('grain')}>

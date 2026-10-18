@@ -108,6 +108,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/layers/',
       '/en/data-warehouse/oltp-vs-olap/',
       '/en/data-warehouse/etl-vs-elt/',
+      '/en/data-warehouse/lakehouse/',
       '/en/',
       '/en/sql/',
       '/en/tools/',
@@ -164,6 +165,24 @@ const ENGLISH_ROUTES = [
       'The transformation and target do not change just because their location changes.',
       'Loading raw rows first does not guarantee that a team keeps them after transformation.',
       'The labels do not promise lower cost, faster execution, or safer reruns.',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/lakehouse/',
+    title: 'What Is a Lakehouse? Files, Tables & Engines | sql.sb',
+    heading: 'What is a lakehouse? Files, table state, and query engines',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/layers/',
+      '/en/data-warehouse/etl-vs-elt/',
+      '/en/data-warehouse/idempotent-etl/',
+    ],
+    boundaries: [
+      'not a universal architecture standard',
+      'A table format and its metadata add a table-state contract',
+      'does not describe a transaction across multiple tables or systems',
+      'do not mean every engine can read and write every feature',
     ],
   },
   {
@@ -857,6 +876,95 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       check(
         `${viewportName} ${route.path} retention controls work at ${width}px`,
         await checkRetention('0', 'false'),
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(`${viewportName} ${route.path} no pageerror after lab interactions`, errors.length === 0)
+    errors.length = 0
+  }
+
+  if (route.path === '/en/data-warehouse/lakehouse/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const lab = page.locator('[data-lakehouse-lab]')
+    const table = lab.locator('table')
+    check(
+      `${viewportName} failed file batch leaves readers on v1`,
+      (await lab.getAttribute('data-scenario')) === 'failed' &&
+        (await lab.getAttribute('data-published-version')) === '1' &&
+        (await lab.getAttribute('data-query-version')) === '1' &&
+        (await lab.getAttribute('data-written-files')) === '5' &&
+        (await lab.getAttribute('data-committed-files')) === '0' &&
+        (await table.locator('tbody tr').count()) === 2 &&
+        !(await table.locator('thead').textContent())?.includes('channel'),
+    )
+
+    await lab.locator('[data-scenario-button="committed"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-lakehouse-lab]')?.getAttribute('data-scenario') ===
+        'committed',
+    )
+    check(
+      `${viewportName} committed table update publishes v2 with the evolved schema`,
+      (await lab.getAttribute('data-published-version')) === '2' &&
+        (await lab.getAttribute('data-query-version')) === '2' &&
+        (await lab.getAttribute('data-written-files')) === '10' &&
+        (await lab.getAttribute('data-committed-files')) === '10' &&
+        (await table.locator('tbody tr').count()) === 3 &&
+        (await table.locator('thead').textContent())?.includes('channel'),
+    )
+
+    await lab.locator('[data-scenario-button="time-travel"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-lakehouse-lab]')?.getAttribute('data-scenario') ===
+        'time-travel',
+    )
+    check(
+      `${viewportName} historical query keeps the published pointer at v2`,
+      (await lab.getAttribute('data-published-version')) === '2' &&
+        (await lab.getAttribute('data-query-version')) === '1' &&
+        (await table.locator('tbody tr').count()) === 2 &&
+        !(await table.locator('thead').textContent())?.includes('channel') &&
+        (await lab.locator('[data-lakehouse-stage="pointer"]').textContent())?.includes(
+          'does not move it back',
+        ),
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-scenario-button="failed"]').focus()
+      await lab.locator('[data-scenario-button="failed"]').press('Enter')
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-lakehouse-lab]')?.getAttribute('data-scenario') ===
+          'failed',
+      )
+      await lab.locator('[data-scenario-button="time-travel"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-lakehouse-lab]')?.getAttribute('data-scenario') ===
+          'time-travel',
+      )
+      check(
+        `${viewportName} ${route.path} controls remain usable at ${width}px`,
+        (await lab.getAttribute('data-published-version')) === '2' &&
+          (await lab.getAttribute('data-query-version')) === '1',
       )
     }
     if (originalViewport) await page.setViewportSize(originalViewport)
