@@ -27,6 +27,11 @@ const expectedEnglishPages = [
     title: 'Why Does a SQL JOIN Duplicate Rows? Examples & Fixes | sql.sb',
   },
   {
+    route: '/en/sql/data-skew/',
+    file: 'en/sql/data-skew/index.html',
+    title: 'SQL Data Skew: Why One Task Takes So Long | sql.sb',
+  },
+  {
     route: '/en/data-warehouse/',
     file: 'en/data-warehouse/index.html',
     title: 'Data Warehouse Engineering | English Resources | sql.sb',
@@ -207,6 +212,16 @@ for (const page of expectedEnglishPages) {
       mainHtml.includes('Customer-day features from 2026-09-10 through the current release date'),
       `${page.route} must render the reused late-data range in English`,
     )
+  }
+  if (page.route === '/en/sql/data-skew/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(
+      mainHtml,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} SSR body must be English-only`,
+    )
+    assert.match(mainHtml, /not a measured\s+runtime, a benchmark/)
+    assert.ok(mainHtml.includes('Teaching simulation'))
   }
 
   const expectedAssetPrefix = `${basePath}/_astro/`

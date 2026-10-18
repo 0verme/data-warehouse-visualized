@@ -1,0 +1,191 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { DataSkewLab } from '../../../../components/english/DataSkewLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import dataSkewStylesUrl from '../../../../styles/layouts/english-data-skew.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'SQL Data Skew: Why One Task Takes So Long | sql.sb'
+const description =
+  'Learn how a hot SQL key creates a long-tail task, compare the largest worker with the average, and evaluate salting without treating a simulation as a benchmark.'
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="sql"
+  styleUrls={[dataSkewStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'SQL', key: 'sql' },
+      { label: 'SQL data skew' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">SQL · execution behavior</p>
+    <h1 class="english-article__title">SQL data skew: why one task takes so long</h1>
+    <p class="english-article__lede">
+      Data skew happens when a few key values own far more rows than the rest. After a query
+      redistributes rows by that key, one task can receive much more work than its peers. The stage
+      then waits for the straggler, even if most tasks have already finished.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Check the key distribution at the exchange or shuffle that precedes the slow stage. A hot key
+      can send most matching rows to one execution partition, so the slowest task—not the average—
+      controls stage completion. Filter early, pre-aggregate when the operation allows it, or salt a
+      hot key and merge partial results. Each choice has correctness and resource trade-offs; verify
+      it with the engine's plan and runtime profile.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="skew-shape">
+      <h2 id="skew-shape">What data skew looks like in a SQL stage</h2>
+      <p>
+        Consider an aggregation by <code>open_branch_id</code>. Most branch values may have a modest
+        number of transactions, while one online channel accounts for a large share. A parallel
+        engine often brings equal grouping keys together so it can produce one result per key:
+      </p>
+      <pre><code>{`SELECT open_branch_id, SUM(amount) AS gross_amount
+FROM transactions
+GROUP BY open_branch_id;`}</code></pre>
+      <p>
+        If the execution plan hashes rows by <code>open_branch_id</code>, all rows for one value
+        must be combined somewhere. A hot value can therefore make one task read, sort, aggregate or
+        spill far more input than the others. The stage's wall-clock time is constrained by the task
+        that finishes last, not by the mean amount of work.
+      </p>
+
+      <DataSkewLab client:load />
+
+      <p>
+        The lab reuses a deterministic teaching fixture: 80, 75, 92 and 680 GB across four workers.
+        The salted view divides the 680 GB hot-key input into four equal illustrative buckets and
+        preserves the 927 GB total. These values describe a shape only; they are not a measured
+        runtime, a benchmark or a promise about what a database will do.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="find-hot-key">
+      <h2 id="find-hot-key">Find the hot key before changing the query</h2>
+      <p>
+        Start with the rows that reach the expensive exchange, not just the raw source table. A
+        simple frequency query can reveal a dominant value:
+      </p>
+      <pre><code>{`SELECT open_branch_id, COUNT(*) AS input_rows
+FROM transactions
+GROUP BY open_branch_id
+ORDER BY input_rows DESC
+LIMIT 10;`}</code></pre>
+      <p>
+        <code>LIMIT</code> syntax varies, and an exact frequency count may itself scan a large
+        input. Filters, joins and earlier aggregation can also change the distribution, so compare
+        the relevant input after those operations when possible. Use table statistics as a clue,
+        then inspect the engine's actual plan or query profile for per-task rows, bytes, duration
+        and spill.
+      </p>
+      <div class="english-callout" data-tone="info">
+        <strong>Compare the tail with the center</strong>
+        <p>
+          Record the largest task's input or duration alongside the median or average. If one task
+          is several times larger, an overall average can make a severe long tail look ordinary. The
+          ratio is a diagnostic signal, not a universal threshold.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="mitigations">
+      <h2 id="mitigations">Mitigations change the work, not just the chart</h2>
+      <div class="english-compare-grid">
+        <article class="english-compare-card" data-tone="right">
+          <span>Reduce input before redistribution</span>
+          <h3>Filter or pre-aggregate early</h3>
+          <ul>
+            <li>Apply selective filters before rows cross the expensive exchange.</li>
+            <li>Combine rows locally when the aggregate is valid at that earlier grain.</li>
+            <li>Check that the rewrite preserves null, duplicate and measure semantics.</li>
+          </ul>
+        </article>
+        <article class="english-compare-card" data-tone="info">
+          <span>Split one dominant key</span>
+          <h3>Salt, then merge partial results</h3>
+          <ul>
+            <li>Derive a stable salt bucket from a row-level identifier.</li>
+            <li>
+              Aggregate by the business key plus the salt, then aggregate by the business key again.
+            </li>
+            <li>Expect extra keys, a second aggregation and more state or shuffle overhead.</li>
+          </ul>
+        </article>
+        <article class="english-compare-card" data-tone="info">
+          <span>Use engine support carefully</span>
+          <h3>Check adaptive or skew-aware execution</h3>
+          <ul>
+            <li>Some engines can split skewed work or change a join strategy at runtime.</li>
+            <li>Availability and thresholds depend on the engine, version, plan and statistics.</li>
+            <li>
+              Confirm the executed plan; do not assume that repartitioning alone splits one key.
+            </li>
+          </ul>
+        </article>
+      </div>
+      <pre><code>{`-- Derive salt_bucket from a stable row id (engine-specific hash syntax).
+-- Conceptual two-stage aggregation:
+WITH partial AS (
+  SELECT open_branch_id, salt_bucket, SUM(amount) AS partial_amount
+  FROM transactions
+  GROUP BY open_branch_id, salt_bucket
+)
+SELECT open_branch_id, SUM(partial_amount) AS gross_amount
+FROM partial
+GROUP BY open_branch_id;`}</code></pre>
+      <p>
+        Salting is not a free rewrite. It is naturally compatible with decomposable aggregates such
+        as <code>SUM</code> and <code>COUNT</code>; an <code>AVG</code> needs partial sums and
+        counts before division. Distinct counts, percentiles and other non-additive operations need
+        their own exact or approximate merge logic. Preserve the result contract before comparing
+        resource use.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="verify-change">
+      <h2 id="verify-change">Verify the slowest task and the result</h2>
+      <p>
+        Compare the same input and query semantics before and after a change. Useful evidence
+        includes maximum and median task duration, rows and bytes per task, shuffle read and write,
+        spill, total resource use and the final grouped results. A flatter input chart can still
+        cost more overall if it adds another exchange or aggregation.
+      </p>
+      <ul>
+        <li>Check whether the hot key is present after filters and joins.</li>
+        <li>Compare the largest task with the median, not only with the stage average.</li>
+        <li>Confirm that partial aggregates recombine to the same output at the intended grain.</li>
+        <li>Repeat with representative inputs; one small test does not establish a general win.</li>
+      </ul>
+      <div class="english-callout" data-tone="warning">
+        <strong>Data skew is not the same problem as join fan-out or storage pruning</strong>
+        <p>
+          A join can multiply output rows when keys repeat; that is a correctness and grain
+          question, even though a popular join key can also create skew. See{' '}
+          <a href={getEnglishRoute('joinDuplicateRows')}>why a SQL JOIN duplicates rows</a>. A
+          storage-partition filter may avoid reading files, while a hot grouping key concerns how
+          work is distributed later in execution. These problems can coexist, but their fixes are
+          different.
+        </p>
+      </div>
+    </section>
+
+    <nav class="english-article__related" aria-label="Related English resources">
+      <a href={getEnglishRoute('sql')}>More English SQL resources</a>
+      <a href={getEnglishRoute('joinDuplicateRows')}>SQL JOIN duplicate rows</a>
+      <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+    </nav>
+  </div>
+</EnglishArticleLayout>

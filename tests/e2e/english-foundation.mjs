@@ -39,7 +39,13 @@ const ENGLISH_ROUTES = [
     path: '/en/sql/',
     title: 'SQL Resources | English Data Engineering | sql.sb',
     heading: 'SQL resources',
-    links: ['/en/sql/sql-join-duplicate-rows/', '/en/', '/en/data-warehouse/', '/en/tools/'],
+    links: [
+      '/en/sql/sql-join-duplicate-rows/',
+      '/en/sql/data-skew/',
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/tools/',
+    ],
   },
   {
     path: '/en/sql/sql-join-duplicate-rows/',
@@ -51,6 +57,18 @@ const ENGLISH_ROUTES = [
       'the two O-1001 payments',
       'pairs exist", then DISTINCT',
       'described in data warehouse grain',
+    ],
+  },
+  {
+    path: '/en/sql/data-skew/',
+    title: 'SQL Data Skew: Why One Task Takes So Long | sql.sb',
+    heading: 'SQL data skew: why one task takes so long',
+    links: ['/en/', '/en/sql/', '/en/sql/sql-join-duplicate-rows/', '/en/data-warehouse/grain/'],
+    boundaries: [
+      'all rows for one value',
+      'controls stage completion',
+      'not a measured runtime, a benchmark or a promise',
+      'Data skew is not the same problem as join fan-out or storage pruning',
     ],
   },
   {
@@ -601,6 +619,71 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       )
     }
     if (originalViewport) await page.setViewportSize(originalViewport)
+  }
+
+  if (route.path === '/en/sql/data-skew/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const lab = page.locator('[data-skew-lab]')
+    check(
+      `${viewportName} skew baseline is the deterministic fixture shape`,
+      (await lab.getAttribute('data-skew-plan')) === 'unsplit' &&
+        (await lab.getAttribute('data-skew-total')) === '927' &&
+        (await lab.getAttribute('data-skew-mean')) === '231.75' &&
+        (await lab.getAttribute('data-skew-max')) === '680' &&
+        (await lab.getAttribute('data-skew-ratio')) === '2.93',
+    )
+
+    const saltedButton = lab.locator('[data-skew-plan-button="salted"]')
+    await saltedButton.click()
+    await page.waitForFunction(
+      () => document.querySelector('[data-skew-lab]')?.getAttribute('data-skew-plan') === 'salted',
+    )
+    check(
+      `${viewportName} salting keeps total work and lowers the illustrative long tail`,
+      (await lab.getAttribute('data-skew-total')) === '927' &&
+        (await lab.getAttribute('data-skew-mean')) === '231.75' &&
+        (await lab.getAttribute('data-skew-max')) === '262' &&
+        (await lab.getAttribute('data-skew-ratio')) === '1.13' &&
+        (await lab.locator('[data-skew-worker="Worker 3"]').getAttribute('data-skew-load-gb')) ===
+          '262',
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-skew-plan-button="unsplit"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-skew-lab]')?.getAttribute('data-skew-plan') === 'unsplit',
+      )
+      await lab.locator('[data-skew-plan-button="salted"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-skew-lab]')?.getAttribute('data-skew-plan') === 'salted',
+      )
+      check(
+        `${viewportName} ${route.path} controls remain usable at ${width}px`,
+        (await lab.getAttribute('data-skew-max')) === '262' &&
+          (await lab.getAttribute('data-skew-total')) === '927',
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(`${viewportName} ${route.path} no pageerror after lab interactions`, errors.length === 0)
+    errors.length = 0
   }
 }
 
