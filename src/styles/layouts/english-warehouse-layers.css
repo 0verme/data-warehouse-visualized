@@ -1,0 +1,254 @@
+/* Page-owned layout for /en/data-warehouse/layers/. */
+
+.english-warehouse-layers-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.english-warehouse-layers-lab__header > div {
+  max-width: 76ch;
+}
+
+.english-warehouse-layers-lab__eyebrow {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.english-warehouse-layers-lab__header h3 {
+  margin: 0;
+  font-size: clamp(18px, 2.4vw, 22px);
+  line-height: 1.35;
+}
+
+.english-warehouse-layers-lab__header p:not(.english-warehouse-layers-lab__eyebrow) {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.english-warehouse-layers-lab__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.english-warehouse-layers-lab__controls button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.english-warehouse-layers-lab__controls button:hover,
+.english-warehouse-layers-lab__controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+.english-warehouse-layers-lab__controls button[aria-pressed='true'] {
+  background: var(--success-bg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.english-warehouse-layers-lab__controls button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.english-warehouse-layers-lab__diagram {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) 28px minmax(260px, 1.5fr) 28px minmax(155px, 0.85fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-top: 18px;
+  background: var(--surface-2);
+}
+
+.english-warehouse-layers-lab__sources,
+.english-warehouse-layers-lab__consumers,
+.english-warehouse-layers-lab__stages,
+.english-warehouse-layers-lab__direct-work {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.english-warehouse-layers-lab__node,
+.english-warehouse-layers-lab__consumer,
+.english-warehouse-layers-lab__stage,
+.english-warehouse-layers-lab__work-copy,
+.english-warehouse-layers-lab__direct-summary {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+  overflow-wrap: anywhere;
+}
+
+.english-warehouse-layers-lab__node,
+.english-warehouse-layers-lab__stage,
+.english-warehouse-layers-lab__work-copy,
+.english-warehouse-layers-lab__direct-summary {
+  display: grid;
+  gap: 5px;
+}
+
+.english-warehouse-layers-lab__node > span,
+.english-warehouse-layers-lab__stage > span,
+.english-warehouse-layers-lab__work-copy > span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.english-warehouse-layers-lab__node strong,
+.english-warehouse-layers-lab__stage strong,
+.english-warehouse-layers-lab__work-copy > strong,
+.english-warehouse-layers-lab__direct-summary strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.english-warehouse-layers-lab__node small,
+.english-warehouse-layers-lab__stage p,
+.english-warehouse-layers-lab__direct-summary span {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.english-warehouse-layers-lab__stage code {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.english-warehouse-layers-lab__work-copy ol {
+  display: grid;
+  gap: 5px;
+  padding-left: 18px;
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.english-warehouse-layers-lab__work-copy li::marker {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.english-warehouse-layers-lab__consumer {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.english-warehouse-layers-lab__arrow {
+  color: var(--text-muted);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.english-warehouse-layers-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 135px), 1fr));
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.english-warehouse-layers-lab__metrics > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.english-warehouse-layers-lab__metrics dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.english-warehouse-layers-lab__metrics dd {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.english-warehouse-layers-lab__note {
+  padding: 12px 14px;
+  border-left: 3px solid var(--info-text);
+  margin: 14px 0 0;
+  background: var(--info-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+@media (max-width: 900px) {
+  .english-warehouse-layers-lab__diagram {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .english-warehouse-layers-lab__arrow {
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 420px) {
+  .english-warehouse-layers-lab__diagram {
+    padding: 10px;
+  }
+
+  .english-warehouse-layers-lab__node,
+  .english-warehouse-layers-lab__consumer,
+  .english-warehouse-layers-lab__stage,
+  .english-warehouse-layers-lab__work-copy,
+  .english-warehouse-layers-lab__direct-summary {
+    padding: 10px;
+  }
+}

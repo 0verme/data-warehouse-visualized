@@ -42,6 +42,11 @@ const expectedEnglishPages = [
     title: 'Data Warehouse Engineering | English Resources | sql.sb',
   },
   {
+    route: '/en/data-warehouse/layers/',
+    file: 'en/data-warehouse/layers/index.html',
+    title: 'Data Warehouse Layers Explained: Staging, Core & Marts | sql.sb',
+  },
+  {
     route: '/en/data-warehouse/grain/',
     file: 'en/data-warehouse/grain/index.html',
     title: 'Data Warehouse Grain: What Does One Row Represent? | sql.sb',

@@ -13,6 +13,7 @@ const englishRoutes = [
   { file: 'en/sql/data-skew/index.astro', route: ENGLISH_PATHS.dataSkew },
   { file: 'en/sql/partition-pruning/index.astro', route: ENGLISH_PATHS.partitionPruning },
   { file: 'en/data-warehouse/index.astro', route: ENGLISH_PATHS.warehouse },
+  { file: 'en/data-warehouse/layers/index.astro', route: ENGLISH_PATHS.warehouseLayers },
   { file: 'en/data-warehouse/grain/index.astro', route: ENGLISH_PATHS.grain },
   { file: 'en/data-warehouse/idempotent-etl/index.astro', route: ENGLISH_PATHS.idempotentEtl },
   {
@@ -120,7 +121,7 @@ why-data-warehouse
   .split(/\s+/)
 
 describe('English SEO routing contract', () => {
-  it('defines exactly the eighteen English pages outside /learn/', () => {
+  it('defines exactly the nineteen English pages outside /learn/', () => {
     const pageFiles = readdirSync(pagesDirectory, { recursive: true }).map(String)
     const englishPageFiles = pageFiles
       .filter((path) => path.startsWith('en/') && path.endsWith('.astro'))
@@ -135,6 +136,7 @@ describe('English SEO routing contract', () => {
       '/en/sql/data-skew/',
       '/en/sql/partition-pruning/',
       '/en/data-warehouse/',
+      '/en/data-warehouse/layers/',
       '/en/data-warehouse/grain/',
       '/en/data-warehouse/idempotent-etl/',
       '/en/data-warehouse/data-lineage-vs-task-dependency/',
@@ -155,6 +157,7 @@ describe('English SEO routing contract', () => {
       new URL('../src/pages/en/data-warehouse/index.astro', import.meta.url),
       'utf8',
     )
+    expect(indexSource.match(/getEnglishRoute\('warehouseLayers'\)/g)).toHaveLength(1)
     expect(indexSource.match(/getEnglishRoute\('factVsDimensionTables'\)/g)).toHaveLength(1)
     expect(indexSource.match(/getEnglishRoute\('starSchemaVsSnowflake'\)/g)).toHaveLength(1)
     expect(indexSource.match(/getEnglishRoute\('incrementalVsFullLoad'\)/g)).toHaveLength(1)
@@ -196,6 +199,7 @@ describe('English SEO routing contract', () => {
       expect(getEnglishRoute('dataSkew')).toBe('/preview/en/sql/data-skew/')
       expect(getEnglishRoute('partitionPruning')).toBe('/preview/en/sql/partition-pruning/')
       expect(getEnglishRoute('scdType2')).toBe('/preview/en/data-warehouse/scd-type-2/')
+      expect(getEnglishRoute('warehouseLayers')).toBe('/preview/en/data-warehouse/layers/')
       expect(renderToStaticMarkup(<SiteFooter variant="home" />)).toContain(
         '<a href="/preview/en/">English</a>',
       )
