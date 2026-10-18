@@ -1,0 +1,351 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { StarSchemaVsSnowflakeLab } from '../../../../components/english/StarSchemaVsSnowflakeLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import {
+  PRODUCT_CATEGORY_ROWS,
+  SNOWFLAKE_PRODUCT_ROWS,
+  SNOWFLAKE_SCHEMA_SQL,
+  STAR_PRODUCT_ROWS,
+  STAR_SCHEMA_SQL,
+  TRANSACTION_FACT_ROWS,
+  compareSchemaShapes,
+} from '../../../../features/english-modeling/star-snowflake'
+import starSnowflakeStylesUrl from '../../../../styles/layouts/english-star-snowflake.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'Star Schema vs Snowflake Schema: Trade-offs | sql.sb'
+const description =
+  'Compare star and snowflake schemas using the same transaction model: see how normalization changes dimension joins, repeated attributes and maintenance without changing the query result.'
+const comparison = compareSchemaShapes()
+const usd = (value: number) => value.toLocaleString('en-US')
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[starSnowflakeStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Star schema vs snowflake schema' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · schema design</p>
+    <h1 class="english-article__title">
+      Star schema vs snowflake schema: where should product categories live?
+    </h1>
+    <p class="english-article__lede">
+      Keep the transaction facts fixed and change one modeling choice: store category attributes
+      with each product, or normalize them into a related category dimension.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      A star schema keeps descriptive attributes close to the dimension used by analysts: here,
+      <code>dim_product</code> contains <code>category_name</code>. A snowflake schema normalizes
+      that hierarchy into another table: <code>dim_product</code> keeps a category key and joins to{' '}
+      <code>dim_product_category</code>. Both shapes can return the same category totals from the
+      same fact rows. The star offers a shorter, more direct query path; the snowflake centralizes
+      shared category attributes and can reduce repeated descriptive data, at the cost of another
+      relationship to maintain and query. Neither shape is universally faster or better.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="same-facts">
+      <h2 id="same-facts">Hold the fact rows constant</h2>
+      <p>
+        This teaching fixture records four account transactions. The question is fixed: sum
+        transaction amount by product category. Only the dimension layout changes.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>fact_transaction · the same rows in both models</caption>
+          <thead>
+            <tr>
+              <th scope="col">transaction_id</th>
+              <th scope="col">product_sk</th>
+              <th scope="col">transaction_amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {TRANSACTION_FACT_ROWS.map((row) => (
+              <tr>
+                <td>
+                  <code>{row.transaction_id}</code>
+                </td>
+                <td>
+                  <code>{row.product_sk}</code>
+                </td>
+                <td>{usd(Number(row.transaction_amount))}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2">Fact total</td>
+              <td>{usd(comparison.star.total)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p>
+        This article is about dimension normalization and join topology, not about what one fact row
+        means. For the role of each table, see{' '}
+        <a href={getEnglishRoute('factVsDimensionTables')}>fact table vs dimension table</a>; for
+        row meaning, see <a href={getEnglishRoute('grain')}>data warehouse grain</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="shapes">
+      <h2 id="shapes">One category hierarchy, two dimension shapes</h2>
+      <div class="star-snowflake__comparison-grid">
+        <article class="star-snowflake__comparison-card">
+          <span class="star-snowflake__label">STAR · direct attribute</span>
+          <h3>dim_product carries category_name</h3>
+          <p>Product and category descriptions are on one dimension row set.</p>
+          <div class="english-table-scroll">
+            <table class="english-table">
+              <caption>Star-shaped dim_product fixture</caption>
+              <thead>
+                <tr>
+                  <th scope="col">product_sk</th>
+                  <th scope="col">product_name</th>
+                  <th scope="col">category_name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {STAR_PRODUCT_ROWS.map((row) => (
+                  <tr>
+                    <td>
+                      <code>{row.product_sk}</code>
+                    </td>
+                    <td>{row.product_name}</td>
+                    <td>{row.category_name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <article class="star-snowflake__comparison-card">
+          <span class="star-snowflake__label">SNOWFLAKE · normalized attribute</span>
+          <h3>dim_product points to dim_product_category</h3>
+          <p>Product rows hold a category key; the category label has one owner.</p>
+          <div class="english-table-scroll">
+            <table class="english-table">
+              <caption>Snowflake dim_product fixture</caption>
+              <thead>
+                <tr>
+                  <th scope="col">product_sk</th>
+                  <th scope="col">product_name</th>
+                  <th scope="col">category_sk</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SNOWFLAKE_PRODUCT_ROWS.map((row) => (
+                  <tr>
+                    <td>
+                      <code>{row.product_sk}</code>
+                    </td>
+                    <td>{row.product_name}</td>
+                    <td>
+                      <code>{row.category_sk}</code>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div class="english-table-scroll">
+            <table class="english-table">
+              <caption>Snowflake dim_product_category fixture</caption>
+              <thead>
+                <tr>
+                  <th scope="col">category_sk</th>
+                  <th scope="col">category_name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PRODUCT_CATEGORY_ROWS.map((row) => (
+                  <tr>
+                    <td>
+                      <code>{row.category_sk}</code>
+                    </td>
+                    <td>{row.category_name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+      <p>
+        The category label “Deposit accounts” appears on two product rows in the star fixture, but
+        once in the normalized category table. Renaming it therefore touches two product rows in
+        this example versus one category row. A real system must also decide how that change is
+        historized; a normalized table alone does not preserve history.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="query-shape">
+      <h2 id="query-shape">The query adds one join, not a different answer</h2>
+      <div class="star-snowflake__sql-grid">
+        <div>
+          <h3>Star: fact to product</h3>
+          <pre class="star-snowflake__sql"><code>{STAR_SCHEMA_SQL}</code></pre>
+        </div>
+        <div>
+          <h3>Snowflake: fact to product to category</h3>
+          <pre class="star-snowflake__sql"><code>{SNOWFLAKE_SCHEMA_SQL}</code></pre>
+        </div>
+      </div>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Deterministic query result from both shapes</caption>
+          <thead>
+            <tr>
+              <th scope="col">category_name</th>
+              <th scope="col">Star total</th>
+              <th scope="col">Snowflake total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.star.rows.map((row, index) => (
+              <tr>
+                <td>{row.category_name}</td>
+                <td>{usd(row.total_amount)}</td>
+                <td>{usd(comparison.snowflake.rows[index]?.total_amount ?? 0)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>Grand total</td>
+              <td>{usd(comparison.star.total)}</td>
+              <td>{usd(comparison.snowflake.total)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <p>
+        The output is equal because each product key resolves to exactly one product row and each
+        category key resolves to exactly one category row. If either relationship is not unique or
+        referentially complete, the join can drop or multiply facts; normalization does not remove
+        the need for key and relationship checks.
+      </p>
+      <StarSchemaVsSnowflakeLab client:load />
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">Choose for the maintenance and query contract</h2>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Trade-offs for the same product-category hierarchy</caption>
+          <thead>
+            <tr>
+              <th scope="col">Concern</th>
+              <th scope="col">Star shape</th>
+              <th scope="col">Snowflake shape</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Consumer query</th>
+              <td>Fewer joins; category is immediately available on the product dimension.</td>
+              <td>One additional join or a semantic-layer relationship.</td>
+            </tr>
+            <tr>
+              <th scope="row">Repeated attributes</th>
+              <td>Shared category text repeats across product rows.</td>
+              <td>Category description has one row in its own dimension.</td>
+            </tr>
+            <tr>
+              <th scope="row">Change ownership</th>
+              <td>
+                Updating a shared label requires every affected product row to stay consistent.
+              </td>
+              <td>
+                A category value has one maintenance location, with key and history rules to manage.
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Consumer simplicity</th>
+              <td>
+                Often easier for self-service users and BI tools with simple relationship support.
+              </td>
+              <td>Can require more modeling knowledge and additional semantic relationships.</td>
+            </tr>
+            <tr>
+              <th scope="row">Query performance</th>
+              <td colspan="2">
+                Depends on the engine, optimizer, storage, statistics, data size and workload; join
+                count alone is not a benchmark.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        A small, stable hierarchy with many consumers may justify a normalized shared dimension. If
+        simple, predictable analyst queries matter more and repeated attributes are manageable,
+        keeping the hierarchy in one dimension can be a better serving contract. Many warehouses
+        choose a deliberate mix rather than enforcing one shape everywhere.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="boundaries">
+      <h2 id="boundaries">Boundaries: normalization is not history or grain</h2>
+      <ul>
+        <li>
+          <strong>Not fact vs dimension.</strong> Both models still have a fact and a descriptive
+          dimension; this choice is about whether one dimension is split into related tables.
+        </li>
+        <li>
+          <strong>Not grain.</strong> The four transaction facts and their business meaning do not
+          change when the category table is split. See <a href={getEnglishRoute('grain')}>grain</a>{' '}
+          for the row-level contract.
+        </li>
+        <li>
+          <strong>Not SCD.</strong> Normalizing a category does not decide whether old transactions
+          should show the category label as it was at the time. That is a history policy; see{' '}
+          <a href={getEnglishRoute('scdType2')}>SCD Type 2</a>.
+        </li>
+        <li>
+          <strong>Not a universal speed rule.</strong> A star has fewer explicit joins in this
+          example, but execution plans and performance depend on the database and workload. The
+          numbers above count rows in a synthetic fixture, not elapsed time or production cost.
+        </li>
+      </ul>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('factVsDimensionTables')}>Fact table vs dimension table</a> —
+          roles, keys and measure ownership.
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a> — what one row represents.
+        </li>
+        <li>
+          <a href={getEnglishRoute('scdType2')}>SCD Type 2</a> — how dimension attribute history is
+          represented.
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>Idempotent ETL</a> — a separate write-safety
+          question, not a schema-normalization choice.
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

@@ -20,6 +20,7 @@ export const ENGLISH_PATHS = {
   dataContracts: '/en/data-warehouse/data-contracts/',
   pipelineObservability: '/en/data-warehouse/pipeline-observability/',
   factVsDimensionTables: '/en/data-warehouse/fact-vs-dimension-tables/',
+  starSchemaVsSnowflake: '/en/data-warehouse/star-schema-vs-snowflake/',
   tools: '/en/tools/',
 } as const
 
