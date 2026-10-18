@@ -16,6 +16,7 @@ const fullLoad = comparison.plans.find(({ id }) => id === 'full-load')!
 const eventTimeOnly = comparison.plans.find(({ id }) => id === 'event-time-only')!
 const arrivalCursor = comparison.plans.find(({ id }) => id === 'arrival-cursor')!
 const lateData = tradeoffData.lateData
+const affectedFeatureRange = `Customer-day features from ${lateData.businessDate} through the current release date`
 const usd = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 0 })
 ---
 
@@ -183,7 +184,7 @@ const usd = (value: number) => value.toLocaleString('en-US', { maximumFractionDi
                 {lateData.customerId} × {lateData.counterpartyId}: first-seen date changes from{' '}
                 {lateData.currentFirstSeenDate} to {lateData.correctedFirstSeenDate}
               </td>
-              <td>{lateData.affectedFeatureRange}</td>
+              <td>{affectedFeatureRange}</td>
             </tr>
           </tbody>
         </table>

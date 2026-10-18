@@ -269,6 +269,7 @@ const ENGLISH_ROUTES = [
       'A full load rebuilds the complete declared target scope',
       'The event-time-only filter leaves the old result at',
       'Arrival date is not business date',
+      'Customer-day features from 2026-09-10 through the current release date',
       'Do not confuse load scope with idempotent writes',
     ],
   },
@@ -525,6 +526,10 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
   }
 
   if (route.path === '/en/data-warehouse/incremental-vs-full-load/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
     const lab = page.locator('[data-load-lab]')
     const result = lab.locator('[data-load-plan]')
     await lab.locator('[data-load-plan-button="event-time-only"]').click()
