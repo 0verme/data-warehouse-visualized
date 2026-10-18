@@ -76,6 +76,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/fact-vs-dimension-tables/index.html',
     title: 'Fact Table vs Dimension Table: Roles & Keys | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/star-schema-vs-snowflake/',
+    file: 'en/data-warehouse/star-schema-vs-snowflake/index.html',
+    title: 'Star Schema vs Snowflake Schema: Trade-offs | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 

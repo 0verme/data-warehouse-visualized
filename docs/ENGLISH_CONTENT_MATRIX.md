@@ -361,6 +361,7 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 | 2026-10-17 | 队列第 2 篇 `data-quality-checks` merged 并上线；台账补录第 2 行                                                                                             | PR #265 `4a599a5`；deploy `39030453540`；生产探针 11/11 英文路由 |
 | 2026-10-17 | 队列第 3 篇 `data-contracts` merged 并上线；台账补录第 3 行                                                                                                  | PR #267 `e6fac48`；deploy `39032017897`；生产探针 12/12 英文路由 |
 | 2026-10-17 | 队列第 4 篇 `pipeline-observability` merged 并上线；Cluster E 完成；台账补录第 4 行                                                                          | PR #269 `428dded`；deploy `39033653943`；生产探针 13/13 英文路由 |
+| 2026-10-17 | 队列第 5 篇 `fact-vs-dimension-tables` merged 并上线；Cluster B 开始；台账补录第 5 行                                                                        | PR #271 `67c48a0`；deploy `39035457680`；生产探针 14/14 英文路由 |
 
 > 后续 Loop 应在完成 Wave 0 任务、Gate 变化或 Child 判定调整时更新本表与 #220，而不是重写整份文档。
 
@@ -434,6 +435,7 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 | 2026-10-17 | `/en/data-warehouse/data-quality-checks/`       | E #226 / Child #264 | [#265](https://github.com/0verme/data-warehouse-visualized/pull/265) | `4a599a5` | `39030453540` success | 生产探针 2026-10-17T11:52Z：HTTP 200 / `lang=en` / self-canonical / 无 noindex / 无 hreflang / 唯一 H1 / SSR 正文 15,211 字符 / 无 CJK；sitemap 含该 URL（英文路由 11 条）；GSC = `DATA NOT YET AVAILABLE`            |
 | 2026-10-17 | `/en/data-warehouse/data-contracts/`            | E #226 / Child #266 | [#267](https://github.com/0verme/data-warehouse-visualized/pull/267) | `e6fac48` | `39032017897` success | 生产探针 2026-10-17T12:15Z：HTTP 200 / `lang=en` / self-canonical / 无 noindex / 无 hreflang / 唯一 H1 / SSR 正文 12,944 字符 / 无 CJK；sitemap 含该 URL（英文路由 12 条）；GSC = `DATA NOT YET AVAILABLE`            |
 | 2026-10-17 | `/en/data-warehouse/pipeline-observability/`    | E #226 / Child #268 | [#269](https://github.com/0verme/data-warehouse-visualized/pull/269) | `428dded` | `39033653943` success | 生产探针 2026-10-17T12:59Z：HTTP 200 / `lang=en` / self-canonical / 无 noindex / 无 hreflang / 唯一 H1 / SSR 正文 12,017 字符 / 无 CJK；sitemap 含该 URL（英文路由 13 条）；GSC = `DATA NOT YET AVAILABLE`            |
+| 2026-10-17 | `/en/data-warehouse/fact-vs-dimension-tables/`  | B #223 / Child #270 | [#271](https://github.com/0verme/data-warehouse-visualized/pull/271) | `67c48a0` | `39035457680` success | 生产探针 2026-10-17T13:19Z：HTTP 200 / `lang=en` / self-canonical / 无 noindex / 无 hreflang / 唯一 H1 / SSR 正文 11,484 字符 / 无 CJK；sitemap 含该 URL（英文路由 14 条）；GSC = `DATA NOT YET AVAILABLE`            |
 
 **观测基线规则：** 每篇记录 launch date、URL、commit、deploy run 与首次生产探针结果（HTTP / lang / canonical / sitemap / SSR 正文）；GSC / SERP 数据可得时追加 query / impression / index 状态，不可得时记 `DATA NOT YET AVAILABLE`；不与 #179 Baseline A / B 合并。
 

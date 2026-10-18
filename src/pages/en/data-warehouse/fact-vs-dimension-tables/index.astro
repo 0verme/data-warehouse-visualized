@@ -280,7 +280,11 @@ const usd = (value: number) => value.toLocaleString('en-US')
             </tr>
             <tr>
               <td>How normalized should the schema be, and how many joins is that?</td>
-              <td>Star schema vs snowflake schema (next page)</td>
+              <td>
+                <a href={getEnglishRoute('starSchemaVsSnowflake')}>
+                  Star schema vs snowflake schema
+                </a>
+              </td>
             </tr>
             <tr>
               <td>How does a dimension attribute change over time?</td>
@@ -329,6 +333,10 @@ const usd = (value: number) => value.toLocaleString('en-US')
         <li>
           <a href={getEnglishRoute('grain')}>Data warehouse grain</a> — the row meaning that makes a
           fact table’s measures add up correctly.
+        </li>
+        <li>
+          <a href={getEnglishRoute('starSchemaVsSnowflake')}>Star schema vs snowflake schema</a> —
+          how normalization changes the dimension join shape.
         </li>
         <li>
           <a href={getEnglishRoute('scdType2')}>SCD Type 2 example</a> — how dimension attributes
