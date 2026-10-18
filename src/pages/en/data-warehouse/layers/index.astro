@@ -52,9 +52,11 @@ const layerModel = getWarehouseLayersDecisionModel()
     <section class="english-article__section" aria-labelledby="responsibilities">
       <h2 id="responsibilities">What staging, core, and mart mean in this example</h2>
       <p>
-        The labels describe jobs, not product types or a universal naming scheme. A team can combine
-        two jobs in one table, split one job across several assets, or use different names if the
-        data contract stays clear.
+        This fixture follows deposit-balance and loan-balance inputs to a branch-level
+        loan-to-deposit ratio: a comparison of those balances for the same branch. The labels
+        describe jobs, not product types or a universal naming scheme. A team can combine two jobs
+        in one table, split one job across several assets, or use different names if the data
+        contract stays clear.
       </p>
       <div class="english-table-scroll">
         <table class="english-table">
@@ -93,8 +95,8 @@ const layerModel = getWarehouseLayersDecisionModel()
         A separate SQL-transformation fixture starts with account-balance snapshots, standardizes
         shared detail, groups balances for reuse, then selects one metric for a report. The
         published row is for snapshot date <code>{layerModel.fixedExample.snapshotDate}</code>,
-        Hangzhou branch, small-business customers, fixed-term deposits, and CNY. The counts below
-        come from that deterministic fixture; they are not production volumes.
+        Hangzhou branch, the fixture's upstream small-business category, fixed-term deposits, and
+        CNY. The counts below come from that deterministic fixture; they are not production volumes.
       </p>
       <div class="english-table-scroll">
         <table

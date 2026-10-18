@@ -107,7 +107,7 @@ const stageCopy: Record<string, Omit<WarehouseLayerStageView, 'id' | 'output'>> 
 const repeatedResponsibilities = [
   'Read the source snapshots',
   'Align branch identifiers',
-  'Apply the same ratio definition',
+  'Aggregate balances and apply the same ratio definition',
 ] as const
 
 function getLayerEvolutionVisualization(): LayerEvolutionVisualization {

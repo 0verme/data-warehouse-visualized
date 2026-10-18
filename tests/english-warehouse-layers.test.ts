@@ -38,7 +38,7 @@ describe('English warehouse-layers decision model', () => {
       repeatedResponsibilities: [
         'Read the source snapshots',
         'Align branch identifiers',
-        'Apply the same ratio definition',
+        'Aggregate balances and apply the same ratio definition',
       ],
     })
     expect(many).toMatchObject({
