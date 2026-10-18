@@ -57,6 +57,11 @@ const expectedEnglishPages = [
     title: 'ETL vs ELT: Where Should You Transform Data? | sql.sb',
   },
   {
+    route: '/en/data-warehouse/lakehouse/',
+    file: 'en/data-warehouse/lakehouse/index.html',
+    title: 'What Is a Lakehouse? Files, Tables & Engines | sql.sb',
+  },
+  {
     route: '/en/data-warehouse/grain/',
     file: 'en/data-warehouse/grain/index.html',
     title: 'Data Warehouse Grain: What Does One Row Represent? | sql.sb',
@@ -273,6 +278,40 @@ for (const page of expectedEnglishPages) {
       'data-published-amount': '300000',
     })) {
       assert.equal(getTagAttribute(fixture, /<div\b[^>]*>/i, attribute), expected)
+    }
+    const islandUrl = getTagAttribute(mainHtml, /<astro-island\b[^>]*>/i, 'component-url')
+    const islandPath = removeBase(new URL(islandUrl, siteOrigin).pathname)
+    const islandScript = readFileSync(join(dist, islandPath.replace(/^\/+/, '')), 'utf8')
+    assert.doesNotMatch(
+      islandScript,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} client island must not bundle Chinese lesson content`,
+    )
+  }
+  if (page.route === '/en/data-warehouse/lakehouse/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(
+      mainHtml,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} SSR body must be English-only`,
+    )
+    assert.ok(mainHtml.includes('not a universal architecture standard'))
+    assert.ok(
+      mainHtml.includes('The file count and sample rows are separate views in this fixture'),
+    )
+    assert.ok(
+      mainHtml.includes('does not describe a transaction across multiple tables or systems.'),
+    )
+    const lab = mainHtml.match(/<section\b[^>]*data-lakehouse-lab[^>]*>/)?.[0] ?? ''
+    assert.ok(lab, `${page.route} must server-render the table-state island`)
+    for (const [attribute, expected] of Object.entries({
+      'data-scenario': 'failed',
+      'data-published-version': '1',
+      'data-query-version': '1',
+      'data-written-files': '5',
+      'data-committed-files': '0',
+    })) {
+      assert.equal(getTagAttribute(lab, /<section\b[^>]*>/i, attribute), expected)
     }
     const islandUrl = getTagAttribute(mainHtml, /<astro-island\b[^>]*>/i, 'component-url')
     const islandPath = removeBase(new URL(islandUrl, siteOrigin).pathname)

@@ -1,0 +1,219 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { LakehouseTableStateLab } from '../../../../components/english/LakehouseTableStateLab'
+import { buildEnglishLakehouseFixture } from '../../../../features/english-lakehouse/fixture'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import lakehouseStylesUrl from '../../../../styles/layouts/english-lakehouse.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+
+const title = 'What Is a Lakehouse? Files, Tables & Engines | sql.sb'
+const description =
+  'A lakehouse is an architecture pattern, not a standard. See how data files, table metadata, catalogs and query engines fit in a bounded table-commit example.'
+const fixture = buildEnglishLakehouseFixture()
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[lakehouseStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Lakehouse' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · lakehouse pattern</p>
+    <h1 class="english-article__title">
+      What is a lakehouse? Files, table state, and query engines
+    </h1>
+    <p class="english-article__lede">
+      A lakehouse is a useful name for an analytical architecture pattern: data files remain in
+      lake-style storage while a table-management layer makes schema and committed table state
+      explicit for compatible query engines. The term is not a universal architecture standard, and
+      the exact boundaries depend on the implementation.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      A lakehouse pattern combines flexible file storage with managed table semantics, such as a
+      schema and a versioned set of files, so supported engines can query a defined table state. The
+      files store data; table metadata describes which files belong to a table version; a catalog
+      can help engines find the table; and a query engine executes the read. These are related but
+      distinct responsibilities—not one interchangeable product or a promise of universal
+      transactions or engine compatibility.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="roles">
+      <h2 id="roles">Four responsibilities sit between stored bytes and a query result</h2>
+      <p>
+        A file can be readable without telling every reader which schema or file set represents the
+        current table. A table format and its metadata add a table-state contract; a catalog and a
+        query engine may participate too, but they do different jobs.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Separate the data, table, discovery, and execution roles</caption>
+          <thead>
+            <tr>
+              <th scope="col">Responsibility</th>
+              <th scope="col">What it contributes</th>
+              <th scope="col">What it does not do by itself</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Data files</th>
+              <td>
+                Store records as bytes in a file format such as Parquet, JSON, or CSV. The teaching
+                fixture below models a small mobile-banking event table.
+              </td>
+              <td>A directory of files alone does not define the current table version.</td>
+            </tr>
+            <tr>
+              <th scope="row">Table format and metadata</th>
+              <td>
+                Describe table schema and, in supported implementations, the data files and
+                snapshots that make up a table state.
+              </td>
+              <td>It does not execute a SQL query or provide compute on its own.</td>
+            </tr>
+            <tr>
+              <th scope="row">Catalog</th>
+              <td>
+                Help identify or discover a table and locate its metadata through an
+                implementation's catalog interface.
+              </td>
+              <td>Its exact role and boundary vary; a catalog is not the query engine.</td>
+            </tr>
+            <tr>
+              <th scope="row">Query engine</th>
+              <td>
+                Plans and executes a query, reading table metadata and data files through a
+                compatible integration.
+              </td>
+              <td>
+                Reading one format does not imply support for every format feature or commit path.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        In a particular deployment, some responsibilities may be packaged together or exposed
+        through different interfaces. Keep the concepts separate when tracing who stores bytes,
+        defines table state, resolves a table name, and runs the query.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="table-state">
+      <h2 id="table-state">Follow one table update from files to reader visibility</h2>
+      <p>
+        This fixed example reuses the existing <code>mobile_banking_events</code> teaching fixture.
+        Version 1 has two sample event rows and four fields. An update adds a <code>channel</code>{' '}
+        field and a new sample event. The separate file batch models ten files, with the sixth as a
+        failure point; the file count is not a row count or a one-file-per-row mapping.
+      </p>
+      <LakehouseTableStateLab client:load fixture={fixture} />
+      <p>
+        The failed case leaves five files written before the error, but they are not included in a
+        committed v2 snapshot in this model. Their later cleanup is not assumed. On a successful
+        table-level commit, the example publishes v2; querying historical v1 changes this read's
+        target, not the current published pointer.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="scope">
+      <h2 id="scope">A table commit has a boundary</h2>
+      <p>
+        A supported integration can define how a particular table update becomes a committed
+        version. That is a table-level statement about the format, storage, catalog, and engine path
+        involved—not a guarantee of one distributed transaction across ingestion, transformations,
+        multiple tables, or unrelated services. Implementations differ in their commit protocols,
+        concurrency handling, and supported operations.
+      </p>
+      <ul>
+        <li>
+          Snapshot history can make earlier table states addressable, but retention policy still
+          determines which history remains available.
+        </li>
+        <li>
+          A schema change can be represented as a table-state change; engine behavior for that
+          change depends on compatible implementations and the features in use.
+        </li>
+        <li>
+          Open or interoperable formats do not mean every engine can read and write every feature
+          with equal support. Verify the actual engine, catalog, format, and version combination.
+        </li>
+        <li>
+          Table metadata does not automatically provide governance, permissions, data quality,
+          lineage, file cleanup, or a performance improvement.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>
+          The example is a table-state model, not a cross-system transaction guarantee
+        </strong>
+        <p>
+          It reuses the repository's deterministic teaching fixture to show one supported commit
+          boundary. It does not measure a storage engine, estimate runtime, or claim that all
+          lakehouse implementations behave identically.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="examples">
+      <h2 id="examples">Treat implementation names as examples, not synonyms</h2>
+      <p>
+        {fixture.formatExamples.join(', ')} are examples of table-management projects used in
+        lakehouse discussions. They have distinct specifications, protocols, and integration
+        behavior; this page does not compare them or promise feature parity. For implementation
+        details, check the relevant project's current documentation:
+      </p>
+      <ul>
+        <li>
+          <a href="https://iceberg.apache.org/spec/">Apache Iceberg format specification</a>
+        </li>
+        <li>
+          <a href="https://github.com/delta-io/delta/blob/master/PROTOCOL.md">
+            Delta Lake transaction protocol
+          </a>
+        </li>
+        <li>
+          <a href="https://hudi.apache.org/docs/timeline/">Apache Hudi timeline documentation</a>
+        </li>
+      </ul>
+      <p>
+        Specifications and compatibility evolve. A broad description of a table-management pattern
+        is not a substitute for checking a concrete deployment's supported operations and
+        integration boundaries.
+      </p>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('warehouseLayers')}>Data warehouse layers</a>
+          <p>How staging, core, and mart responsibilities differ from a storage/table pattern.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('etlVsElt')}>ETL vs ELT</a>
+          <p>Where transformation happens relative to the warehouse load boundary.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>Idempotent ETL</a>
+          <p>Why write repeatability and recovery are separate from a table format.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>

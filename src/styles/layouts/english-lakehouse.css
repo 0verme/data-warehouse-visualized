@@ -1,0 +1,224 @@
+/* Page-owned styles for /en/data-warehouse/lakehouse/. */
+
+.english-lakehouse-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.english-lakehouse-lab__header {
+  max-width: 760px;
+}
+
+.english-lakehouse-lab__eyebrow {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.english-lakehouse-lab__header h3 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: clamp(20px, 2.5vw, 26px);
+  line-height: 1.25;
+}
+
+.english-lakehouse-lab__header > p:last-child,
+.english-lakehouse-lab__note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.english-lakehouse-lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+
+.english-lakehouse-lab__controls button {
+  flex: 1 1 150px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.english-lakehouse-lab__controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.english-lakehouse-lab__controls button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.english-lakehouse-lab__result {
+  padding: 16px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-md);
+  margin: 0 0 18px;
+  background: var(--info-bg);
+}
+
+.english-lakehouse-lab__result > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.english-lakehouse-lab__result > .english-lakehouse-lab__result-title {
+  margin-bottom: 4px;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.english-lakehouse-lab__versions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.english-lakehouse-lab__versions > div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+}
+
+.english-lakehouse-lab__versions dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.english-lakehouse-lab__versions dd {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.english-lakehouse-lab__chain {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  margin: 0 0 18px;
+  list-style: none;
+}
+
+.english-lakehouse-lab__chain li {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.english-lakehouse-lab__chain strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.english-lakehouse-lab__chain span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.english-lakehouse-lab__table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+}
+
+.english-lakehouse-lab__table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+}
+
+.english-lakehouse-lab__table caption {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: left;
+}
+
+.english-lakehouse-lab__table th,
+.english-lakehouse-lab__table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.english-lakehouse-lab__table thead th {
+  background: var(--surface-2);
+  font-size: 12px;
+}
+
+.english-lakehouse-lab__table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.english-lakehouse-lab__note {
+  margin-top: 14px;
+}
+
+@media (max-width: 700px) {
+  .english-lakehouse-lab {
+    padding: 15px 12px;
+  }
+
+  .english-lakehouse-lab__versions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .english-lakehouse-lab__chain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  .english-lakehouse-lab__chain {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
