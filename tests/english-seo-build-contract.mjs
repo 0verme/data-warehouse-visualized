@@ -47,6 +47,11 @@ const expectedEnglishPages = [
     title: 'Data Warehouse Layers Explained: Staging, Core & Marts | sql.sb',
   },
   {
+    route: '/en/data-warehouse/oltp-vs-olap/',
+    file: 'en/data-warehouse/oltp-vs-olap/index.html',
+    title: 'OLTP vs OLAP: Row and Column Storage Explained | sql.sb',
+  },
+  {
     route: '/en/data-warehouse/grain/',
     file: 'en/data-warehouse/grain/index.html',
     title: 'Data Warehouse Grain: What Does One Row Represent? | sql.sb',
@@ -222,6 +227,16 @@ for (const page of expectedEnglishPages) {
       mainHtml.includes('Customer-day features from 2026-09-10 through the current release date'),
       `${page.route} must render the reused late-data range in English`,
     )
+  }
+  if (page.route === '/en/data-warehouse/oltp-vs-olap/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(
+      mainHtml,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} SSR body must be English-only`,
+    )
+    assert.ok(mainHtml.includes('one row page or four column blocks'))
+    assert.ok(mainHtml.includes('does not model mutation cost'))
   }
   if (page.route === '/en/sql/data-skew/') {
     const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''

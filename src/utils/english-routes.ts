@@ -14,6 +14,7 @@ export const ENGLISH_PATHS = {
   partitionPruning: '/en/sql/partition-pruning/',
   warehouse: '/en/data-warehouse/',
   warehouseLayers: '/en/data-warehouse/layers/',
+  oltpVsOlap: '/en/data-warehouse/oltp-vs-olap/',
   grain: '/en/data-warehouse/grain/',
   idempotentEtl: '/en/data-warehouse/idempotent-etl/',
   lineageVsTaskDependency: '/en/data-warehouse/data-lineage-vs-task-dependency/',
