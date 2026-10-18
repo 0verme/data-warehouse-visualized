@@ -1,0 +1,248 @@
+/* Page-owned styles for /en/data-warehouse/etl-vs-elt/. */
+
+.english-etl-elt-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.english-etl-elt-lab__header {
+  max-width: 760px;
+}
+
+.english-etl-elt-lab__eyebrow,
+.english-etl-elt-lab__path-label {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.english-etl-elt-lab__header h3 {
+  margin: 0 0 8px;
+  color: var(--text-primary);
+  font-size: clamp(20px, 2.5vw, 26px);
+  line-height: 1.25;
+}
+
+.english-etl-elt-lab__header > p:last-child,
+.english-etl-elt-lab__retention p,
+.english-etl-elt-lab__boundary,
+.english-etl-elt-lab__retained-at,
+.english-etl-elt-lab__note {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.english-etl-elt-lab__header > p:last-child {
+  margin: 0;
+}
+
+.english-etl-elt-lab__result {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-md);
+  margin: 20px 0;
+  background: var(--info-bg);
+}
+
+.english-etl-elt-lab__result > span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.english-etl-elt-lab__result > strong {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.english-etl-elt-lab__result > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.english-etl-elt-lab__retention {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.english-etl-elt-lab__retention > div:first-child {
+  flex: 1 1 250px;
+  min-width: 0;
+}
+
+.english-etl-elt-lab__retention strong {
+  color: var(--text-primary);
+}
+
+.english-etl-elt-lab__retention p {
+  margin: 4px 0 0;
+}
+
+.english-etl-elt-lab__controls {
+  display: flex;
+  flex: 1 1 320px;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.english-etl-elt-lab__controls button {
+  flex: 1 1 150px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.english-etl-elt-lab__controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.english-etl-elt-lab__controls button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.english-etl-elt-lab__paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.english-etl-elt-lab__path {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.english-etl-elt-lab__path h4 {
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.english-etl-elt-lab__path ol {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.english-etl-elt-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.english-etl-elt-lab__metrics > div {
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.english-etl-elt-lab__metrics dt {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.english-etl-elt-lab__metrics dd {
+  margin: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.english-etl-elt-lab__boundary,
+.english-etl-elt-lab__retained-at {
+  margin: 12px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.english-etl-elt-lab__retained-at strong {
+  color: var(--text-primary);
+}
+
+.english-etl-elt-lab__replay {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-sm);
+  margin: 12px 0 0;
+  background: var(--info-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.english-etl-elt-lab__path[data-replay-available='false'] .english-etl-elt-lab__replay {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+}
+
+.english-etl-elt-lab__replay strong {
+  color: var(--text-primary);
+}
+
+.english-etl-elt-lab__note {
+  margin: 16px 0 0;
+}
+
+@media (max-width: 680px) {
+  .english-etl-elt-lab {
+    padding: 15px 12px;
+  }
+
+  .english-etl-elt-lab__paths {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .english-etl-elt-lab__path {
+    padding: 14px;
+  }
+}

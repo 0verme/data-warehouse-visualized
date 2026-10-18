@@ -15,6 +15,7 @@ export const ENGLISH_PATHS = {
   warehouse: '/en/data-warehouse/',
   warehouseLayers: '/en/data-warehouse/layers/',
   oltpVsOlap: '/en/data-warehouse/oltp-vs-olap/',
+  etlVsElt: '/en/data-warehouse/etl-vs-elt/',
   grain: '/en/data-warehouse/grain/',
   idempotentEtl: '/en/data-warehouse/idempotent-etl/',
   lineageVsTaskDependency: '/en/data-warehouse/data-lineage-vs-task-dependency/',
