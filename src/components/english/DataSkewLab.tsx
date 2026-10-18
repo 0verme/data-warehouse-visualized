@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { getDataSkewSnapshot, type DataSkewPlan } from '../../features/english-data-skew/model'
 
 const numberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+const BAR_SCALE_MAX_GB = getDataSkewSnapshot('unsplit').maximumInputGb
 
 function formatGb(value: number): string {
   return `${numberFormat.format(value)} GB`
@@ -21,6 +22,7 @@ export function DataSkewLab() {
       className="english-data-skew-lab"
       data-skew-lab
       data-skew-plan={plan}
+      data-skew-bar-scale={BAR_SCALE_MAX_GB}
       data-skew-total={snapshot.totalInputGb}
       data-skew-mean={snapshot.averageInputGb}
       data-skew-max={snapshot.maximumInputGb}
@@ -85,17 +87,17 @@ export function DataSkewLab() {
               role="meter"
               aria-label={`${worker.workerId} simulated input`}
               aria-valuemin={0}
-              aria-valuemax={snapshot.maximumInputGb}
+              aria-valuemax={BAR_SCALE_MAX_GB}
               aria-valuenow={worker.totalInputGb}
               aria-valuetext={`${formatGb(worker.totalInputGb)} of simulated input`}
             >
               <span
                 className="english-data-skew-lab__bar-segment english-data-skew-lab__bar-segment--routine"
-                style={{ width: `${(worker.routineInputGb / snapshot.maximumInputGb) * 100}%` }}
+                style={{ width: `${(worker.routineInputGb / BAR_SCALE_MAX_GB) * 100}%` }}
               />
               <span
                 className="english-data-skew-lab__bar-segment english-data-skew-lab__bar-segment--hot-key"
-                style={{ width: `${(worker.hotKeyInputGb / snapshot.maximumInputGb) * 100}%` }}
+                style={{ width: `${(worker.hotKeyInputGb / BAR_SCALE_MAX_GB) * 100}%` }}
               />
             </div>
             <small>

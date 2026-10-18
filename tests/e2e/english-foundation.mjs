@@ -633,7 +633,11 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
         (await lab.getAttribute('data-skew-total')) === '927' &&
         (await lab.getAttribute('data-skew-mean')) === '231.75' &&
         (await lab.getAttribute('data-skew-max')) === '680' &&
-        (await lab.getAttribute('data-skew-ratio')) === '2.93',
+        (await lab.getAttribute('data-skew-ratio')) === '2.93' &&
+        (await lab.getAttribute('data-skew-bar-scale')) === '680' &&
+        (await lab
+          .locator('[data-skew-worker="Worker 4"] [role="meter"]')
+          .getAttribute('aria-valuemax')) === '680',
     )
 
     const saltedButton = lab.locator('[data-skew-plan-button="salted"]')
@@ -647,6 +651,13 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
         (await lab.getAttribute('data-skew-mean')) === '231.75' &&
         (await lab.getAttribute('data-skew-max')) === '262' &&
         (await lab.getAttribute('data-skew-ratio')) === '1.13' &&
+        (await lab.getAttribute('data-skew-bar-scale')) === '680' &&
+        (await lab
+          .locator('[data-skew-worker="Worker 3"] [role="meter"]')
+          .getAttribute('aria-valuemax')) === '680' &&
+        (await lab
+          .locator('[data-skew-worker="Worker 3"] .english-data-skew-lab__bar-segment--hot-key')
+          .evaluate((element) => element.style.width)) === '25%' &&
         (await lab.locator('[data-skew-worker="Worker 3"]').getAttribute('data-skew-load-gb')) ===
           '262',
     )
@@ -678,7 +689,8 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       check(
         `${viewportName} ${route.path} controls remain usable at ${width}px`,
         (await lab.getAttribute('data-skew-max')) === '262' &&
-          (await lab.getAttribute('data-skew-total')) === '927',
+          (await lab.getAttribute('data-skew-total')) === '927' &&
+          (await lab.getAttribute('data-skew-bar-scale')) === '680',
       )
     }
     if (originalViewport) await page.setViewportSize(originalViewport)
