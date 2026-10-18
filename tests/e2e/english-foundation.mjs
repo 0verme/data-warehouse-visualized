@@ -68,6 +68,7 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/pipeline-observability/',
       '/en/data-warehouse/fact-vs-dimension-tables/',
       '/en/data-warehouse/star-schema-vs-snowflake/',
+      '/en/data-warehouse/incremental-vs-full-load/',
       '/en/',
       '/en/sql/',
       '/en/tools/',
@@ -250,6 +251,26 @@ const ENGLISH_ROUTES = [
       'Choose for the maintenance and query contract',
       'Boundaries: normalization is not history or grain',
       'Neither shape is universally faster or better.',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/incremental-vs-full-load/',
+    title: 'Incremental vs Full Load: Scope & Late Data | sql.sb',
+    heading: 'Incremental load vs full load: how much should you recompute?',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/pipeline-failure-recovery/',
+      '/en/data-warehouse/pipeline-observability/',
+      '/en/data-warehouse/grain/',
+    ],
+    boundaries: [
+      'A full load rebuilds the complete declared target scope',
+      'The event-time-only filter leaves the old result at',
+      'Arrival date is not business date',
+      'Customer-day features from 2026-09-10 through the current release date',
+      'Do not confuse load scope with idempotent writes',
     ],
   },
   {
@@ -502,6 +523,84 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       state.bodyLinks.includes(withBase(link)),
       JSON.stringify(state.bodyLinks),
     )
+  }
+
+  if (route.path === '/en/data-warehouse/incremental-vs-full-load/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const lab = page.locator('[data-load-lab]')
+    const result = lab.locator('[data-load-plan]')
+    await lab.locator('[data-load-plan-button="event-time-only"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-load-plan]')?.getAttribute('data-load-plan') ===
+        'event-time-only',
+    )
+    check(
+      `${viewportName} event-time-only incremental plan misses late changes`,
+      (await result.getAttribute('data-load-equivalent')) === 'false' &&
+        (await lab.locator('[data-load-total]').getAttribute('data-load-total')) === '600',
+    )
+
+    await lab.locator('[data-load-plan-button="arrival-cursor"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-load-plan]')?.getAttribute('data-load-plan') ===
+        'arrival-cursor',
+    )
+    check(
+      `${viewportName} arrival cursor repairs one window and matches full load`,
+      (await result.getAttribute('data-load-equivalent')) === 'true' &&
+        (await lab.locator('[data-load-total]').getAttribute('data-load-total')) === '1020' &&
+        (await lab
+          .locator('[data-load-recompute-rows]')
+          .getAttribute('data-load-recompute-rows')) === '4' &&
+        (await lab.locator('[data-load-window-count]').getAttribute('data-load-window-count')) ===
+          '1',
+    )
+
+    await lab.locator('[data-load-plan-button="full-load"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-load-plan]')?.getAttribute('data-load-plan') === 'full-load',
+    )
+    check(
+      `${viewportName} full load is the reference and rebuilds both windows`,
+      (await result.getAttribute('data-load-equivalent')) === 'true' &&
+        (await lab.locator('[data-load-total]').getAttribute('data-load-total')) === '1020' &&
+        (await lab.locator('[data-load-window-count]').getAttribute('data-load-window-count')) ===
+          '2',
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-load-plan-button="arrival-cursor"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-load-plan]')?.getAttribute('data-load-plan') ===
+          'arrival-cursor',
+      )
+      check(
+        `${viewportName} ${route.path} interaction remains correct at ${width}px`,
+        (await result.getAttribute('data-load-equivalent')) === 'true' &&
+          (await lab.locator('[data-load-total]').getAttribute('data-load-total')) === '1020',
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
   }
 }
 

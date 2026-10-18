@@ -21,6 +21,7 @@ export const ENGLISH_PATHS = {
   pipelineObservability: '/en/data-warehouse/pipeline-observability/',
   factVsDimensionTables: '/en/data-warehouse/fact-vs-dimension-tables/',
   starSchemaVsSnowflake: '/en/data-warehouse/star-schema-vs-snowflake/',
+  incrementalVsFullLoad: '/en/data-warehouse/incremental-vs-full-load/',
   tools: '/en/tools/',
 } as const
 

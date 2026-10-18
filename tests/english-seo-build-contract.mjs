@@ -81,6 +81,11 @@ const expectedEnglishPages = [
     file: 'en/data-warehouse/star-schema-vs-snowflake/index.html',
     title: 'Star Schema vs Snowflake Schema: Trade-offs | sql.sb',
   },
+  {
+    route: '/en/data-warehouse/incremental-vs-full-load/',
+    file: 'en/data-warehouse/incremental-vs-full-load/index.html',
+    title: 'Incremental vs Full Load: Scope & Late Data | sql.sb',
+  },
   { route: '/en/tools/', file: 'en/tools/index.html', title: 'Data Engineering Tools | sql.sb' },
 ]
 
@@ -191,6 +196,18 @@ for (const page of expectedEnglishPages) {
   assert.match(html, /<h1\b[^>]*>/, `${page.route} must render its page heading`)
   assert.doesNotMatch(html, /hreflang=/i, `${page.route} must not emit hreflang`)
   checkPageIndexability(html, page.route)
+  if (page.route === '/en/data-warehouse/incremental-vs-full-load/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(
+      mainHtml,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} SSR body must be English-only`,
+    )
+    assert.ok(
+      mainHtml.includes('Customer-day features from 2026-09-10 through the current release date'),
+      `${page.route} must render the reused late-data range in English`,
+    )
+  }
 
   const expectedAssetPrefix = `${basePath}/_astro/`
   const assetReferences = Array.from(
