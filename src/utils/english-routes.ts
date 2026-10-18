@@ -13,6 +13,7 @@ export const ENGLISH_PATHS = {
   dataSkew: '/en/sql/data-skew/',
   partitionPruning: '/en/sql/partition-pruning/',
   warehouse: '/en/data-warehouse/',
+  warehouseLayers: '/en/data-warehouse/layers/',
   grain: '/en/data-warehouse/grain/',
   idempotentEtl: '/en/data-warehouse/idempotent-etl/',
   lineageVsTaskDependency: '/en/data-warehouse/data-lineage-vs-task-dependency/',

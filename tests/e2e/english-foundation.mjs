@@ -105,9 +105,29 @@ const ENGLISH_ROUTES = [
       '/en/data-warehouse/fact-vs-dimension-tables/',
       '/en/data-warehouse/star-schema-vs-snowflake/',
       '/en/data-warehouse/incremental-vs-full-load/',
+      '/en/data-warehouse/layers/',
       '/en/',
       '/en/sql/',
       '/en/tools/',
+    ],
+  },
+  {
+    path: '/en/data-warehouse/layers/',
+    title: 'Data Warehouse Layers Explained: Staging, Core & Marts | sql.sb',
+    heading: 'Data warehouse layers explained: staging, core, and marts',
+    links: [
+      '/en/',
+      '/en/data-warehouse/',
+      '/en/data-warehouse/grain/',
+      '/en/data-warehouse/fact-vs-dimension-tables/',
+      '/en/data-warehouse/idempotent-etl/',
+      '/en/data-warehouse/incremental-vs-full-load/',
+    ],
+    boundaries: [
+      'not a required three-layer architecture',
+      'Three business groups; this result need not be persisted as a separate layer',
+      'a structural comparison only',
+      'Layer names are conventions, not universal standards',
     ],
   },
   {
@@ -559,6 +579,96 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       state.bodyLinks.includes(withBase(link)),
       JSON.stringify(state.bodyLinks),
     )
+  }
+
+  if (route.path === '/en/data-warehouse/layers/') {
+    check(
+      `${viewportName} ${route.path} SSR body contains no CJK or replacement characters`,
+      !/[\u3400-\u9fff\uFFFD]/.test(state.mainText),
+    )
+    const example = page.locator('[data-layer-example]')
+    check(
+      `${viewportName} layer example matches the fixed transformation fixture`,
+      (await example.getAttribute('data-source-rows')) === '5' &&
+        (await example.getAttribute('data-core-rows')) === '4' &&
+        (await example.getAttribute('data-grouped-rows')) === '3' &&
+        (await example.getAttribute('data-published-rows')) === '1' &&
+        (await example.getAttribute('data-published-amount')) === '300000' &&
+        (await example.textContent())?.includes('CNY 300,000'),
+    )
+    const lab = page.locator('[data-layer-lab]')
+    check(
+      `${viewportName} layer lab starts with the two-consumer direct fixture`,
+      (await lab.getAttribute('data-layer-demand')) === 'two-consumers' &&
+        (await lab.getAttribute('data-layer-architecture')) === 'direct' &&
+        (await lab.getAttribute('data-layer-consumer-count')) === '2' &&
+        (await lab.getAttribute('data-layer-repeated-work-slots')) === '6',
+    )
+
+    await lab.locator('[data-layer-demand-button="one-consumer"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-layer-lab]')?.getAttribute('data-layer-demand') ===
+        'one-consumer',
+    )
+    check(
+      `${viewportName} one consumer keeps the direct path small`,
+      (await lab.getAttribute('data-layer-consumer-count')) === '1' &&
+        (await lab.getAttribute('data-layer-repeated-work-slots')) === '3',
+    )
+
+    await lab.locator('[data-layer-demand-button="many-consumers"]').click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[data-layer-lab]')?.getAttribute('data-layer-demand') ===
+        'many-consumers',
+    )
+    check(
+      `${viewportName} multiple consumers share the three fixture stages`,
+      (await lab.getAttribute('data-layer-architecture')) === 'shared' &&
+        (await lab.getAttribute('data-layer-consumer-count')) === '4' &&
+        (await lab.getAttribute('data-layer-shared-stage-count')) === '3' &&
+        (await lab.locator('[data-layer-stage]').count()) === 3,
+    )
+
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} ${route.path} has no overflow at ${width}px`,
+        dimensions.scrollWidth - dimensions.width <= TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+        `document=${dimensions.scrollWidth} viewport=${dimensions.width} main=${dimensions.mainWidth}`,
+      )
+      await lab.locator('[data-layer-demand-button="two-consumers"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-layer-lab]')?.getAttribute('data-layer-demand') ===
+          'two-consumers',
+      )
+      await lab.locator('[data-layer-demand-button="many-consumers"]').click()
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[data-layer-lab]')?.getAttribute('data-layer-demand') ===
+          'many-consumers',
+      )
+      check(
+        `${viewportName} ${route.path} layer controls work at ${width}px`,
+        (await lab.getAttribute('data-layer-shared-stage-count')) === '3' &&
+          (await lab.locator('[data-layer-stage]').count()) === 3,
+      )
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(
+      `${viewportName} ${route.path} no pageerror after layer interactions`,
+      errors.length === 0,
+    )
+    errors.length = 0
   }
 
   if (route.path === '/en/data-warehouse/incremental-vs-full-load/') {

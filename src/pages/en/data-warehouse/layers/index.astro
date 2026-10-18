@@ -1,0 +1,295 @@
+---
+import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
+import { WarehouseLayersDecisionLab } from '../../../../components/english/WarehouseLayersDecisionLab'
+import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import warehouseLayersStylesUrl from '../../../../styles/layouts/english-warehouse-layers.css?url'
+import { getEnglishRoute } from '../../../../utils/english-routes'
+import { getWarehouseLayersDecisionModel } from '../../../../features/english-warehouse-layers/model'
+
+const title = 'Data Warehouse Layers Explained: Staging, Core & Marts | sql.sb'
+const description =
+  'A practical guide to staging, core, and mart responsibilities: when a shared boundary is useful, what another layer costs, and when to keep the path simple.'
+const layerModel = getWarehouseLayersDecisionModel()
+---
+
+<EnglishArticleLayout
+  title={title}
+  description={description}
+  active="warehouse"
+  styleUrls={[warehouseLayersStylesUrl]}
+>
+  <EnglishBreadcrumb
+    items={[
+      { label: 'English home', key: 'overview' },
+      { label: 'Data warehouse', key: 'warehouse' },
+      { label: 'Layers' },
+    ]}
+  />
+
+  <header class="english-article__header">
+    <p class="english-article__eyebrow">Data warehouse · architecture</p>
+    <h1 class="english-article__title">
+      Data warehouse layers explained: staging, core, and marts
+    </h1>
+    <p class="english-article__lede">
+      A layer is a responsibility boundary, not a number in a mandatory stack. The useful question
+      is whether separating source intake, shared business data, or consumer-ready output makes a
+      real contract easier to reuse and operate.
+    </p>
+  </header>
+
+  <div class="english-answer">
+    <span class="english-answer__label">Quick answer</span>
+    <p>
+      Staging keeps landed input inspectable, core standardizes data that several consumers can
+      share, and a mart shapes a result for a named business use. These are explanatory roles, not a
+      required three-layer architecture. Add a boundary only when its reuse, isolation, or ownership
+      benefit is worth the dependency and maintenance it creates, plus storage if it is persisted.
+    </p>
+  </div>
+
+  <div class="english-article__body">
+    <section class="english-article__section" aria-labelledby="responsibilities">
+      <h2 id="responsibilities">What staging, core, and mart mean in this example</h2>
+      <p>
+        The labels describe jobs, not product types or a universal naming scheme. A team can combine
+        two jobs in one table, split one job across several assets, or use different names if the
+        data contract stays clear.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Three responsibilities in a branch-ratio reporting path</caption>
+          <thead>
+            <tr>
+              <th scope="col">Role</th>
+              <th scope="col">Responsibility</th>
+              <th scope="col">Question it helps answer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Staging</th>
+              <td>Land source snapshots with enough context to inspect what arrived.</td>
+              <td>Which source values and timestamps entered this pipeline?</td>
+            </tr>
+            <tr>
+              <th scope="row">Core</th>
+              <td>Align shared identifiers, fields, and business meanings.</td>
+              <td>Which reusable facts can different products rely on?</td>
+            </tr>
+            <tr>
+              <th scope="row">Mart</th>
+              <td>Publish a shaped dataset for a specific report or service.</td>
+              <td>Which business slice does this consumer need to query?</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="worked-example">
+      <h2 id="worked-example">Trace one fixed example without assuming every step is a layer</h2>
+      <p>
+        A separate SQL-transformation fixture starts with account-balance snapshots, standardizes
+        shared detail, groups balances for reuse, then selects one metric for a report. The
+        published row is for snapshot date <code>{layerModel.fixedExample.snapshotDate}</code>,
+        Hangzhou branch, small-business customers, fixed-term deposits, and CNY. The counts below
+        come from that deterministic fixture; they are not production volumes.
+      </p>
+      <div class="english-table-scroll">
+        <table
+          class="english-table"
+          data-layer-example
+          data-source-rows={layerModel.fixedExample.sourceRows}
+          data-core-rows={layerModel.fixedExample.standardizedDetailRows}
+          data-grouped-rows={layerModel.fixedExample.groupedRows}
+          data-published-rows={layerModel.fixedExample.publishedMetricRows}
+          data-published-amount={layerModel.fixedExample.publishedMetricAmount}
+        >
+          <caption>Fixed snapshot fixture: input to a consumer-specific metric</caption>
+          <thead>
+            <tr>
+              <th scope="col">Point in the path</th>
+              <th scope="col">Rows</th>
+              <th scope="col">Example result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Landed input</th>
+              <td>{layerModel.fixedExample.sourceRows}</td>
+              <td>Source account-balance snapshots</td>
+            </tr>
+            <tr>
+              <th scope="row">Standardized detail</th>
+              <td>{layerModel.fixedExample.standardizedDetailRows}</td>
+              <td>Reusable account-day facts</td>
+            </tr>
+            <tr>
+              <th scope="row">Grouped intermediate</th>
+              <td>{layerModel.fixedExample.groupedRows}</td>
+              <td>Three business groups; this result need not be persisted as a separate layer</td>
+            </tr>
+            <tr>
+              <th scope="row">Published metric</th>
+              <td>{layerModel.fixedExample.publishedMetricRows}</td>
+              <td>
+                Hangzhou / small business / fixed-term / CNY{' '}
+                {layerModel.fixedExample.publishedMetricAmount.toLocaleString('en-US')}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The example shows why a consumer mart can be narrower than shared core data. It does not
+        prescribe four physical tables: the grouped intermediate can be a query step, a view, or a
+        persisted asset depending on reuse, freshness, and operational needs. For the separate
+        question of what one row means, see{' '}
+        <a href={getEnglishRoute('grain')}>data warehouse grain</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="consumer-count">
+      <h2 id="consumer-count">When does repeated work justify a shared boundary?</h2>
+      <p>
+        Start with consumers and repeated responsibilities, not with a target layer count. This
+        fixed architecture fixture changes the number of outputs while keeping the underlying
+        branch-level ratio work recognizable.
+      </p>
+      <WarehouseLayersDecisionLab plans={layerModel.plans} client:load />
+      <p>
+        The counts are a structural comparison only. They do not estimate CPU, query latency,
+        storage savings, or a guaranteed performance improvement; sharing also creates a dependency
+        that needs an owner and a freshness contract.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="cross-layer">
+      <h2 id="cross-layer">
+        A cross-layer read is a question to investigate, not an automatic defect
+      </h2>
+      <p>
+        Production systems grow through migrations, new consumers, and temporary delivery paths.
+        Their dependency graph may not look like one clean vertical stack. Check why a consumer
+        reads a lower-level asset and what would change before moving it.
+      </p>
+      <div class="english-table-scroll">
+        <table class="english-table">
+          <caption>Three dependency shapes and a practical review</caption>
+          <thead>
+            <tr>
+              <th scope="col">Observed path</th>
+              <th scope="col">Possible reason</th>
+              <th scope="col">Review before changing it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Core detail → risk API</td>
+              <td>The API needs account-level detail, not a branch summary.</td>
+              <td>Confirm owner, required freshness, and exposed fields.</td>
+            </tr>
+            <tr>
+              <td>Core detail → temporary branch result → partner API</td>
+              <td>A delivery shortcut may have duplicated an existing calculation.</td>
+              <td>Compare the rule and its consumers before converging on a shared result.</td>
+            </tr>
+            <tr>
+              <td>Shared mart → report and dashboard</td>
+              <td>Several products rely on the same branch-level definition.</td>
+              <td>Keep the shared contract explicit and account for its dependency surface.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        A graph is evidence for impact analysis, not a mandate to refactor every edge. For the
+        separate decision about recomputation scope, see{' '}
+        <a href={getEnglishRoute('incrementalVsFullLoad')}>incremental load vs full load</a>.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="tradeoffs">
+      <h2 id="tradeoffs">What an extra layer costs</h2>
+      <ul>
+        <li>
+          <strong>Another dependency:</strong> consumers now wait on an upstream asset and its
+          availability contract.
+        </li>
+        <li>
+          <strong>Freshness and operations:</strong> another step needs scheduling, monitoring,
+          ownership, and a recovery path.
+        </li>
+        <li>
+          <strong>Storage and migration:</strong> persisted copies consume resources and schema or
+          semantic changes must be coordinated.
+        </li>
+        <li>
+          <strong>Potential benefit:</strong> shared rules become easier to reuse and explain when
+          more than one consumer truly depends on them.
+        </li>
+      </ul>
+      <div class="english-callout" data-tone="info">
+        <strong>Do not add a layer just to make a diagram look complete</strong>
+        <p>
+          If a step has one consumer, no distinct contract, and no isolation need, an extra
+          persisted table may add more maintenance than value. Conversely, a shared boundary can be
+          worthwhile even when it adds a dependency, if it prevents multiple teams from implementing
+          different versions of the same rule.
+        </p>
+      </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="names">
+      <h2 id="names">Layer names are conventions, not universal standards</h2>
+      <p>
+        Staging, core, and mart are useful role names for this article, not a mandatory blueprint.
+        ODS, DWD, DWS, and ADS are labels used in some environments; their meaning and boundaries
+        vary, and they do not define one required sequence or number of layers. A label alone cannot
+        tell you what a table guarantees.
+      </p>
+      <p>
+        Write down each asset's input, output meaning, grain, owner, freshness, and intended
+        consumers. A team may use fewer or more boundaries, provided those contracts remain clear.
+      </p>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="choose">
+      <h2 id="choose">A short decision checklist</h2>
+      <ol>
+        <li>Name the distinct responsibility this boundary would own.</li>
+        <li>List current consumers and the exact logic they repeat.</li>
+        <li>
+          Compare reuse, isolation, and ownership benefits with storage and operational costs.
+        </li>
+        <li>
+          Decide whether a view or direct transformation is enough before persisting another copy.
+        </li>
+        <li>Document exceptions and review their impact when consumers or rules change.</li>
+      </ol>
+    </section>
+
+    <section class="english-related" aria-labelledby="related">
+      <h2 id="related">Related pages</h2>
+      <ul>
+        <li>
+          <a href={getEnglishRoute('warehouse')}>Data warehouse engineering</a>
+          <p>The English resource index and overview of the warehouse topics.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+          <p>How to state and verify what one row represents.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('factVsDimensionTables')}>Fact table vs dimension table</a>
+          <p>Separate event measures from descriptive context inside a model.</p>
+        </li>
+        <li>
+          <a href={getEnglishRoute('idempotentEtl')}>Idempotent ETL</a>
+          <p>A separate guide to repeatable writes, retries, and reruns.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</EnglishArticleLayout>
