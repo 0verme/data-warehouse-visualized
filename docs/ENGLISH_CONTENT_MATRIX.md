@@ -362,7 +362,7 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 | 2026-10-17 | 队列第 3 篇 `data-contracts` merged 并上线；台账补录第 3 行                                                                                                  | PR #267 `e6fac48`；deploy `39032017897`；生产探针 12/12 英文路由                   |
 | 2026-10-17 | 队列第 4 篇 `pipeline-observability` merged 并上线；Cluster E 完成；台账补录第 4 行                                                                          | PR #269 `428dded`；deploy `39033653943`；生产探针 13/13 英文路由                   |
 | 2026-10-17 | 队列第 5 篇 `fact-vs-dimension-tables` merged 并上线；Cluster B 开始；台账补录第 5 行                                                                        | PR #271 `67c48a0`；deploy `39035457680`；生产探针 14/14 英文路由                   |
-| 2026-10-18 | 队列第 6 篇 `star-schema-vs-snowflake` merged 并上线；Cluster B 第 2 篇完成；补录第 5 篇行并复核第 6 篇生产交互                                              | PR #273 `671adfd`；CI `39085637391`；deploy `39086246495`；生产页面与交互探针 PASS |
+| 2026-10-18 | 队列第 6 篇 `star-schema-vs-snowflake` merged 并上线；Cluster B 第 2 篇完成；补录第 6 篇行并复核第 6 篇生产交互                                              | PR #273 `671adfd`；CI `39085637391`；deploy `39086246495`；生产页面与交互探针 PASS |
 
 > 后续 Loop 应在完成 Wave 0 任务、Gate 变化或 Child 判定调整时更新本表与 #220，而不是重写整份文档。
 
