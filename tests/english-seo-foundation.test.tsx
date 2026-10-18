@@ -10,6 +10,7 @@ const englishRoutes = [
   { file: 'en/index.astro', route: ENGLISH_PATHS.overview },
   { file: 'en/sql/index.astro', route: ENGLISH_PATHS.sql },
   { file: 'en/sql/sql-join-duplicate-rows/index.astro', route: ENGLISH_PATHS.joinDuplicateRows },
+  { file: 'en/sql/data-skew/index.astro', route: ENGLISH_PATHS.dataSkew },
   { file: 'en/data-warehouse/index.astro', route: ENGLISH_PATHS.warehouse },
   { file: 'en/data-warehouse/grain/index.astro', route: ENGLISH_PATHS.grain },
   { file: 'en/data-warehouse/idempotent-etl/index.astro', route: ENGLISH_PATHS.idempotentEtl },
@@ -118,7 +119,7 @@ why-data-warehouse
   .split(/\s+/)
 
 describe('English SEO routing contract', () => {
-  it('defines exactly the sixteen English pages outside /learn/', () => {
+  it('defines exactly the seventeen English pages outside /learn/', () => {
     const pageFiles = readdirSync(pagesDirectory, { recursive: true }).map(String)
     const englishPageFiles = pageFiles
       .filter((path) => path.startsWith('en/') && path.endsWith('.astro'))
@@ -130,6 +131,7 @@ describe('English SEO routing contract', () => {
       '/en/',
       '/en/sql/',
       '/en/sql/sql-join-duplicate-rows/',
+      '/en/sql/data-skew/',
       '/en/data-warehouse/',
       '/en/data-warehouse/grain/',
       '/en/data-warehouse/idempotent-etl/',
@@ -156,6 +158,16 @@ describe('English SEO routing contract', () => {
     expect(indexSource.match(/getEnglishRoute\('incrementalVsFullLoad'\)/g)).toHaveLength(1)
   })
 
+  it('lists the SQL data-skew article exactly once in the SQL index source', () => {
+    const indexSource = readFileSync(
+      new URL('../src/pages/en/sql/index.astro', import.meta.url),
+      'utf8',
+    )
+
+    expect(indexSource.match(/getEnglishRoute\('dataSkew'\)/g)).toHaveLength(1)
+    expect(getEnglishRoute('dataSkew')).toBe('/en/sql/data-skew/')
+  })
+
   it('preserves 64 unique Learn slugs and their existing /learn/ URL shape', () => {
     const slugs = lessons.map(({ slug }) => slug)
 
@@ -177,6 +189,7 @@ describe('English SEO routing contract', () => {
 
     try {
       expect(getEnglishRoute('overview')).toBe('/preview/en/')
+      expect(getEnglishRoute('dataSkew')).toBe('/preview/en/sql/data-skew/')
       expect(getEnglishRoute('scdType2')).toBe('/preview/en/data-warehouse/scd-type-2/')
       expect(renderToStaticMarkup(<SiteFooter variant="home" />)).toContain(
         '<a href="/preview/en/">English</a>',

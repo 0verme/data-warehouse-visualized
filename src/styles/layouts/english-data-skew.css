@@ -1,0 +1,236 @@
+/* Page styles for /en/sql/data-skew/. Keep the skew comparison readable at phone widths. */
+
+.english-data-skew-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.english-data-skew-lab__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.english-data-skew-lab__header > div {
+  flex: 1 1 340px;
+  min-width: 0;
+}
+
+.english-data-skew-lab__eyebrow {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.english-data-skew-lab__header h3 {
+  margin: 0;
+  font-size: clamp(18px, 2.4vw, 22px);
+  line-height: 1.35;
+}
+
+.english-data-skew-lab__header p:not(.english-data-skew-lab__eyebrow) {
+  max-width: 68ch;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.english-data-skew-lab__total {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.english-data-skew-lab__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.english-data-skew-lab__controls button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.english-data-skew-lab__controls button:hover {
+  border-color: var(--accent);
+}
+
+.english-data-skew-lab__controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--success-bg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.english-data-skew-lab__controls button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.english-data-skew-lab__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 18px 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.english-data-skew-lab__legend span::before {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 7px;
+  background: var(--accent);
+  content: '';
+  vertical-align: -1px;
+}
+
+.english-data-skew-lab__legend [data-kind='hot-key']::before {
+  background: var(--warning-text);
+}
+
+.english-data-skew-lab__workers {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.english-data-skew-lab__worker {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.english-data-skew-lab__worker-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.english-data-skew-lab__worker-heading strong {
+  color: var(--text-primary);
+}
+
+.english-data-skew-lab__worker-heading span {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.english-data-skew-lab__bar {
+  display: flex;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-1);
+}
+
+.english-data-skew-lab__bar-segment {
+  display: block;
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 100%;
+}
+
+.english-data-skew-lab__bar-segment--routine {
+  background: var(--accent);
+}
+
+.english-data-skew-lab__bar-segment--hot-key {
+  background: var(--warning-text);
+}
+
+.english-data-skew-lab__worker small {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.english-data-skew-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.english-data-skew-lab__metrics > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.english-data-skew-lab__metrics dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.english-data-skew-lab__metrics dd {
+  margin: 5px 0 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.english-data-skew-lab__note {
+  padding: 12px 14px;
+  border-left: 3px solid var(--warning-text);
+  margin: 14px 0 0;
+  background: var(--warning-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+@media (max-width: 420px) {
+  .english-data-skew-lab__workers {
+    padding: 12px;
+  }
+
+  .english-data-skew-lab__metrics dd {
+    font-size: 16px;
+  }
+}

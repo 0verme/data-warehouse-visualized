@@ -10,6 +10,7 @@ export const ENGLISH_PATHS = {
   overview: '/en/',
   sql: '/en/sql/',
   joinDuplicateRows: '/en/sql/sql-join-duplicate-rows/',
+  dataSkew: '/en/sql/data-skew/',
   warehouse: '/en/data-warehouse/',
   grain: '/en/data-warehouse/grain/',
   idempotentEtl: '/en/data-warehouse/idempotent-etl/',
