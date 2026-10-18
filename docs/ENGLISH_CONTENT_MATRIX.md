@@ -442,6 +442,8 @@ Loop: 串行；BLOCKED 如实记录；禁止自行解除 Gate
 | 2026-10-18 | `/en/sql/data-skew/`                            | C #224 / Child #277 | [#278](https://github.com/0verme/data-warehouse-visualized/pull/278) | `95e7554` | `39103430803` success | HTTP 200 / `lang=en` / canonical / `og=en_US` / H1=1 / SSR 10,779 chars; no noindex/hreflang/CJK; sitemap route (17 URLs); 320/360/390/1280 no overflow; lab PASS, 0 errors; GSC = `DATA NOT YET AVAILABLE`                                           |
 | 2026-10-18 | `/en/sql/partition-pruning/`                    | C #224 / Child #280 | [#281](https://github.com/0verme/data-warehouse-visualized/pull/281) | `8245b1e` | `39106538905` success | HTTP 200 / en / self-canonical / og=en_US / H1=1 / SSR 10,881 chars; no noindex/hreflang/CJK/U+FFFD; sitemap 18 URLs. Browser 320/360/390/1280 no overflow; both fixture cases pass, 0 errors; no engine/runtime claim; GSC=DATA NOT YET AVAILABLE    |
 
+| 2026-10-18 | `/en/data-warehouse/layers/` | A #222 / Child #283 | [#284](https://github.com/0verme/data-warehouse-visualized/pull/284) | `f5de930` | `39110692418` success | 生产 HTTP 200 / `lang=en` / self-canonical / `og:locale=en_US` / H1=1 / SSR main text 11,961 chars；无 noindex / hreflang / CJK / U+FFFD；sitemap 19 English URLs。浏览器 320/360/390/1280 无溢出；fixture 5→4→3→1 rows、CNY 300,000；one-consumer 3 repeated-work slots / many-consumer 4 consumers + 3 shared stages；0 page errors；GSC=`DATA NOT YET AVAILABLE` |
+
 **观测基线规则：** 每篇记录 launch date、URL、commit、deploy run 与首次生产探针结果（HTTP / lang / canonical / sitemap / SSR 正文）；GSC / SERP 数据可得时追加 query / impression / index 状态，不可得时记 `DATA NOT YET AVAILABLE`；不与 #179 Baseline A / B 合并。
 
 ### 14.6 Loop 恢复指引
