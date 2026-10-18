@@ -11,6 +11,7 @@ export const ENGLISH_PATHS = {
   sql: '/en/sql/',
   joinDuplicateRows: '/en/sql/sql-join-duplicate-rows/',
   dataSkew: '/en/sql/data-skew/',
+  partitionPruning: '/en/sql/partition-pruning/',
   warehouse: '/en/data-warehouse/',
   grain: '/en/data-warehouse/grain/',
   idempotentEtl: '/en/data-warehouse/idempotent-etl/',

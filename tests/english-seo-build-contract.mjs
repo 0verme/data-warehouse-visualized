@@ -32,6 +32,11 @@ const expectedEnglishPages = [
     title: 'SQL Data Skew: Why One Task Takes So Long | sql.sb',
   },
   {
+    route: '/en/sql/partition-pruning/',
+    file: 'en/sql/partition-pruning/index.html',
+    title: 'Partition Pruning in SQL: Why Filters May Not Prune | sql.sb',
+  },
+  {
     route: '/en/data-warehouse/',
     file: 'en/data-warehouse/index.html',
     title: 'Data Warehouse Engineering | English Resources | sql.sb',
@@ -222,6 +227,17 @@ for (const page of expectedEnglishPages) {
     )
     assert.match(mainHtml, /not a measured\s+runtime, a benchmark/)
     assert.ok(mainHtml.includes('Teaching simulation'))
+  }
+  if (page.route === '/en/sql/partition-pruning/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(
+      mainHtml,
+      /[\u3400-\u9fff\uFFFD]/,
+      `${page.route} SSR body must be English-only`,
+    )
+    assert.ok(mainHtml.includes('1,095 historical partitions'))
+    assert.ok(mainHtml.includes('not production measurements or a benchmark'))
+    assert.match(mainHtml, /engine.s plan or scan metrics/)
   }
 
   const expectedAssetPrefix = `${basePath}/_astro/`

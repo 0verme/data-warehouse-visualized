@@ -175,9 +175,10 @@ GROUP BY open_branch_id;`}</code></pre>
           A join can multiply output rows when keys repeat; that is a correctness and grain
           question, even though a popular join key can also create skew. See{' '}
           <a href={getEnglishRoute('joinDuplicateRows')}>why a SQL JOIN duplicates rows</a>. A
-          storage-partition filter may avoid reading files, while a hot grouping key concerns how
-          work is distributed later in execution. These problems can coexist, but their fixes are
-          different.
+          storage-partition predicate can exclude whole partitions; see{' '}
+          <a href={getEnglishRoute('partitionPruning')}>how SQL partition pruning works</a>. A hot
+          grouping key concerns how work is distributed later in execution. These problems can
+          coexist, but their fixes are different.
         </p>
       </div>
     </section>
@@ -186,6 +187,7 @@ GROUP BY open_branch_id;`}</code></pre>
       <a href={getEnglishRoute('sql')}>More English SQL resources</a>
       <a href={getEnglishRoute('joinDuplicateRows')}>SQL JOIN duplicate rows</a>
       <a href={getEnglishRoute('grain')}>Data warehouse grain</a>
+      <a href={getEnglishRoute('partitionPruning')}>SQL partition pruning</a>
     </nav>
   </div>
 </EnglishArticleLayout>

@@ -1,0 +1,199 @@
+/* Page-owned teaching controls for /en/sql/partition-pruning/. */
+
+.english-partition-pruning-lab {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 28px 0;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.english-partition-pruning-lab__header > div {
+  min-width: 0;
+}
+
+.english-partition-pruning-lab__eyebrow {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.english-partition-pruning-lab__header h3 {
+  margin: 0;
+  font-size: clamp(18px, 2.4vw, 22px);
+  line-height: 1.35;
+}
+
+.english-partition-pruning-lab__header p:not(.english-partition-pruning-lab__eyebrow) {
+  max-width: 68ch;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.english-partition-pruning-lab__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.english-partition-pruning-lab__controls button {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.english-partition-pruning-lab__controls button strong {
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.english-partition-pruning-lab__controls button span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.english-partition-pruning-lab__controls button:hover,
+.english-partition-pruning-lab__controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+
+.english-partition-pruning-lab__controls button[aria-pressed='true'] {
+  background: var(--success-bg);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.english-partition-pruning-lab__controls button:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.english-partition-pruning-lab__scope {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+  background: var(--surface-2);
+}
+
+.english-partition-pruning-lab__scope-heading,
+.english-partition-pruning-lab__scope-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.english-partition-pruning-lab__scope-heading {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.english-partition-pruning-lab__scope-heading span {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.english-partition-pruning-lab__meter {
+  width: 100%;
+  height: 16px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  margin-top: 12px;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+
+.english-partition-pruning-lab__meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.english-partition-pruning-lab__scope-scale {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.english-partition-pruning-lab__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 145px), 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
+.english-partition-pruning-lab__metrics > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.english-partition-pruning-lab__metrics dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.english-partition-pruning-lab__metrics dd {
+  margin: 5px 0 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.english-partition-pruning-lab__status,
+.english-partition-pruning-lab__note {
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent);
+  margin: 14px 0 0;
+  background: var(--success-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.english-partition-pruning-lab__note {
+  border-left-color: var(--warning-text);
+  margin-top: 10px;
+  background: var(--warning-bg);
+}
+
+@media (max-width: 420px) {
+  .english-partition-pruning-lab__scope {
+    padding: 12px;
+  }
+
+  .english-partition-pruning-lab__metrics dd {
+    font-size: 16px;
+  }
+}
