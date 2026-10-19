@@ -2,12 +2,16 @@
 import EnglishBreadcrumb from '../../../../components/english/EnglishBreadcrumb.astro'
 import { ScdTimelineLab } from '../../../../components/english/ScdTimelineLab'
 import EnglishArticleLayout from '../../../../layouts/EnglishArticleLayout.astro'
+import setupSql from '../../../../features/english-scd/sql/setup.sql?raw'
+import loadSql from '../../../../features/english-scd/sql/load.sql?raw'
+import historySql from '../../../../features/english-scd/sql/history.sql?raw'
 import scdStylesUrl from '../../../../styles/layouts/english-scd.css?url'
 import { getEnglishRoute } from '../../../../utils/english-routes'
 
-const title = 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb'
+const title = 'SCD Type 2 SQL Query Example (PostgreSQL) | sql.sb'
 const description =
-  'A concrete SCD Type 2 example with before/after rows, effective_from and effective_to, the current flag, and the historical join at a boundary date.'
+  'Run a complete SCD Type 2 SQL query in PostgreSQL: detect customer changes, UPDATE old rows, INSERT new versions, and query history safely across retries.'
+const completeSql = [setupSql, loadSql, historySql].join('\n')
 ---
 
 <EnglishArticleLayout
@@ -26,7 +30,9 @@ const description =
 
   <header class="english-article__header">
     <p class="english-article__eyebrow">Data warehouse · dimension history</p>
-    <h1 class="english-article__title">SCD Type 2 example: effective dates and historical rows</h1>
+    <h1 class="english-article__title">
+      SCD Type 2 SQL query: effective dates and historical rows
+    </h1>
     <p class="english-article__lede">
       Slowly changing dimension Type 2 keeps one row per version of a business entity. Each row
       carries an effective date range and a current flag, so a historical fact can join to the
@@ -40,11 +46,16 @@ const description =
       On an attribute change, close the old row and insert a new one. Use the half-open range{' '}
       <code>[effective_from, effective_to)</code>: the start date belongs to the new version, the
       end date does not. Keep a stable business key (<code>customer_id</code>) plus a surrogate key
-      (<code>customer_sk</code>) that identifies one version, and a current flag for “today”.
+      (<code>customer_sk</code>) that identifies one version, and a current flag for the latest
+      loaded version.
     </p>
   </div>
 
   <div class="english-article__body">
+    <p>
+      Jump to the <a href="#sql-example">complete PostgreSQL example</a>, the{' '}
+      <a href="#query">historical JOIN</a>, or the <a href="#faq">SQL FAQ</a>.
+    </p>
     <section class="english-article__section" aria-labelledby="example">
       <h2 id="example">Before and after: customer C-100 moves from Standard to Premium</h2>
       <p>
@@ -106,10 +117,17 @@ const description =
 
     <section class="english-article__section" aria-labelledby="boundary">
       <h2 id="boundary">Boundary semantics: why the range is half-open</h2>
+      <p>
+        <code>effective_from</code> is the first business date on which a version is valid
+        (inclusive). <code>effective_to</code> is the first date on which it is no longer valid
+        (exclusive). <code>is_current</code> marks the latest loaded, open-ended version. In this
+        example, <code>9999-12-31</code> is the open-end sentinel, not an actual planned change
+        date; supported business dates are earlier than that sentinel.
+      </p>
       <ul>
         <li>
-          <strong>2026-02-28</strong> is before <code>effective_from</code>, so it matches the old
-          version: Standard / Austin.
+          <strong>2026-02-28</strong> is before the new row’s <code>effective_from</code>, so it
+          matches the old version: Standard / Austin.
         </li>
         <li>
           <strong>2026-03-01</strong> is the change date. Because the start is inclusive, it matches
@@ -127,6 +145,77 @@ const description =
           worse: a historical fact can join to two dimension rows at once and duplicate the fact.
         </p>
       </div>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="sql-example">
+      <h2 id="sql-example">SCD Type 2 SQL Query Example</h2>
+      <p>
+        This complete example uses <strong>PostgreSQL 15+</strong>, not portable SQL for every
+        database. Run it once in a fresh SQL session with autocommit enabled (for example, in{' '}
+        <code>psql</code>). All tables are temporary and disappear on disconnect. The{' '}
+        <code>customer</code> dimension represents the Banking Teaching Domain’s Customer: one
+        business identity, one row per attribute version. The tracked attributes are customer level
+        and branch; the scenario is the same C-100 change shown in the timeline.
+      </p>
+      <ol>
+        <li>Create the dimension, seed Standard / Austin, and stage Premium / Denver.</li>
+        <li>
+          Compare staged attributes to the current row with <code>IS DISTINCT FROM</code>, which
+          also detects changes to or from <code>NULL</code>. A missing customer is a first load.
+        </li>
+        <li>
+          Save the candidates before the <code>UPDATE</code>, close old versions, then{' '}
+          <code>INSERT</code> the candidates as new current versions in the same transaction.
+        </li>
+        <li>Read all history and the version effective on the change date.</li>
+      </ol>
+      <pre
+        data-scd-sql="complete"
+        tabindex="0"
+        role="region"
+        aria-label="Complete PostgreSQL SCD Type 2 example"
+      ><code>{completeSql}</code></pre>
+      <h3 id="sql-result">Expected history and repeat execution</h3>
+      <p>
+        The first result contains exactly two rows: Standard / Austin over{' '}
+        <code>[2025-01-01, 2026-03-01)</code> with <code>is_current = false</code>, then Premium /
+        Denver over <code>[2026-03-01, 9999-12-31)</code> with <code>is_current = true</code>. In
+        this fresh session the generated keys are 1001 and 1002; the timeline’s illustrative new key
+        2002 has the same version-key role. The second result returns only Premium / Denver.
+      </p>
+      <p>
+        To test a retry, rerun only the block from <code>-- LOAD START</code> through{' '}
+        <code>-- LOAD END</code> in the same session, without rerunning setup. Both the{' '}
+        <code>UPDATE</code> and <code>INSERT</code> write zero rows: the staged attributes already
+        match the current version. A later batch with the same attributes also creates no version.
+        To test a first load, start a fresh session and omit the initial{' '}
+        <code>INSERT INTO customer</code>; the same loader inserts one current row into the empty
+        dimension. A new customer in staging follows that same path.
+      </p>
+      <div class="english-callout" data-tone="warning">
+        <strong>A forward-only teaching loader, not a full CDC pipeline</strong>
+        <p>
+          Stage at most one row per customer per batch and process batches in effective-date order.
+          A changed payload at the same or an earlier start date is rejected rather than creating a
+          zero-length or overlapping version. After an error, issue <code>ROLLBACK</code> before
+          retrying. A missing staged customer is not a deletion. Late corrections need explicit
+          range repair; timestamps are needed for multiple distinct changes within a day.
+        </p>
+        <p>
+          The transaction makes closing and inserting atomic. The table lock serializes writers when
+          adapted to a shared dimension, at the cost of write concurrency. Uniqueness and check
+          constraints provide guardrails, but do not prevent every possible historical overlap from
+          arbitrary external writes. All writers must follow the loading contract. With future-dated
+          versions, the current flag means latest loaded, not necessarily valid today; use an as-of
+          date predicate instead.
+        </p>
+      </div>
+      <p>
+        This is a dimension-specific application of{' '}
+        <a href={getEnglishRoute('idempotentEtl')}>idempotent ETL</a>. For choosing which source
+        records reach staging, see{' '}
+        <a href={getEnglishRoute('incrementalVsFullLoad')}>incremental vs full load</a>.
+      </p>
     </section>
 
     <section class="english-article__section" aria-labelledby="query">
@@ -148,9 +237,11 @@ JOIN customer AS c
 
 -- customer_sk 1001 → Standard / Austin for a 2025-11-15 disbursement`}</code></pre>
       <p>
-        The current row is simply the one with <code>is_current = true</code> (or the row whose{' '}
+        The latest loaded row is the one with <code>is_current = true</code> (or the row whose{' '}
         <code>effective_to</code> is the open sentinel). Do not use the current flag for historical
-        analysis — it answers “what is true today”, not “what was true then”.
+        analysis — it selects the latest version, not necessarily “what was true then”. A{' '}
+        <code>BETWEEN</code> predicate includes both endpoints, so it is not suitable for these
+        half-open ranges.
       </p>
     </section>
 
@@ -222,6 +313,40 @@ JOIN customer AS c
           the business date. Decide whether to use an “unknown” dimension row or reject the fact.
         </li>
       </ul>
+    </section>
+
+    <section class="english-article__section" aria-labelledby="faq">
+      <h2 id="faq">Frequently asked questions</h2>
+      <h3 id="faq-merge">Should I use MERGE for SCD Type 2 SQL?</h3>
+      <p>
+        <code>MERGE</code> can help express source-to-target matching, but it does not automatically
+        implement Type 2 history. A simple PostgreSQL 15 <code>WHEN MATCHED THEN UPDATE</code>{' '}
+        action closes a matched row; that same source row does not also run a{' '}
+        <code>WHEN NOT MATCHED THEN INSERT</code> action. This example uses explicit{' '}
+        <code>UPDATE</code> plus <code>INSERT</code> over saved candidates so both writes are
+        visible and atomic. Other databases and versions have different MERGE semantics; adapt and
+        test rather than pasting this PostgreSQL script unchanged.
+      </p>
+      <h3 id="faq-history">How do I query a customer’s historical version?</h3>
+      <p>
+        Filter on <code>customer_id</code> and{' '}
+        <code>business_date &gt;= effective_from AND business_date &lt; effective_to</code>. For
+        C-100, 2026-02-28 returns Standard / Austin; 2026-03-01 returns Premium / Denver. The{' '}
+        <a href="#query">historical JOIN pattern</a> applies that same condition to each loan’s
+        disbursement date. Filtering only on <code>is_current</code> loses that history; overlapping
+        ranges can also cause <a href={getEnglishRoute('joinDuplicateRows')}>duplicate JOIN rows</a>
+        .
+      </p>
+      <h3 id="faq-retry">Will rerunning the SQL create duplicate versions?</h3>
+      <p>
+        Not when the same staged batch is immediately retried through the complete load transaction:
+        unchanged attributes produce no candidates, so no old row is closed and no new row is
+        inserted. The unique current-row index and <code>(customer_id, effective_from)</code>{' '}
+        constraint add protection. They are not a substitute for the change comparison or
+        transaction. Replaying an older batch after newer changes is different: this forward-only
+        example rejects changed backdated payloads; use a separate correction/backfill policy for
+        that case. The setup is a one-time session fixture, not the retry block.
+      </p>
     </section>
 
     <section class="english-related" aria-labelledby="related">

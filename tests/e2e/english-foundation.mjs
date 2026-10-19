@@ -226,20 +226,25 @@ const ENGLISH_ROUTES = [
   },
   {
     path: '/en/data-warehouse/scd-type-2/',
-    title: 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb',
-    heading: 'SCD Type 2 example: effective dates and historical rows',
+    title: 'SCD Type 2 SQL Query Example (PostgreSQL) | sql.sb',
+    heading: 'SCD Type 2 SQL query: effective dates and historical rows',
     links: [
       '/en/',
       '/en/data-warehouse/',
       '/en/data-warehouse/grain/',
       '/en/data-warehouse/idempotent-etl/',
       '/en/data-warehouse/data-lineage-vs-task-dependency/',
+      '/en/data-warehouse/incremental-vs-full-load/',
+      '/en/sql/sql-join-duplicate-rows/',
     ],
     boundaries: [
       'half-open range [effective_from, effective_to)',
       'identifies the customer. customer_sk changes',
       'row whose effective_to',
       'index on (customer_id, effective_from)',
+      'customer dimension represents',
+      'same transaction.',
+      'complete load transaction:',
     ],
   },
   {
@@ -634,6 +639,110 @@ async function verifyFoundationPage(page, baseUrl, route, viewportName, theme, e
       state.bodyLinks.includes(withBase(link)),
       JSON.stringify(state.bodyLinks),
     )
+  }
+
+  if (route.path === '/en/data-warehouse/scd-type-2/') {
+    const lab = page.getByRole('region', { name: 'SCD Type 2 timeline lab' })
+    const code = page.locator('[data-scd-sql="complete"] code')
+    const sql = await code.textContent()
+    check(
+      `${viewportName} SCD SQL is complete and selectable as plain text`,
+      sql.includes('CREATE TEMP TABLE customer') &&
+        sql.includes('IS DISTINCT FROM') &&
+        sql.includes('UPDATE customer AS c') &&
+        sql.includes('INSERT INTO customer') &&
+        sql.includes('COMMIT;') &&
+        sql.includes("DATE '2026-03-01' < effective_to"),
+    )
+    for (const id of ['sql-example', 'query', 'faq']) {
+      check(
+        `${viewportName} SCD jump link #${id} resolves an existing section`,
+        (await page.locator(`main a[href="#${id}"]`).count()) > 0 &&
+          (await page.locator(`#${id}`).count()) === 1,
+      )
+    }
+    check(
+      `${viewportName} SCD timeline still starts with two versions and historical loan`,
+      (await lab.locator('tbody tr').count()) === 2 &&
+        (await lab.locator('.scd-lab__loan').textContent()).includes('Standard · Austin'),
+    )
+    await lab.getByRole('button', { name: /Day before change/ }).click()
+    await page.waitForFunction(() =>
+      document.querySelector('.scd-lab__cursor')?.textContent.includes('1001'),
+    )
+    check(
+      `${viewportName} day before change matches the old range`,
+      (await lab.locator('.scd-lab__cursor').textContent()).includes('Standard · Austin'),
+    )
+    await lab.getByRole('button', { name: /Change date/ }).click()
+    await page.waitForFunction(() =>
+      document.querySelector('.scd-lab__cursor')?.textContent.includes('2002'),
+    )
+    check(
+      `${viewportName} change date matches only the new range`,
+      (await lab.locator('.scd-lab__cursor').textContent()).includes('Premium · Denver') &&
+        (await lab.locator('tr.is-hit').count()) === 1,
+    )
+    const cursor = lab.getByRole('slider', { name: 'Business date cursor' })
+    await cursor.focus()
+    await cursor.press('ArrowLeft')
+    await page.waitForFunction(
+      () =>
+        document.querySelector('.scd-lab__range')?.getAttribute('aria-valuetext') === '2026-02-28',
+    )
+    check(
+      `${viewportName} keyboard cursor crosses back to the old range`,
+      (await lab.locator('.scd-lab__cursor').textContent()).includes('1001'),
+    )
+    await lab.getByRole('button', { name: /SCD Type 1/ }).click()
+    await page.waitForFunction(() =>
+      document.querySelector('#scd-status')?.textContent.includes('Overwrite only'),
+    )
+    check(
+      `${viewportName} Type 1 still demonstrates lost history`,
+      (await lab.locator('tbody tr').count()) === 1 &&
+        (await lab.locator('.scd-lab__loan').textContent()).includes('Wrong history'),
+    )
+    await lab.getByRole('button', { name: /SCD Type 2 · version rows/ }).click()
+    await page.waitForFunction(() =>
+      document.querySelector('#scd-status')?.textContent.includes('History kept'),
+    )
+    await lab.getByRole('button', { name: 'Reset cursor' }).click()
+    await page.waitForFunction(
+      () =>
+        document.querySelector('.scd-lab__range')?.getAttribute('aria-valuetext') === '2025-11-15',
+    )
+    check(
+      `${viewportName} Type 2 reset retains the correct historical loan`,
+      (await lab.locator('tbody tr').count()) === 2 &&
+        (await lab.locator('.scd-lab__loan').textContent()).includes('Correct:'),
+    )
+    const originalViewport = page.viewportSize()
+    for (const width of [320, 360]) {
+      await page.setViewportSize({ width, height: 844 })
+      const dimensions = await page.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        mainWidth: document.querySelector('main')?.scrollWidth ?? 0,
+      }))
+      check(
+        `${viewportName} SCD SQL and timeline have no page overflow at ${width}px`,
+        dimensions.scrollWidth <= dimensions.width + TOLERANCE &&
+          dimensions.mainWidth <= dimensions.width + TOLERANCE,
+      )
+      await lab.getByRole('button', { name: /Change date/ }).click()
+      await page.waitForFunction(() =>
+        document.querySelector('.scd-lab__cursor')?.textContent.includes('2002'),
+      )
+      check(
+        `${viewportName} SCD boundary control works at ${width}px`,
+        (await lab.locator('.scd-lab__cursor').textContent()).includes('Premium · Denver'),
+      )
+      await lab.getByRole('button', { name: 'Reset cursor' }).click()
+    }
+    if (originalViewport) await page.setViewportSize(originalViewport)
+    check(`${viewportName} SCD has no pageerror after interactions`, errors.length === 0)
+    errors.length = 0
   }
 
   if (route.path === '/en/data-warehouse/layers/') {

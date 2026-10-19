@@ -10,6 +10,7 @@
     "preview": "astro preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:scd-postgres": "node tests/scd-type-2-postgres.mjs",
     "check": "astro check",
     "test:e2e:smoke": "node tests/e2e/release-smoke.mjs",
     "test:e2e:smart-404": "node tests/e2e/smart-404.mjs",
