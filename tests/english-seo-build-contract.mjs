@@ -79,7 +79,7 @@ const expectedEnglishPages = [
   {
     route: '/en/data-warehouse/scd-type-2/',
     file: 'en/data-warehouse/scd-type-2/index.html',
-    title: 'SCD Type 2 Example: Effective Dates & Historical Rows | sql.sb',
+    title: 'SCD Type 2 SQL Query Example (PostgreSQL) | sql.sb',
   },
   {
     route: '/en/data-warehouse/pipeline-failure-recovery/',
@@ -226,6 +226,28 @@ for (const page of expectedEnglishPages) {
   assert.match(html, /<h1\b[^>]*>/, `${page.route} must render its page heading`)
   assert.doesNotMatch(html, /hreflang=/i, `${page.route} must not emit hreflang`)
   checkPageIndexability(html, page.route)
+  if (page.route === '/en/data-warehouse/scd-type-2/') {
+    const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
+    assert.doesNotMatch(mainHtml, /[\u3400-\u9fff\uFFFD]/)
+    assert.equal((mainHtml.match(/<h1\b/g) ?? []).length, 1)
+    assert.match(getMeta(html, /<meta\b[^>]*\bname="description"[^>]*>/i), /SCD Type 2 SQL query/)
+    assert.ok(mainHtml.includes('SCD Type 2 SQL Query Example'))
+    assert.ok(mainHtml.includes('Frequently asked questions'))
+    const code = mainHtml.match(
+      /<pre\b[^>]*data-scd-sql="complete"[^>]*>\s*<code>([\s\S]*?)<\/code>\s*<\/pre>/,
+    )?.[1]
+    assert.ok(code, 'SCD2 must server-render the complete copyable SQL')
+    const publishedSql = ['setup', 'load', 'history']
+      .map((name) =>
+        readFileSync(join(root, 'src/features/english-scd/sql', `${name}.sql`), 'utf8'),
+      )
+      .join('\n')
+    assert.equal(
+      decodeEntities(code),
+      publishedSql,
+      'Rendered SQL must equal the PostgreSQL-tested source',
+    )
+  }
   if (page.route === '/en/data-warehouse/incremental-vs-full-load/') {
     const mainHtml = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? ''
     assert.doesNotMatch(
